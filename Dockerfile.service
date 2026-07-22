@@ -33,11 +33,18 @@ RUN wget -q https://www.cs.virginia.edu/stream/FTP/Code/stream.c -O /tmp/stream.
     gcc -O3 -march=native -fopenmp /tmp/stream.c -o /usr/local/bin/stream && \
     rm /tmp/stream.c
 
+# Dependencies come from the pinned requirements.txt (fully resolved, every transitive
+# pinned) so image builds are reproducible. Copied before src/ so the expensive install
+# layer stays cached across source edits.
+COPY requirements.txt ./
+RUN python -m pip install --upgrade pip setuptools wheel && \
+    python -m pip install --no-cache-dir -r requirements.txt
+
+# The project itself, without re-resolving what requirements.txt already pinned.
 COPY pyproject.toml README.md ./
 COPY src ./src
 
-RUN python -m pip install --upgrade pip setuptools wheel && \
-    python -m pip install --no-cache-dir .
+RUN python -m pip install --no-cache-dir --no-deps .
 
 COPY scripts ./scripts
 COPY benchmark_queries ./benchmark_queries
