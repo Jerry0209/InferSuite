@@ -1,6 +1,7 @@
 ### perf knobs
 
 sudo sysctl -w kernel.perf_event_paranoid=-1 kernel.kptr_restrict=0
+
 # make it survive reboot:
 printf 'kernel.perf_event_paranoid = -1\nkernel.kptr_restrict = 0\n' \
   | sudo tee /etc/sysctl.d/99-infersuite-perf.conf
