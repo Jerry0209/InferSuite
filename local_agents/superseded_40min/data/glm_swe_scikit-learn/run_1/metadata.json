@@ -1,0 +1,25 @@
+{
+ "workload": "swe",
+ "config": "scikit-learn",
+ "run": 1,
+ "model": "glm-5.2",
+ "endpoint": "https://api.z.ai/api/paas/v4",
+ "thinking": "enabled",
+ "cpus_measured": "2-11,14-23",
+ "cpus_house": "0-1,12-13",
+ "winsec": 10,
+ "repo_rev": "9fc5074",
+ "kernel": "6.17.0-1024-oem",
+ "gorder": "fpbr cache mlp fe fe_lat core_ports dram_bw priv",
+ "rotation": "shuffled",
+ "tma_cont": true,
+ "ts_start": 1784795957.841546,
+ "extra": {
+  "instance": "scikit-learn__scikit-learn-25232",
+  "subset": "verified",
+  "temperature": 0.0,
+  "harness_cg": "measured.slice/glm-swe-scikit-learn-r1.scope",
+  "tool_cg": "measured.slice/docker-4e610fb67268f3de35730580c759421f9971f178a6b133950f46ad895d6a9341.scope",
+  "proxy_cg": "user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-226803.scope"
+ }
+}

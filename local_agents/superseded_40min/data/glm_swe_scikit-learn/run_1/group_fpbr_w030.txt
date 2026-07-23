@@ -1,0 +1,24 @@
+
+ Performance counter stats for 'system wide':
+
+       323,666,127      cycles                           measured.slice/glm-swe-scikit-learn-r1.scope                                      
+     1,035,125,484      instructions                     measured.slice/glm-swe-scikit-learn-r1.scope #    3.20  insn per cycle            
+               720      fp_arith_inst_retired.scalar     measured.slice/glm-swe-scikit-learn-r1.scope                                      
+                 0      fp_arith_inst_retired.vector     measured.slice/glm-swe-scikit-learn-r1.scope                                      
+       209,296,046      branches                         measured.slice/glm-swe-scikit-learn-r1.scope                                      
+         1,027,981      branch-misses                    measured.slice/glm-swe-scikit-learn-r1.scope #    0.49% of all branches           
+   432,170,498,538      cycles                           measured.slice/docker-4e610fb67268f3de35730580c759421f9971f178a6b133950f46ad895d6a9341.scope                                      
+   271,657,824,783      instructions                     measured.slice/docker-4e610fb67268f3de35730580c759421f9971f178a6b133950f46ad895d6a9341.scope #    0.63  insn per cycle            
+       236,439,112      fp_arith_inst_retired.scalar     measured.slice/docker-4e610fb67268f3de35730580c759421f9971f178a6b133950f46ad895d6a9341.scope                                      
+       289,351,476      fp_arith_inst_retired.vector     measured.slice/docker-4e610fb67268f3de35730580c759421f9971f178a6b133950f46ad895d6a9341.scope                                      
+    40,116,629,770      branches                         measured.slice/docker-4e610fb67268f3de35730580c759421f9971f178a6b133950f46ad895d6a9341.scope                                      
+        68,248,807      branch-misses                    measured.slice/docker-4e610fb67268f3de35730580c759421f9971f178a6b133950f46ad895d6a9341.scope #    0.17% of all branches           
+       110,341,347      cycles                           user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-226803.scope                                      
+       234,684,970      instructions                     user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-226803.scope #    2.13  insn per cycle            
+             1,130      fp_arith_inst_retired.scalar     user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-226803.scope                                      
+                 0      fp_arith_inst_retired.vector     user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-226803.scope                                      
+        45,448,444      branches                         user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-226803.scope                                      
+           417,201      branch-misses                    user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-226803.scope #    0.92% of all branches           
+
+      10.002647605 seconds time elapsed
+
