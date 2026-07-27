@@ -175,12 +175,35 @@ interpreter retires many instructions per unit of real progress.
   took. Episode length varies 2–3×; the instruction mix doesn't.
 
 **Which commands are frontend- vs backend-bound** (the TODO question, answered at fence
-granularity): scikit-learn's tool fence is **backend-bound** (33–35 %) — OpenBLAS matrix math
-limited by memory/execution ports. astropy's and sympy's tool fences are **frontend-bound**
-(31–35 %) with high bad-speculation (11–19 %) — interpreter-heavy short commands that starve
-and mispredict the pipeline. The harness is balanced retiring/backend everywhere. True
-*per-command* TMA (rather than per-fence) would need window-to-call alignment and is future
-work; the call-class × fence combination above already pins the main attributions.
+granularity): scikit-learn's tool fence is **backend-bound** (33–35 %), astropy's and sympy's
+tool fences are **frontend-bound** (31–35 %) with high bad-speculation (11–19 %). The harness
+is balanced retiring/backend everywhere.
+
+**Level-2 drill (deck slide 18).** The banked continuous census also counts the Level-2
+splits directly (fetch-latency and memory-bound; bandwidth and core are the remainders), so
+the drill-down needs no new capture:
+
+| Task (tool fence) | FE·fetch-lat | FE·fetch-bw | Bad·mispred | BE·memory | BE·core | Ret·heavy |
+|---|---|---|---|---|---|---|
+| scikit-learn | 19.6 | 3.7 | 0.6 | 6.1 | **28.3** | 22.1 |
+| astropy | 17.4 | 17.1 | 14.1 | 7.0 | 6.6 | 4.2 |
+| sympy | 16.4 | 15.3 | 18.0 | 10.4 | 8.0 | 2.6 |
+
+- **scikit-learn's backend is core-bound, not DRAM**: core 28.3 % vs memory 6.1 %, with 22 %
+  heavy-ops retiring (vector/FMA) — OpenBLAS is limited by execution ports/dependencies, and
+  the floor-level LLC MPKI (0.01) and AMAT (5.1) independently rule out main-memory latency.
+- **astropy/sympy split their frontend ~evenly between fetch-latency and fetch-bandwidth**
+  (17.4/17.1 and 16.4/15.3) — the large-code-footprint signature: L1I misses stall fetch, and
+  DSB→MITE undersupply throttles it, plus 14–18 % branch-mispredict.
+
+**During which commands is L1I MPKI high?** Answerable from banked logs by joining each
+`fe_lat` counter window (exact, zero-mux, epoch-bracketed in `windows.tsv`) to the tool
+fence's activity bursts (10 Hz cpu.stat; contiguous bursts ≥ 3 s are the build/test
+executions). astropy featured run: **MPKI ≈ 28 during build/test windows** (which carry
+200 of 253 G instructions, peaking at 42) **vs ≈ 8 in short-command windows** — the
+episode-level L1I MPKI of 24 is the test suite itself, not the small commands. True
+*function-level* attribution would need one sampled-event replay (`GORDER_OVERRIDE`,
+deterministic, no API cost) — available on request.
 
 This directly answers the acceptance criterion ("as long as the successful runs of each task
 share a similar distribution pattern, it's fine"): **they do — and at the microarchitecture

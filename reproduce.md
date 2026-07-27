@@ -100,3 +100,68 @@ SWE_INSTANCES="scikit-learn__scikit-learn-25232" REPEATS=1 \
 DATA_ROOT=$HOME/InferSuite/local_agents/superseded_40min/data \
 SWE_INSTANCES="scikit-learn__scikit-learn-25232 astropy__astropy-14096 sympy__sympy-14248 django__django-10097" \
   ./run_glm_campaign.sh campaign swe                    # full 12 episodes, ~2.5-4 h
+
+
+
+
+
+```text
+~/InferSuite
+│
+├── measure.sh                          # optional entry point (SWE_clean profile: temp 0.6, REPEATS=1)
+│                                       #   ── our reproduction called the kit directly instead
+│
+├── local_agents/scripts/glm/           # ════ THE CAMPAIGN KIT (everything runs from here) ════
+│   ├── run_glm_campaign.sh             # the runner: preflight → dryrun → isolation+ISO-PROOF →
+│   │                                   #   proxy → episodes → capture stack → teardown; stages+resume
+│   ├── campaign.conf                   # all knobs: instances, REPEATS, SWE_TEMP, CPU partition, key path
+│   ├── litellm_glm.yaml                # proxy config → GLM-5.2 endpoint (key via env, never in file)
+│   ├── validate_glm_agents.py          # post-hoc gates E1–E11 (incl. E7 action-uniqueness = loop check)
+│   ├── audit_plots.py                  # recomputes every plotted number from raw → "ALL MATCH"
+│   ├── gen_lanes_leaf.sh               # derives per-CPU lanes + leaf symbol tables from rec_*.data
+│   ├── plot_glm_results.py             # main plotter → 12 figures + values_dump.json (spec-driven)
+│   ├── plot_call_structure.py          #   companion plotters, same PLOT_SPEC mechanism
+│   ├── plot_internal_tools.py          #   (traj-anchored per-call CPU attribution)
+│   ├── plot_calls_vs_bursts.py
+│   ├── plot_harness_scaling.py         # cross-campaign turns^2.7 law (reads SWE_clean + archive)
+│   ├── campaign.log                    # (generated) master log — the monitor watched this
+│   └── proxy.log                       # (generated) litellm round-trips; overwritten per campaign
+│
+├── agentic/swe_agent/                  # ════ THE HARNESS THE KIT DRIVES ════
+│   ├── external/SWE-agent/             # vendored SWE-agent v1.1.0 (3ea751c0) — incl. the buggy
+│   │   └── tools/review_on_submit_m/bin/submit    #   f-string submit tool (the django finding)
+│   └── .venv/                          # sweagent CLI env (gitignored; rebuilt from external/)
+│
+├── agentic/openclaw/.venv_litellm/     # litellm 1.89.4 proxy env (housekeeping cores; gitignored)
+│
+├── local_agents/superseded_40min/      # ════ THE REPRODUCTION CAMPAIGN (this session) ════
+│   ├── data/
+│   │   ├── glm_swe_{scikit-learn,astropy,sympy,django}/run_{1..3}/   # 12 temp-0 episodes
+│   │   ├── glm-t06_swe_django/run_{1,2}/                             # 2 temp-0.6 episodes
+│   │   │   ── per episode: ───────────────────────────────────────
+│   │   │   agent.log                   # harness narration (STEP markers = turns)
+│   │   │   metadata.json               # provenance: model, temperature, cgroup names
+│   │   │   traj/<inst>/<inst>.traj     # full trajectory (thought/action/observation per step)
+│   │   │   cpustat_scope{1,2,3}.tsv    # 10 Hz exact CPU: 1=harness 2=tool 3=litellm
+│   │   │   windows.tsv                 # shuffled counter-rotation schedule (epoch brackets)
+│   │   │   group_{fpbr,cache,mlp,fe,fe_lat,core_ports,dram_bw,priv}_wNNN.txt   # zero-mux counts
+│   │   │   tma_cont.csv                # continuous top-down census (TMA L1+L2 source)
+│   │   │   rec_scope{1,2,3}.data       # 99 Hz perf records (attribution only)
+│   │   │   scope{1,2,3}_{dso,comm}.txt # what-program/library tables from the records
+│   │   │   procstat_partition.tsv      # partition witness (gate E11)
+│   │   │   DONE                        # resume marker
+│   │   ├── plot_spec.json              # featured-run selection (the 5-entry spec)
+│   │   └── plots/                      # (generated) glm_*.png + values_dump.json
+│   │       └── compare/                # (generated) cmp_*.png + moh_featured/ (his figures)
+│   │
+├── local_agents/SWE_clean/             # the certified thesis campaign (read-only reference:
+│   │                                   #   data/, plots/, plot_spec.json — the turns^2.7 inputs)
+│   └── analysis.md                     # ← repo root: the comparison write-up
+│
+└── (outside the repo, still required)
+    ~/.glm_key                                     # API key (bare string, 600)
+    ~/llm-service-kernel-latest/archive/certified_glm_40min/   # Mohamad's raw campaign (comparison baseline)
+    docker: swebench/sweb.eval.x86_64.*            # per-task sandbox images (pulled on demand)
+    /usr/lib/linux-tools-6.8*/perf                 # the working perf binary (glob!)
+
+```
