@@ -186,6 +186,42 @@ This directly answers the acceptance criterion ("as long as the successful runs 
 share a similar distribution pattern, it's fine"): **they do — and at the microarchitecture
 level the distributions are the tightest of all.**
 
+## Part 5 — The django experiment: two episodes at temperature 0.6 (deck slide 17)
+
+The follow-up my mentor asked for: since django looped in every temp-0.0 attempt, run it twice
+more at temperature 0.6 (with the loop guard armed, N = 12) and see whether it can solve the
+task. Method: same kit, same isolation (ISO-PROOF quiet at 0.7 %), data banked under a separate
+`glm-t06` config so the temp-0.0 evidence is untouched; temperature 0.6 verified in each
+episode's recorded metadata. Figures on deck slides 2–5 and 16 now carry a fifth
+"django @0.6" column (audit: ALL MATCH).
+
+**What happened:**
+
+- **Run 1 (36.5 min, 160 turns).** Temperature 0.6 did what it is supposed to do: ~126 turns
+  of genuinely varied work — **64 heavy tool bursts** versus 4 in the temp-0 loops — and only
+  78 core-seconds total (the temp-0 loops burned 486–743). The agent finished its work and
+  tried to **submit 29 times**. Every attempt bounced with the same error: the harness's
+  submit tool (`review_on_submit_m/bin/submit`) crashes with a **Python SyntaxError** inside
+  this task's container — the tool uses modern f-string syntax, and django-10097's ancient
+  testbed image cannot parse it. The 12th identical bounce tripped the loop guard.
+- **Run 2 (~18 min, 160 turns).** A classic work-loop (repeated `git diff-tree` inspection),
+  caught by the guard — django remains genuinely loop-prone even at 0.6; the guard turned a
+  40-minute burn into an 18-minute one.
+
+**The answer to "can it solve django at higher temperature": no — and the reason is new.**
+django-10097 is unsolvable in this harness configuration at *any* temperature, because no
+patch can ever be produced: the submission mechanism itself is broken in this task's
+environment. The failure is **two-layered**: greedy-decode loops (layer 1, fixed by 0.6 +
+guard) had masked an environment/tooling incompatibility (layer 2) that only became visible
+once the agent survived long enough to reach submission. Neither campaign could have seen
+layer 2 before — every temp-0.0 episode died in a work-loop first.
+
+Notes for precision: "solve" here means "submit a patch" — formal SWE-bench resolution would
+additionally require the SWE-bench evaluation harness, which this kit does not run. The
+harness TMA of both 0.6 episodes is the same constant bar as the other 24 (retiring ≈ 45,
+frontend ≈ 22, bad-spec ≈ 8, backend ≈ 25) — one more confirmation that the agent program's
+microarchitecture profile is independent of task, temperature, and outcome.
+
 ## The findings
 
 ### 1. The computer mostly waits — in every single episode
@@ -255,9 +291,13 @@ conversation to the model). Same disease, different symptom — and a good demon
 looped episodes must not be presented as a task's profile.
 
 Also worth noting: temperature 0.0 is *supposed* to be deterministic, but over a live API it
-isn't — his three django attempts ran 304/414/443 turns under identical settings. The known fix
-(used in the later certified campaign) is temperature 0.6 plus a loop guard; django is the
-clearest candidate for such a re-run.
+isn't — his three django attempts ran 304/414/443 turns under identical settings.
+
+**Update (the re-run happened — see Part 5):** two fresh django episodes at temperature 0.6
+confirmed the loops are only half the story. One episode escaped the work-loops entirely, did
+real varied work, reached submission — and discovered that the harness's submit tool crashes
+(SyntaxError) inside django-10097's ancient container. So this task cannot produce a patch in
+this setup at any temperature; the greedy-decode loops had been hiding an environment bug.
 
 ## The temperature question
 
@@ -347,8 +387,12 @@ gate backstop it, so 0.6 only needs to make loops rare, not impossible.
 
 ## Caveats
 
-- My astropy has only one clean episode (and it's a long one); django has none anywhere.
-  A temp-0.6 re-run of those two tasks would close both gaps.
+- My astropy has only one clean episode (and it's a long one). A temp-0.6 astropy re-run
+  would give it a dispersion band.
+- django has no *solved* episode anywhere — and Part 5 shows it cannot have one in this
+  harness configuration (broken submit tool in its container), independent of temperature.
+  A genuine django profile would need either a tool fix (patch `review_on_submit_m` for old
+  Python) or a different django instance with a modern testbed image.
 - "Looped" is classified by a simple rule (≥ 8 of the last 12 actions identical); the kit's
   validator gate E7 is the formal version.
 - The harness breakdown comes from statistical profiling samples — reliable as percentages,

@@ -5,13 +5,15 @@
     ["scikit-learn (Python)", "glm_swe_scikit-learn", ["run_1"]],
     ["astropy (Python)", "glm_swe_astropy", ["run_2"]],
     ["sympy (Python)", "glm_swe_sympy", ["run_2"]],
-    ["django (Python)", "glm_swe_django", ["run_2"]]
+    ["django (Python)", "glm_swe_django", ["run_2"]],
+    ["django @0.6 (Python)", "glm-t06_swe_django", ["run_1"]]
   ],
   "outcome": {
     "scikit-learn (Python)": "resolved",
     "astropy (Python)": "resolved",
     "sympy (Python)": "resolved",
-    "django (Python)": "looped"
+    "django (Python)": "looped",
+    "django @0.6 (Python)": "submit-blocked"
   },
   "stop_before_hw": false
 }
