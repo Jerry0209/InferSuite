@@ -536,7 +536,7 @@ for n, cfg, runs in RESOLVED:
                      heavy_bursts=stats[n]["n"],
                      med_heavy_dur=float(stats[n]["med"]), peak_spike=float(stats[n]["peak"]),
                      sust=float(stats[n]["sust"]), tool_wall_pct=float(stats[n]["share"]))
-PANELS = [("n", "Tool calls per episode", "{:.0f}"), ("med", "Median call duration (s)", "{:.1f}"),
+PANELS = [("n", "Tool calls per episode", "{:.0f}"), ("med", "Median heavy-burst duration (s)", "{:.1f}"),
           ("internal", "Agent-internal calls", "{:.0f}"),
           ("share", "Tool-active share of wall (%)", "{:.1f}")]
 if any(stats[n]["internal"] is None for n in names):     # OC transcripts carry no trajectory
@@ -567,7 +567,10 @@ for pi, (ax, (k, ttl, fmtv)) in enumerate(zip(axes, PANELS)):
         ax.set_yticks(range(len(names))); ax.set_yticklabels([])
         ax.invert_yaxis(); ax.set_xlim(0, max(tv) * 1.5); ax.grid(axis="x")
         continue
-    ax.set_title(ttl, fontsize=10)
+    if k == "med":   # burst metric, NOT per-call time — the old "Median call duration" label misread
+        ax.set_title(ttl + "\nsame >0.3-core bursts as the dark bars", fontsize=8.5)
+    else:
+        ax.set_title(ttl, fontsize=10)
     for i, x in enumerate(v):
         ax.text(x, i, " " + fmtv.format(x), va="center", fontsize=9, color="#333333")
     ax.set_yticks(range(len(names)))

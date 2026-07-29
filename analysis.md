@@ -245,6 +245,122 @@ harness TMA of both 0.6 episodes is the same constant bar as the other 24 (retir
 frontend ≈ 22, bad-spec ≈ 8, backend ≈ 25) — one more confirmation that the agent program's
 microarchitecture profile is independent of task, temperature, and outcome.
 
+## Part 6 — Per-window distributions: beyond the episode average (deck slides 19–20)
+
+The critique that motivated this part: the signature heatmap's numbers (e.g. L1I MPKI) are
+episode-sum ratios — misses summed over all of an event's windows divided by co-counted
+instructions. That is the right *average*, but it says nothing about the *distribution*: which
+windows, which commands, how much spread. The fix, per mentor sketch: compute every metric
+**per window**, tag each window with **which command was executing**, and present box plots
+and tag-colored timelines.
+
+**Method (all free — replays call no model):**
+- One **deterministic replay** of the featured episode per counter group, with
+  `GORDER_OVERRIDE` dedicating every window of that pass to a single group (the kit's own
+  dedicated-group probe) and `WINSEC=2` (2-s windows, ~57 windows per pass for scikit-learn).
+  10 passes per task, strictly serialized (GP counters are shared hardware). Each pass runs
+  the identical recorded trajectory, so passes are comparable.
+- **Two counter groups were added to the kit** (`run_glm_campaign.sh` GRP table) to complete
+  TMA Level 3, using the exact events perf's own SPR formulas name:
+  `mem_bound` = exe_activity.bound_on_loads + memory_activity.stalls_l{1d,2,3}_miss (the
+  L1/L2/L3/DRAM-bound ladder) and `fe_l3x` = dsb2mite_switches.penalty_cycles,
+  idq.ms_switches, exe_activity.bound_on_stores, itlb_misses.walk_active. Both verified
+  100%-enabled (zero multiplexing). LCP is the one L3 child not captured.
+- A host-side **command tagger** polls the tool cgroup's processes at 2 Hz from the
+  housekeeping cores (zero pollution of the measured fences) → `cmdlog.tsv` (epoch, pid,
+  argv). Each window is tagged by the most specific foreground command present (priority:
+  tests(pytest) > compile > pkg/build > git > python-other > shell > agent-tool), so the
+  persistent plumbing (SWE-ReX server, session shell) cannot dilute the tag.
+- **All values first, plot later:** `local_agents/superseded_40min/data/l3_study/`
+  `all_windows_<task>.csv` (one row per pass × window × fence × metric, with epoch, duration,
+  instructions, and tag — 2,116 rows for scikit-learn) and `tma_intervals_<task>.csv`
+  (per-10-s TMA L1+L2 shares). Plots are generated from the CSV afterwards
+  (`analyze_l3_windows.py --plot`), one box plot per metric plus tag-colored timelines.
+
+**scikit-learn findings (tool fence, medians):**
+- The episode averages hid a ~3× command structure. Per-window IPC: tests(pytest) **0.62**
+  (the OpenBLAS backend-bound signature) vs pkg/build **1.9**, shell **1.35**, python-other
+  **1.1**. The famous "scikit IPC = 0.64" is a pytest-weighted average, not a property of the
+  workload mix.
+- L1I pressure is the mirror image: pytest windows ≈ **0.9 MPKI** (hot OpenBLAS loops fit
+  L1I) while command-startup windows spike to **16–30** — the episode's L1I average is low
+  *because* the test suite dominates instructions.
+- **TMA L3 memory ladder verdict** (pytest windows): **L1-bound 14.4 %** of cycles,
+  L2-bound 0.02 %, L3-bound 0.3 %, **DRAM-bound 0.0 %**, store-bound 0.1 %. Meanwhile DRAM
+  read occupancy (≥4 reads in flight) is **62 % of cycles at MLP ≈ 3.3**: heavy streaming,
+  fully prefetched/overlapped, never a stall source. This settles the earlier open question
+  by direct measurement: OpenBLAS is limited by execution ports and near-core (L1) data
+  supply — definitively not by main memory. Frontend L3 children are negligible for scikit
+  (DSB-switch stalls 1.1 % of cycles, iTLB-walk ≈ 0).
+
+**astropy and sympy findings (tool fence, per-window medians; ~330 windows per task across
+the 10 passes):**
+
+| metric (tool fence, median) | scikit-learn | astropy | sympy |
+|---|---|---|---|
+| IPC — pytest windows | **0.62** | 1.77 | 1.97 |
+| IPC — other-python windows | 1.1 | 1.53 | 1.70 |
+| L1I code-read MPKI — pytest | 0.85 | **23.3** | 18.5 |
+| L1I code-read MPKI — other python | ~5–8 | **7.9** | **19.1** |
+| iCache stall (% cyc) — pytest | 0.1 | 6.9 | 5.2 |
+| TMA DSB-switch stalls (% cyc) | 1.1 | 6.9 | 6.5 |
+| iTLB-walk (% cyc) | ~0 | 0.5–0.7 | 0.3 |
+| TMA DRAM-bound (% cyc) | 0.0 | 1.6 | **4.7** |
+| branch MPKI | 0.2 | 3.3 | 5.2 |
+
+Three distribution *shapes* — the finding the averages could never show:
+- **scikit-learn is bimodal**: OpenBLAS pytest windows at IPC 0.62 vs everything else ≥ 1.1.
+- **astropy is wide**: its instruction-footprint problem is *specifically the test suite* —
+  pytest windows at 23.3 code-read MPKI vs 7.9 in other python windows. FE-latency L3
+  children during pytest: iCache stalls 6.9 % + DSB-switch penalties 6.9 % + branch resteers
+  ≈ 8 % of cycles.
+- **sympy is tight**: ≈ 19 MPKI and ≈ 5.6 % iCache stall in *every* tag — the interpreter
+  churn is the workload itself, not any particular command. sympy is also the only task with
+  visible memory reach (DRAM-bound 4.7 %) and carries the highest branch MPKI (5.2).
+- iTLB-walk ≤ 0.7 % of cycles everywhere: instruction-TLB is ruled out as a material
+  fetch-latency cause on all three tasks.
+
+**Paper cross-check (arXiv 2605.26297, "Agentic AI Workload Characteristics"):** its Figure
+10 categories are raw Claude-Code tool names (Bash/Read/Edit/Grep/WebFetch/…); the
+bash-command taxonomy is its **Figure 11** (grep, python3, curl, head, echo, ls, …, Other —
+a flat top-12, no semantic grouping), and the paper reports **no microarchitectural metrics
+at all** (only wall-time/token/turn statistics). Per-command microarchitecture
+distributions, as measured here, do not appear in that paper.
+
+## Part 7 — How tool-call boundaries are marked (the mandatory verification)
+
+Verified in code, line by line (full write-up with references banked from the review agent):
+
+**Spatial boundary — a kernel cgroup wall, never a name.** The harness runs inside a
+transient systemd scope created at launch (`measured.slice/<unit>.scope`); its fence path is
+constructed from the unit name, never discovered from a PID. The tool fence is the docker
+sandbox's cgroup, resolved through the kernel from the container's init PID
+(`docker inspect .State.Pid` → `/proc/<pid>/cgroup`), with docker's `cgroup-parent` rewritten
+to the measured slice so containers cannot escape. The container-name grep (`sweb*`) only
+bootstraps discovery of *which container*; membership itself is cgroup inheritance, so
+SWE-ReX (the in-container action executor), the persistent session shell, and every spawned
+child are structurally inside the tool fence whatever their names. All three fence paths are
+banked per run in `metadata.json`, and capture starts only after the fences demonstrably
+exist and the agent reaches STEP 2 ("WORK VERIFIED").
+
+**Temporal boundaries — an ordinal anchor join, with printed diagnostics.** Bursts come from
+the 10 Hz `cpu.stat` series: a span opens above a detection floor (tool 0.005 / harness 0.02
+cores), gaps < 0.4 s are merged, ≤ 0.001 core-s dust is dropped (constants locked in the
+MANIFEST). Calls come from the trajectory in order, each with the harness's own
+`execution_time`. The join: calls > 5 s are paired 1:1, in order, with spans > 5 s (anchors —
+only test suites/builds run that long); anchors partition both sequences into aligned
+segments, and within a segment the short spans' summed core-seconds are distributed over the
+short calls weighted by `execution_time`. "Attribution coverage 100 %" means every
+core-second inside a detected tool burst was credited to some call class.
+
+**Exact vs heuristic:** fence membership and all core-second totals are exact kernel
+accounting; only the *time attribution* layer (floors, 0.4 s merge, 5 s anchor threshold,
+ordinal pairing, execution-time weights) is heuristic — and each assumption has a visible
+guard (anchor-count diagnostic printed per task; explicit fallback label "duration-weighted"
+when no long calls exist; sub-floor trickle excluded symmetrically from numerator and
+denominator). The per-window study of Part 6 adds an independent second tagging mechanism
+(the 2 Hz process poll), which agreed with the burst-class picture where they overlap.
+
 ## The findings
 
 ### 1. The computer mostly waits — in every single episode

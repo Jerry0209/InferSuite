@@ -49,6 +49,15 @@ GRP[fe]="cycles,instructions,idq.dsb_uops,idq.mite_uops,idq.ms_uops,lsd.uops"
 GRP[fe_lat]="cycles,instructions,icache_data.stalls,icache_tag.stalls,int_misc.clear_resteer_cycles,l2_rqsts.all_code_rd"
 GRP[core_ports]="cycles,instructions,exe_activity.1_ports_util,exe_activity.2_ports_util,exe_activity.exe_bound_0_ports,arith.div_active"
 GRP[dram_bw]="cycles,instructions,cpu/offcore_requests_outstanding.data_rd,cmask=4/,offcore_requests_outstanding.cycles_with_data_rd,offcore_requests.data_rd"
+# TMA-L3 drill groups (2026-07-28, per-window distribution study): NOT in the certified GORDER —
+# select via GORDER_OVERRIDE on replays. mem_bound = exact SPR memory-ladder events (perf's own
+# tma_l{1,2,3}_bound / tma_dram_bound formulas); fe_l3x = DSB-switch / MS-switch / store-bound /
+# iTLB-walk children. Both verified 100%-enabled (4 GP + fixed each).
+GRP[mem_bound]="cycles,instructions,exe_activity.bound_on_loads,memory_activity.stalls_l1d_miss,memory_activity.stalls_l2_miss,memory_activity.stalls_l3_miss"
+GRP[fe_l3x]="cycles,instructions,dsb2mite_switches.penalty_cycles,idq.ms_switches,exe_activity.bound_on_stores,itlb_misses.walk_active"
+# fe_miss (2026-07-28b): BTB-miss proxy (baclears), uop-cache miss count, and branch-direction
+# vs indirect mispredict split — for the per-window distribution study. GORDER_OVERRIDE only.
+GRP[fe_miss]="cycles,instructions,baclears.any,frontend_retired.any_dsb_miss,br_misp_retired.cond,br_misp_retired.indirect"
 # priv: kernel-vs-user split + kernel-mediated behavior. context-switches/migrations/
 # page-faults are software events (zero PMU counters); :u/:k splits cost 2 GP.
 GRP[priv]="task-clock,context-switches,cpu-migrations,page-faults,cycles:u,cycles:k,instructions:u,instructions:k"
