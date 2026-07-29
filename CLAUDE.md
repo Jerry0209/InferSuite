@@ -24,6 +24,18 @@ resurrect them into the main tree. The thesis itself is a separate repo at
 torn down. If `HANDOFF.md` exists at the repo root it is the current session-state document —
 read it first when resuming thesis work (it is gitignored; never commit it).
 
+## Knowledge wiki
+
+`docs/wiki/` is the persistent, LLM-maintained knowledge base (an instance of the LLM-Wiki
+framework, `docs/raw/llm-wiki.md`) — cross-cutting knowledge consolidated from this file and the
+handwritten notes into interlinked pages: measurement ontology, agent/service architecture, the
+load-bearing decisions (the "issues we ran into" list, as decision pages), and profiling/operations
+conventions. Start at `docs/wiki/index.md`; the operating rules are `docs/wiki/schema.md`. Three
+layers: `docs/raw/` (immutable sources) → `docs/wiki/` (the wiki) → `docs/reports/` (per-study
+outputs, written by `study-report`). Maintain it with the `wiki` skill (ingest/query/lint); the
+`report-check-commit` skill lints the wiki as its commit gate. This section is a pointer — the wiki
+holds the detail, and `CLAUDE.md` remains the canonical schema.
+
 ## Commands
 
 All measurement campaigns go through one entry point (it dispatches to the per-campaign kits;

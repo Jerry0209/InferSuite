@@ -6,7 +6,7 @@ you'd read it.
 ## Microarchitectural study reports — `reports/`
 
 Reproducibility-grade write-ups of the agent-CPU studies — one per study, covering the
-full 23-slide team deck section by section, plus one report per per-window metric group.
+full 25-slide team deck section by section, plus one report per per-window metric group.
 Each report: key summary → methodology with every load-bearing
 decision and the scripts used → insights ranked by importance.
 Full index and reading order: **[reports/README.md](reports/README.md)**.
@@ -24,7 +24,9 @@ Full index and reading order: **[reports/README.md](reports/README.md)**.
 | 19–23 | [10 — branches & speculation](reports/10_slides19-23_branches_speculation.md) | Mispredict direction/indirect split, BTB proxy, resteers |
 | 19–23 | [11 — memory hierarchy](reports/11_slides19-23_memory_hierarchy.md) | Cache ladder, AMAT model, MLP, exact TMA-L3 memory ladder, DRAM occupancy-vs-stall |
 | 19–23 | [12 — execution core & system](reports/12_slides19-23_execution_core.md) | IPC distributions, ports cycle profile, vector-FP, kernel share |
+| 24–25 | [13 — multilingual language axis](reports/13_slides24-25_multilingual_language_axis.md) | JS + C++ via SWE-bench Multilingual: instruction-supply pressure generalizes; harness is language-independent |
 | 21 | [03 — tool-call boundary marking](reports/03_slide21_tool_call_boundary_marking.md) | Method audit: cgroup wall + ordinal anchor join |
+| 1–25 | [14 — instrument-to-figure reference](reports/14_slides1-25_instrument_to_figure_reference.md) | Which instrument produced each deck number, exact vs heuristic, code site of every constant; JS-tagger gap; published slide links |
 
 Companion material elsewhere in the repo:
 

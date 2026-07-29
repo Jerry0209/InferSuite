@@ -1,6 +1,6 @@
 # Microarchitectural study reports
 
-One report per study of the team deck ("Agent CPU profiling — GLM-5.2 SWE-agent", 23
+One report per study of the team deck ("Agent CPU profiling — GLM-5.2 SWE-agent", 25
 slides), written for reproducibility: each has (1) a key summary, (2) the methodology with
 every load-bearing decision and the scripts used, (3) insights ordered by importance. The
 running prose companion is [`../handwritten_notes/analysis.md`](../handwritten_notes/analysis.md);
@@ -20,11 +20,14 @@ creation; the table below is ordered by deck slide.
 | 19–23 | [10 — branches & speculation](10_slides19-23_branches_speculation.md) | Metric group: all/direction/indirect mispredicts, BTB-miss proxy (BAClears), resteer cycles, TMA bad-speculation — sympy worst and direction-dominated |
 | 19–23 | [11 — memory hierarchy](11_slides19-23_memory_hierarchy.md) | Metric group: L1D/L2/LLC ladder, AMAT (fixed-latency model), MLP, exact TMA-L3 memory ladder, DRAM occupancy vs stall — L1-bound, DRAM stall ≈ 0 |
 | 19–23 | [12 — execution core & system](12_slides19-23_execution_core.md) | Metric group: IPC distributions, ports-utilization cycle profile (not parent-nested — caveat), divider, vector-FP share, kernel share |
+| 24–25 | [13 — multilingual language axis](13_slides24-25_multilingual_language_axis.md) | SWE-bench Multilingual (babel JS, fmt C++) profiled by the same per-window method at zero API cost: instruction-supply pressure is not a CPython artifact; the harness is language-independent |
 | 21 | [03 — tool-call boundary marking](03_slide21_tool_call_boundary_marking.md) | Method audit: cgroup wall (spatial, exact) + ordinal anchor join (temporal, heuristic-with-diagnostics); underpins 07, 09–12 |
+| 1–25 | [14 — instrument-to-figure reference](14_slides1-25_instrument_to_figure_reference.md) | Cross-cutting: which instrument produced each deck number, exact vs heuristic layer, and the code site of every constant — plus the JS command-tagger gap that qualifies babel's tag mix on 24–25, and the published slide links |
 
-**Reading order for a newcomer:** 03 (what a "tool call" is in this data) → 05 → 06 → 07 →
-08 → 02 → 04 → 09/10/11/12 (any order) → 01.
+**Reading order for a newcomer:** 14 (which instrument produced what) → 03 (what a "tool call"
+is in this data) → 05 → 06 → 07 → 08 → 02 → 04 → 09/10/11/12 (any order) → 13 → 01.
 
 **Numbering note:** 01–04 were written first (slides 17+); 05–12 filled in the earlier deck
-sections and the per-window metric groups. File numbers are stable identifiers — do not
-renumber.
+sections and the per-window metric groups; 13 covers the multilingual extension; 14 is the
+cross-cutting instrument reference spanning the whole deck. File numbers are stable
+identifiers — do not renumber.

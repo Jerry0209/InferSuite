@@ -584,7 +584,12 @@ oc_episode(){ # $1 task key, $2 run n
 # ---------------- SWE replay episode (determinism anchor: recorded traj, NO model) ------------
 replay_episode(){ # $1 short-name, $2 source live run, $3 dest run n
   local SHORT="$1" SRC="$2" N="$3"
-  local TRAJ=$(find "$DATA/${TIER_PREFIX}_swe_${SHORT}/run_${SRC}/traj" -name "*.traj" 2>/dev/null | head -1)
+  # TRAJ_OVERRIDE: replay a specific trajectory file. Needed for trajectories recorded on
+  # another workstation: a .traj embeds absolute tools/<bundle> paths, so a foreign traj makes
+  # run-replay die at startup (PermissionError -> "no sandbox"). Localize it first with
+  # localize_traj.py (writes a *.local.traj copy; banked evidence untouched) and pass that here.
+  # Without the override the glob would non-deterministically pick either file.
+  local TRAJ="${TRAJ_OVERRIDE:-$(find "$DATA/${TIER_PREFIX}_swe_${SHORT}/run_${SRC}/traj" -name "*.traj" ! -name "*.local.traj" 2>/dev/null | head -1)}"
   [ -n "$TRAJ" ] || { log "SKIP replay $SHORT r$N (no traj in live run_$SRC)"; return 0; }
   local OUT="$DATA/${TIER_PREFIX}_replay_swe_${SHORT}/run_${N}"
   [ -f "$OUT/DONE" ] && { log "skip replay $SHORT r$N (DONE)"; return 0; }

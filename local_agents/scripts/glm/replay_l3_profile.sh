@@ -16,6 +16,9 @@ SRC="${SRC:?live source run number}"
 export DATA_ROOT="${DATA_ROOT:?}"
 export TIER_PREFIX="${TIER_PREFIX:-glm}"
 export WINSEC="${WINSEC:-2}"
+# TRAJ_OVERRIDE: pass a specific (e.g. localize_traj.py-localized) trajectory to every pass —
+# required when the source campaign was recorded on another workstation. See run_glm_campaign.sh.
+[ -n "${TRAJ_OVERRIDE:-}" ] && export TRAJ_OVERRIDE
 PROF_GROUPS="${PROF_GROUPS:-fe_lat fe fpbr cache mlp core_ports dram_bw mem_bound fe_l3x priv}"
 log(){ printf '[l3prof %s] %s\n' "$(date +%H:%M:%S)" "$*"; }
 

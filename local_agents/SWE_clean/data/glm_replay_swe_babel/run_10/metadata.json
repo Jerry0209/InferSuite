@@ -1,0 +1,23 @@
+{
+ "workload": "swe_replay",
+ "config": "babel",
+ "run": 10,
+ "model": "glm-5.2",
+ "endpoint": "https://api.z.ai/api/paas/v4",
+ "thinking": "enabled",
+ "cpus_measured": "2-11,14-23",
+ "cpus_house": "0-1,12-13",
+ "winsec": 2,
+ "repo_rev": "c4a1b2e",
+ "kernel": "6.17.0-1024-oem",
+ "gorder": "priv",
+ "rotation": "shuffled",
+ "tma_cont": true,
+ "ts_start": 1785330564.4710922,
+ "extra": {
+  "source_run": 1,
+  "traj": "/home/thu/InferSuite/local_agents/SWE_clean/data/glm_swe_babel/run_1/traj/babel__babel-15445/babel__babel-15445.local.traj",
+  "harness_cg": "measured.slice/glm-rep-babel-r10.scope",
+  "tool_cg": "measured.slice/docker-e64ff14fd30f1d4e73fa241af9553e30db485a80996840e8988c698c36299a19.scope"
+ }
+}
