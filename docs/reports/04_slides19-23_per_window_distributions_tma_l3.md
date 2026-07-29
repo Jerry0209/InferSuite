@@ -3,7 +3,7 @@
 **Date of study:** 2026-07-28 · **Author of record:** Tianrui (Jerry), with Claude Code
 **Deck slides:** 19 (method + scikit flagships), 20 (TMA-L3 memory verdict), 22 (12-metric
 cross-task grid), 23 (harness fence + call durations + gallery links)
-**Longer prose version:** `analysis.md`, Part 6 · **Boundary/tagging audit:** Report 03
+**Longer prose version:** [`../handwritten_notes/analysis.md`](../handwritten_notes/analysis.md), Part 6 · **Boundary/tagging audit:** Report 03
 
 ---
 

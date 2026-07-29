@@ -1,21 +1,30 @@
 # Microarchitectural study reports
 
-One report per study from **deck slide 17 onward**, written for reproducibility: each has
-(1) a key summary, (2) the methodology with every load-bearing decision and the scripts
-used, (3) insights ordered by importance. The deck referenced throughout is the published
-team readout ("Agent CPU profiling — GLM-5.2 SWE-agent", 23 slides); the running prose
-companion is the repo-root `analysis.md`.
+One report per study of the team deck ("Agent CPU profiling — GLM-5.2 SWE-agent", 23
+slides), written for reproducibility: each has (1) a key summary, (2) the methodology with
+every load-bearing decision and the scripts used, (3) insights ordered by importance. The
+running prose companion is [`../handwritten_notes/analysis.md`](../handwritten_notes/analysis.md);
+the counter-event reference is `local_agents/scripts/glm/events.md`. Reports are numbered by
+creation; the table below is ordered by deck slide.
 
-| Report | Deck slides | Study |
+| Deck slides | Report | Study |
 |---|---|---|
-| [01_slide17_django_temperature_experiment.md](01_slide17_django_temperature_experiment.md) | 17 | Two django episodes at temperature 0.6 → the layered failure: decode loops were masking a stock SWE-agent submit-tool crash on Python-3.5 task containers (unsolvable at any temperature; previously unreported upstream) |
-| [02_slide18_tma_level2_drill.md](02_slide18_tma_level2_drill.md) | 18 | TMA Level-2 split from the banked continuous census (no new capture): scikit = core-bound not DRAM; astropy/sympy = fetch-latency ≈ fetch-bandwidth; astropy's L1I pressure time-resolved to the test suite |
-| [03_slide21_tool_call_boundary_marking.md](03_slide21_tool_call_boundary_marking.md) | 21 | Method audit: how tool/agent-call boundaries are marked — cgroup wall (spatial, exact) + ordinal anchor join (temporal, heuristic-with-diagnostics) |
-| [04_slides19-23_per_window_distributions_tma_l3.md](04_slides19-23_per_window_distributions_tma_l3.md) | 19–20, 22–23 | Per-window distribution study: dedicated-group deterministic replays, 2-s windows, 2 Hz command tagger, three new counter groups (TMA L3 + BTB/µop-cache/branch-direction), CSV-first outputs, cross-task grids and per-task galleries |
+| 1–6 | [05 — featured reproduction results](05_slides1-6_featured_reproduction.md) | How one representative episode per task is selected (never pooled), rendered into the wall-clock / CPU-work / timeline / tool-call figures, and audited (ALL MATCH) |
+| 7–12 | [06 — run-to-run variance](06_slides7-12_run_to_run_variance.md) | All 24 episodes of both campaigns side by side: shares and shapes reproduce; absolute wall/core-s are 2–3× draws; within-campaign variance ≥ between-campaign difference |
+| 13 | [07 — inside the fences](07_slide13_inside_the_fences.md) | CPU attribution inside each fence: tool CPU by agent-call class (trajectory-anchored), harness CPU by library (perf DSO shares — time-shares, not miss-shares) |
+| 14–16 | [08 — TMA L1 & signatures](08_slides14-16_tma_l1_signatures.md) | Microarchitecture-level reproducibility: TMA L1 side by side, signature heatmaps on hardware-anchored absolute scales, TMA for every run — the tightest-reproducing layer of the study |
+| 17 | [01 — django temperature experiment](01_slide17_django_temperature_experiment.md) | Temp-0.6 episodes revealed a layered failure: decode loops were masking a stock SWE-agent submit-tool crash on Python-3.5 task containers (unsolvable at any temperature; upstream-unreported) |
+| 18 | [02 — TMA Level-2 drill](02_slide18_tma_level2_drill.md) | The banked continuous census already contains Level 2: scikit-learn core-bound (not DRAM); astropy/sympy split frontend evenly between fetch-latency and fetch-bandwidth |
+| 19–23 | [04 — per-window distributions & TMA L3](04_slides19-23_per_window_distributions_tma_l3.md) | The capture method: dedicated-group deterministic replays, 2-s windows, 2 Hz command tagger, three new counter groups, CSV-first outputs, cross-task grids and galleries |
+| 19–23 | [09 — frontend instruction supply](09_slides19-23_frontend_instruction_supply.md) | Metric group: L1I pressure, iCache/iTLB stalls, DSB vs MITE delivery, µop-cache misses, decoder-switch penalties — the axis that most cleanly separates the tasks |
+| 19–23 | [10 — branches & speculation](10_slides19-23_branches_speculation.md) | Metric group: all/direction/indirect mispredicts, BTB-miss proxy (BAClears), resteer cycles, TMA bad-speculation — sympy worst and direction-dominated |
+| 19–23 | [11 — memory hierarchy](11_slides19-23_memory_hierarchy.md) | Metric group: L1D/L2/LLC ladder, AMAT (fixed-latency model), MLP, exact TMA-L3 memory ladder, DRAM occupancy vs stall — L1-bound, DRAM stall ≈ 0 |
+| 19–23 | [12 — execution core & system](12_slides19-23_execution_core.md) | Metric group: IPC distributions, ports-utilization cycle profile (not parent-nested — caveat), divider, vector-FP share, kernel share |
+| 21 | [03 — tool-call boundary marking](03_slide21_tool_call_boundary_marking.md) | Method audit: cgroup wall (spatial, exact) + ordinal anchor join (temporal, heuristic-with-diagnostics); underpins 07, 09–12 |
 
-Context that predates slide 17 (not duplicated here): campaign reproduction and comparison
-methodology in `analysis.md` Parts 1–4, the counter-event reference in
-`local_agents/scripts/glm/events.md`, and the certified campaign kit's own
-`local_agents/scripts/glm/README.md`.
+**Reading order for a newcomer:** 03 (what a "tool call" is in this data) → 05 → 06 → 07 →
+08 → 02 → 04 → 09/10/11/12 (any order) → 01.
 
-Reading order for a newcomer: 03 (what a "tool call" even is in this data) → 02 → 04 → 01.
+**Numbering note:** 01–04 were written first (slides 17+); 05–12 filled in the earlier deck
+sections and the per-window metric groups. File numbers are stable identifiers — do not
+renumber.

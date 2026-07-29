@@ -2,7 +2,7 @@
 
 **Date of study:** 2026-07-27 · **Author of record:** Tianrui (Jerry), with Claude Code
 **Deck slides:** 17 (also feeds the "django @0.6" column on slides 2–5)
-**Longer prose version:** `analysis.md`, Part 5 and "The temperature question"
+**Longer prose version:** [`../handwritten_notes/analysis.md`](../handwritten_notes/analysis.md), Part 5 and "The temperature question"
 
 ---
 

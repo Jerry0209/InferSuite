@@ -2,7 +2,7 @@
 
 **Date of study:** 2026-07-28 · **Author of record:** Tianrui (Jerry), with Claude Code
 **Deck slides:** 21 (method audit; underpins slides 13, 18 and Report 04's tagging)
-**Longer prose version:** `analysis.md`, Part 7
+**Longer prose version:** [`../handwritten_notes/analysis.md`](../handwritten_notes/analysis.md), Part 7
 
 ---
 

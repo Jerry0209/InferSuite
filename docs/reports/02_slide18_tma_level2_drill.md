@@ -2,7 +2,7 @@
 
 **Date of study:** 2026-07-28 · **Author of record:** Tianrui (Jerry), with Claude Code
 **Deck slides:** 18 (builds on 14–16, the TMA L1 comparisons)
-**Longer prose version:** `analysis.md`, Part 4 ("Level-2 drill" subsection)
+**Longer prose version:** [`../handwritten_notes/analysis.md`](../handwritten_notes/analysis.md), Part 4 ("Level-2 drill" subsection)
 
 ---
 
