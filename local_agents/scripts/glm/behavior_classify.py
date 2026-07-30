@@ -17,7 +17,11 @@ Definitions (action-count semantics — stated because babel proved "dominated" 
   E edit-dominated     writing the fix is the work: str_replace/create/insert/sed -i dominate
   T test-dominated     the verify loop is the work: test runners + repro snippets dominate
   B build-dominated    build/deps wrangling is the work: make/cmake/installs dominate
-An episode's label = argmax over S/E/T/B counts (git/misc excluded); ties -> M (mixed).
+An episode's label = argmax over S/E/T/B counts (git/misc excluded), but only if it leads the
+runner-up by MARGIN points; otherwise M (mixed) — a 49 %-S/47 %-T episode is not
+"search-dominated" in any useful sense (observed: phpspreadsheet-3940). A cell is CREDITED by
+`credits()`: the intended type is the leader, or is co-dominant (within MARGIN of it), because a
+co-dominant T episode does supply test-execution behaviour even if S edges it.
 A cell is only credited by a REALIZED label; the static predictor is a prior (5/9-grade
 accuracy on mechanism validation warns against trusting static labels — Report 17 §2.2).
 
@@ -83,17 +87,31 @@ def traj_of(short, campaign):
         if not p.endswith(".local.traj"): return p
     return None
 
+MARGIN = 10.0   # percentage points of the classified-action mix
+
+def _shares(c):
+    core = {k: c.get(k, 0) for k in "SETB"}
+    tot = sum(core.values())
+    return ({k: 100.0 * v / tot for k, v in core.items()} if tot else
+            {k: 0.0 for k in "SETB"}), tot
+
 def episode_label(traj):
     d = json.load(open(traj))
     acts = [(st.get("action") or "").strip() for st in (d.get("trajectory") or [])]
     c = collections.Counter(act_class(a) for a in acts if a)
-    core = {k: c.get(k, 0) for k in "SETB"}
-    tot = sum(core.values())
+    sh, tot = _shares(c)
     if not tot: return "M", c, 0
-    best = max(core, key=core.get)
-    ties = [k for k, v in core.items() if v == core[best]]
-    label = "M" if len(ties) > 1 else best
+    order = sorted(sh, key=sh.get, reverse=True)
+    top, second = order[0], order[1]
+    label = top if (sh[top] - sh[second]) >= MARGIN else "M"
     return label, c, tot
+
+def credits(intended, c):
+    """does this episode supply behaviour of type `intended`? leader, or co-dominant with it."""
+    sh, tot = _shares(c)
+    if not tot: return False
+    top = max(sh, key=sh.get)
+    return intended == top or (sh[top] - sh.get(intended, 0.0)) < MARGIN
 
 def cmd_labels(print_out=True):
     rows = []
@@ -173,6 +191,15 @@ def cmd_plan(realized, rows, pred):
                           "rubocop/rubocop", "vuejs/core", "php-cs-fixer/php-cs-fixer",
                           "babel/babel", "fmtlib/fmt", "gin-gonic/gin", "briannesbitt/carbon",
                           "laravel/framework"}
+            DONE_INSTANCES = {"tokio-rs__tokio-6551", "jqlang__jq-2681",
+                "prometheus__prometheus-9248", "google__gson-2061", "rubocop__rubocop-13668",
+                "vuejs__core-11915", "php-cs-fixer__php-cs-fixer-7523", "babel__babel-15445",
+                "fmtlib__fmt-3248", "gin-gonic__gin-3741", "briannesbitt__carbon-2813",
+                "laravel__framework-51890"}
+            # an already-profiled instance is not a candidate at all: re-running it would spend an
+            # episode to re-measure a banked one (the PHP/T runner-up did exactly this).
+            cands = [r for r in cands if r["instance_id"] not in DONE_INSTANCES]
+            if not cands: continue
             cands.sort(key=lambda r: (r["repo"] in done_repos,
                                       -(int(r["n_f2p"]) + int(r["n_p2p"]))))
             rep, ru = cands[0], (cands[1] if len(cands) > 1 else None)

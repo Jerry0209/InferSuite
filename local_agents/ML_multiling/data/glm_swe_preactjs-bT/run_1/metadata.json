@@ -1,0 +1,25 @@
+{
+ "workload": "swe",
+ "config": "preactjs-bT",
+ "run": 1,
+ "model": "glm-5.2",
+ "endpoint": "https://api.z.ai/api/paas/v4",
+ "thinking": "enabled",
+ "cpus_measured": "2-11,14-23",
+ "cpus_house": "0-1,12-13",
+ "winsec": 5,
+ "repo_rev": "a76e695d",
+ "kernel": "6.17.0-1024-oem",
+ "gorder": "fpbr cache mlp fe fe_lat core_ports dram_bw priv",
+ "rotation": "shuffled",
+ "tma_cont": true,
+ "ts_start": 1785415739.839987,
+ "extra": {
+  "instance": "preactjs__preact-4152",
+  "subset": "multilingual",
+  "temperature": 0.6,
+  "harness_cg": "measured.slice/glm-swe-preactjs-bT-r1.scope",
+  "tool_cg": "measured.slice/docker-d1686b5cd58ccd745f9ea6b2800a733ef1b016acb36739507834b7c2a87aef85.scope",
+  "proxy_cg": "user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-2826528.scope"
+ }
+}

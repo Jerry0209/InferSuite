@@ -1,10 +1,10 @@
-# Report 14 — Instrument-to-figure reference: how each deck number is measured (deck slides 1–25)
+# Report 14 — Instrument-to-figure reference: how each deck number is measured (deck slides 1–28)
 
 **Date of study:** 2026-07-29 · **Author of record:** Tianrui (Jerry), with Claude Code
-**Deck slides:** 1–25, cross-cutting — this report answers "how do you know that?" for any
+**Deck slides:** 1–28, cross-cutting — this report answers "how do you know that?" for any
 figure on the deck and names the code site of every constant behind it
 **Per-study detail:** Reports 05 (1–6) · 06 (7–12) · 07 (13) · 08 (14–16) · 01 (17) · 02 (18) ·
-04 + 09–12 (19–23) · 03 (21) · 13 (24–25)
+04 + 09–12 (19–23) · 03 (21) · 13 (24–25) · 16 (26–27) · 17 (28)
 **Longer prose version:** [`../handwritten_notes/analysis.md`](../handwritten_notes/analysis.md), Parts 1–7
 
 ---
@@ -34,8 +34,10 @@ that truncated "JavaScript" to "Java".
 ### 2.1 Instrument → figure map
 
 Deck numbering drifts as slides are added; the stable identifier is the on-slide eyebrow label.
-As of 2026-07-29 the deck is 25 slides and the numbering below matches
-[`README.md`](README.md).
+As of 2026-07-30 the deck is 28 slides and the numbering below matches
+[`README.md`](README.md). Slides 26–28 (nine-language axis, composition-vs-magnitude,
+⟨language, type⟩ sampling frame) are documented in Reports 16 and 17; their instruments are the
+same per-window stack as 19–25, plus the ownership+adequacy gate in `attribute_windows.py`.
 
 | Deck slides | What the figure shows | Instrument | Layer | Code site |
 |---|---|---|---|---|
@@ -44,7 +46,8 @@ As of 2026-07-29 the deck is 25 slides and the numbering below matches
 | 4, 12 | calls, bursts, heavy bursts, burst duration, turns | trajectory + bursts derived from the 10 Hz series | mixed (energy exact, classes/edges heuristic) | `plot_glm_results.py:171-175, 260-270, 509-540`; `cmp_allruns_absolute.py:33-46` |
 | 13 | tool CPU by agent-call class; harness CPU by library | ordinal anchor join; 99 Hz cgroup-scoped `perf record` | heuristic; statistical | `plot_internal_tools.py:33-101`; `run_glm_campaign.sh:279-297` |
 | 14–16, 18 | TMA Level 1 and Level 2 per fence | continuous PERF_METRICS census, whole episode | **exact** (hardware slot accounting) | `run_glm_campaign.sh:69, 265-272`; `plot_glm_results.py:303-318` |
-| 19–25 | per-2 s-window metric distributions, tagged by command | windowed zero-mux counter groups + 2 Hz command sampler | counters exact, tags heuristic | `analyze_l3_windows.py:30-64` |
+| 19–28 | per-2 s-window metric distributions, tagged by command | windowed zero-mux counter groups + 2 Hz command sampler | counters exact, tags heuristic | `analyze_l3_windows.py` `tag_of`/`_progs` (basename matching since 2026-07-30) |
+| 26 | ownership + adequacy gate per task | 2 Hz argv poll ∩ per-window instructions | heuristic (presence-based; lower bound for short-lived compilers) | `attribute_windows.py` (`probe`) |
 | 21 | the boundary rule itself (method audit) | — | — | Report 03 |
 
 ### 2.2 Definitions and constants — where each rule lives
@@ -191,12 +194,19 @@ Published Claude artifacts (live slide links; private unless shared):
 
 | Artifact | Link | Covers |
 |---|---|---|
-| Agent CPU profiling — GLM-5.2 SWE-agent (the deck, 25 slides) | https://claude.ai/code/artifact/e93ebcb7-015d-4f40-8f83-62fe21777e62 | slides 1–25 |
+| Agent CPU profiling — GLM-5.2 SWE-agent (the deck, **28 slides**) | https://claude.ai/code/artifact/e93ebcb7-015d-4f40-8f83-62fe21777e62 | slides 1–28 (26–28 added 2026-07-30: nine-language axis, composition-vs-magnitude, sampling frame — reports 16/17) |
 | Per-window gallery — scikit-learn | https://claude.ai/code/artifact/c12b01c1-7ac7-4f2e-8729-b1c90f5ef63b | slides 19–23 backing detail |
 | Per-window gallery — astropy | https://claude.ai/code/artifact/3b68efd2-f9f0-49ad-b047-20ac27bb3c68 | slides 19–23 backing detail |
 | Per-window gallery — sympy | https://claude.ai/code/artifact/704ab3b2-3b63-4c57-b087-88dcdcf968ff | slides 19–23 backing detail |
 | Per-window gallery — babel (JS) | https://claude.ai/code/artifact/18a013a4-5013-4f95-9d11-9b214ed7ffbe | slides 24–25 backing detail |
 | Per-window gallery — fmtlib (C++) | https://claude.ai/code/artifact/f84723fc-9fdb-424d-8728-8fa29bf3a5e6 | slides 24–25 backing detail |
+| Per-window gallery — tokio (Rust) | https://claude.ai/code/artifact/ee3c3c29-b2d0-48f0-9e84-2215435d1c85 | slide 26 backing detail |
+| Per-window gallery — jq (C) | https://claude.ai/code/artifact/9a6d9546-5589-4fd4-aa8d-534397b9034c | slide 26 backing detail |
+| Per-window gallery — prometheus (Go) | https://claude.ai/code/artifact/43bdccbb-e539-4a97-9758-99f4c75e4f1a | slide 26 backing detail |
+| Per-window gallery — gson (Java) | https://claude.ai/code/artifact/024cd36f-e98c-45c7-8595-ece33bc8c891 | slide 26 backing detail |
+| Per-window gallery — rubocop (Ruby) | https://claude.ai/code/artifact/1135e8b0-7ebf-48e9-a839-60da45099c00 | slide 26 backing detail |
+| Per-window gallery — vue (TypeScript) | https://claude.ai/code/artifact/5e03855b-62db-4d1a-9522-145fff53bd2c | slide 26 backing detail |
+| Per-window gallery — php-cs-fixer (PHP) | https://claude.ai/code/artifact/e6a80616-9410-446f-b1d7-fc1eeac751b2 | slide 26 backing detail |
 
 Related (not a deck): weekly status page —
 https://claude.ai/code/artifact/7a9d155c-11f6-4e97-9d21-f60f677caca9

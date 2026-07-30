@@ -33,21 +33,25 @@ log(){ printf '[bcamp %s] %s\n' "$(date +%H:%M:%S)" "$*"; }
 
 [ -f "$LEDGER" ] || printf 'when\tlanguage\ttype\tinstance\tshort\tstatus\tdetail\n' > "$LEDGER"
 mark(){ printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$(date +%F.%T)" "$1" "$2" "$3" "$4" "$5" "$6" >> "$LEDGER"; }
-done_status(){ awk -F'\t' -v i="$1" '$4==i && ($6=="profiled" || $6=="realized-mismatch" || \
-  $6=="episode-fail" || $6=="gate-fail" || $6=="no-image") {s=$6} END{print s}' "$LEDGER"; }
+# Only `profiled` is terminal. no-image was observed to be TRANSIENT (a Docker Hub blip marked
+# an image that is present locally as missing), and realized-mismatch/gate-fail can flip when the
+# label rule or a gate threshold is corrected — so they must not permanently retire a cell.
+done_status(){ awk -F'\t' -v i="$1" '$4==i && $6=="profiled" {s=$6} END{print s}' "$LEDGER"; }
 
 # realized behavioural label of a freshly captured episode, via behavior_classify's own rules
-realized_of(){ # $1 = short(with suffix)
-  "$PY" - "$DATA_ROOT" "$1" <<'PYEOF'
-import sys, glob, json, importlib.util
-data, short = sys.argv[1], sys.argv[2]
+realized_of(){ # $1 = short(with suffix)  $2 = intended type -> "<label> <credit:yes|no> <mix>"
+  "$PY" - "$DATA_ROOT" "$1" "$2" <<'PYEOF'
+import sys, glob, importlib.util
+data, short, intended = sys.argv[1], sys.argv[2], sys.argv[3]
 spec = importlib.util.spec_from_file_location("bc", "/home/thu/InferSuite/local_agents/scripts/glm/behavior_classify.py")
 bc = importlib.util.module_from_spec(spec); spec.loader.exec_module(bc)
 trajs = [p for p in glob.glob(f"{data}/glm_swe_{short}/run_1/traj/*/*.traj") if not p.endswith(".local.traj")]
-if not trajs: print("NOTRAJ ?"); raise SystemExit
+if not trajs: print("NOTRAJ no -"); raise SystemExit
 lab, c, tot = bc.episode_label(trajs[0])
 mix = " ".join(f"{k}={100*c.get(k,0)/max(tot,1):.0f}%" for k in "SETB")
-print(lab, mix)
+# credit on CO-DOMINANCE, not on the hard label: an S=49/T=47 episode does exercise the
+# verify loop, and refusing it would discard the only non-S behaviour the suite offers.
+print(lab, ("yes" if bc.credits(intended, c) else "no"), mix)
 PYEOF
 }
 
@@ -98,9 +102,22 @@ run_cell(){ # $1 lang $2 type $3 instance $4 attempt-tag -> sets CELL_RESULT
   local OWNER="${INST%%__*}" SHORT="${INST%%__*}-b$2$TAG"
   CELL_RESULT="episode-fail"
   local IMG="swebench/sweb.eval.x86_64.$(echo "$INST" | sed 's/__/_1776_/'):latest"
-  if ! docker manifest inspect "$IMG" >/dev/null 2>&1; then
+  # A locally-present image needs no registry at all; only then consult the registry, and retry —
+  # a single transient manifest failure previously retired a cell whose image was already pulled.
+  local HAVE=0
+  docker image inspect "$IMG" >/dev/null 2>&1 && HAVE=1
+  if [ "$HAVE" = 0 ]; then
+    for _try in 1 2 3; do
+      docker manifest inspect "$IMG" >/dev/null 2>&1 && { HAVE=1; break; }
+      sleep $((_try * 5))
+    done
+  fi
+  if [ "$HAVE" = 0 ]; then
     log "cell $LANG/$TYPE $INST: image missing"; mark "$LANG" "$TYPE" "$INST" "$SHORT" no-image "$IMG"
     CELL_RESULT="no-image"; return; fi
+  if [ -f "$DATA_ROOT/glm_swe_$SHORT/run_1/DONE" ]; then
+    log "cell $LANG/$TYPE $INST: reusing banked episode $SHORT (no new API spend)"
+  else
   log "cell $LANG/$TYPE: episode $INST (short=$SHORT)"
   SWE_SUBSET=multilingual SWE_INSTANCES="$INST" REPEATS=1 SWE_SHORT_SUFFIX="-b$TYPE$TAG" \
     DATA_ROOT="$DATA_ROOT" "$REPO/measure.sh" agents-swe campaign \
@@ -112,10 +129,12 @@ run_cell(){ # $1 lang $2 type $3 instance $4 attempt-tag -> sets CELL_RESULT
     mark "$LANG" "$TYPE" "$INST" "$SHORT" episode-fail "rc=$RC steps=${STEPS:-0}"
     [ "${STEPS:-0}" -lt 5 ] && STARVED=$((STARVED+1)) || STARVED=0
     return; fi
+  fi
   STARVED=0
-  local RL; RL=$(realized_of "$SHORT"); local LAB="${RL%% *}"
+  local RL; RL=$(realized_of "$SHORT" "$TYPE")
+  local LAB CRED; LAB=$(echo "$RL" | awk '{print $1}'); CRED=$(echo "$RL" | awk '{print $2}')
   log "cell $LANG/$TYPE $INST: realized=$RL"
-  if [ "$LAB" != "$TYPE" ]; then
+  if [ "$CRED" != yes ]; then
     mark "$LANG" "$TYPE" "$INST" "$SHORT" realized-mismatch "$RL"
     CELL_RESULT="realized-mismatch"; return; fi
   SHORT="$SHORT" SRC=1 DATA_ROOT="$DATA_ROOT" WINSEC=2 PROF_GROUPS="fe_miss" \
@@ -128,7 +147,7 @@ run_cell(){ # $1 lang $2 type $3 instance $4 attempt-tag -> sets CELL_RESULT
     PROF_GROUPS="fe_miss fe_lat fe fpbr cache mlp core_ports dram_bw mem_bound fe_l3x priv" \
     "$KIT/replay_l3_profile.sh" >> "$DATA_ROOT/../sampling_frame/log_${SHORT}.log" 2>&1
   "$PY" "$KIT/analyze_l3_windows.py" "$DATA_ROOT" "$SHORT" --plot >/dev/null 2>&1
-  mark "$LANG" "$TYPE" "$INST" "$SHORT" profiled "realized=$RL gate=$G"
+  mark "$LANG" "$TYPE" "$INST" "$SHORT" profiled "realized=$LAB credit=$CRED mix=[${RL#* * }] gate=$G"
   CELL_RESULT="profiled"
 }
 

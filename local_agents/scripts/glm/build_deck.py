@@ -752,15 +752,18 @@ BODY = """
       every language occupies exactly one mechanism, so the ⟨language, mechanism⟩ grid has 9
       reachable cells and the twelve profiled workloads already cover all of them. The open
       dimension is the <b>agent's behavioural mix</b> — search- vs edit- vs test-dominated episodes —
-      which was expected to vary within a language. Measured properly (editor <i>view</i> counted
-      as reading), <b>all 13 banked episodes realize as search-dominated</b> (S 47–84%) — the mix
-      may belong to the agent, not the task. The campaign therefore opens with three
-      falsification probes (the instances most likely to realize non-S); the full one-per-cell
-      sweep runs only if a probe succeeds, and every cell is credited by realized type.</p>
+      which was expected to vary within a language. It does not. Measured with editor <i>view</i>
+      counted as reading, and then <b>tested with three falsification probes</b> aimed at the
+      instances most likely to break the pattern, <b>16 of 16 episodes across 9 languages and 15
+      repos are search-led</b>. The decisive probe: the largest gold patch in the whole corpus
+      (9 files / 534 added lines) realized <b>3% edit actions</b>. So the action mix belongs to
+      this agent at temperature 0.6, not to the task — ⟨language, type⟩ cannot stratify this
+      suite on either definition, and the residual structure is a search↔test gradient
+      (T spans 0–47%), not four discrete types.</p>
       <div class="take">
         <div class="chip tool">Mechanism axis: saturated (9/9 cells measured)</div>
-        <div class="chip harness">Behavioural axis: S-dominant in all 13 banked episodes — 3 falsification probes before any sweep</div>
-        <div class="chip wait">Magnitude is not a selection criterion: the same instance moves 5.3× between episodes</div>
+        <div class="chip harness">Behavioural axis: 16/16 episodes search-led; 3/3 probes failed to break it — sweep stopped by circuit breaker</div>
+        <div class="chip wait">~17 sweep episodes (~26 h) deliberately NOT spent: premise tested with the strongest candidates and held</div>
       </div>
       <p class="note">Selection is static (patch shape, problem-statement cues, test counts from the
       instance metadata), then verified post-hoc from the realized trajectory; a cell is only

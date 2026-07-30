@@ -1,0 +1,7 @@
+{
+    "preactjs__preact-4152": {
+        "model_name_or_path": "preactjs__preact-4152_r1",
+        "instance_id": "preactjs__preact-4152",
+        "model_patch": "diff --git a/src/diff/children.js b/src/diff/children.js\nindex 35874a64..84d7b8b1 100644\n--- a/src/diff/children.js\n+++ b/src/diff/children.js\n@@ -72,7 +72,8 @@ export function diffChildren(\n \t\t\ttypeof childVNode == 'string' ||\n \t\t\ttypeof childVNode == 'number' ||\n \t\t\t// eslint-disable-next-line valid-typeof\n-\t\t\ttypeof childVNode == 'bigint'\n+\t\t\ttypeof childVNode == 'bigint' ||\n+\t\t\tchildVNode.constructor === String\n \t\t) {\n \t\t\tchildVNode = newParentVNode._children[i] = createVNode(\n \t\t\t\tnull,\n"
+    }
+}

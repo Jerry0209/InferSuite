@@ -20,13 +20,16 @@ compositions. Central finding: **if "type" means the CPU mechanism, type is a fu
 language** — every language occupies exactly one mechanism class, the 9×5 grid collapses to 9
 reachable cells, and the 12 already-profiled workloads cover all 9. The mentor's deduplication
 is automatic at mechanism level ("another build-heavy C++ task" is the only kind there is).
-The intended second axis was the **agent's behavioural mix** — but measuring it properly
-(§2.2 correction) shows *all 13 banked episodes realize as search-dominated* (S = 47–84 % of
-classified actions, dominant in every one), so the behavioural axis may be a property of the
-agent, not of the task. The campaign therefore opens with three falsification probes (the
-instances statically most likely to realize non-S) before any full sweep; cells are credited
-only by an episode's *realized* type. Static prediction earned little trust twice over —
-5/9 clean on the mechanism validation, and **1/10** on realized behavioural labels.
+The intended second axis was the **agent's behavioural mix** — and it collapses too. Measured
+with editor `view` counted as reading (§2.2 correction), 11 of 13 banked episodes are
+search-dominated and 2 are mixed search/test; **three falsification probes then ran** on the
+instances statically most likely to realize otherwise, and all three realized search-led
+(§2.4). That is **16 of 16 episodes across 9 languages and 15 repos**, so the behavioural mix is
+a property of *this agent at temperature 0.6*, not of the task — ⟨language, type⟩ cannot
+stratify this suite on either definition. The residual structure is a search↔test *gradient*
+(T spans 0–47 %), never discrete types; edit and build never lead. Static prediction earned
+little trust twice over — 5/9 clean on the mechanism validation, **1/10** on realized
+behavioural labels.
 
 ## 2. Methodology
 
@@ -95,16 +98,58 @@ no API spend; the *resulting* campaign costs ~1.5 h exclusive-core time per cell
 | `plan.md` | same dir | ⟨language, type⟩ matrix + run list (numeric corrections noted in its README) |
 | `attribute_windows.py mix/probe` | `local_agents/scripts/glm/` | the post-episode instrument that confirms a cell's realized type |
 
+
+### 2.4 The falsification probes (executed 2026-07-30)
+
+Rather than spend the 20-cell sweep (~30 h) against an untested premise, three probes ran first
+— the plan rows statically most likely to realize a non-search label. Driver:
+`behavior_campaign.sh` (probes first, circuit breaker, realized-type crediting, ~1.5 h/cell).
+
+| probe cell | instance | why chosen | realized mix | verdict |
+|---|---|---|---|---|
+| PHP / test | phpspreadsheet-3940 | PHP shows the strongest T lean (php-cs-fixer T=46 %) | S=49 E=4 **T=47** B=0 | co-dominant T — credits under `credits()` |
+| JavaScript / test | preact-4152 | large verify set | S=87 E=3 T=10 B=0 | clean negative (77 pp margin) |
+| Go / edit | terraform-35543 | **largest gold patch of any E candidate** (9 files / 37 hunks / 534 +lines) | S=82 **E=3** T=8 B=6 | clean negative — the decisive one |
+
+The Go/E result kills the static prior's central assumption: a large fix does *not* produce
+edit-dominated behaviour (3 % edit actions). The breaker fired and stopped the campaign before
+the sweep — correct behaviour, though note it counts only fully-profiled cells, so the
+co-dominant PHP/T row did not satisfy it under the pre-correction rule.
+
+**What was deliberately NOT spent:** the ~17 remaining sweep cells (~26 h) and 3 runner-up
+episodes. The premise was tested with the strongest available candidates and survived; further
+episodes buy repetition. Override is one flag: `BREAKER=0 ./behavior_campaign.sh`.
+
+**Recovered for free:** phpspreadsheet-3940's episode (217 steps, banked) was skipped for
+profiling by the pre-correction hard-label rule; under co-dominance it credits PHP/T, so it was
+given the gate probe + 11 passes at zero API cost. It is the study's only tool workload where
+the verify loop rivals searching. Note its replay is by far the slowest in the study
+(~31 min/pass vs ~2.5 min for the language pilots) — a 217-step trajectory re-executes in full.
+
+**Three driver defects found by this run** (all fixed, all had cost):
+1. *Hard-label crediting* rejected a 49/47 S/T episode as "not test-dominated". Replaced by
+   `credits()` (co-dominance within MARGIN), which is why the PHP/T episode was recoverable.
+2. *Single-attempt image check* produced **3 false negatives out of 3** (php-cs-fixer-7523,
+   preact-3062, terraform-34900 — all verified available afterwards). Every runner-up retry was
+   silently skipped, so each probe got one attempt where the design intended two. Fixed:
+   check locally first, then retry the registry; `no-image` is no longer terminal in the ledger.
+3. *Non-idempotent driver* would re-pay for a banked episode on re-run. Fixed: reuse any
+   episode with `run_1/DONE` and re-judge it.
+Operational lesson worth its own line: the driver was edited **while bash was executing it**, so
+none of these fixes applied to the run in flight (bash had already parsed `run_cell`). Edit a
+running campaign script and the fix silently does not take effect.
+
 ## 3. Key insights (most → least important)
 
 1. **Mechanism-type is nested in language** in this benchmark: 9 reachable ⟨language,
    mechanism⟩ cells, not 45 — and the 12 profiled workloads already cover all 9. The mentor's
    deduplication happens automatically at this level.
-2. **The behavioural axis appears agent-dominated, not task-dominated** (corrected 2026-07-30):
-   with `str_replace_editor view` counted as reading, every banked episode across 9 languages
-   and 12 repos is search-dominated (S 47–84 %, T 0–46 %, E 1–18 %, B 0–18 %). The residual
-   variation is a search↔test *gradient* (babel S84/T11 vs php-cs-fixer S53/T46), not discrete
-   types. Whether any instance can realize E/T/B dominance is exactly what the probes test.
+2. **The behavioural axis is agent-dominated, not task-dominated — tested, not assumed.**
+   16 of 16 episodes (13 banked + 3 targeted probes) across 9 languages and 15 repos are
+   search-led; edit and build never exceed 18 % and never lead. The strongest possible edit
+   candidate (largest gold patch in the corpus) realized 3 % edit actions. The residual
+   structure is a search↔test gradient (T 0–47 %), so the mentor's four discrete types do not
+   exist in this data for this agent.
 3. **Static prediction is a prior, not a verdict**: 5/9 clean agreement against measured
    compositions; two of the four misses were tagger visibility problems rather than taxonomy
    errors — attribution instruments and taxonomy must be debugged together.
