@@ -24,11 +24,10 @@ def uri(name):
     return "data:image/png;base64," + base64.b64encode(b).decode()
 
 IMG = {k: uri(v) for k, v in {
-    "split": "glm_time_split.png",
-    "split_ml": "/home/thu/InferSuite/local_agents/SWE_clean/plots/glm_time_split.png",
-    "cpu": "glm_cpu_work.png",
+    "split": "/home/thu/InferSuite/local_agents/cross_campaign/plots_5t/glm_time_split.png",          # mentor 2026-07-30: no django, + babel/fmt
+    "cpu": "/home/thu/InferSuite/local_agents/cross_campaign/plots_5t/glm_cpu_work.png",
     "timeline": "glm_timeline.png",
-    "calls": "glm_tool_calls.png",
+    "calls": "/home/thu/InferSuite/local_agents/cross_campaign/plots_calls6t/glm_tool_calls.png",     # django@0.6 out, looped @0 stays
     "cmp_wall": "compare/cmp_wall_split.png",
     "cmp_cpu": "compare/cmp_cpu_work.png",
     "cmp_tl_moh": "compare/cmp_timeline_moh.png",
@@ -37,7 +36,7 @@ IMG = {k: uri(v) for k, v in {
     "cmp_calls": "compare/cmp_callstruct.png",
     "cmp_heavy": "compare/cmp_whats_heavy.png",
     "tma_moh": "compare/moh_featured/glm_tma_l1.png",
-    "tma_new": "glm_tma_l1.png",
+    "tma_new": "/home/thu/InferSuite/local_agents/cross_campaign/plots_5t/glm_tma_l1.png",
     "sig_moh": "compare/moh_featured/glm_signature.png",
     "sig_new": "glm_signature.png",
     "tma_all": "compare/cmp_tma_l1_allruns.png",
@@ -198,24 +197,22 @@ BODY = """
       <h2>The wall clock is mostly waiting on the model</h2>
       <p class="lead">Across every task — and every language — elapsed time is dominated by the
       model round-trip: the CPU sits idle waiting for tokens. Tool execution and the agent harness
-      together are the minority of wall time, from an 8-minute scikit-learn episode to a 41-minute
-      django one. The pattern holds beyond Python (second row, the certified SWE_clean campaign):
-      <b>babel (JavaScript)</b> waits on the model ~86 % of a 7.3-min episode (tools 8.0 %), and
-      <b>fmt (C++)</b> — the compile-heaviest task in the study — still waits ~82 % of 16.2 min,
-      with tools at 13.5 %, the highest tool share of wall measured anywhere.</p>
-      <div class="figcard"><img alt="Wall-clock time split donuts — Python-era tasks: scikit-learn, astropy, sympy, django@0, django@0.6" src="__SPLIT__"></div>
-      <div class="figcard"><img alt="Wall-clock time split donuts — certified SWE_clean campaign: django, sympy, babel (JavaScript), fmt (C++)" src="__SPLITML__"></div>
+      together are the minority of wall time, from an 8-minute scikit-learn episode to a 37-minute
+      astropy one. The pattern holds beyond Python: <b>babel (JavaScript)</b> waits on the model
+      86 % of a 7-min episode, and <b>fmt (C++)</b> — the compile-heaviest task in the study —
+      still waits 82 % of 16 min, with tools at 13 %, the highest tool share of wall measured.</p>
+      <div class="figcard"><img alt="Wall-clock time split donuts: scikit-learn, astropy, sympy, babel (JavaScript), fmt (C++)" src="__SPLIT__"></div>
       <div class="take">
-        <div class="chip wait">model wait&nbsp; scikit <b>74</b> · astropy <b>89</b> · sympy <b>78</b> · django@0.6 <b>94</b> · <b>babel 86</b> · <b>fmt 82%</b></div>
-        <div class="chip tool">tools&nbsp; <b>23</b> · <b>9</b> · <b>11</b> · <b>3</b> · <b>babel 8</b> · <b>fmt 13%</b></div>
-        <div class="chip harness">harness&nbsp; <b>3</b> · <b>2</b> · <b>11</b> · <b>4</b> · <b>babel 6</b> · <b>fmt 4.5%</b></div>
+        <div class="chip wait">model wait&nbsp; <b>74</b> · <b>89</b> · <b>78</b> · <b>86</b> · <b>82%</b></div>
+        <div class="chip tool">tools&nbsp; <b>23</b> · <b>9</b> · <b>11</b> · <b>8</b> · <b>13%</b></div>
+        <div class="chip harness">harness&nbsp; <b>3</b> · <b>2</b> · <b>11</b> · <b>6</b> · <b>4.5%</b></div>
       </div>
-      <p class="note">Top row: reproduced superseded_40min campaign (temp-0 era + the django@0.6
-      re-run). Bottom row: the certified SWE_clean campaign (its own featured runs: django run_3,
-      sympy run_1, babel run_1, fmt run_1), figures regenerated from banked data and audited
-      (ALL MATCH) tonight. Cross-campaign panels are shown side by side, never merged into one
-      figure — absolute wall minutes are episode draws (babel spans 37.9–202.1 tool core-s across
-      its four episodes), while the split itself is the reproducible layer.</p>
+      <p class="note">Python tasks: reproduced superseded_40min campaign (featured runs). babel +
+      fmt: certified SWE_clean campaign (featured runs). One figure by request; per-task
+      provenance stated here, figures rendered by the same plotter from banked data and audited
+      (ALL MATCH). The django columns live in the original figure
+      (superseded_40min/plots/glm_time_split.png, untouched); absolute wall minutes are episode
+      draws — the split shares are the reproducible layer.</p>
     </div>
   </section>
 
@@ -225,16 +222,16 @@ BODY = """
       <h2>CPU work is tool-heavy — but not always</h2>
       <p class="lead">Flip to CPU work and model wait vanishes (≈ 0 core-seconds — pure waiting). For
       scikit-learn and astropy, tools dominate: scikit-learn's test suite alone burns 1,449 core-seconds.
-      sympy inverts it (53% harness), and django's temp-0 loop is the extreme — 89% harness, the CPU
-      signature of an agent stuck repeating itself. The temp-0.6 django re-run burns far less
-      total CPU (78 core-s) doing real, varied work.</p>
-      <div class="figcard"><img alt="CPU work in core-seconds across four tasks" src="__CPU__"></div>
+      sympy inverts it (53% harness). The pattern crosses languages: fmt's compile-heavy episode is
+      91% tools (296 core-s), babel's short episode splits 72/23 between tools and harness — and
+      every language's litellm share stays negligible.</p>
+      <div class="figcard"><img alt="CPU work in core-seconds: scikit-learn, astropy, sympy, babel, fmt" src="__CPU__"></div>
       <div class="take">
         <div class="chip tool">scikit-learn · <b>1,449</b> core-s, 100% tools</div>
         <div class="chip tool">astropy · <b>265</b> core-s, 88% tools</div>
         <div class="chip harness">sympy · <b>234</b> core-s, 53% harness</div>
-        <div class="chip harness">django @0 (looped) · <b>486</b> core-s, 89% harness</div>
-        <div class="chip harness">django @0.6 · <b>78</b> core-s, 58% harness — real work, 6× cheaper</div>
+        <div class="chip tool">babel · <b>53</b> core-s, 72% tools</div>
+        <div class="chip tool">fmt · <b>296</b> core-s, 91% tools</div>
       </div>
     </div>
   </section>
@@ -259,15 +256,16 @@ BODY = """
     <div class="wrap">
       <p class="eyebrow">Slide 4 · call structure</p>
       <h2>How the tool calls break down</h2>
-      <p class="lead">Call counts and weights vary widely. scikit-learn's fewer calls carry the heaviest
-      compute; sympy issues many. django's loop is visible here too — 383 calls but only 4 heavy and
-      2 agent-internal: a flood of shallow, repeated commands doing almost no real work.</p>
-      <div class="figcard"><img alt="Tool-call structure across four tasks" src="__CALLS__"></div>
+      <p class="lead">Call counts and weights vary widely — across languages too. scikit-learn's fewer
+      calls carry the heaviest compute; sympy issues many; fmt's C++ episode packs 58 heavy calls of
+      114. django's loop stays visible — 383 calls but only 4 heavy and 2 agent-internal: a flood of
+      shallow, repeated commands doing almost no real work.</p>
+      <div class="figcard"><img alt="Tool-call structure: scikit-learn, astropy, sympy, django looped@0, babel, fmt" src="__CALLS__"></div>
       <div class="take">
         <div class="chip tool">scikit-learn · <b>67</b> calls, 26 heavy, <b>22.8%</b> tool-active</div>
-        <div class="chip tool">astropy · <b>130</b> calls, 58 heavy, <b>9.3%</b> tool-active</div>
-        <div class="chip harness">sympy · <b>238</b> calls, 157 heavy, <b>10.9%</b> tool-active</div>
         <div class="chip harness">django (looped) · <b>383</b> calls, 4 heavy, <b>5.1%</b> tool-active</div>
+        <div class="chip tool">babel · <b>94</b> calls, 23 heavy, <b>8.0%</b> tool-active</div>
+        <div class="chip tool">fmt · <b>114</b> calls, 58 heavy, <b>13.5%</b> tool-active</div>
       </div>
     </div>
   </section>
@@ -397,9 +395,11 @@ BODY = """
       <h2>Where the pipeline slots go — certified vs re-run</h2>
       <p class="lead">Top-down analysis (TMA) splits every CPU pipeline slot into four buckets:
       useful work (Retiring), waiting for instructions (Frontend-bound), thrown away on wrong
-      guesses (Bad speculation), waiting for data/execution (Backend-bound). Featured episodes,
-      Mohamad (top) vs this re-run (bottom): the buckets match within 1–5 points on every clean
-      fence — e.g. scikit-learn tool 43/24/1/33 vs 42/23/1/34.</p>
+      guesses (Bad speculation), waiting for data/execution (Backend-bound). Mohamad's certified
+      Python episodes (left) vs this study's featured set across three languages (right): the
+      Python buckets match within 1–5 points on every clean fence — e.g. scikit-learn tool
+      43/24/1/33 vs 42/23/1/34 — and babel/fmt land in the same frontend-bound family as the
+      interpreters (FE 40/34, bad-spec 16/18).</p>
       <div class="grid2">
         <div class="figcard"><img alt="TMA Level 1, Mohamad certified campaign" src="__TMAMOH__"></div>
         <div class="figcard"><img alt="TMA Level 1, new campaign" src="__TMANEW__"></div>
@@ -801,8 +801,7 @@ BODY = (BODY.replace("__SPLIT__", IMG["split"]).replace("__CPU__", IMG["cpu"])
             .replace("__WX__", IMG["w_x"]).replace("__WXH__", IMG["w_xh"]).replace("__WDUR__", IMG["w_dur"])
             .replace("__MLGRID__", IMG["ml_grid"]).replace("__MLGRIDH__", IMG["ml_gridh"])
             .replace("__MLTLB__", IMG["ml_tl_babel"]).replace("__MLTLF__", IMG["ml_tl_fmt"])
-            .replace("__MLGRID12__", IMG["ml_grid12"]).replace("__GOUOPTL__", IMG["go_uop_tl"])
-            .replace("__SPLITML__", IMG["split_ml"]))
+            .replace("__MLGRID12__", IMG["ml_grid12"]).replace("__GOUOPTL__", IMG["go_uop_tl"]))
 
 HTML = ('<title>Agent CPU profiling — GLM-5.2 SWE-agent</title>\n'
         '<style>' + CSS + '</style>\n' + BODY + '\n<script>' + JS + '</script>\n')

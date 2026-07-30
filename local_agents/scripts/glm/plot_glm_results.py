@@ -1137,7 +1137,7 @@ for k, (ttl, fn, hi) in enumerate(CARD):
     ax.grid(axis="y")
 
 # (c) cost dynamics — CPU consumed per harness burst over the episode
-axsC = grid[2].subgridspec(1, 4, wspace=0.3)
+axsC = grid[2].subgridspec(1, max(4, len(names9)), wspace=0.3)
 for k, name in enumerate(names9):
     ax = fig.add_subplot(axsC[k])
     rd = TASKS[name]["rep"]
