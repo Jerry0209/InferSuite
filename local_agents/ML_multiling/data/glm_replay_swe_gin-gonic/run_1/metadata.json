@@ -1,0 +1,23 @@
+{
+ "workload": "swe_replay",
+ "config": "gin-gonic",
+ "run": 1,
+ "model": "glm-5.2",
+ "endpoint": "https://api.z.ai/api/paas/v4",
+ "thinking": "enabled",
+ "cpus_measured": "2-11,14-23",
+ "cpus_house": "0-1,12-13",
+ "winsec": 2,
+ "repo_rev": "ac0a56c",
+ "kernel": "6.17.0-1024-oem",
+ "gorder": "fe_miss",
+ "rotation": "shuffled",
+ "tma_cont": true,
+ "ts_start": 1785348896.2891881,
+ "extra": {
+  "source_run": 1,
+  "traj": "/home/thu/InferSuite/local_agents/ML_multiling/data/glm_swe_gin-gonic/run_1/traj/gin-gonic__gin-3741/gin-gonic__gin-3741.traj",
+  "harness_cg": "measured.slice/glm-rep-gin-gonic-r1.scope",
+  "tool_cg": "measured.slice/docker-0ad7d556b2ff94628e16a7192fe07deba24fa03f38db06d2604e283fb2a9b392.scope"
+ }
+}

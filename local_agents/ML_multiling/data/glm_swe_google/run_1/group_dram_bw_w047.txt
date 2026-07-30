@@ -1,0 +1,21 @@
+
+ Performance counter stats for 'system wide':
+
+       314,012,548      cycles                           measured.slice/glm-swe-google-r1.scope                                      
+       953,618,795      instructions                     measured.slice/glm-swe-google-r1.scope #    3.04  insn per cycle            
+        13,960,609      cpu/offcore_requests_outstanding.data_rd,cmask=4/ measured.slice/glm-swe-google-r1.scope                                      
+        60,877,882      offcore_requests_outstanding.cycles_with_data_rd measured.slice/glm-swe-google-r1.scope                                      
+           881,766      offcore_requests.data_rd         measured.slice/glm-swe-google-r1.scope                                      
+    41,273,044,592      cycles                           measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope                                      
+    71,232,067,673      instructions                     measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope #    1.73  insn per cycle            
+     4,065,984,138      cpu/offcore_requests_outstanding.data_rd,cmask=4/ measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope                                      
+    13,330,655,039      offcore_requests_outstanding.cycles_with_data_rd measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope                                      
+       218,886,048      offcore_requests.data_rd         measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope                                      
+       101,553,947      cycles                           user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope                                      
+       226,865,481      instructions                     user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope #    2.23  insn per cycle            
+         5,019,490      cpu/offcore_requests_outstanding.data_rd,cmask=4/ user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope                                      
+        26,478,171      offcore_requests_outstanding.cycles_with_data_rd user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope                                      
+           225,959      offcore_requests.data_rd         user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope                                      
+
+       5.002910593 seconds time elapsed
+

@@ -1,0 +1,23 @@
+{
+ "workload": "swe_replay",
+ "config": "rubocop",
+ "run": 5,
+ "model": "glm-5.2",
+ "endpoint": "https://api.z.ai/api/paas/v4",
+ "thinking": "enabled",
+ "cpus_measured": "2-11,14-23",
+ "cpus_house": "0-1,12-13",
+ "winsec": 2,
+ "repo_rev": "ac0a56c",
+ "kernel": "6.17.0-1024-oem",
+ "gorder": "cache",
+ "rotation": "shuffled",
+ "tma_cont": true,
+ "ts_start": 1785359800.4843993,
+ "extra": {
+  "source_run": 1,
+  "traj": "/home/thu/InferSuite/local_agents/ML_multiling/data/glm_swe_rubocop/run_1/traj/rubocop__rubocop-13668/rubocop__rubocop-13668.traj",
+  "harness_cg": "measured.slice/glm-rep-rubocop-r5.scope",
+  "tool_cg": "measured.slice/docker-2c533f916806fdcb38215feed0e22727fd7fc1187b144b0613f904b85655c18c.scope"
+ }
+}

@@ -1,0 +1,18 @@
+
+ Performance counter stats for 'system wide':
+
+         1,982,024      cycles                           measured.slice/glm-rep-rubocop-r1.scope                                      
+           847,664      instructions                     measured.slice/glm-rep-rubocop-r1.scope #    0.43  insn per cycle            
+            11,478      baclears.any                     measured.slice/glm-rep-rubocop-r1.scope                                      
+           106,420      frontend_retired.any_dsb_miss    measured.slice/glm-rep-rubocop-r1.scope                                      
+             5,241      br_misp_retired.cond             measured.slice/glm-rep-rubocop-r1.scope                                      
+               229      br_misp_retired.indirect         measured.slice/glm-rep-rubocop-r1.scope                                      
+     6,397,960,745      cycles                           measured.slice/docker-8ebac6a7da3d88e232f90cb5a56317376c81bd734854a7bbe96523d39c73c9da.scope                                      
+    13,227,665,388      instructions                     measured.slice/docker-8ebac6a7da3d88e232f90cb5a56317376c81bd734854a7bbe96523d39c73c9da.scope #    2.07  insn per cycle            
+         5,424,349      baclears.any                     measured.slice/docker-8ebac6a7da3d88e232f90cb5a56317376c81bd734854a7bbe96523d39c73c9da.scope                                      
+       780,197,661      frontend_retired.any_dsb_miss    measured.slice/docker-8ebac6a7da3d88e232f90cb5a56317376c81bd734854a7bbe96523d39c73c9da.scope                                      
+        34,391,212      br_misp_retired.cond             measured.slice/docker-8ebac6a7da3d88e232f90cb5a56317376c81bd734854a7bbe96523d39c73c9da.scope                                      
+         9,383,761      br_misp_retired.indirect         measured.slice/docker-8ebac6a7da3d88e232f90cb5a56317376c81bd734854a7bbe96523d39c73c9da.scope                                      
+
+       2.002337638 seconds time elapsed
+

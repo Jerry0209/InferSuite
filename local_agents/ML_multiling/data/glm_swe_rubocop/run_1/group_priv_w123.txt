@@ -1,0 +1,30 @@
+
+ Performance counter stats for 'system wide':
+
+            144.02 msec task-clock                       measured.slice/glm-swe-rubocop-r1.scope #    0.029 CPUs utilized             
+                42      context-switches                 measured.slice/glm-swe-rubocop-r1.scope #  291.623 /sec                      
+                 3      cpu-migrations                   measured.slice/glm-swe-rubocop-r1.scope #   20.830 /sec                      
+             3,725      page-faults                      measured.slice/glm-swe-rubocop-r1.scope #   25.864 K/sec                     
+       428,439,112      cycles:u                         measured.slice/glm-swe-rubocop-r1.scope                                      
+        29,881,447      cycles:k                         measured.slice/glm-swe-rubocop-r1.scope                                      
+     1,423,073,475      instructions:u                   measured.slice/glm-swe-rubocop-r1.scope #    3.32  insn per cycle            
+        31,809,939      instructions:k                   measured.slice/glm-swe-rubocop-r1.scope #    1.06  insn per cycle            
+          1,095.49 msec task-clock                       measured.slice/docker-6b0686f8bf2020753eaf00ffdd5a0d278bcd8b8c5f3ada5a744a0f8dfca1e070.scope #    0.219 CPUs utilized             
+                91      context-switches                 measured.slice/docker-6b0686f8bf2020753eaf00ffdd5a0d278bcd8b8c5f3ada5a744a0f8dfca1e070.scope #   83.068 /sec                      
+                 7      cpu-migrations                   measured.slice/docker-6b0686f8bf2020753eaf00ffdd5a0d278bcd8b8c5f3ada5a744a0f8dfca1e070.scope #    6.390 /sec                      
+            22,216      page-faults                      measured.slice/docker-6b0686f8bf2020753eaf00ffdd5a0d278bcd8b8c5f3ada5a744a0f8dfca1e070.scope #   20.279 K/sec                     
+     3,142,722,419      cycles:u                         measured.slice/docker-6b0686f8bf2020753eaf00ffdd5a0d278bcd8b8c5f3ada5a744a0f8dfca1e070.scope                                      
+       352,884,858      cycles:k                         measured.slice/docker-6b0686f8bf2020753eaf00ffdd5a0d278bcd8b8c5f3ada5a744a0f8dfca1e070.scope                                      
+     6,495,946,235      instructions:u                   measured.slice/docker-6b0686f8bf2020753eaf00ffdd5a0d278bcd8b8c5f3ada5a744a0f8dfca1e070.scope #    2.07  insn per cycle            
+       565,830,041      instructions:k                   measured.slice/docker-6b0686f8bf2020753eaf00ffdd5a0d278bcd8b8c5f3ada5a744a0f8dfca1e070.scope #    1.60  insn per cycle            
+             37.63 msec task-clock                       user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-1273502.scope #    0.008 CPUs utilized             
+                57      context-switches                 user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-1273502.scope #    1.515 K/sec                     
+                 3      cpu-migrations                   user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-1273502.scope #   79.720 /sec                      
+                 5      page-faults                      user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-1273502.scope #  132.867 /sec                      
+       115,132,348      cycles:u                         user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-1273502.scope                                      
+         3,034,614      cycles:k                         user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-1273502.scope                                      
+       273,543,569      instructions:u                   user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-1273502.scope #    2.38  insn per cycle            
+         1,666,006      instructions:k                   user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-1273502.scope #    0.55  insn per cycle            
+
+       5.003258929 seconds time elapsed
+

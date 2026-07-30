@@ -125,7 +125,7 @@ Fence naming for parsers: harness cgroup contains `glm-rep`, tool contains `dock
 | `replay_l3_profile.sh` | same dir | pass orchestrator (passes `TRAJ_OVERRIDE` through) |
 | `analyze_l3_windows.py` | same dir | windows × counters × tags → CSVs + per-metric figures (both fences) |
 | `cross_task_grid.py` | same dir | **extended**: 5-task language axis, per-task data roots, provenance footer, `GRID_OUT` |
-| `build_metric_gallery.py` | same dir | per-language galleries (33 metrics × 3 views) |
+| `build_metric_gallery.py` | same dir | per-language galleries (33 metrics × 4 views: tool box, harness box, tool timeline, harness timeline) |
 | Raw passes | `local_agents/SWE_clean/data/glm_replay_swe_{babel,fmtlib}/run_1..11/` | 11 groups each; `l3group.txt` names the group per run |
 | CSVs | `local_agents/SWE_clean/data/l3_study/all_windows_{babel,fmtlib}.csv` (1,306 + 3,050 rows), `tma_intervals_*.csv` | all values, plot-agnostic |
 | Figures | `.../l3_study/plots/` (262 files) + `superseded_40min/.../plots/cross_task_grid_{tool,harness}.png` | per-language + 5-task grids |
@@ -134,11 +134,17 @@ Fence naming for parsers: harness cgroup contains `glm-rep`, tool contains `dock
 ## 3. Key insights (most → least important)
 
 1. **Instruction-supply pressure generalizes across languages — it is not a CPython
-   artifact.** babel (JavaScript/V8) has the highest L1I pressure of any task measured
+   artifact.** babel (JavaScript/V8) has the highest L1I pressure *of the tasks in this report*
    (20.8 MPKI, 7.5 % iCache stall cycles, µop-cache 61.5 MPKI) and fmt (C++) is comparable to
    the Python interpreters (16.1 MPKI, 5.3 %, 47.1). Only scikit-learn escapes it (1.1 MPKI,
    0.04 %). The earlier "large, fragmented hot-code footprint" story is therefore a property
    of *agent tool workloads* broadly, not of one interpreter.
+   **Superseded as the maximum (2026-07-29):** the Rust language pilot (tokio, `ML_multiling`)
+   is worse than every task here — L1I code-read **30.7** MPKI, µop-cache **83.9** MPKI, DSB
+   coverage **43.5 %** (lowest measured), legacy decode **53.1 %** (highest). So the claim
+   "babel is the highest" holds only within slides 24–25; the generalization it supports is
+   *strengthened*, since the extreme now belongs to an ahead-of-time optimising compiler rather
+   than to any interpreter or JIT.
 2. **The harness fence is language-independent, per-window.** Across all five tasks the
    harness sits at IPC 2.81–2.95, DSB 83–85 %, L1I ≈ 3–4 MPKI, branch ≈ 1.0–1.4 MPKI. This
    extends the earlier task-independence result (Report 08) to a *language* axis: the agent
@@ -151,10 +157,19 @@ Fence naming for parsers: harness cgroup contains `glm-rep`, tool contains `dock
    proxy in the study (BAClears 1.56 MPKI vs 0.69 C++ and 0.2–0.6 Python) at branch
    MPKI 4.67 (direction-dominated: cond 4.03). Consistent with V8's polymorphic dispatch and
    inline-cache churn — a hypothesis this data supports but does not prove.
+   **Quantified and re-tagged (Report 15):** the JS attribution is now measured, not assumed —
+   **77–78 % of babel's tool-fence instructions** are in windows running jest/node/yarn (two
+   independent methods agree), and the extended tagger puts the elevation in the right rows
+   (`tests(js)` ≈ 1.6, `node-other` 1.75, vs `compile` 0.75 and `git` 0.2). Two candidate
+   mechanisms (concurrent-PID and exec-rate churn) were tested and **rejected**, so the gap
+   stays descriptive. Caveat sharpened: babel's fence is the smallest measured (190 Ginstr/pass,
+   20 windows) and its IQR overlaps fmt's, so "babel > fmt" is **not** resolved.
 5. **C++ is the first compile-dominated task**: the live tagger assigns `compile` to 49 of
    66 windows (IPC 1.86) versus `shell` 12 (IPC 1.44) — the per-command structure the language
-   axis was expected to expose, and a workload class absent from the Python tasks. babel's
-   counterpart composition must be read with the JS-tagging caveat above (Report 14 §2.3).
+   axis was expected to expose, and a workload class absent from the Python tasks. Weighted by
+   instructions this is 97 % `compile` in **every** pass (Report 15), making fmt the clean
+   language-axis case. babel's composition was mislabelled until the tagger gained JS rules;
+   it is now `tests(js)` 77 % / shell 12 % / git 8 % (was shell 80 % / git 16 %).
 6. **Deterministic replay makes the language axis nearly free** — 22 passes, 0 API tokens,
    using trajectories already banked. Extending to more of SWE-bench Multilingual (Ruby, Go,
    Java, PHP, Rust) needs only live episodes to produce trajectories once; the profiling

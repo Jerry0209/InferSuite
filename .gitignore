@@ -67,3 +67,10 @@ local_agents/superseded_40min/data/
 
 # Claude session scratch/transcript (not a durable doc)
 further_check.md
+# multilingual language-pilot campaign (ML_multiling): same policy as *_clean — bank
+# everything needed to regenerate/audit figures; exclude only heavy perf records and logs
+local_agents/ML_multiling/data/**/rec_*.data
+local_agents/ML_multiling/data/glm_swe_prometheus/run_1/traj/prometheus__prometheus-9248/prometheus__prometheus-9248.traj
+
+# kit runtime state (gate markers, dryrun outputs) — per-machine, never committed
+local_agents/scripts/glm/.state/

@@ -1,0 +1,30 @@
+
+ Performance counter stats for 'system wide':
+
+            361.66 msec task-clock                       measured.slice/glm-swe-tokio-rs-r1.scope #    0.072 CPUs utilized             
+                60      context-switches                 measured.slice/glm-swe-tokio-rs-r1.scope #  165.902 /sec                      
+                 0      cpu-migrations                   measured.slice/glm-swe-tokio-rs-r1.scope #    0.000 /sec                      
+             6,622      page-faults                      measured.slice/glm-swe-tokio-rs-r1.scope #   18.310 K/sec                     
+     1,090,422,416      cycles:u                         measured.slice/glm-swe-tokio-rs-r1.scope                                      
+        62,783,953      cycles:k                         measured.slice/glm-swe-tokio-rs-r1.scope                                      
+     3,888,504,289      instructions:u                   measured.slice/glm-swe-tokio-rs-r1.scope #    3.57  insn per cycle            
+        66,072,968      instructions:k                   measured.slice/glm-swe-tokio-rs-r1.scope #    1.05  insn per cycle            
+             77.30 msec task-clock                       measured.slice/docker-b3d5bef0a9300ca0086601d37b03cc3fbf62c4c98169f27d6a6abeaf457825c6.scope #    0.015 CPUs utilized             
+               112      context-switches                 measured.slice/docker-b3d5bef0a9300ca0086601d37b03cc3fbf62c4c98169f27d6a6abeaf457825c6.scope #    1.449 K/sec                     
+                 1      cpu-migrations                   measured.slice/docker-b3d5bef0a9300ca0086601d37b03cc3fbf62c4c98169f27d6a6abeaf457825c6.scope #   12.936 /sec                      
+             4,345      page-faults                      measured.slice/docker-b3d5bef0a9300ca0086601d37b03cc3fbf62c4c98169f27d6a6abeaf457825c6.scope #   56.208 K/sec                     
+       164,040,528      cycles:u                         measured.slice/docker-b3d5bef0a9300ca0086601d37b03cc3fbf62c4c98169f27d6a6abeaf457825c6.scope                                      
+        79,253,772      cycles:k                         measured.slice/docker-b3d5bef0a9300ca0086601d37b03cc3fbf62c4c98169f27d6a6abeaf457825c6.scope                                      
+       203,555,497      instructions:u                   measured.slice/docker-b3d5bef0a9300ca0086601d37b03cc3fbf62c4c98169f27d6a6abeaf457825c6.scope #    1.24  insn per cycle            
+        96,213,312      instructions:k                   measured.slice/docker-b3d5bef0a9300ca0086601d37b03cc3fbf62c4c98169f27d6a6abeaf457825c6.scope #    1.21  insn per cycle            
+             56.73 msec task-clock                       user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-2223875.scope #    0.011 CPUs utilized             
+                55      context-switches                 user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-2223875.scope #  969.552 /sec                      
+                 1      cpu-migrations                   user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-2223875.scope #   17.628 /sec                      
+               126      page-faults                      user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-2223875.scope #    2.221 K/sec                     
+       174,977,963      cycles:u                         user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-2223875.scope                                      
+         4,159,887      cycles:k                         user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-2223875.scope                                      
+       482,436,812      instructions:u                   user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-2223875.scope #    2.76  insn per cycle            
+         2,313,942      instructions:k                   user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-2223875.scope #    0.56  insn per cycle            
+
+       5.003157428 seconds time elapsed
+

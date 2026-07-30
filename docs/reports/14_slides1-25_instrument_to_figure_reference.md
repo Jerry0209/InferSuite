@@ -23,9 +23,11 @@ core-second, timeline, and burst; the PERF_METRICS slot census produces every TM
 statement about *which command* owns CPU is text classification of the agent's own logged
 action string, attached to the CPU timeline by an ordinal anchor join — heuristic by
 construction, with named diagnostics. A new finding is documented here: the per-window command
-tagger has **no JavaScript bucket**, and `TAG_PRIORITY` ranks `shell` above `other`, so babel's
-jest runs are labelled `shell`. On slides 24–25 the missing *compile* bar is a true property of
-the workload; the missing *test* bar is a labelling artifact (§2.3).
+tagger had **no JavaScript bucket**, and `TAG_PRIORITY` ranks `shell` above `other`, so babel's
+jest runs were labelled `shell`. On slides 24–25 the missing *compile* bar is a true property of
+the workload; the missing *test* bar was a labelling artifact (§2.3) — **fixed in Report 15**,
+along with a plotter that silently dropped any tag absent from its colour dict and an axis label
+that truncated "JavaScript" to "Java".
 
 ## 2. Methodology
 
@@ -211,11 +213,15 @@ https://claude.ai/code/artifact/7a9d155c-11f6-4e97-9d21-f60f677caca9
    accounting (`cpu.stat`), the isolation (`cpuset`), and the PMU filter (`--for-each-cgroup`,
    `--cgroup=`), and their fork+exec inheritance is what makes name-blind fencing possible.
    Every per-fence number on the deck exists because of that one mechanism.
-3. **The command tagger is Python/C-centric and silently mislabels JavaScript.** babel's jest
-   runs land in `shell` because there is no JS rule and `shell` outranks `other`. The absent
-   compile bar on slides 24–25 is real; the absent test bar is not. Quoting babel's tag mix as
-   a workload property without this caveat would be wrong, though the metric distributions
-   themselves stand.
+3. **The command tagger was Python/C-centric and silently mislabelled JavaScript — now fixed.**
+   babel's jest runs landed in `shell` because there was no JS rule and `shell` outranks
+   `other`. The absent compile bar on slides 24–25 is real; the absent test bar was not.
+   **Resolved in Report 15:** `tag_of()` gained per-language test-runner, compiler, and
+   package-manager rules (all ranked above `shell`), re-derived free from banked `cmdlog.tsv`;
+   babel becomes `tests(js)` 77 %, the four other tasks are byte-identical, and regenerating
+   `all_windows_babel.csv` changed 0 of 1306 values. The claim that "the metric distributions
+   themselves stand" is now measured: **78.2 %** of babel's fence instructions occur in windows
+   where jest/node/yarn was observed in the raw argv, independent of any tag.
 4. **Turn counts must come from the harness's own log.** 389 STEP markers = 389 trajectory
    entries on sympy run_1; deriving turns from CPU activity over-segments (≈5× on OC, whose
    gateway is never idle).

@@ -37,7 +37,10 @@ set -o pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GLM="$REPO/local_agents/scripts/glm"
 SVC="$REPO/local_service/scripts/iso"
-PY=python3
+# Plotting python: matplotlib/numpy moved out of the system interpreter into the
+# `infersuite-full` conda env (2026-07) — bare python3 breaks every plotter and the dryrun gate.
+PY="${PY:-$HOME/miniforge3/envs/infersuite-full/bin/python3}"
+"$PY" -c "import matplotlib" 2>/dev/null || PY=python3   # last-resort fallback
 
 usage(){ sed -n '2,40p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 [ $# -ge 1 ] || usage 1

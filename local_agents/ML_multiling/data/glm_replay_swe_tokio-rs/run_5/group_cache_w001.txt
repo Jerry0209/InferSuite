@@ -1,0 +1,18 @@
+
+ Performance counter stats for 'system wide':
+
+       305,334,124      cycles                           measured.slice/glm-rep-tokio-rs-r5.scope                                      
+       525,043,517      instructions                     measured.slice/glm-rep-tokio-rs-r5.scope #    1.72  insn per cycle            
+       138,002,033      mem_load_retired.l1_hit          measured.slice/glm-rep-tokio-rs-r5.scope                                      
+         2,262,457      mem_load_retired.l2_hit          measured.slice/glm-rep-tokio-rs-r5.scope                                      
+           174,800      mem_load_retired.l3_hit          measured.slice/glm-rep-tokio-rs-r5.scope                                      
+           145,095      mem_load_retired.l3_miss         measured.slice/glm-rep-tokio-rs-r5.scope                                      
+     1,273,649,843      cycles                           measured.slice/docker-33e58ff4c3bf73f56cefa54c977c21133e41c20951a23dd3f727b8ed4f8401b9.scope                                      
+     1,698,503,259      instructions                     measured.slice/docker-33e58ff4c3bf73f56cefa54c977c21133e41c20951a23dd3f727b8ed4f8401b9.scope #    1.33  insn per cycle            
+       434,164,529      mem_load_retired.l1_hit          measured.slice/docker-33e58ff4c3bf73f56cefa54c977c21133e41c20951a23dd3f727b8ed4f8401b9.scope                                      
+        12,384,374      mem_load_retired.l2_hit          measured.slice/docker-33e58ff4c3bf73f56cefa54c977c21133e41c20951a23dd3f727b8ed4f8401b9.scope                                      
+         1,304,134      mem_load_retired.l3_hit          measured.slice/docker-33e58ff4c3bf73f56cefa54c977c21133e41c20951a23dd3f727b8ed4f8401b9.scope                                      
+           250,642      mem_load_retired.l3_miss         measured.slice/docker-33e58ff4c3bf73f56cefa54c977c21133e41c20951a23dd3f727b8ed4f8401b9.scope                                      
+
+       2.002315458 seconds time elapsed
+

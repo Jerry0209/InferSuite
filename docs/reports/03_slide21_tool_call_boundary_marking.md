@@ -121,3 +121,15 @@ evidence the boundary story is right.
 5. **Two independent taggers (trajectory-text join vs live process poll) agree**, which
    both validates the older figures (slides 13/18) and justifies preferring the live poll
    (Report 04) when per-window granularity is needed.
+
+---
+
+**Method update (2026-07-30).** `run_glm_campaign.sh` changed after this report was written,
+in ways that do not alter this study's banked data but do alter the harness a reproducer runs:
+the dry-run numpy workloads now resolve a numpy-capable interpreter (`dry_python()`; bare
+`python3` no longer has numpy on this workstation), the ISO-PROOF quiet check settles-and-retries
+up to 8×4 s (2.0 %/core threshold unchanged — the single sample used to land in the
+cpuset-migration drain), and episode liveness keys on the highest `STEP N` seen rather than the
+literal "STEP 2" banner (which SWE-agent does not always emit). Evidence and rationale:
+report 16 §2.2. The method as described in this report is what was in force when this study's
+data was captured.

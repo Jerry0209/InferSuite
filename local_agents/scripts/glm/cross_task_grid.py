@@ -12,13 +12,49 @@ import matplotlib.pyplot as plt
 D  = "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study"
 DM = "/home/thu/InferSuite/local_agents/SWE_clean/data/l3_study"
 OUTD = os.environ.get("GRID_OUT", D)
+DML = "/home/thu/InferSuite/local_agents/ML_multiling/data/l3_study"   # language pilots
 LANG = {"scikit-learn": "Python", "astropy": "Python", "sympy": "Python",
-        "babel": "JavaScript", "fmtlib": "C++"}
-ROOT = {"scikit-learn": D, "astropy": D, "sympy": D, "babel": DM, "fmtlib": DM}
-TASKS = [t for t in ["scikit-learn", "astropy", "sympy", "babel", "fmtlib"]
-         if os.path.exists(f"{ROOT[t]}/all_windows_{t}.csv")]
+        "babel": "JavaScript", "fmtlib": "C++",
+        # SWE-bench Multilingual pilots. Task keys are the campaign's SHORT = the owner segment
+        # of the instance id, which is why several read as an org rather than a project.
+        "tokio-rs": "Rust", "jqlang": "C", "gin-gonic": "Go", "google": "Java",
+        "rubocop": "Ruby", "briannesbitt": "PHP", "vuejs": "TypeScript",
+        "prometheus": "Go", "php-cs-fixer": "PHP"}
+# Display name per task: the raw SHORT is often unreadable on an axis ("google" is gson/Java,
+# "briannesbitt" is carbon/PHP), and t[:6] would truncate it to something worse.
+NAME = {"scikit-learn": "scikit", "tokio-rs": "tokio", "jqlang": "jq", "gin-gonic": "gin",
+        "google": "gson", "briannesbitt": "carbon", "vuejs": "vue", "fmtlib": "fmt",
+        "prometheus": "promth", "php-cs-fixer": "cs-fixer"}
+def tname(t):
+    return NAME.get(t, t)[:8]
+# Axis labels use SHORT, never LANG[...][:4] — truncating "JavaScript" yields "Java", which
+# names a DIFFERENT SWE-bench-Multilingual language, and "Python" yields "Pyth".
+SHORT = {"Python": "Py", "JavaScript": "JS", "TypeScript": "TS", "C++": "C++", "C": "C",
+         "Java": "Java", "Ruby": "Rb", "PHP": "PHP", "Rust": "Rs", "Go": "Go"}
+def slang(t):
+    return SHORT.get(LANG[t], LANG[t])
+ROOT = {"scikit-learn": D, "astropy": D, "sympy": D, "babel": DM, "fmtlib": DM,
+        "tokio-rs": DML, "jqlang": DML, "gin-gonic": DML, "google": DML,
+        "rubocop": DML, "briannesbitt": DML, "vuejs": DML, "prometheus": DML, "php-cs-fixer": DML}
+# Existing tasks first so the established figures keep their column order; pilots append in
+# language order. A task with no banked CSV is skipped, so this list can name work not yet run.
+ORDER = ["scikit-learn", "astropy", "sympy", "babel", "fmtlib",
+         "vuejs", "google", "tokio-rs", "prometheus", "jqlang", "rubocop", "php-cs-fixer"]
+TASKS = [t for t in ORDER if os.path.exists(f"{ROOT[t]}/all_windows_{t}.csv")]
+# TASKS_ONLY="a,b,c" restricts the grid; GRID_SUFFIX names the output so a restricted grid can be
+# FROZEN for a deck slide whose prose describes that subset. Added when the 12-task grid silently
+# replaced the 3-task figure under deck slide 22 ("Three tasks, three distribution shapes") — a
+# figure a slide references must not change population out from under its caption.
+_only = os.environ.get("TASKS_ONLY")
+if _only:
+    keep = [t.strip() for t in _only.split(",") if t.strip()]
+    TASKS = [t for t in TASKS if t in keep]
+SUFFIX = os.environ.get("GRID_SUFFIX", "")
 TCOL = {"scikit-learn": "#159f77", "astropy": "#4d9e83", "sympy": "#6b4fa0",
-        "babel": "#cf6a1f", "fmtlib": "#b2182b"}
+        "babel": "#cf6a1f", "fmtlib": "#b2182b",
+        "vuejs": "#e08a1f", "google": "#3d6b1f", "tokio-rs": "#8c4a1f",
+        "gin-gonic": "#1f6f8c", "prometheus": "#1f6f8c", "jqlang": "#7a1f5b", "rubocop": "#8c1f3d",
+        "briannesbitt": "#5b4b8a", "php-cs-fixer": "#5b4b8a"}
 ROWS = {t: list(csv.DictReader(open(f"{ROOT[t]}/all_windows_{t}.csv"))) for t in TASKS}
 
 def vals(task, metric, fence):
@@ -43,41 +79,52 @@ PANELS = [  # (metric key, panel title)  — mentor's list + the new fe_miss met
 for fence in ("tool", "harness"):
     panels = [(m, ttl) for m, ttl in PANELS if any(vals(t, m, fence) for t in TASKS)]
     ncol = 4; nrow = (len(panels) + ncol - 1) // ncol
-    fig, axes = plt.subplots(nrow, ncol, figsize=(16, 3.4 * nrow))
+    # Width must grow with the task count: at 5 tasks 16in was fine, at 12 the tick labels
+    # collided into an unreadable smear. ~0.30in per task per panel column keeps them apart.
+    fig_w = max(16, ncol * (1.7 + 0.30 * len(TASKS)))
+    fig, axes = plt.subplots(nrow, ncol, figsize=(fig_w, 3.4 * nrow))
     axes = axes.flatten()
     for ax, (m, ttl) in zip(axes, panels):
         data = [vals(t, m, fence) for t in TASKS]
-        bp = ax.boxplot(data, tick_labels=[f"{t[:6]}\n{LANG[t][:4]}\n(n={len(d)})"
+        bp = ax.boxplot(data, tick_labels=[f"{tname(t)}\n{slang(t)}\n(n={len(d)})"
                                           for t, d in zip(TASKS, data)],
                         showmeans=True, patch_artist=True, whis=(5, 95))
         for box, t in zip(bp["boxes"], TASKS):
             box.set_facecolor(TCOL[t]); box.set_alpha(.7)
         ax.set_title(ttl, fontsize=10.5); ax.grid(axis="y", alpha=.3)
-        ax.tick_params(labelsize=8)
+        ax.tick_params(labelsize=7 if len(TASKS) > 8 else 8)
     for ax in axes[len(panels):]: ax.axis("off")
     fig.suptitle(f"Per-window distributions across tasks and languages — {fence} fence, 2-s "
                  f"windows (box = IQR, orange = median, ▲ = mean, whiskers = 5–95%, ○ = outliers)",
                  fontsize=12.5, y=1.0)
-    fig.text(0.5, -0.004, "Python tasks: reproduced superseded_40min campaign · "
-             "babel (JavaScript) + fmt (C++): SWE-bench Multilingual instances from the "
-             "certified SWE_clean campaign", ha="center", fontsize=8.5, color="#666")
+    # Provenance is built from the task set actually plotted. Hard-coding it (it used to name
+    # "babel + fmt" as the only multilingual tasks) silently becomes a false caption the moment
+    # another language is added — the same failure mode as the truncated "Java" label.
+    def prov(root, label):
+        ts = [f"{tname(t)} ({LANG[t]})" for t in TASKS if ROOT[t] == root]
+        return f"{label}: {', '.join(ts)}" if ts else ""
+    fig.text(0.5, -0.004, " · ".join(x for x in [
+        prov(D, "reproduced superseded_40min campaign"),
+        prov(DM, "certified SWE_clean campaign"),
+        prov(DML, "SWE-bench Multilingual language pilots (ML_multiling)")] if x),
+        ha="center", fontsize=8.5, color="#666")
     fig.tight_layout(rect=[0, 0, 1, 0.985])
-    out = f"{OUTD}/plots/cross_task_grid_{fence}.png"
+    out = f"{OUTD}/plots/cross_task_grid_{fence}{SUFFIX}.png"
     fig.savefig(out, dpi=135, bbox_inches="tight"); plt.close(fig)
     print("wrote", out, f"({len(panels)} panels)")
 
 # per-call duration cross-task panel
-fig, ax = plt.subplots(figsize=(7, 3.2))
+fig, ax = plt.subplots(figsize=(max(7, 1.2 + 0.62 * len(TASKS)), 3.2))
 have = [t for t in TASKS if os.path.exists(f"{ROOT[t]}/call_durations_{t}.csv")]
 data = []
 for t in have:
     data.append([float(r["execution_time_s"]) for r in csv.DictReader(open(f"{ROOT[t]}/call_durations_{t}.csv"))])
 if data:
-    bp = ax.boxplot(data, tick_labels=[f"{t[:6]}\n{LANG[t][:4]}\n(n={len(d)})" for t, d in zip(have, data)],
+    bp = ax.boxplot(data, tick_labels=[f"{tname(t)}\n{slang(t)}\n(n={len(d)})" for t, d in zip(have, data)],
                     showmeans=True, patch_artist=True, whis=(5, 95))
     for box, t in zip(bp["boxes"], have): box.set_facecolor(TCOL[t]); box.set_alpha(.7)
     ax.set_yscale("log"); ax.set_ylabel("tool-call duration (s, log)")
     ax.set_title("Per-call wall-clock duration across tasks (trajectory execution_time)", fontsize=11)
     ax.grid(axis="y", alpha=.3)
-    fig.tight_layout(); fig.savefig(f"{OUTD}/plots/cross_task_calldur.png", dpi=135, bbox_inches="tight")
-    print("wrote cross_task_calldur.png")
+    fig.tight_layout(); fig.savefig(f"{OUTD}/plots/cross_task_calldur{SUFFIX}.png", dpi=135, bbox_inches="tight")
+    print(f"wrote cross_task_calldur{SUFFIX}.png")

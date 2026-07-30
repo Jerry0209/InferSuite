@@ -1,0 +1,25 @@
+{
+ "workload": "swe",
+ "config": "prometheus",
+ "run": 1,
+ "model": "glm-5.2",
+ "endpoint": "https://api.z.ai/api/paas/v4",
+ "thinking": "enabled",
+ "cpus_measured": "2-11,14-23",
+ "cpus_house": "0-1,12-13",
+ "winsec": 5,
+ "repo_rev": "ac0a56c",
+ "kernel": "6.17.0-1024-oem",
+ "gorder": "fpbr cache mlp fe fe_lat core_ports dram_bw priv",
+ "rotation": "shuffled",
+ "tma_cont": true,
+ "ts_start": 1785349117.4791512,
+ "extra": {
+  "instance": "prometheus__prometheus-9248",
+  "subset": "multilingual",
+  "temperature": 0.6,
+  "harness_cg": "measured.slice/glm-swe-prometheus-r1.scope",
+  "tool_cg": "measured.slice/docker-c1a99aeb9dd37bce07731bb4169ae71d80414da9a829e4be9e917edc75a37037.scope",
+  "proxy_cg": "user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-3873013.scope"
+ }
+}

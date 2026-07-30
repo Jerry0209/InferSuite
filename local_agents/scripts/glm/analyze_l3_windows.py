@@ -27,16 +27,101 @@ FENCES = {"harness": "glm-rep", "tool": "docker-"}
 
 # ---- command tagging: argv -> category (taxonomy: build/test, vcs, pkg/compile, agent-tools,
 # shell, python-other; aligned with the internal-tools classes + Fig-10-style buckets) ----
+def _progs(a):
+    """The set of PROGRAM NAMES actually invoked, as basenames — not substrings of the whole argv.
+
+    Matching program identity against the raw argv string is the single most productive source of
+    wrong labels in this study, because directory names collide with tool names:
+      /testbed + " -m elf_x86_64" + a test-binary name -> GNU linker tagged tests(pytest)
+      /usr/local/bundle/bin/rubocop                    -> the app under test tagged pkg/build
+      .pnpm/@esbuild.../bin/esbuild                    -> a TRANSPILER tagged pkg/build
+      /usr/share/maven/boot/plexus-classworlds.jar     -> right answer, wrong reason
+    So program-identity rules match here, against basenames, while genuinely path-shaped evidence
+    (Go's pkg/tool/<arch>/compile, /tmp/go-build) stays an explicit path rule below.
+
+    `bundle exec rubocop` / `npm run test` style wrappers put the interesting program in a later
+    token, so every token's basename is considered, not just argv[0].
+    """
+    out = set()
+    for tok in a.split():
+        if tok.startswith("-"): continue
+        out.add(tok.rsplit("/", 1)[-1])
+    return out
+
+
+def _has(progs, *names):
+    return any(n in progs for n in names)
+
+
 def tag_of(argv):
     a = argv.lower()
-    if "pytest" in a or "py.test" in a or "runtests" in a or "testbed" in a and " -m " in a and "test" in a:
+    P = _progs(a)
+    # Test runners FIRST, and per language. Before the non-Python runners existed here, every
+    # jest/rspec/gradle run fell through to `other`, which TAG_PRIORITY ranks BELOW `shell` —
+    # so a JS test run sharing a window with its parent bash was labelled `shell` and the
+    # language axis showed no test bar at all (babel, deck slides 24-25). Keep the language
+    # suffix: "tests(X)" so a multilingual grid can show which toolchain ran.
+    # The `-m` form MUST require an actual python binary. The previous condition was
+    #   "testbed" in a or ... or ("testbed" in a and " -m " in a and "test" in a)
+    # which the GNU linker satisfies on any compiled language: /testbed is the SWE-bench working
+    # dir, `-m elf_x86_64` supplies " -m ", and a test-binary name supplies "test". That tagged
+    # 36% of Rust's tool-fence instructions as `tests(pytest)` (ld + collect2 link windows).
+    # Harmless on the Python tasks, which link almost nothing — hence unnoticed until Rust.
+    if re.search(r"pytest|py\.test|runtests", a) \
+       or (re.search(r"\bpython[0-9.]*\b", a) and " -m " in a and "test" in a):
         return "tests(pytest)"
-    if re.search(r"\bcc1\b|\bgcc\b|\bg\+\+|\bld\b|cythonize|build_ext", a): return "compile"
-    if re.search(r"\bpip3?\b|setup\.py|\bninja\b|\bmake\b", a): return "pkg/build"
+    if _has(P, "jest", "mocha", "vitest", "jasmine", "karma"):              return "tests(js)"
+    if _has(P, "rspec", "minitest") or (_has(P, "rake") and " build" not in a):
+        return "tests(ruby)"
+    if _has(P, "phpunit", "pest"):                                          return "tests(php)"
+    if re.search(r"\bgo\s+test\b", a) or _has(P, "gotestsum"):              return "tests(go)"
+    if re.search(r"\bcargo\s+test\b", a):                                   return "tests(rust)"
+    if _has(P, "ctest") or "gtest_filter" in a:                             return "tests(c/c++)"
+    # maven/gradle: the forked JVM names a jar, so ALSO accept surefire/maven as a token anywhere
+    # (that is deliberate path evidence for a maven fork, not an accident).
+    if _has(P, "mvn", "gradle", "gradlew") or re.search(r"surefire|/maven/", a):
+        return "tests(java)"
+    # Compilers / codegen. cc1plus is NOT matched by \bcc1\b (no word break before "plus").
+    # Go's toolchain children are named `compile`/`link`/`asm`/`cgo` and live under
+    # $GOROOT/pkg/tool/<os>_<arch>/ — bare words that match no compiler name, so they fell to
+    # `other` and would have been outranked by `shell`, repeating the babel mislabel exactly.
+    # Added ahead of the Go episode after verifying the miss against real argv shapes; the
+    # path anchor (pkg/tool/... or /tmp/go-build) keeps it from catching unrelated binaries
+    # that merely happen to be called "link" or "compile".
+    if re.search(r"pkg/tool/[^/]+/(compile|link|asm|cgo|vet)\b|/tmp/go-build", a):
+        return "compile"
+    # Compilers and transpilers, by program name. esbuild/swc/vite are added because they ARE the
+    # compile step for JS/TS: vue's transpile work was landing in pkg/build purely because the
+    # esbuild binary lives under a .pnpm/ path.
+    if _has(P, "cc1", "cc1plus", "gcc", "g++", "cc", "c++", "clang", "clang++", "ld", "collect2",
+            "as", "rustc", "javac", "tsc", "swc", "esbuild", "vite", "rollup", "webpack") \
+       or re.search(r"cythonize|build_ext", a) \
+       or (_has(P, "babel") and "test" not in a):
+        return "compile"
+    # INSTALL / dependency resolution only — not "any command whose path mentions a package
+    # manager". `bundle exec rubocop` runs rubocop; `/usr/local/bundle/bin/rubocop` IS rubocop.
+    # Requiring an install-ish subcommand is what separates resolution from execution.
+    if re.search(r"\b(bundle|gem|composer|npm|pnpm|yarn|pip3?|cargo|go)\s+"
+                 r"(install|add|update|fetch|download|ci|mod|sync|require|wheel)\b", a) \
+       or re.search(r"setup\.py\s+(install|develop|build)", a):
+        return "pkg/build"
+    # Build drivers (orchestrate compilation without being compilers themselves).
+    if _has(P, "make", "gmake", "cmake", "ninja", "libtool", "automake", "autoconf", "configure") \
+       or re.search(r"\bgo\s+build\b|\bcargo\s+build\b", a):
+        return "pkg/build"
     if re.search(r"\bgit\b", a): return "git"
     if "str_replace" in a or "swerex" in a or "registry" in a or "_state" in a: return "agent-tool"
     if re.search(r"/bin/(ba)?sh\b|^sh |^bash ", a): return "shell"
     if "python" in a: return "python-other"
+    # Language runtimes with no more specific role: still far more informative than `shell`.
+    if re.search(r"\bnode\b", a):   return "node-other"
+    # A gem/bundle bin-dir executable IS a Ruby program even though its name says nothing (e.g.
+    # /usr/local/bundle/bin/rubocop, the repo's own linter run as the subject under test). This is
+    # deliberate path evidence, unlike the accidental `/bundle/` collision that used to send it to
+    # pkg/build and made it look like dependency resolution.
+    if _has(P, "ruby", "irb") or re.search(r"/(bundle|gems?)/bin/", a): return "ruby-other"
+    if re.search(r"\bjava\b", a):   return "java-other"
+    if re.search(r"\bphp\b", a):    return "php-other"
     return "other"
 
 def window_tags(cmdlog):
@@ -54,7 +139,9 @@ def window_tags(cmdlog):
 
 # priority: the most specific FOREGROUND activity wins the window. Persistent plumbing
 # (swerex server, session shell) is present in every poll and must not dilute the tag.
-TAG_PRIORITY = ["tests(pytest)", "compile", "pkg/build", "git", "python-other",
+TAG_PRIORITY = ["tests(pytest)", "tests(js)", "tests(ruby)", "tests(php)", "tests(go)",
+                "tests(rust)", "tests(c/c++)", "tests(java)", "compile", "pkg/build", "git",
+                "python-other", "node-other", "ruby-other", "java-other", "php-other",
                 "shell", "other", "agent-tool"]
 def tag_for(win_a, win_b, samples):
     """highest-priority tag observed in [a,b); 'idle' if no samples"""
@@ -210,9 +297,21 @@ if DO_PLOT and rows:
     import matplotlib; matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     PD = f"{OUTD}/plots"; os.makedirs(PD, exist_ok=True)
-    TAGCOL = {"tests(pytest)":"#0b5c44","compile":"#d35400","pkg/build":"#e6a817","git":"#67c6ab",
-              "agent-tool":"#c9e9df","shell":"#159f77","python-other":"#4d9e83","other":"#999999",
-              "mixed":"#bbbbbb","idle":"#e8e8e8"}
+    TAGCOL = {"tests(pytest)":"#0b5c44","tests(js)":"#1f7a8c","tests(ruby)":"#8c1f3d",
+              "tests(php)":"#5b4b8a","tests(go)":"#1f6f8c","tests(rust)":"#8c4a1f",
+              "tests(c/c++)":"#7a1f5b","tests(java)":"#3d6b1f",
+              "compile":"#d35400","pkg/build":"#e6a817","git":"#67c6ab",
+              "agent-tool":"#c9e9df","shell":"#159f77","python-other":"#4d9e83",
+              "node-other":"#3fa7bf","ruby-other":"#bf5f7a","java-other":"#7fa85f",
+              "php-other":"#8f86b5","other":"#999999","mixed":"#bbbbbb","idle":"#e8e8e8"}
+    # Tag rows are selected from the DATA (ordered by TAG_PRIORITY), never from TAGCOL's keys.
+    # Iterating TAGCOL silently dropped any tag missing from it: when the JS/Ruby/etc. rules
+    # were added, babel's tests(js) windows vanished from the panels while "ALL" still counted
+    # them, so the rows no longer summed to the total. Unknown tags now render in a fallback grey.
+    def tags_present(rr):
+        seen = {r["tag"] for r in rr}
+        return [t for t in TAG_PRIORITY + ["mixed", "idle"] if t in seen] + \
+               sorted(seen - set(TAG_PRIORITY) - {"mixed", "idle"})
     def sel(metric, fence="tool"):
         return [r for r in rows if r["metric"] == metric and r["fence"] == fence]
     metrics = sorted({r["metric"] for r in rows})
@@ -232,9 +331,10 @@ if DO_PLOT and rows:
     for m in metrics:
         rr = sel(m)
         if len(rr) < 5: continue
-        tags = [t for t in TAGCOL if any(r["tag"] == t for r in rr)]
-        data = [[r["value"] for r in rr if r["tag"] == t] for t in tags]
-        data = [d for d in data if d]; tags = [t for t, d0 in zip(tags, [ [r["value"] for r in rr if r["tag"]==t] for t in tags]) if d0]
+        tags = tags_present(rr)
+        pairs = [(t, [r["value"] for r in rr if r["tag"] == t]) for t in tags]
+        pairs = [(t, d0) for t, d0 in pairs if d0]
+        tags = [t for t, _ in pairs]; data = [d0 for _, d0 in pairs]
         fig, ax = plt.subplots(figsize=(8, 0.6 + 0.55 * (len(tags) + 1)))
         allv = [r["value"] for r in rr]
         bp = ax.boxplot([allv] + data, vert=False, tick_labels=[f"ALL ({len(allv)}w)"] +
@@ -267,8 +367,8 @@ if DO_PLOT and rows:
                    color=TAGCOL.get(r["tag"], "#999"), align="edge")
         ax.set_xlabel("replay time (min)"); ax.set_ylabel(m)
         ax.set_title(f"{SHORT} — per-window {m} over the episode (color = command tag)", fontsize=11)
-        hs = [plt.Rectangle((0,0),1,1,fc=c) for t,c in TAGCOL.items() if any(r['tag']==t for r in rr)]
-        ls = [t for t in TAGCOL if any(r['tag']==t for r in rr)]
+        ls = tags_present(rr)          # data-driven, so a new tag cannot go missing from the key
+        hs = [plt.Rectangle((0,0),1,1,fc=TAGCOL.get(t, "#999999")) for t in ls]
         ax.legend(hs, ls, fontsize=7.5, ncol=min(5,len(ls)), frameon=False, loc="upper right")
         fig.tight_layout(); fig.savefig(f"{PD}/timeline_{SHORT}_{m}.png", dpi=130); plt.close(fig)
     # (c) per-CALL wall-clock durations from the trajectory (execution_time), by call class

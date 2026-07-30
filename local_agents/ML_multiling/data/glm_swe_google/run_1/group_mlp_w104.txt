@@ -1,0 +1,18 @@
+
+ Performance counter stats for 'system wide':
+
+     1,273,250,961      cycles                           measured.slice/glm-swe-google-r1.scope                                      
+     2,637,868,089      instructions                     measured.slice/glm-swe-google-r1.scope #    2.07  insn per cycle            
+     1,640,377,546      l1d_pend_miss.pending            measured.slice/glm-swe-google-r1.scope                                      
+       629,574,985      l1d_pend_miss.pending_cycles     measured.slice/glm-swe-google-r1.scope                                      
+    77,389,986,402      cycles                           measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope                                      
+   141,630,777,331      instructions                     measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope #    1.83  insn per cycle            
+    32,857,145,480      l1d_pend_miss.pending            measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope                                      
+    19,338,430,859      l1d_pend_miss.pending_cycles     measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope                                      
+       145,241,263      cycles                           user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope                                      
+       383,574,731      instructions                     user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope #    2.64  insn per cycle            
+        57,233,680      l1d_pend_miss.pending            user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope                                      
+        37,883,097      l1d_pend_miss.pending_cycles     user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope                                      
+
+       5.002654139 seconds time elapsed
+

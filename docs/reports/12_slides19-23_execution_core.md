@@ -114,7 +114,8 @@ replays: phenomena and medians reproduce; exact window counts may shift by ±a f
 | `run_10/group_priv_w*.txt` + `cmdlog.tsv` | `…/data/glm_replay_swe_<task>/` | kernel_pct source (see §2.2 gap) |
 
 Galleries, grids, and CSV set are the same artifact family as Report 09 (frontend-supply
-metrics) — one gallery per task, three views per metric.
+metrics) — one gallery per task, four views per metric (tool and harness distributions, then
+each fence's over-the-episode timeline).
 
 ## 3. Key insights (most → least important)
 
@@ -159,3 +160,15 @@ metrics) — one gallery per task, three views per metric.
    absent — the analyzer's shared instruction gate keyed on an event name the priv group
    doesn't emit (§2.2). Gate checks must key on the events each group actually counts;
    until fixed, kernel numbers come from the raw pass files.
+
+---
+
+**Method update (2026-07-30).** `run_glm_campaign.sh` changed after this report was written,
+in ways that do not alter this study's banked data but do alter the harness a reproducer runs:
+the dry-run numpy workloads now resolve a numpy-capable interpreter (`dry_python()`; bare
+`python3` no longer has numpy on this workstation), the ISO-PROOF quiet check settles-and-retries
+up to 8×4 s (2.0 %/core threshold unchanged — the single sample used to land in the
+cpuset-migration drain), and episode liveness keys on the highest `STEP N` seen rather than the
+literal "STEP 2" banner (which SWE-agent does not always emit). Evidence and rationale:
+report 16 §2.2. The method as described in this report is what was in force when this study's
+data was captured.

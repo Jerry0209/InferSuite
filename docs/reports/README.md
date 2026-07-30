@@ -22,12 +22,18 @@ creation; the table below is ordered by deck slide.
 | 19–23 | [12 — execution core & system](12_slides19-23_execution_core.md) | Metric group: IPC distributions, ports-utilization cycle profile (not parent-nested — caveat), divider, vector-FP share, kernel share |
 | 24–25 | [13 — multilingual language axis](13_slides24-25_multilingual_language_axis.md) | SWE-bench Multilingual (babel JS, fmt C++) profiled by the same per-window method at zero API cost: instruction-supply pressure is not a CPython artifact; the harness is language-independent |
 | 21 | [03 — tool-call boundary marking](03_slide21_tool_call_boundary_marking.md) | Method audit: cgroup wall (spatial, exact) + ordinal anchor join (temporal, heuristic-with-diagnostics); underpins 07, 09–12 |
+| 19–25 | [15 — cross-task attribution](15_slides19-25_cross_task_attribution.md) | Why the tasks differ: identifies the program owning each fence's instructions (pytest→BLAS, source build, cc1plus, jest/V8), explains the L1D/L2, branch, BTB and µop-cache gaps, rejects two churn mechanisms, and fixes three shipped defects (the "Java" label, silent tag drops, no non-Python test runners) |
+| 26–27 | [16 — nine-language expansion](16_slides26-27_multilingual_expansion.md) | Seven new languages via episode → ownership+adequacy gate → 11 replay passes: composition reproduces (~1 %) while magnitude is episode noise (5.33×); within-Go compile-vs-test front-end split; Java's JIT best front end; six silent harness/tagger defects found and fixed; three instances rejected by automated gates |
+| 28 | [17 — ⟨language, type⟩ sampling frame](17_slide28_language_type_sampling_frame.md) | The mentor's frame operationalised: 300-instance inventory (assertion-checked counts), deterministic taxonomy validated against 12 measured compositions — mechanism-type is nested in language (9 cells, all covered), so the next campaign samples the open behavioural axis with realized-type crediting |
 | 1–25 | [14 — instrument-to-figure reference](14_slides1-25_instrument_to_figure_reference.md) | Cross-cutting: which instrument produced each deck number, exact vs heuristic layer, and the code site of every constant — plus the JS command-tagger gap that qualifies babel's tag mix on 24–25, and the published slide links |
 
 **Reading order for a newcomer:** 14 (which instrument produced what) → 03 (what a "tool call"
-is in this data) → 05 → 06 → 07 → 08 → 02 → 04 → 09/10/11/12 (any order) → 13 → 01.
+is in this data) → 05 → 06 → 07 → 08 → 02 → 04 → 09/10/11/12 (any order) → **15 (why the tasks
+differ at all — read before drawing conclusions from 09–12)** → 13 → 16 → 17 → 01.
 
 **Numbering note:** 01–04 were written first (slides 17+); 05–12 filled in the earlier deck
 sections and the per-window metric groups; 13 covers the multilingual extension; 14 is the
-cross-cutting instrument reference spanning the whole deck. File numbers are stable
+cross-cutting instrument reference spanning the whole deck; 15 explains the cross-task and
+cross-language differences that 09–13 display; 16 is the nine-language expansion and 17 the
+sampling frame that governs the next campaign. File numbers are stable
 identifiers — do not renumber.

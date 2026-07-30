@@ -1,0 +1,22 @@
+
+ Performance counter stats for 'system wide':
+
+             84.69 msec task-clock                       measured.slice/glm-rep-google-r11.scope #    0.042 CPUs utilized             
+                90      context-switches                 measured.slice/glm-rep-google-r11.scope #    1.063 K/sec                     
+                 2      cpu-migrations                   measured.slice/glm-rep-google-r11.scope #   23.616 /sec                      
+               213      page-faults                      measured.slice/glm-rep-google-r11.scope #    2.515 K/sec                     
+       253,394,143      cycles:u                         measured.slice/glm-rep-google-r11.scope                                      
+        15,341,160      cycles:k                         measured.slice/glm-rep-google-r11.scope                                      
+       875,610,698      instructions:u                   measured.slice/glm-rep-google-r11.scope #    3.46  insn per cycle            
+        10,754,506      instructions:k                   measured.slice/glm-rep-google-r11.scope #    0.70  insn per cycle            
+          4,612.35 msec task-clock                       measured.slice/docker-56cc8a57348e1dbfb942a3b7adb2255f980591d183306dba1689f6aca421ae7d.scope #    2.304 CPUs utilized             
+            15,517      context-switches                 measured.slice/docker-56cc8a57348e1dbfb942a3b7adb2255f980591d183306dba1689f6aca421ae7d.scope #    3.364 K/sec                     
+               532      cpu-migrations                   measured.slice/docker-56cc8a57348e1dbfb942a3b7adb2255f980591d183306dba1689f6aca421ae7d.scope #  115.343 /sec                      
+            99,031      page-faults                      measured.slice/docker-56cc8a57348e1dbfb942a3b7adb2255f980591d183306dba1689f6aca421ae7d.scope #   21.471 K/sec                     
+    12,466,457,132      cycles:u                         measured.slice/docker-56cc8a57348e1dbfb942a3b7adb2255f980591d183306dba1689f6aca421ae7d.scope                                      
+     2,007,556,225      cycles:k                         measured.slice/docker-56cc8a57348e1dbfb942a3b7adb2255f980591d183306dba1689f6aca421ae7d.scope                                      
+    23,307,865,139      instructions:u                   measured.slice/docker-56cc8a57348e1dbfb942a3b7adb2255f980591d183306dba1689f6aca421ae7d.scope #    1.87  insn per cycle            
+     3,005,355,250      instructions:k                   measured.slice/docker-56cc8a57348e1dbfb942a3b7adb2255f980591d183306dba1689f6aca421ae7d.scope #    1.50  insn per cycle            
+
+       2.001956684 seconds time elapsed
+

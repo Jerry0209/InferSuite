@@ -1,0 +1,16 @@
+
+ Performance counter stats for 'system wide':
+
+     1,302,913,410      cycles                           measured.slice/glm-rep-google-r8.scope                                      
+     3,250,757,546      instructions                     measured.slice/glm-rep-google-r8.scope #    2.49  insn per cycle            
+       280,660,253      cpu/offcore_requests_outstanding.data_rd,cmask=4/ measured.slice/glm-rep-google-r8.scope                                      
+       620,034,080      offcore_requests_outstanding.cycles_with_data_rd measured.slice/glm-rep-google-r8.scope                                      
+        13,736,402      offcore_requests.data_rd         measured.slice/glm-rep-google-r8.scope                                      
+    11,830,694,249      cycles                           measured.slice/docker-548212328cbd2e7d1727763b97be906f06d68196a927d017385ca721754e1c5f.scope                                      
+    19,054,409,873      instructions                     measured.slice/docker-548212328cbd2e7d1727763b97be906f06d68196a927d017385ca721754e1c5f.scope #    1.61  insn per cycle            
+       753,400,134      cpu/offcore_requests_outstanding.data_rd,cmask=4/ measured.slice/docker-548212328cbd2e7d1727763b97be906f06d68196a927d017385ca721754e1c5f.scope                                      
+     2,794,450,135      offcore_requests_outstanding.cycles_with_data_rd measured.slice/docker-548212328cbd2e7d1727763b97be906f06d68196a927d017385ca721754e1c5f.scope                                      
+        43,430,602      offcore_requests.data_rd         measured.slice/docker-548212328cbd2e7d1727763b97be906f06d68196a927d017385ca721754e1c5f.scope                                      
+
+       2.001623204 seconds time elapsed
+

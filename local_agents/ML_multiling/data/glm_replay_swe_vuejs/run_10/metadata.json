@@ -1,0 +1,23 @@
+{
+ "workload": "swe_replay",
+ "config": "vuejs",
+ "run": 10,
+ "model": "glm-5.2",
+ "endpoint": "https://api.z.ai/api/paas/v4",
+ "thinking": "enabled",
+ "cpus_measured": "2-11,14-23",
+ "cpus_house": "0-1,12-13",
+ "winsec": 2,
+ "repo_rev": "ac0a56c",
+ "kernel": "6.17.0-1024-oem",
+ "gorder": "fe_l3x",
+ "rotation": "shuffled",
+ "tma_cont": true,
+ "ts_start": 1785358223.7484336,
+ "extra": {
+  "source_run": 1,
+  "traj": "/home/thu/InferSuite/local_agents/ML_multiling/data/glm_swe_vuejs/run_1/traj/vuejs__core-11915/vuejs__core-11915.traj",
+  "harness_cg": "measured.slice/glm-rep-vuejs-r10.scope",
+  "tool_cg": "measured.slice/docker-e329a19be4ad3ddfa2f42aa5e33af6f20eb50a54da86ba51073caeba24ba1f04.scope"
+ }
+}

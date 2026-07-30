@@ -148,7 +148,11 @@ sync_plots → (only after approval in chat) copy into the thesis repo's `figure
 
 ## Measurement conventions (locked — violating these invalidates figures)
 
-- **Plot with SYSTEM `python3`**, not the project `.venv` (matplotlib lives system-wide).
+- **Plot with the `infersuite-full` conda python**
+  (`~/miniforge3/envs/infersuite-full/bin/python3`), not the project `.venv` and not bare
+  `python3` — matplotlib/numpy no longer exist in the system interpreter (moved 2026-07; the old
+  "system python3" rule silently broke the plotters and the dryrun gate's numpy workloads).
+  `measure.sh` resolves this via `$PY`; standalone plotter invocations must use the env path.
   Collection and plotting are decoupled: collection scripts only collect; plot afterwards from
   banked data (`./measure.sh plots`).
 - **perf on this workstation**: the working binary is

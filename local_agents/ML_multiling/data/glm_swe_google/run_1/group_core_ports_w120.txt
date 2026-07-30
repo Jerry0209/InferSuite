@@ -1,0 +1,24 @@
+
+ Performance counter stats for 'system wide':
+
+        46,635,152      cycles                           measured.slice/glm-swe-google-r1.scope                                      
+        67,864,281      instructions                     measured.slice/glm-swe-google-r1.scope #    1.46  insn per cycle            
+         4,065,258      exe_activity.1_ports_util        measured.slice/glm-swe-google-r1.scope                                      
+         4,025,169      exe_activity.2_ports_util        measured.slice/glm-swe-google-r1.scope                                      
+           584,740      exe_activity.exe_bound_0_ports   measured.slice/glm-swe-google-r1.scope                                      
+            59,167      arith.div_active                 measured.slice/glm-swe-google-r1.scope                                      
+    41,179,776,130      cycles                           measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope                                      
+    69,706,948,913      instructions                     measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope #    1.69  insn per cycle            
+     5,047,441,422      exe_activity.1_ports_util        measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope                                      
+     5,025,803,556      exe_activity.2_ports_util        measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope                                      
+       665,863,949      exe_activity.exe_bound_0_ports   measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope                                      
+        39,427,456      arith.div_active                 measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope                                      
+        24,487,977      cycles                           user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope                                      
+        17,177,533      instructions                     user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope #    0.70  insn per cycle            
+         1,604,078      exe_activity.1_ports_util        user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope                                      
+         1,358,389      exe_activity.2_ports_util        user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope                                      
+           279,276      exe_activity.exe_bound_0_ports   user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope                                      
+            16,857      arith.div_active                 user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope                                      
+
+       5.002714205 seconds time elapsed
+

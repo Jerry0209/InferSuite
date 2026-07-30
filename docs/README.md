@@ -6,7 +6,7 @@ you'd read it.
 ## Microarchitectural study reports — `reports/`
 
 Reproducibility-grade write-ups of the agent-CPU studies — one per study, covering the
-full 25-slide team deck section by section, plus one report per per-window metric group.
+full 28-slide team deck section by section, plus one report per per-window metric group.
 Each report: key summary → methodology with every load-bearing
 decision and the scripts used → insights ranked by importance.
 Full index and reading order: **[reports/README.md](reports/README.md)**.
@@ -26,6 +26,9 @@ Full index and reading order: **[reports/README.md](reports/README.md)**.
 | 19–23 | [12 — execution core & system](reports/12_slides19-23_execution_core.md) | IPC distributions, ports cycle profile, vector-FP, kernel share |
 | 24–25 | [13 — multilingual language axis](reports/13_slides24-25_multilingual_language_axis.md) | JS + C++ via SWE-bench Multilingual: instruction-supply pressure generalizes; harness is language-independent |
 | 21 | [03 — tool-call boundary marking](reports/03_slide21_tool_call_boundary_marking.md) | Method audit: cgroup wall + ordinal anchor join |
+| 19–25 | [15 — cross-task attribution](reports/15_slides19-25_cross_task_attribution.md) | Why the tasks differ at all: which program owns each fence (BLAS kernels, source build, cc1plus, jest/V8) and how that explains every metric gap; two churn mechanisms rejected; three shipped defects fixed |
+| 26–27 | [16 — nine-language expansion](reports/16_slides26-27_multilingual_expansion.md) | 9 languages / 12 workloads, gated (ownership 92–99 %); composition reproduces ~1 %, magnitude 5.33× episode noise; six silent defects fixed |
+| 28 | [17 — ⟨language, type⟩ sampling frame](reports/17_slide28_language_type_sampling_frame.md) | 300 instances inventoried + classified; mechanism-type nested in language (9/9 cells covered); next campaign samples the behavioural axis |
 | 1–25 | [14 — instrument-to-figure reference](reports/14_slides1-25_instrument_to_figure_reference.md) | Which instrument produced each deck number, exact vs heuristic, code site of every constant; JS-tagger gap; published slide links |
 
 Companion material elsewhere in the repo:

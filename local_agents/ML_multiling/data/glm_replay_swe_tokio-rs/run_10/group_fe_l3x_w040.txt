@@ -1,0 +1,18 @@
+
+ Performance counter stats for 'system wide':
+
+     1,056,262,281      cycles                           measured.slice/glm-rep-tokio-rs-r10.scope                                      
+     3,866,397,739      instructions                     measured.slice/glm-rep-tokio-rs-r10.scope #    3.66  insn per cycle            
+        60,758,942      dsb2mite_switches.penalty_cycles measured.slice/glm-rep-tokio-rs-r10.scope                                      
+         1,958,162      idq.ms_switches                  measured.slice/glm-rep-tokio-rs-r10.scope                                      
+        20,474,010      exe_activity.bound_on_stores     measured.slice/glm-rep-tokio-rs-r10.scope                                      
+         1,376,028      itlb_misses.walk_active          measured.slice/glm-rep-tokio-rs-r10.scope                                      
+     8,579,871,380      cycles                           measured.slice/docker-b125ac913118456c82dffd7ebd4940d3d6fb382eacad3cf254b01093d8f03b8d.scope                                      
+     7,975,843,410      instructions                     measured.slice/docker-b125ac913118456c82dffd7ebd4940d3d6fb382eacad3cf254b01093d8f03b8d.scope #    0.93  insn per cycle            
+       186,444,194      dsb2mite_switches.penalty_cycles measured.slice/docker-b125ac913118456c82dffd7ebd4940d3d6fb382eacad3cf254b01093d8f03b8d.scope                                      
+       146,368,968      idq.ms_switches                  measured.slice/docker-b125ac913118456c82dffd7ebd4940d3d6fb382eacad3cf254b01093d8f03b8d.scope                                      
+       347,951,005      exe_activity.bound_on_stores     measured.slice/docker-b125ac913118456c82dffd7ebd4940d3d6fb382eacad3cf254b01093d8f03b8d.scope                                      
+        17,301,633      itlb_misses.walk_active          measured.slice/docker-b125ac913118456c82dffd7ebd4940d3d6fb382eacad3cf254b01093d8f03b8d.scope                                      
+
+       2.002321632 seconds time elapsed
+

@@ -121,3 +121,10 @@ auditing (`"temperature": 0.6`).
 6. **Definitional caveat carried on the slide:** "solved" here = produced/attempted to submit
    a patch. Formal SWE-bench resolution additionally needs the evaluation harness, which this
    kit intentionally does not run.
+
+---
+
+**Method update (2026-07-30).** `measure.sh` changed after this report: its plotting
+interpreter `$PY` now resolves to the `infersuite-full` conda python (matplotlib/numpy left the
+system interpreter). Nothing in this study's capture or analysis is affected; only the
+interpreter a reproducer invokes. See report 16 §2.2 and CLAUDE.md's updated convention.

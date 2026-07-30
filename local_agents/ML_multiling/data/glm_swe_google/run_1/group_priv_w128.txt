@@ -1,0 +1,30 @@
+
+ Performance counter stats for 'system wide':
+
+            321.12 msec task-clock                       measured.slice/glm-swe-google-r1.scope #    0.064 CPUs utilized             
+                56      context-switches                 measured.slice/glm-swe-google-r1.scope #  174.391 /sec                      
+                 0      cpu-migrations                   measured.slice/glm-swe-google-r1.scope #    0.000 /sec                      
+             8,355      page-faults                      measured.slice/glm-swe-google-r1.scope #   26.019 K/sec                     
+       966,373,329      cycles:u                         measured.slice/glm-swe-google-r1.scope                                      
+        57,460,395      cycles:k                         measured.slice/glm-swe-google-r1.scope                                      
+     3,379,470,039      instructions:u                   measured.slice/glm-swe-google-r1.scope #    3.50  insn per cycle            
+        68,935,931      instructions:k                   measured.slice/glm-swe-google-r1.scope #    1.20  insn per cycle            
+            213.40 msec task-clock                       measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope #    0.043 CPUs utilized             
+               109      context-switches                 measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope #  510.770 /sec                      
+                 2      cpu-migrations                   measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope #    9.372 /sec                      
+             4,329      page-faults                      measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope #   20.286 K/sec                     
+       214,363,763      cycles:u                         measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope                                      
+       463,261,183      cycles:k                         measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope                                      
+       468,691,581      instructions:u                   measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope #    2.19  insn per cycle            
+       870,433,096      instructions:k                   measured.slice/docker-3aa40b22f872c219537efc55ba12edd39ad67aa31f0c5a72b3c54c5cd6c5ba10.scope #    1.88  insn per cycle            
+             53.72 msec task-clock                       user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope #    0.011 CPUs utilized             
+                55      context-switches                 user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope #    1.024 K/sec                     
+                 1      cpu-migrations                   user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope #   18.614 /sec                      
+               107      page-faults                      user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope #    1.992 K/sec                     
+       166,275,295      cycles:u                         user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope                                      
+         3,437,779      cycles:k                         user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope                                      
+       453,687,129      instructions:u                   user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope #    2.73  insn per cycle            
+         2,109,274      instructions:k                   user.slice/user-1006.slice/user@1006.service/app.slice/glm-proxy-756672.scope #    0.61  insn per cycle            
+
+       5.003034499 seconds time elapsed
+

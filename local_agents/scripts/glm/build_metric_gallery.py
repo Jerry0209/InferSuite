@@ -49,14 +49,27 @@ for t in TASKS:
     parts = [f"<title>Per-window gallery — {t}</title><style>{CSS}</style><div class='wrap'>"]
     parts.append(f"<h1>Per-window gallery — {t} (tool + harness fences)</h1>")
     parts.append("<p class='note'>Every metric, per 2-s window, from dedicated-group deterministic "
-                 "replays. Box = IQR, orange = median, ▲ = mean, whiskers = 5–95%, ○ = outliers; "
-                 "(Nw) = windows owning that tag. Timeline color = command tag (2 Hz cgroup process "
-                 "poll). Data: l3_study/all_windows_*.csv.</p>")
+                 "replays. <b>Four views per metric:</b> distribution for the <b>tool</b> fence "
+                 "(split by command tag) and for the <b>harness</b> fence, then the two "
+                 "over-the-episode timelines. Box = IQR, orange = median, ▲ = mean, "
+                 "whiskers = 5–95%, ○ = outliers; (Nw) = windows owning that tag. "
+                 "<b>Tool</b> timelines are colored by command tag (2 Hz cgroup process poll); "
+                 "the <b>harness</b> fence is a single program (the SWE-agent process), so it "
+                 "carries no command tags and is drawn in one color. A metric may lack harness "
+                 "panels when the agent program never exercises it (vecFP_pct: no FP arithmetic). "
+                 "Data: l3_study/all_windows_*.csv.</p>")
     metrics = [m for m in ORDER if os.path.exists(f"{PD}/box_{t}_{m}.png")]
     parts.append("<div class='nav'>" + " ".join(f"<a href='#{m}'>{m}</a>" for m in metrics) + "</div>")
     for m in metrics:
         parts.append(f"<h2 id='{m}'>{html.escape(m)}</h2>")
-        b, tl, hb = f"{PD}/box_{t}_{m}.png", f"{PD}/timeline_{t}_{m}.png", f"{PD}/hbox_{t}_{m}.png"
+        # four views per metric: distributions side by side (tool | harness), then the two
+        # over-the-episode timelines stacked full width (they are wide and would not survive
+        # being halved). A metric can legitimately lack a harness panel — vecFP_pct has no
+        # harness windows because the agent program executes essentially no FP arithmetic.
+        b  = f"{PD}/box_{t}_{m}.png"
+        hb = f"{PD}/hbox_{t}_{m}.png"
+        tl = f"{PD}/timeline_{t}_{m}.png"
+        htl = f"{PD}/htimeline_{t}_{m}.png"
         parts.append("<div class='row'>")
         parts.append(f"<div class='card'><img loading='lazy' alt='tool box {m}' src='{uri(b)}'></div>")
         if os.path.exists(hb):
@@ -64,6 +77,8 @@ for t in TASKS:
         parts.append("</div>")
         if os.path.exists(tl):
             parts.append(f"<div class='card'><img loading='lazy' alt='tool timeline {m}' src='{uri(tl)}'></div>")
+        if os.path.exists(htl):
+            parts.append(f"<div class='card'><img loading='lazy' alt='harness timeline {m}' src='{uri(htl)}'></div>")
     parts.append("</div>")
     out = f"{OUT}/gallery_{t}.html"
     open(out, "w").write("\n".join(parts))

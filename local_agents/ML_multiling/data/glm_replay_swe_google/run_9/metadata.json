@@ -1,0 +1,23 @@
+{
+ "workload": "swe_replay",
+ "config": "google",
+ "run": 9,
+ "model": "glm-5.2",
+ "endpoint": "https://api.z.ai/api/paas/v4",
+ "thinking": "enabled",
+ "cpus_measured": "2-11,14-23",
+ "cpus_house": "0-1,12-13",
+ "winsec": 2,
+ "repo_rev": "ac0a56c",
+ "kernel": "6.17.0-1024-oem",
+ "gorder": "mem_bound",
+ "rotation": "shuffled",
+ "tma_cont": true,
+ "ts_start": 1785356473.1574528,
+ "extra": {
+  "source_run": 1,
+  "traj": "/home/thu/InferSuite/local_agents/ML_multiling/data/glm_swe_google/run_1/traj/google__gson-2061/google__gson-2061.traj",
+  "harness_cg": "measured.slice/glm-rep-google-r9.scope",
+  "tool_cg": "measured.slice/docker-c155ca7ba5ae3ac08150b38b99453a7a7847683556d19be8bb6c73cd4faa6c67.scope"
+ }
+}
