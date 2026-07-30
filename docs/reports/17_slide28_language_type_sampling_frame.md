@@ -20,11 +20,13 @@ compositions. Central finding: **if "type" means the CPU mechanism, type is a fu
 language** — every language occupies exactly one mechanism class, the 9×5 grid collapses to 9
 reachable cells, and the 12 already-profiled workloads cover all 9. The mentor's deduplication
 is automatic at mechanism level ("another build-heavy C++ task" is the only kind there is).
-The dimension that genuinely varies within a language — and is uncovered — is the **agent's
-behavioural mix** (babel: 72 % of actions were searches; fmt: 34 % edits, same mechanism
-class), so the next campaign samples ⟨language, behavioural type⟩, with each cell credited
-only by the episode's *realized* type. Static prediction earned limited trust in validation
-(5 clean agreements of 9 scoreable) and is used as a prior, not a verdict.
+The intended second axis was the **agent's behavioural mix** — but measuring it properly
+(§2.2 correction) shows *all 13 banked episodes realize as search-dominated* (S = 47–84 % of
+classified actions, dominant in every one), so the behavioural axis may be a property of the
+agent, not of the task. The campaign therefore opens with three falsification probes (the
+instances statically most likely to realize non-S) before any full sweep; cells are credited
+only by an episode's *realized* type. Static prediction earned little trust twice over —
+5/9 clean on the mechanism validation, and **1/10** on realized behavioural labels.
 
 ## 2. Methodology
 
@@ -98,9 +100,11 @@ no API spend; the *resulting* campaign costs ~1.5 h exclusive-core time per cell
 1. **Mechanism-type is nested in language** in this benchmark: 9 reachable ⟨language,
    mechanism⟩ cells, not 45 — and the 12 profiled workloads already cover all 9. The mentor's
    deduplication happens automatically at this level.
-2. **The behavioural axis is the real sampling dimension**: within one mechanism class, action
-   mixes range from 72 %-search (babel) to edit-heavy (fmt); it is uncovered, varies per
-   episode, and therefore cells must be credited by realized type.
+2. **The behavioural axis appears agent-dominated, not task-dominated** (corrected 2026-07-30):
+   with `str_replace_editor view` counted as reading, every banked episode across 9 languages
+   and 12 repos is search-dominated (S 47–84 %, T 0–46 %, E 1–18 %, B 0–18 %). The residual
+   variation is a search↔test *gradient* (babel S84/T11 vs php-cs-fixer S53/T46), not discrete
+   types. Whether any instance can realize E/T/B dominance is exactly what the probes test.
 3. **Static prediction is a prior, not a verdict**: 5/9 clean agreement against measured
    compositions; two of the four misses were tagger visibility problems rather than taxonomy
    errors — attribution instruments and taxonomy must be debugged together.
@@ -109,3 +113,18 @@ no API spend; the *resulting* campaign costs ~1.5 h exclusive-core time per cell
    composition and uses a free repo-probe for magnitude floors.
 5. **The inventory itself corrected the working numbers**: JS/TS is one published 43-bucket that
    splits 31/12; per-language counts now assertion-checked so a silent remap cannot recur.
+
+---
+
+**Correction (2026-07-30, same day).** The first published version motivated the behavioural
+axis with "babel 72 % searches vs fmt 34 % edits". That contrast was an artifact of the
+action extractor counting `str_replace_editor view` — a *read* — as an edit: fmt's 38 editor
+calls are 28 `view` + 10 actual edits, so fmt is S=71 %/E=11 %, not edit-heavy. Reclassifying
+all 13 banked trajectories with view=read (`behavior_classify.py labels`) yields S-dominant
+for every episode. The static behavioural prior scores 1/10 against these realized labels.
+Consequence: the planned one-episode-per-⟨language, behaviour⟩ sweep (20 cells, ~30 h) is not
+run blindly; three falsification probes run first (`sampling_frame/behavior_plan.tsv` rows:
+PHP/T phpspreadsheet-3940, JavaScript/T preact-4152, Go/E terraform-35543 — the candidates
+statically most likely to realize non-S). If none realizes non-S, the honest deliverable is
+the finding that SWE-agent's action mix is agent-dominated, and the ⟨language, type⟩ frame
+collapses on both of its natural definitions.

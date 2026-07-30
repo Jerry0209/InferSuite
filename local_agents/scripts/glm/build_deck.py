@@ -752,12 +752,14 @@ BODY = """
       every language occupies exactly one mechanism, so the ⟨language, mechanism⟩ grid has 9
       reachable cells and the twelve profiled workloads already cover all of them. The open
       dimension is the <b>agent's behavioural mix</b> — search- vs edit- vs test-dominated episodes —
-      which varies within a language (babel: 72% of actions were searches; fmt: 34% edits) and is
-      what the next campaign samples: one instance per ⟨language, behavioural type⟩ cell, with the
-      realized type confirmed from the episode's own trajectory after the run.</p>
+      which was expected to vary within a language. Measured properly (editor <i>view</i> counted
+      as reading), <b>all 13 banked episodes realize as search-dominated</b> (S 47–84%) — the mix
+      may belong to the agent, not the task. The campaign therefore opens with three
+      falsification probes (the instances most likely to realize non-S); the full one-per-cell
+      sweep runs only if a probe succeeds, and every cell is credited by realized type.</p>
       <div class="take">
         <div class="chip tool">Mechanism axis: saturated (9/9 cells measured)</div>
-        <div class="chip harness">Behavioural axis: open — the target of the next campaign</div>
+        <div class="chip harness">Behavioural axis: S-dominant in all 13 banked episodes — 3 falsification probes before any sweep</div>
         <div class="chip wait">Magnitude is not a selection criterion: the same instance moves 5.3× between episodes</div>
       </div>
       <p class="note">Selection is static (patch shape, problem-statement cues, test counts from the
