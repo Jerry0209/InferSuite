@@ -172,3 +172,12 @@ cpuset-migration drain), and episode liveness keys on the highest `STEP N` seen 
 literal "STEP 2" banner (which SWE-agent does not always emit). Evidence and rationale:
 report 16 §2.2. The method as described in this report is what was in force when this study's
 data was captured.
+
+---
+
+**Method update (2026-07-30, evening).** `plot_glm_results.py` changed after this report: the
+harness-anatomy figure's cost-dynamics row had a hardcoded 1×4 sub-grid and crashed on specs
+with 5+ tasks — silently, because every preceding figure (including all of this report's) had
+already been written. The grid now scales with the task count. No figure this report documents
+changes in content; the fix exists so the mentor-requested 5- and 6-task cross-campaign
+variants (`local_agents/cross_campaign/`, report 14) render completely.
