@@ -25,6 +25,7 @@ def uri(name):
 
 IMG = {k: uri(v) for k, v in {
     "split": "glm_time_split.png",
+    "split_ml": "/home/thu/InferSuite/local_agents/SWE_clean/plots/glm_time_split.png",
     "cpu": "glm_cpu_work.png",
     "timeline": "glm_timeline.png",
     "calls": "glm_tool_calls.png",
@@ -195,17 +196,26 @@ BODY = """
     <div class="wrap">
       <p class="eyebrow">Slide 1 · wall-clock</p>
       <h2>The wall clock is mostly waiting on the model</h2>
-      <p class="lead">Across every task, elapsed time is dominated by the model round-trip — the CPU
-      sits idle waiting for tokens. Tool execution and the agent harness together are the minority of
-      wall time, from an 8-minute scikit-learn episode to a 41-minute django one. The fifth column is the new
-      temp-0.6 django re-run: 36.5 min, 94 % model wait — the agent worked slowly and carefully.
-      Values below are scikit-learn · astropy · sympy · django@0 · django@0.6.</p>
-      <div class="figcard"><img alt="Wall-clock time split donuts for four tasks" src="__SPLIT__"></div>
+      <p class="lead">Across every task — and every language — elapsed time is dominated by the
+      model round-trip: the CPU sits idle waiting for tokens. Tool execution and the agent harness
+      together are the minority of wall time, from an 8-minute scikit-learn episode to a 41-minute
+      django one. The pattern holds beyond Python (second row, the certified SWE_clean campaign):
+      <b>babel (JavaScript)</b> waits on the model ~86 % of a 7.3-min episode (tools 8.0 %), and
+      <b>fmt (C++)</b> — the compile-heaviest task in the study — still waits ~82 % of 16.2 min,
+      with tools at 13.5 %, the highest tool share of wall measured anywhere.</p>
+      <div class="figcard"><img alt="Wall-clock time split donuts — Python-era tasks: scikit-learn, astropy, sympy, django@0, django@0.6" src="__SPLIT__"></div>
+      <div class="figcard"><img alt="Wall-clock time split donuts — certified SWE_clean campaign: django, sympy, babel (JavaScript), fmt (C++)" src="__SPLITML__"></div>
       <div class="take">
-        <div class="chip wait">model wait&nbsp; <b>74</b> · <b>89</b> · <b>78</b> · <b>74</b> · <b>94%</b></div>
-        <div class="chip tool">tools&nbsp; <b>23</b> · <b>9</b> · <b>11</b> · <b>5</b> · <b>3%</b></div>
-        <div class="chip harness">harness&nbsp; <b>3</b> · <b>2</b> · <b>11</b> · <b>21</b> · <b>4%</b></div>
+        <div class="chip wait">model wait&nbsp; scikit <b>74</b> · astropy <b>89</b> · sympy <b>78</b> · django@0.6 <b>94</b> · <b>babel 86</b> · <b>fmt 82%</b></div>
+        <div class="chip tool">tools&nbsp; <b>23</b> · <b>9</b> · <b>11</b> · <b>3</b> · <b>babel 8</b> · <b>fmt 13%</b></div>
+        <div class="chip harness">harness&nbsp; <b>3</b> · <b>2</b> · <b>11</b> · <b>4</b> · <b>babel 6</b> · <b>fmt 4.5%</b></div>
       </div>
+      <p class="note">Top row: reproduced superseded_40min campaign (temp-0 era + the django@0.6
+      re-run). Bottom row: the certified SWE_clean campaign (its own featured runs: django run_3,
+      sympy run_1, babel run_1, fmt run_1), figures regenerated from banked data and audited
+      (ALL MATCH) tonight. Cross-campaign panels are shown side by side, never merged into one
+      figure — absolute wall minutes are episode draws (babel spans 37.9–202.1 tool core-s across
+      its four episodes), while the split itself is the reproducible layer.</p>
     </div>
   </section>
 
@@ -791,7 +801,8 @@ BODY = (BODY.replace("__SPLIT__", IMG["split"]).replace("__CPU__", IMG["cpu"])
             .replace("__WX__", IMG["w_x"]).replace("__WXH__", IMG["w_xh"]).replace("__WDUR__", IMG["w_dur"])
             .replace("__MLGRID__", IMG["ml_grid"]).replace("__MLGRIDH__", IMG["ml_gridh"])
             .replace("__MLTLB__", IMG["ml_tl_babel"]).replace("__MLTLF__", IMG["ml_tl_fmt"])
-            .replace("__MLGRID12__", IMG["ml_grid12"]).replace("__GOUOPTL__", IMG["go_uop_tl"]))
+            .replace("__MLGRID12__", IMG["ml_grid12"]).replace("__GOUOPTL__", IMG["go_uop_tl"])
+            .replace("__SPLITML__", IMG["split_ml"]))
 
 HTML = ('<title>Agent CPU profiling — GLM-5.2 SWE-agent</title>\n'
         '<style>' + CSS + '</style>\n' + BODY + '\n<script>' + JS + '</script>\n')

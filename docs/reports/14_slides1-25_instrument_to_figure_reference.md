@@ -41,7 +41,7 @@ same per-window stack as 19–25, plus the ownership+adequacy gate in `attribute
 
 | Deck slides | What the figure shows | Instrument | Layer | Code site |
 |---|---|---|---|---|
-| 1–2 | wall-clock split; CPU work in core-seconds incl. litellm | 10 Hz `cpu.stat` pollers, three cgroup scopes | **exact** (wait = residual) | `run_glm_campaign.sh:226-238`; `plot_glm_results.py:343-430` |
+| 1–2 | wall-clock split; CPU work in core-seconds incl. litellm — since 2026-07-30 the wall-clock slide shows BOTH campaigns' donut rows side by side (superseded_40min + SWE_clean incl. babel/fmt), never merged into one figure | 10 Hz `cpu.stat` pollers, three cgroup scopes | **exact** (wait = residual) | `run_glm_campaign.sh:226-238`; `plot_glm_results.py:343-430` |
 | 3 | orchestration timelines (cores vs time) | same 10 Hz series, no floor/merge/width-floor | **exact** | `plot_glm_results.py:432-471` |
 | 4, 12 | calls, bursts, heavy bursts, burst duration, turns | trajectory + bursts derived from the 10 Hz series | mixed (energy exact, classes/edges heuristic) | `plot_glm_results.py:171-175, 260-270, 509-540`; `cmp_allruns_absolute.py:33-46` |
 | 13 | tool CPU by agent-call class; harness CPU by library | ordinal anchor join; 99 Hz cgroup-scoped `perf record` | heuristic; statistical | `plot_internal_tools.py:33-101`; `run_glm_campaign.sh:279-297` |
