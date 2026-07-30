@@ -243,3 +243,9 @@ https://claude.ai/code/artifact/7a9d155c-11f6-4e97-9d21-f60f677caca9
    move burst counts and durations; the core-seconds inside a burst are the exact `usage_usec`
    delta either way. That separation is why the same locked vocabulary can be reused across
    every campaign without invalidating the amounts.
+
+---
+
+**Method update (2026-07-30, late).** `analyze_l3_windows.py` gained cache **miss-rate**
+metrics (and `cross_task_grid.py` a `GRID_LAYOUT=16` rearranged grid) on the mentor's request —
+additive only; every number this report documents is unchanged. Details: report 11's note.

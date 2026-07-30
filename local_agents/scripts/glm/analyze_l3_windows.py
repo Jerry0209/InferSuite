@@ -182,7 +182,17 @@ def derive(group, d):
         out["L1D_MPKI"] = 1000 * (l2 + l3 + lm) / I
         out["L2_MPKI"] = 1000 * (l3 + lm) / I
         out["LLC_MPKI"] = 1000 * lm / I
-        if loads > 1e4: out["AMAT_cyc"] = (5*l1 + 15*l2 + 50*l3 + 250*lm) / loads
+        if loads > 1e4:
+            out["AMAT_cyc"] = (5*l1 + 15*l2 + 50*l3 + 250*lm) / loads
+            # Miss RATES (per-access %), mentor-requested alongside the MPKI family. Same
+            # retired-load ladder, so each level's rate is misses-beyond / accesses-reaching:
+            # L1D: (l2+l3+lm)/loads · L2: (l3+lm)/(l2+l3+lm) · LLC: lm/(l3+lm).
+            # NOTE: no L1I ACCESS count is banked anywhere (l2_rqsts.all_code_rd counts misses
+            # only), so an L1I miss rate cannot be derived — plots use iCache stall % as the
+            # stated proxy.
+            out["L1D_missrate_pct"] = 100 * (l2 + l3 + lm) / loads
+            if (l2 + l3 + lm) > 1e3: out["L2_missrate_pct"] = 100 * (l3 + lm) / (l2 + l3 + lm)
+            if (l3 + lm) > 1e3:      out["LLC_missrate_pct"] = 100 * lm / (l3 + lm)
     elif group == "mlp":
         pc = g("l1d_pend_miss.pending_cycles")
         if pc > 1e4: out["MLP"] = g("l1d_pend_miss.pending") / pc

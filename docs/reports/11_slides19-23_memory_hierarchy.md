@@ -144,3 +144,17 @@ print(m.value.median(), m.groupby("tag").value.median())   # 14.39 overall; pyte
    one wide metric (medians 9.32/7.91/17.99 %, sympy p75 22.26): the CPython agent process
    reaches memory deeper than most tool windows. Read with care — harness window counts are
    small for scikit (n = 19) and the occupancy caveat applies unchanged.
+
+---
+
+**Method update (2026-07-30, late).** On the mentor's request the cache family gained per-window
+**miss-rate** metrics beside the MPKI family, derived from the same retired-load ladder
+(`cache` group, gate loads > 10⁴): `L1D_missrate_pct` = (l2+l3+lm)/loads,
+`L2_missrate_pct` = (l3+lm)/(l2+l3+lm) [gate ≥10³ L1D misses],
+`LLC_missrate_pct` = lm/(l3+lm) [gate ≥10³ L2 misses]. All 13 task CSVs re-derived
+(existing rows unchanged — the change only appends metrics). **No L1I access count is banked**
+(`l2_rqsts.all_code_rd` counts misses only), so an L1I miss rate cannot be formed; the
+rearranged grids show iCache stall % explicitly labelled as a proxy. New 4×4 grid layout:
+`GRID_LAYOUT=16 cross_task_grid.py` → `cross_task_grid16_{tool,harness}[SUFFIX].png`
+(original 12-panel files untouched). Reading worth keeping: LLC miss *rates* run 8–18 % where
+LLC MPKI is near zero — misses beyond L2 are rare per instruction but not rare per access.

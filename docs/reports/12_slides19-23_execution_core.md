@@ -181,3 +181,9 @@ with 5+ tasks — silently, because every preceding figure (including all of thi
 already been written. The grid now scales with the task count. No figure this report documents
 changes in content; the fix exists so the mentor-requested 5- and 6-task cross-campaign
 variants (`local_agents/cross_campaign/`, report 14) render completely.
+
+---
+
+**Method update (2026-07-30, late).** `analyze_l3_windows.py` gained cache **miss-rate**
+metrics (and `cross_task_grid.py` a `GRID_LAYOUT=16` rearranged grid) on the mentor's request —
+additive only; every number this report documents is unchanged. Details: report 11's note.

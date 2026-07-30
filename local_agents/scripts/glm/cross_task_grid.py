@@ -76,6 +76,33 @@ PANELS = [  # (metric key, panel title)  — mentor's list + the new fe_miss met
     ("uopCache_MPKI", "µop-cache (DSB) MPKI"),
 ]
 
+# Mentor-requested 4x4 rearrangement (2026-07-30): branch family on one row, front-end/L1 on
+# the next, then the cache ladder as MPKI + MISS-RATE pairs. Selected with GRID_LAYOUT=16,
+# written to cross_task_grid16_* — the original 12-panel files are never overwritten.
+# "L1I stall (% cycles)" stands in for an L1I miss rate: no L1I access count is banked
+# (l2_rqsts.all_code_rd counts misses only), stated here and in the figure footer.
+PANELS16 = [
+    ("IPC", "IPC"),
+    ("branch_MPKI", "Branch MPKI (all mispredicts)"),
+    ("branchDir_MPKI", "Branch-direction MPKI (cond.)"),
+    ("BTB_MPKI", "BTB MPKI (BAClears)"),
+    ("DSB_pct", "DSB coverage (%)"),
+    ("uopCache_MPKI", "µop-cache (DSB) MPKI"),
+    ("codeRead_MPKI_L1I", "L1I MPKI (code-read)"),
+    ("L1D_MPKI", "L1D-load MPKI"),
+    ("L2_MPKI", "L2-load MPKI"),
+    ("LLC_MPKI", "LLC MPKI"),
+    ("icache_data_stall_pct", "L1I stall (% cycles) — miss-rate proxy"),
+    ("L1D_missrate_pct", "L1D miss rate (%)"),
+    ("L2_missrate_pct", "L2-load miss rate (%)"),
+    ("LLC_missrate_pct", "LLC miss rate (%)"),
+    ("AMAT_cyc", "AMAT (cycles)"),
+    ("MLP", "MLP"),
+]
+LAYOUT16 = os.environ.get("GRID_LAYOUT") == "16"
+if LAYOUT16:
+    PANELS = PANELS16
+
 for fence in ("tool", "harness"):
     panels = [(m, ttl) for m, ttl in PANELS if any(vals(t, m, fence) for t in TASKS)]
     ncol = 4; nrow = (len(panels) + ncol - 1) // ncol
@@ -109,7 +136,7 @@ for fence in ("tool", "harness"):
         prov(DML, "SWE-bench Multilingual language pilots (ML_multiling)")] if x),
         ha="center", fontsize=8.5, color="#666")
     fig.tight_layout(rect=[0, 0, 1, 0.985])
-    out = f"{OUTD}/plots/cross_task_grid_{fence}{SUFFIX}.png"
+    out = f"{OUTD}/plots/cross_task_grid{'16' if LAYOUT16 else ''}_{fence}{SUFFIX}.png"
     fig.savefig(out, dpi=135, bbox_inches="tight"); plt.close(fig)
     print("wrote", out, f"({len(panels)} panels)")
 

@@ -240,3 +240,9 @@ the documented fmt `pkg/build`↔`compile` window bookkeeping. `cross_task_grid.
 gained per-task roots for the 12-task axis and `TASKS_ONLY`/`GRID_SUFFIX` frozen-subset grids;
 later the same day both registries gained the behavioural-probe task `phpoffice-bT`
 (13-task grid; report 17 §2.4). None of this alters this report's numbers.
+
+---
+
+**Method update (2026-07-30, late).** `analyze_l3_windows.py` gained cache **miss-rate**
+metrics (and `cross_task_grid.py` a `GRID_LAYOUT=16` rearranged grid) on the mentor's request —
+additive only; every number this report documents is unchanged. Details: report 11's note.
