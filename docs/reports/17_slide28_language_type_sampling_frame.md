@@ -120,11 +120,26 @@ co-dominant PHP/T row did not satisfy it under the pre-correction rule.
 episodes. The premise was tested with the strongest available candidates and survived; further
 episodes buy repetition. Override is one flag: `BREAKER=0 ./behavior_campaign.sh`.
 
-**Recovered for free:** phpspreadsheet-3940's episode (217 steps, banked) was skipped for
-profiling by the pre-correction hard-label rule; under co-dominance it credits PHP/T, so it was
-given the gate probe + 11 passes at zero API cost. It is the study's only tool workload where
-the verify loop rivals searching. Note its replay is by far the slowest in the study
-(~31 min/pass vs ~2.5 min for the language pilots) — a 217-step trajectory re-executes in full.
+**Recovered for free — and measured (2026-07-30 evening):** phpspreadsheet-3940's episode
+(217 steps, banked) was skipped by the pre-correction hard-label rule; under co-dominance it
+credits PHP/T and received the gate probe + 11 passes at zero API cost (slowest replay in the
+study, ~31 min/pass — a 217-step trajectory re-executes in full). Result: gate **96.3 %**
+ownership at **888 windows / 1293 Ginstr per pass** (12,933 pooled — second-largest fence
+measured), composition `tests(php)` 96 %. Registered as task `phpoffice-bT`. This gives the
+study its first **within-language controlled pair** (vs php-cs-fixer: same interpreter, same
+mechanism, different workload):
+
+| metric (instr-weighted) | php-cs-fixer (static analysis) | phpspreadsheet (unit suite) |
+|---|---|---|
+| µop-cache MPKI / DSB % | 44.5 / 69.7 | 42.5 / 70.8 |
+| branch-direction MPKI / BTB MPKI | **3.33 / 0.84** | 1.83 / 0.35 |
+| LLC MPKI / DRAM-bound % / MLP | 0.09 / 4.3 / 1.82 | **0.29 / 6.0 / 2.16** |
+| IPC | 1.74 | 2.36 |
+
+Front-end metrics are near-identical (≈5 %) while branch metrics halve and memory reach
+doubles with the workload — instruction-supply pressure tracks the *runtime*, branch and
+memory pressure track the *task*. One pair, single episodes each; a suggestive controlled
+contrast, not a law.
 
 **Three driver defects found by this run** (all fixed, all had cost):
 1. *Hard-label crediting* rejected a 49/47 S/T episode as "not test-dominated". Replaced by

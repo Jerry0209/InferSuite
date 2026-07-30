@@ -237,4 +237,6 @@ elsewhere (rubocop-as-`pkg/build`, esbuild-as-`pkg/build`, `/usr/bin/c++` never 
 path evidence is now an explicit deliberate rule. Counter values are untouched (0-value diffs
 re-derived on all 13 tasks); the five tasks analysed here re-derive with identical tags except
 the documented fmt `pkg/build`↔`compile` window bookkeeping. `cross_task_grid.py` additionally
-gained per-task roots for the 12-task axis and `TASKS_ONLY`/`GRID_SUFFIX` frozen-subset grids.
+gained per-task roots for the 12-task axis and `TASKS_ONLY`/`GRID_SUFFIX` frozen-subset grids;
+later the same day both registries gained the behavioural-probe task `phpoffice-bT`
+(13-task grid; report 17 §2.4). None of this alters this report's numbers.

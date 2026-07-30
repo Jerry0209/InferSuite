@@ -19,12 +19,12 @@ LANG = {"scikit-learn": "Python", "astropy": "Python", "sympy": "Python",
         # of the instance id, which is why several read as an org rather than a project.
         "tokio-rs": "Rust", "jqlang": "C", "gin-gonic": "Go", "google": "Java",
         "rubocop": "Ruby", "briannesbitt": "PHP", "vuejs": "TypeScript",
-        "prometheus": "Go", "php-cs-fixer": "PHP"}
+        "prometheus": "Go", "php-cs-fixer": "PHP", "phpoffice-bT": "PHP"}
 # Display name per task: the raw SHORT is often unreadable on an axis ("google" is gson/Java,
 # "briannesbitt" is carbon/PHP), and t[:6] would truncate it to something worse.
 NAME = {"scikit-learn": "scikit", "tokio-rs": "tokio", "jqlang": "jq", "gin-gonic": "gin",
         "google": "gson", "briannesbitt": "carbon", "vuejs": "vue", "fmtlib": "fmt",
-        "prometheus": "promth", "php-cs-fixer": "cs-fixer"}
+        "prometheus": "promth", "php-cs-fixer": "cs-fixer", "phpoffice-bT": "sheet-T"}
 def tname(t):
     return NAME.get(t, t)[:8]
 # Axis labels use SHORT, never LANG[...][:4] — truncating "JavaScript" yields "Java", which
@@ -35,11 +35,11 @@ def slang(t):
     return SHORT.get(LANG[t], LANG[t])
 ROOT = {"scikit-learn": D, "astropy": D, "sympy": D, "babel": DM, "fmtlib": DM,
         "tokio-rs": DML, "jqlang": DML, "gin-gonic": DML, "google": DML,
-        "rubocop": DML, "briannesbitt": DML, "vuejs": DML, "prometheus": DML, "php-cs-fixer": DML}
+        "rubocop": DML, "briannesbitt": DML, "vuejs": DML, "prometheus": DML, "php-cs-fixer": DML, "phpoffice-bT": DML}
 # Existing tasks first so the established figures keep their column order; pilots append in
 # language order. A task with no banked CSV is skipped, so this list can name work not yet run.
 ORDER = ["scikit-learn", "astropy", "sympy", "babel", "fmtlib",
-         "vuejs", "google", "tokio-rs", "prometheus", "jqlang", "rubocop", "php-cs-fixer"]
+         "vuejs", "google", "tokio-rs", "prometheus", "jqlang", "rubocop", "php-cs-fixer", "phpoffice-bT"]
 TASKS = [t for t in ORDER if os.path.exists(f"{ROOT[t]}/all_windows_{t}.csv")]
 # TASKS_ONLY="a,b,c" restricts the grid; GRID_SUFFIX names the output so a restricted grid can be
 # FROZEN for a deck slide whose prose describes that subset. Added when the 12-task grid silently
@@ -54,7 +54,7 @@ TCOL = {"scikit-learn": "#159f77", "astropy": "#4d9e83", "sympy": "#6b4fa0",
         "babel": "#cf6a1f", "fmtlib": "#b2182b",
         "vuejs": "#e08a1f", "google": "#3d6b1f", "tokio-rs": "#8c4a1f",
         "gin-gonic": "#1f6f8c", "prometheus": "#1f6f8c", "jqlang": "#7a1f5b", "rubocop": "#8c1f3d",
-        "briannesbitt": "#5b4b8a", "php-cs-fixer": "#5b4b8a"}
+        "briannesbitt": "#5b4b8a", "php-cs-fixer": "#5b4b8a", "phpoffice-bT": "#8f86b5"}
 ROWS = {t: list(csv.DictReader(open(f"{ROOT[t]}/all_windows_{t}.csv"))) for t in TASKS}
 
 def vals(task, metric, fence):

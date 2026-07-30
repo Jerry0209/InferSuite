@@ -41,12 +41,13 @@ CAMPAIGN = {"scikit-learn": "superseded_40min", "astropy": "superseded_40min",
             "tokio-rs": "ML_multiling", "jqlang": "ML_multiling", "gin-gonic": "ML_multiling",
             "prometheus": "ML_multiling", "php-cs-fixer": "ML_multiling",
             "google": "ML_multiling", "rubocop": "ML_multiling",
-            "briannesbitt": "ML_multiling", "vuejs": "ML_multiling"}
+            "briannesbitt": "ML_multiling", "vuejs": "ML_multiling", "phpoffice-bT": "ML_multiling"}
 LANG = {"scikit-learn": "Python", "astropy": "Python", "sympy": "Python",
         "babel": "JavaScript", "fmtlib": "C++",
         "tokio-rs": "Rust", "jqlang": "C", "gin-gonic": "Go", "prometheus": "Go",
         "google": "Java", "php-cs-fixer": "PHP",
-        "rubocop": "Ruby", "briannesbitt": "PHP", "vuejs": "TypeScript"}
+        "rubocop": "Ruby", "briannesbitt": "PHP", "vuejs": "TypeScript",
+        "phpoffice-bT": "PHP"}
 TASKS = [t for t in CAMPAIGN
          if os.path.exists(f"{ROOT}/{CAMPAIGN[t]}/data/l3_study/all_windows_{t}.csv")]
 
@@ -195,6 +196,7 @@ PROBE = {"babel": r"\bnode\b|jest|yarn|npm", "fmtlib": r"cc1plus|/c\+\+|\bg\+\+"
          "gin-gonic":    r"\bgo\b|pkg/tool/|/tmp/go-build",
          "prometheus":   r"\bgo\b|pkg/tool/|/tmp/go-build",
          "php-cs-fixer": r"\bphp\b|phpunit|composer|php-cs-fixer",
+         "phpoffice-bT":  r"\bphp\b|phpunit|composer",
          "google":       r"\bjava\b|\bjavac\b|\bmvn\b|maven|surefire|\bgradle",
          "rubocop":      r"\bruby\b|\brspec\b|\brake\b|\bbundle\b",
          "briannesbitt": r"\bphp\b|phpunit|composer",

@@ -47,7 +47,7 @@ same per-window stack as 19–25, plus the ownership+adequacy gate in `attribute
 | 13 | tool CPU by agent-call class; harness CPU by library | ordinal anchor join; 99 Hz cgroup-scoped `perf record` | heuristic; statistical | `plot_internal_tools.py:33-101`; `run_glm_campaign.sh:279-297` |
 | 14–16, 18 | TMA Level 1 and Level 2 per fence | continuous PERF_METRICS census, whole episode | **exact** (hardware slot accounting) | `run_glm_campaign.sh:69, 265-272`; `plot_glm_results.py:303-318` |
 | 19–28 | per-2 s-window metric distributions, tagged by command | windowed zero-mux counter groups + 2 Hz command sampler | counters exact, tags heuristic | `analyze_l3_windows.py` `tag_of`/`_progs` (basename matching since 2026-07-30) |
-| 26 | ownership + adequacy gate per task | 2 Hz argv poll ∩ per-window instructions | heuristic (presence-based; lower bound for short-lived compilers) | `attribute_windows.py` (`probe`) |
+| 26 | ownership + adequacy gate per task | 2 Hz argv poll ∩ per-window instructions | heuristic (presence-based; lower bound for short-lived compilers) | `attribute_windows.py` (`probe`; task registry last extended 2026-07-30 evening with the behavioural-probe task `phpoffice-bT`, report 17 §2.4) |
 | 21 | the boundary rule itself (method audit) | — | — | Report 03 |
 
 ### 2.2 Definitions and constants — where each rule lives

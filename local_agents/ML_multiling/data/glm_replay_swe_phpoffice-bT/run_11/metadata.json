@@ -1,0 +1,23 @@
+{
+ "workload": "swe_replay",
+ "config": "phpoffice-bT",
+ "run": 11,
+ "model": "glm-5.2",
+ "endpoint": "https://api.z.ai/api/paas/v4",
+ "thinking": "enabled",
+ "cpus_measured": "2-11,14-23",
+ "cpus_house": "0-1,12-13",
+ "winsec": 2,
+ "repo_rev": "51a74125",
+ "kernel": "6.17.0-1024-oem",
+ "gorder": "priv",
+ "rotation": "shuffled",
+ "tma_cont": true,
+ "ts_start": 1785438421.8551567,
+ "extra": {
+  "source_run": 1,
+  "traj": "/home/thu/InferSuite/local_agents/ML_multiling/data/glm_swe_phpoffice-bT/run_1/traj/phpoffice__phpspreadsheet-3940/phpoffice__phpspreadsheet-3940.traj",
+  "harness_cg": "measured.slice/glm-rep-phpoffice-bT-r11.scope",
+  "tool_cg": "measured.slice/docker-f2c0d65761dcdc6bf0867b699490d7bf69cb6ff6508219e15aa2c91a6cb197b5.scope"
+ }
+}
