@@ -121,7 +121,8 @@ The dry-run gate (`stage_dryrun`) verifies both: every windowed group reports 10
 
 ## Not part of this campaign
 
-`local_agents/scripts/swe_live_two_view.sh` is a **separate, unused** experiment: SWE-agent
-driven by a locally k3s-served Coder-7B (not GLM-5.2 via the litellm proxy). It has its own
-7-group layout (`fp1/fp2`, `tma1/tma2`, 199 Hz records) and is referenced by nothing in the
-certified or superseded campaigns. Ignore it for the SWE analysis.
+`swe_live_two_view.sh` (formerly at `local_agents/scripts/`, removed to git history
+2026-08-04 with the rest of the pre-GLM local-loop scripts) was a **separate, unused**
+experiment: SWE-agent driven by a locally k3s-served Coder-7B (not GLM-5.2 via the litellm
+proxy). It had its own 7-group layout (`fp1/fp2`, `tma1/tma2`, 199 Hz records) and is
+referenced by nothing in the certified or superseded campaigns.

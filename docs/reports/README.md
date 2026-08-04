@@ -37,3 +37,9 @@ cross-cutting instrument reference spanning the whole deck; 15 explains the cros
 cross-language differences that 09–13 display; 16 is the nine-language expansion and 17 the
 sampling frame that governs the next campaign. File numbers are stable
 identifiers — do not renumber.
+
+**Housekeeping (2026-08-04):** the pre-GLM local-loop experiment's figures
+(`local_agents/plots/`), its held thesis subsection, and the loose pre-GLM capture/chain
+scripts at `local_agents/scripts/` were removed from the working tree (recover from git
+history). No report in this series cites any of them — the series begins with the GLM
+campaigns; `local_agents/README.md` now describes the current tree.
