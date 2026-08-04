@@ -17,3 +17,17 @@ compositions in `../data/l3_study/`.
   live-episode spread is CONFIRMED, the "fmt vs gin" magnitude pair is 9.6× per-pass (not 96×).
 
 Method + verdicts: docs/reports/17_slide28_language_type_sampling_frame.md.
+
+Mentor packet (2026-07-31) — consolidation deliverables, written after the falsification
+probes; sources of truth unchanged (specs/scripts above win on any disagreement):
+
+- `mentor_answer.md`          — layered answer to the instruction: one page, claim–evidence
+  table, technical appendix, pending decisions.
+- `classification_protocol.md`— the two-axis protocol (mechanism vs behaviour), intrinsic-vs-
+  observed rules, confidence semantics, invalidation checklist.
+- `benchmark_comparison.md`   — SWE-bench Multilingual vs Multi-SWE-bench with provenance;
+  snapshot revision; unresolved discrepancies (41-vs-42 repos).
+- `task_inventory.csv`        — per-instance: static features + mechanism class/confidence +
+  behavioural prior + realized label where measured (`behavior_classify.py export`).
+- `behavior_ledger.tsv`       — executed probe outcomes (3 realized-mismatch, 3 no-image
+  false negatives — images verified available afterwards; check since fixed).

@@ -190,11 +190,14 @@ not: absolute minutes/core-seconds (2–3× episode-to-episode) and the specific
 | `audit_plots.py` | same dir | recomputes every displayed number from raw captures → ALL MATCH |
 | `cmdlog.tsv`, `tma_cont.csv`, `cpustat_scope{1,2,3}.tsv`, `scopeN_dso.txt`, `agent.log`, `traj/` | per run dir | the banked evidence every number in this report was read from |
 
-Published Claude artifacts (live slide links; private unless shared):
+Published Claude artifacts (live slide links; private unless shared). **This table is the
+canonical slide-link registry**: every deck/gallery artifact published for this project must
+have a row here (the `study-report` skill's Step 3 enforces it — new slides register the deck
+row's "Covers" column; new artifacts add a row).
 
 | Artifact | Link | Covers |
 |---|---|---|
-| Agent CPU profiling — GLM-5.2 SWE-agent (the deck, **28 slides**) | https://claude.ai/code/artifact/e93ebcb7-015d-4f40-8f83-62fe21777e62 | slides 1–28 (26–28 added 2026-07-30: nine-language axis, composition-vs-magnitude, sampling frame — reports 16/17) |
+| Agent CPU profiling — GLM-5.2 SWE-agent (the deck, **28 slides**) | https://claude.ai/code/artifact/e93ebcb7-015d-4f40-8f83-62fe21777e62 | slides 1–28 (26–28 added 2026-07-30: nine-language axis, composition-vs-magnitude, sampling frame — reports 16/17; since 2026-07-31 the five per-window grid slides show the 4×4 `grid16` layout with cache miss rates, per-slide populations frozen via `_py3`/`_5t`/`_12t`) |
 | Per-window gallery — scikit-learn | https://claude.ai/code/artifact/c12b01c1-7ac7-4f2e-8729-b1c90f5ef63b | slides 19–23 backing detail |
 | Per-window gallery — astropy | https://claude.ai/code/artifact/3b68efd2-f9f0-49ad-b047-20ac27bb3c68 | slides 19–23 backing detail |
 | Per-window gallery — sympy | https://claude.ai/code/artifact/704ab3b2-3b63-4c57-b087-88dcdcf968ff | slides 19–23 backing detail |
@@ -207,6 +210,8 @@ Published Claude artifacts (live slide links; private unless shared):
 | Per-window gallery — rubocop (Ruby) | https://claude.ai/code/artifact/1135e8b0-7ebf-48e9-a839-60da45099c00 | slide 26 backing detail |
 | Per-window gallery — vue (TypeScript) | https://claude.ai/code/artifact/5e03855b-62db-4d1a-9522-145fff53bd2c | slide 26 backing detail |
 | Per-window gallery — php-cs-fixer (PHP) | https://claude.ai/code/artifact/e6a80616-9410-446f-b1d7-fc1eeac751b2 | slide 26 backing detail |
+| Per-window gallery — phpoffice-bT (PHP, behavioural probe) | https://claude.ai/code/artifact/6b5036f4-efc2-4323-8d52-f2a5c15cb47d | slide 28 / report 17 §2.4 backing detail (within-language pair vs php-cs-fixer) |
+| Method slide — multilingual ⟨language, type⟩ frame & mentor packet | https://claude.ai/code/artifact/de1bab60-e7cc-42f5-bd55-299046bceea7 | slide 28 / report 17 + `sampling_frame/` mentor-packet overview: pipeline, per-language counts, both collapse findings, 16-episode action-mix chart, the three packet documents (2026-07-31) |
 
 Related (not a deck): weekly status page —
 https://claude.ai/code/artifact/7a9d155c-11f6-4e97-9d21-f60f677caca9

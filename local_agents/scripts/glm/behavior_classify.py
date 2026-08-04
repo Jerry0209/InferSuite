@@ -25,7 +25,10 @@ co-dominant T episode does supply test-execution behaviour even if S edges it.
 A cell is only credited by a REALIZED label; the static predictor is a prior (5/9-grade
 accuracy on mechanism validation warns against trusting static labels — Report 17 §2.2).
 
-Usage: behavior_classify.py [labels|predict|plan] (default: all three)
+Usage: behavior_classify.py [labels|predict|plan|export] (default: all)
+`export` writes sampling_frame/task_inventory.csv — one self-contained row per instance:
+static features + mechanism class (axis 1, from classifications.json) + behavioural prior
+(axis 2) + realized label where an episode exists. The mentor-packet deliverable.
 """
 import csv, json, os, re, sys, glob, collections
 
@@ -142,15 +145,17 @@ def predict_row(r):
         return "S", f"tiny fix ({pa}+), no traceback/repro to localize from"
     return "M", "no dominant static signal"
 
+ID_OF = {"tokio-rs": "tokio-rs__tokio-6551", "jqlang": "jqlang__jq-2681",
+         "prometheus": "prometheus__prometheus-9248", "google": "google__gson-2061",
+         "rubocop": "rubocop__rubocop-13668", "vuejs": "vuejs__core-11915",
+         "php-cs-fixer": "php-cs-fixer__php-cs-fixer-7523", "babel": "babel__babel-15445",
+         "fmtlib": "fmtlib__fmt-3248", "gin-gonic": "gin-gonic__gin-3741"}
+
 def cmd_predict(realized):
     rows = list(csv.DictReader(open(INV)))
     pred = {r["instance_id"]: predict_row(r) for r in rows}
     # agreement vs realized (banked instances present in the inventory: the 8 ML ones)
-    id_of = {"tokio-rs": "tokio-rs__tokio-6551", "jqlang": "jqlang__jq-2681",
-             "prometheus": "prometheus__prometheus-9248", "google": "google__gson-2061",
-             "rubocop": "rubocop__rubocop-13668", "vuejs": "vuejs__core-11915",
-             "php-cs-fixer": "php-cs-fixer__php-cs-fixer-7523", "babel": "babel__babel-15445",
-             "fmtlib": "fmtlib__fmt-3248", "gin-gonic": "gin-gonic__gin-3741"}
+    id_of = ID_OF
     print("\n=== static prior vs realized (the honesty table) ===")
     agree = n = 0
     for short, iid in id_of.items():
@@ -217,10 +222,76 @@ def cmd_plan(realized, rows, pred):
         print(f"  {p['language']:<12}{p['type']}  {p['instance']:<42} runner-up: {p['runner_up'] or '-'}")
     return plan
 
+# ---- export -----------------------------------------------------------------------------
+CLS = f"{REPO}/local_agents/ML_multiling/sampling_frame/classifications.json"
+LEDGER = f"{REPO}/local_agents/ML_multiling/sampling_frame/behavior_ledger.tsv"
+
+# mechanism is a total function of language (verified over all 300 rows, report 17 insight 1);
+# the raw per-instance `category` strings from classifications.json are kept alongside because
+# their granularity varies by language (some carry tier/X- codes, some the bare class letter)
+MECH_OF = {"C": "B", "C++": "B", "Rust": "A", "Go": "A", "Java": "J",
+           "PHP": "I", "Ruby": "I", "JavaScript": "N", "TypeScript": "N"}
+
+def _mix_str(sh):
+    return " ".join(f"{k}={sh[k]:.0f}%" for k in "SETB")
+
+def _label_of_shares(sh):
+    order = sorted(sh, key=sh.get, reverse=True)
+    return order[0] if (sh[order[0]] - sh[order[1]]) >= MARGIN else "M"
+
+def _probe_realized():
+    """realized mixes of the falsification probes, from the campaign ledger (the authoritative
+    record of what each probe realized). Label recomputed under the same MARGIN rule as
+    episode_label so a 49/47 episode reads M here even though the driver logged its argmax."""
+    out = {}
+    for row in csv.DictReader(open(LEDGER), delimiter="\t"):
+        if row["status"] != "realized-mismatch": continue
+        m = re.search(r"S=(\d+)% E=(\d+)% T=(\d+)% B=(\d+)%", row["detail"])
+        if not m: continue
+        sh = dict(zip("SETB", map(float, m.groups())))
+        out[row["instance"]] = (_label_of_shares(sh), _mix_str(sh), f"probe {row['short']}")
+    return out
+
+def cmd_export(realized, rows, pred):
+    """sampling_frame/task_inventory.csv — the per-instance answer to the mentor's question.
+    prior_confidence is a constant 'low' because that is what the prior measured against
+    realized labels (1/10, report 17); mechanism confidence is per-row from the sweep."""
+    mech = {a["instance_id"]: a
+            for e in json.load(open(CLS)) for a in e["assignments"]}
+    real_by_id = dict(_probe_realized())
+    for short, (_s, _l, lab, c, tot) in ((s, r) for s, r in realized.items() if s in ID_OF):
+        if tot and ID_OF[short] not in real_by_id:      # ledger (probe) rows take precedence
+            sh, _ = _shares(c)
+            real_by_id[ID_OF[short]] = (lab, _mix_str(sh), BANKED[short][0])
+    out_rows = []
+    for r in sorted(rows, key=lambda r: (r["language"], r["instance_id"])):
+        iid = r["instance_id"]; a = mech.get(iid, {})
+        lab, mix, src = real_by_id.get(iid, ("", "", ""))
+        p, why = pred[iid]
+        out_rows.append({
+            "instance_id": iid, "repo": r["repo"], "language": r["language"],
+            "mech_class": MECH_OF[r["language"]], "mech_category": a.get("category", ""),
+            "mech_confidence": a.get("confidence", ""), "mech_secondary": a.get("secondary", ""),
+            "mech_why": a.get("why", ""), "mech_risk": a.get("risk", ""),
+            "behavior_prior": p, "prior_why": why,
+            "prior_confidence": "low (1/10 vs realized labels, report 17)",
+            "realized_label": lab, "realized_mix": mix, "realized_source": src,
+            **{k: r[k] for k in r if k not in ("instance_id", "repo", "language")},
+        })
+    os.makedirs(OUT, exist_ok=True)
+    p = f"{OUT}/task_inventory.csv"
+    with open(p, "w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(out_rows[0])); w.writeheader(); w.writerows(out_rows)
+    n_real = sum(1 for r in out_rows if r["realized_label"])
+    print(f"\nwrote {p}: {len(out_rows)} rows, {n_real} with realized labels "
+          f"(the other measured episodes are the 3 out-of-corpus Python references)")
+
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "all"
     realized = cmd_labels()
-    if what in ("all", "predict", "plan"):
+    if what in ("all", "predict", "plan", "export"):
         rows, pred = cmd_predict(realized)
         if what in ("all", "plan"):
             cmd_plan(realized, rows, pred)
+        if what in ("all", "export"):
+            cmd_export(realized, rows, pred)

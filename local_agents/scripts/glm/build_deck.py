@@ -45,12 +45,16 @@ IMG = {k: uri(v) for k, v in {
     "w_ipc": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/box_scikit-learn_IPC.png",
     "w_l1i": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/box_scikit-learn_codeRead_MPKI_L1I.png",
     "w_tl": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/timeline_scikit-learn_codeRead_MPKI_L1I.png",
-    "w_x": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/cross_task_grid_tool_py3.png",
-    "w_xh": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/cross_task_grid_harness_py3.png",
+    # grid16_*: the mentor's 4x4 rearrangement (2026-07-31) with the cache miss-rate row —
+    # same frozen task population per slide; the original 12-panel files remain on disk.
+    "w_x": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/cross_task_grid16_tool_py3.png",
+    "w_xh": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/cross_task_grid16_harness_py3.png",
     "w_dur": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/cross_task_calldur_py3.png",
-    "ml_grid": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/cross_task_grid_tool_5t.png",
-    "ml_gridh": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/cross_task_grid_harness_5t.png",
-    "ml_grid12": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/cross_task_grid_tool.png",
+    "ml_grid": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/cross_task_grid16_tool_5t.png",
+    "ml_gridh": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/cross_task_grid16_harness_5t.png",
+    # _12t = the slide's frozen 12-workload population; an unsuffixed grid16 run would now
+    # absorb the 13th task (phpoffice-bT) under a caption that says "twelve".
+    "ml_grid12": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/cross_task_grid16_tool_12t.png",
     "go_uop_tl": "/home/thu/InferSuite/local_agents/ML_multiling/data/l3_study/plots/timeline_prometheus_uopCache_MPKI.png",
     "ml_tl_babel": "/home/thu/InferSuite/local_agents/SWE_clean/data/l3_study/plots/timeline_babel_codeRead_MPKI_L1I.png",
     "ml_tl_fmt": "/home/thu/InferSuite/local_agents/SWE_clean/data/l3_study/plots/timeline_fmtlib_codeRead_MPKI_L1I.png",
@@ -594,22 +598,27 @@ BODY = """
       <p class="eyebrow">Per-window study 3 · all three tasks</p>
       <h2>Three tasks, three distribution shapes</h2>
       <p class="lead">The full metric grid, per 2-s window, tool fence (11 dedicated-group replays per
-      task): IPC, branch MPKI, DSB coverage, L1I / L1D / L2 / LLC MPKI, AMAT, MLP — plus three added
-      counters: <b>branch-direction MPKI</b> (conditional mispredicts), <b>BTB MPKI</b> (BAClears),
-      and <b>µop-cache (DSB) MPKI</b>. The box shapes are the finding: scikit-learn is <b>bimodal</b>
+      task), arranged 4×4 by family: <b>branches</b> (IPC · branch / branch-direction / BTB MPKI),
+      <b>instruction supply</b> (DSB coverage · µop-cache · L1I · L1D MPKI), then the <b>cache
+      ladder</b> twice — per-instruction MPKI and per-access <b>miss rates</b> (L2 · LLC MPKI ·
+      L1I-stall proxy · L1D / L2 / LLC miss rate) — closing with AMAT and MLP. The two cache rows
+      answer different questions: MPKI says how often an instruction pays; the miss rate says how
+      often a lookup at that level fails. The box shapes are the finding: scikit-learn is <b>bimodal</b>
       (OpenBLAS pytest at IPC 0.62 vs everything else ≥1.1); astropy is <b>wide</b> (its L1I pain is
       specifically pytest: 23.3 vs 7.9 MPKI); sympy is <b>tight</b> — the interpreter churn IS the
       workload. New-counter readings: µop-cache MPKI 63/54 for astropy/sympy vs ~20 for scikit;
       sympy's branch problem is mostly <i>direction</i> (cond. 3.7 of 5.2 total) with the highest
       BTB pressure (0.6 MPKI).</p>
-      <div class="figcard"><img alt="Cross-task per-window distribution grid, 12 metrics, tool fence" src="__WX__"></div>
+      <div class="figcard"><img alt="Cross-task per-window distribution grid, 16 panels in the 4x4 family layout, tool fence" src="__WX__"></div>
       <div class="take">
         <div class="chip tool">astropy FE-latency children: iCache 6.9% + DSB-switches 6.9% + resteers ≈8% (pytest windows)</div>
         <div class="chip harness">sympy: branch MPKI 5.2, DRAM-bound 4.7% — the only task with visible memory reach</div>
         <div class="chip wait">iTLB-walk ≤0.7% everywhere — instruction-TLB ruled out as an L3 cause</div>
       </div>
-      <p class="note">Data: l3_study/all_windows_{scikit-learn,astropy,sympy}.csv — 12,350 window-metric
-      rows across the three tasks; per-metric box plots and tag timelines regenerate from the CSVs.</p>
+      <p class="note">Data: l3_study/all_windows_{scikit-learn,astropy,sympy}.csv — 15,938 window-metric
+      rows across the three tasks (miss-rate metrics added 2026-07-31); per-metric box plots and tag
+      timelines regenerate from the CSVs. No banked L1I access count exists, so that panel shows the
+      iCache-stall share of cycles, labelled as a proxy on the figure.</p>
     </div>
   </section>
 
