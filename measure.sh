@@ -9,16 +9,17 @@
 #
 # CAMPAIGNS
 #   agents-swe   SWE-agent x GLM-5.2, long-horizon (SWE_clean: django/sympy/babel/fmt)
-#   agents-oc    OpenClaw x GLM-5.2, long-horizon (banks under local_agents/OC_clean/data)
+#   agents-oc    stub: prints how to restore the removed OpenClaw harness, exits 1
 #   plots        regenerate every figure set from banked data (no capture, no spend)
 #   validate     run every validator over banked data
 #
 # REMOVED 2026-08-04 (repo narrowed to SWE-agent profiling; restore from git history):
-#   the `service` campaign (local_service/ + src/ + deploy/) and the banked OC_clean
-#   data/figures. The agents-oc capture path is kept — the OpenClaw harness is still in
-#   tree and a fresh campaign would re-create its data root.
+#   the `service` campaign (local_service/ + src/ + deploy/), the banked OC_clean
+#   data/figures, and the OpenClaw harness (agentic/openclaw). The litellm proxy venv the
+#   SWE campaign needs moved to local_agents/scripts/glm/.venv_litellm (gitignored; exact
+#   pins recorded in local_agents/scripts/glm/litellm_venv_freeze.txt).
 #
-# STAGES (agents-* share these; run in this order the first time)
+# STAGES (run in this order the first time)
 #   preflight    fail-fast environment checks (no spend, no state change)
 #   dryrun       counter-group multiplexing gate
 #   smoke        one short episode end-to-end (agents only)
@@ -28,13 +29,13 @@
 # EXAMPLES
 #   ./measure.sh agents-swe preflight
 #   SWE_INSTANCES="django__django-16560" SWE_DRAIN_S=5400 ./measure.sh agents-swe campaign
-#   OC_TASKS="jigsaw-med" ./measure.sh agents-oc campaign
+#   ./measure.sh plots agents-swe
 #   ./measure.sh plots            # all figure sets
 #   ./measure.sh plots agents-swe # one set
 #
 # Per-campaign env (defaults are the certified values; override on the command line):
 #   agents-swe : SWE_INSTANCES SWE_SUBSET(verified) SWE_TEMP(0.6) SWE_DRAIN_S LOOP_GUARD_N(12) REPEATS(1)
-#   agents-oc  : OC_TASKS OC_DRAIN_S LOOP_GUARD_N(12) REPEATS(1) OC_WATCHER(lineage)
+#   agents-oc  : (stub — harness removed 2026-08-04; env knobs documented in git history)
 set -o pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GLM="$REPO/local_agents/scripts/glm"
@@ -57,12 +58,10 @@ case "$CAMP" in
     exec "$GLM/run_glm_campaign.sh" "$STAGE" "$@" ;;
 
   agents-oc)
-    : "${LOOP_GUARD_N:=12}" "${REPEATS:=1}" "${OC_WATCHER:=lineage}" "${WINSEC:=5}"
-    export LOOP_GUARD_N REPEATS OC_WATCHER OC_TASKS OC_DRAIN_S WINSEC
-    export DATA_ROOT="${DATA_ROOT:-$REPO/local_agents/OC_clean/data}"
-    [ -n "$STAGE" ] || { echo "need a stage (preflight|dryrun|smoke|campaign|validate)"; exit 1; }
-    [ "$STAGE" = campaign ] && set -- oc "$@"
-    exec "$GLM/run_glm_campaign.sh" "$STAGE" "$@" ;;
+    echo "agents-oc: the OpenClaw harness (agentic/openclaw) was removed 2026-08-04 —"
+    echo "restore it from git history (and its external/WildClawBench checkout) before"
+    echo "running an OC capture. The kit code path in run_glm_campaign.sh is unchanged."
+    exit 1 ;;
 
   plots)
     which="${STAGE:-all}"

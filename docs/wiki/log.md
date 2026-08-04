@@ -42,3 +42,14 @@ is recoverable from git history. Marked
 links; `measure.sh`, `scripts/sync_plots.sh`, `CLAUDE.md`, and `docs/PLOTTING_GUIDE.md` were
 updated in the same commit. The OpenClaw *harness* stays in tree (`agentic/openclaw/` — its
 litellm venv is a hard dependency of the SWE campaign kit).
+
+## [2026-08-04] update | litellm venv moved into the SWE kit; OpenClaw harness removed
+
+Follow-up to the narrowing: the litellm proxy venv the SWE campaign launches (python 3.13.13,
+litellm 1.89.4) moved from `agentic/openclaw/.venv_litellm` to
+`local_agents/scripts/glm/.venv_litellm` (same bits — moved, shebangs/activate paths
+rewritten; exact pins committed as `litellm_venv_freeze.txt`; `agents-swe preflight` passes).
+With the dependency gone, `agentic/openclaw/` was removed (its `external/WildClawBench`
+checkout was already absent, so no OC capture was runnable anyway); `measure.sh agents-oc` is
+now a stub that explains the restore path. Method-update notes appended to reports
+01–04/07–09/12.

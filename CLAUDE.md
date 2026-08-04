@@ -7,14 +7,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 InferSuite: a Master's-thesis measurement suite that characterizes what the CPU does during
 **agentic LLM workloads** — agent harness vs tool execution vs model wait — in wall-clock time
 and CPU core-seconds, measured with cgroup fences, zero-mux perf counting, and continuous TMA.
-The active subject is **SWE-agent x GLM-5.2 on SWE-bench (+ Multilingual)**; the OpenClaw
-harness (`agentic/openclaw/`) remains in tree (its `.venv_litellm` also serves the SWE campaign
-proxy, and a fresh `agents-oc` capture would re-create its data root).
+The active subject is **SWE-agent x GLM-5.2 on SWE-bench (+ Multilingual)**.
 
 **REPO NARROWED 2026-08-04** (user decision, this chat): the Service stack (`src/`, `deploy/`,
 `local_service/` incl. `data_iso`, `benchmark_queries/`, `fastapi_runtime_assets/`, root
 `setup.sh`/`deploy.sh`/`Dockerfile.service`), the GPU-side profiling (`agentic/inference/`),
-the banked OpenClaw campaign (`local_agents/OC_clean`), and the dead EKS scripts were removed
+the banked OpenClaw campaign (`local_agents/OC_clean`), the OpenClaw harness
+(`agentic/openclaw`, removed in a follow-up the same day after relocating its litellm venv —
+see below), and the dead EKS scripts were removed
 from the working tree. **Everything is recoverable from git history** (`git log --follow`, or
 `git checkout <pre-removal-commit> -- <path>`); the curated views under `plots/{service,gpu,
 engine,agents/oc_clean}` and the service/GPU study reports stay as frozen snapshots of that
@@ -54,7 +54,6 @@ nothing is reimplemented in it):
 ```bash
 ./measure.sh agents-swe preflight      # env checks, no spend, no state change
 ./measure.sh agents-swe campaign       # SWE-agent x GLM-5.2 capture (SWE_clean)
-./measure.sh agents-oc  campaign       # OpenClaw x GLM-5.2 capture (re-creates OC data root)
 ./measure.sh plots [set]               # regenerate figures from banked data (no capture)
 ./measure.sh validate [set]            # run validators over banked data
 ./measure.sh help
@@ -98,12 +97,15 @@ in this repo or the thesis repo. Do not commit Claude session artifacts (HANDOFF
   plotters (`plot_glm_results.py` — writes `values_dump.json` with every displayed number —
   plus `plot_exploratory.py`, `plot_harness_scaling.py`, `plot_internal_tools.py`, …),
   `audit_plots.py`, `gen_lanes_leaf.sh` (derives per-CPU lanes + leaf tables from records).
-- `agentic/swe_agent/`, `agentic/openclaw/` — the two agent harnesses the campaigns drive
-  (unmodified; all measurement is external to them). `agentic/openclaw/.venv_litellm` is the
-  litellm proxy binary the SWE campaign launches on the housekeeping cores — openclaw is a
-  hard dependency of the SWE kit even though its own banked campaign was removed.
-(The service data path, its deploy stack, and the GPU-side profiling kit were removed
-2026-08-04 — see the narrowing note at the top; git history has them.)
+- `agentic/swe_agent/` — the SWE-agent harness the campaigns drive (unmodified; all
+  measurement is external to it). The litellm proxy the campaign launches on the
+  housekeeping cores lives at `local_agents/scripts/glm/.venv_litellm` (gitignored venv;
+  python 3.13.13, litellm 1.89.4 — exact pins in
+  `local_agents/scripts/glm/litellm_venv_freeze.txt`, rebuild with
+  `python3.13 -m venv .venv_litellm && .venv_litellm/bin/pip install -r litellm_venv_freeze.txt`).
+  It was moved 2026-08-04 out of `agentic/openclaw/` before that harness was removed.
+(The service data path, its deploy stack, the GPU-side profiling kit, and the OpenClaw
+harness were removed 2026-08-04 — see the narrowing note at the top; git history has them.)
 
 **Agent measurement design** (the part that takes longest to reconstruct from code alone):
 - **Fences are cgroups.** SWE-agent: a Python harness process on the host (measured slice);

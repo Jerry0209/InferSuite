@@ -454,7 +454,7 @@ start_proxy(){
   export GLM_API_KEY="$(tr -d '[:space:]' < "$KEYFILE")"
   PROXY_UNIT="glm-proxy-$$"
   systemd-run --user --scope --unit="$PROXY_UNIT" --collect -- \
-    taskset -c "$CPUS_HOUSE" "$REPO/agentic/openclaw/.venv_litellm/bin/litellm" \
+    taskset -c "$CPUS_HOUSE" "$KIT/.venv_litellm/bin/litellm" \
     --config "$KIT/litellm_glm.yaml" --port "$PROXY_PORT" > "$KIT/proxy.log" 2>&1 &
   local i; for i in $(seq 1 30); do
     curl -sf "localhost:$PROXY_PORT/health/liveliness" >/dev/null 2>&1 && break; sleep 2
@@ -679,7 +679,9 @@ stage_preflight(){
   curl -s --max-time 20 -H "Authorization: Bearer $K" "$GLM_ENDPOINT/models" | grep -q "\"$MODEL_ID\"" \
     || { log "FAIL: $MODEL_ID not in model list"; fail=1; }
   docker info >/dev/null 2>&1 || { log "FAIL: docker"; fail=1; }
-  [ -x "$REPO/agentic/openclaw/.venv_litellm/bin/litellm" ] || { log "FAIL: litellm venv"; fail=1; }
+  # litellm proxy venv: moved 2026-08-04 from agentic/openclaw/.venv_litellm into the kit
+  # (pins recorded in litellm_venv_freeze.txt; python 3.13.13, litellm 1.89.4)
+  [ -x "$KIT/.venv_litellm/bin/litellm" ] || { log "FAIL: litellm venv ($KIT/.venv_litellm)"; fail=1; }
   [ -d "$REPO/agentic/swe_agent/.venv" ] || { log "FAIL: swe venv"; fail=1; }
   pgrep -x perf >/dev/null && { log "FAIL: stale perf running"; fail=1; }
   local free=$(df --output=avail -m "$DATA" | tail -1)

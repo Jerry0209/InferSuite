@@ -134,3 +134,8 @@ campaign dispatch was removed when the repo was narrowed to SWE-agent profiling 
 stack, GPU-side kit, banked OpenClaw campaign, and EKS scripts left the working tree; all are
 in git history). The `agents-swe` path this study used is unchanged — nothing in this study's
 capture, analysis, or reproduction recipe is affected.
+
+**Method update (2026-08-04, follow-up).** `measure.sh` changed again: `agents-oc` is now a
+stub that explains the OpenClaw harness removal (the harness left the tree after its litellm
+venv — which the SWE campaign shares — moved into the SWE kit). The `agents-swe` path this
+study used is unchanged.

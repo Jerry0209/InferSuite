@@ -185,3 +185,9 @@ cpuset-migration drain), and episode liveness keys on the highest `STEP N` seen 
 literal "STEP 2" banner (which SWE-agent does not always emit). Evidence and rationale:
 report 16 §2.2. The method as described in this report is what was in force when this study's
 data was captured.
+
+**Method update (2026-08-04, litellm venv relocation).** `run_glm_campaign.sh` changed after
+this report: the litellm proxy is now launched from `local_agents/scripts/glm/.venv_litellm`
+(the identical venv, moved out of the removed `agentic/openclaw/` tree; exact pins recorded in
+`litellm_venv_freeze.txt`, verified by preflight). The proxy's role, cgroup fencing, and CPU
+placement are byte-for-byte unchanged — nothing in this study's data or analysis is affected.

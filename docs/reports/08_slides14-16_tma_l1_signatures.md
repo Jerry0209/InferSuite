@@ -148,3 +148,9 @@ with 5+ tasks — silently, because every preceding figure (including all of thi
 already been written. The grid now scales with the task count. No figure this report documents
 changes in content; the fix exists so the mentor-requested 5- and 6-task cross-campaign
 variants (`local_agents/cross_campaign/`, report 14) render completely.
+
+**Method update (2026-08-04, litellm venv relocation).** `run_glm_campaign.sh` changed after
+this report: the litellm proxy is now launched from `local_agents/scripts/glm/.venv_litellm`
+(the identical venv, moved out of the removed `agentic/openclaw/` tree; exact pins recorded in
+`litellm_venv_freeze.txt`, verified by preflight). The proxy's role, cgroup fencing, and CPU
+placement are byte-for-byte unchanged — nothing in this study's data or analysis is affected.
