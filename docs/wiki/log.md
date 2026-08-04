@@ -30,3 +30,15 @@ Compiled six knowledge pages from `CLAUDE.md`, `docs/handwritten_notes/analysis.
 [median run never pooled](decisions/median-run-not-pooled.md),
 [perf & TMA conventions](profiling/perf-tma-conventions.md), and
 [isolation & hardening](operations/isolation-hardening.md). Registered all in the index.
+
+## [2026-08-04] update | Repo narrowed to SWE-agent profiling
+
+At the user's request the service stack (`src/`, `deploy/`, `local_service/` incl. `data_iso`,
+`benchmark_queries/`, `fastapi_runtime_assets/`, root deploy scripts), the GPU-side kit
+(`agentic/inference/`), the banked OpenClaw campaign (`local_agents/OC_clean`), and the dead
+EKS scripts were removed from the working tree — all fully committed beforehand, so every path
+is recoverable from git history. Marked
+[service data path](architecture/service-data-path.md) Historical and updated its source
+links; `measure.sh`, `scripts/sync_plots.sh`, `CLAUDE.md`, and `docs/PLOTTING_GUIDE.md` were
+updated in the same commit. The OpenClaw *harness* stays in tree (`agentic/openclaw/` — its
+litellm venv is a hard dependency of the SWE campaign kit).

@@ -32,8 +32,6 @@ Each campaign banks data next to its kit, with figures alongside:
 | campaign | data | figures | spec |
 |---|---|---|---|
 | SWE-agent (certified) | `local_agents/SWE_clean/data/` | `local_agents/SWE_clean/plots/` | `local_agents/SWE_clean/plot_spec.json` |
-| OpenClaw (certified) | `local_agents/OC_clean/data/` | `local_agents/OC_clean/plots/` | `local_agents/OC_clean/plot_spec.json` |
-| Service (isolated k3s) | `local_service/data_iso/` | `local_service/data_iso/plots_iso/` | — |
 | Multilingual pilots | `local_agents/ML_multiling/data/` | per-task galleries + grids | — |
 | Reproduced Python tasks | `local_agents/superseded_40min/data/` | `local_agents/superseded_40min/plots/` | — |
 | Cross-campaign variants | `local_agents/cross_campaign/data` (symlinks) | `local_agents/cross_campaign/plots_*/` | `spec_*.json` per variant |
@@ -65,8 +63,11 @@ PLOT_SPEC=local_agents/SWE_clean/plot_spec.json $PY local_agents/scripts/glm/plo
 PLOT_SPEC=local_agents/SWE_clean/plot_spec.json $PY local_agents/scripts/glm/audit_plots.py   # must say ALL MATCH
 $PY local_agents/scripts/glm/plot_exploratory.py        # exploratory set (plots*/extra/)
 $PY local_agents/scripts/glm/plot_harness_scaling.py    # cross-campaign turns-scaling figure
-$PY local_service/scripts/iso/plot_service_exploratory.py
 ```
+
+(The OpenClaw campaign, the service campaign, and the GPU-side kit were removed from the tree
+on 2026-08-04 — repo narrowed to SWE-agent profiling; everything is in git history, and their
+synced figures remain frozen under `plots/{agents/oc_clean,service,gpu,engine}`.)
 
 ## 3. The per-window distribution family (l3_study)
 

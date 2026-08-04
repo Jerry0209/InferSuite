@@ -3,9 +3,14 @@
 | Field | Value |
 |---|---|
 | Owner | LLM maintained, human reviewed |
-| Status | Implemented |
-| Last updated | 2026-07-29 |
-| Sources | [CLAUDE.md](../../../CLAUDE.md), [src/service/](../../../src/service), [deploy/](../../../deploy) |
+| Status | Historical (source tree removed 2026-08-04) |
+| Last updated | 2026-08-04 |
+| Sources | [CLAUDE.md](../../../CLAUDE.md), `src/service/` and `deploy/` (removed from the working tree 2026-08-04 — repo narrowed to SWE-agent profiling; recover via git history, e.g. `git checkout <pre-removal-commit> -- src deploy`) |
+
+> **Note (2026-08-04):** the service stack this page describes (`src/`, `deploy/`,
+> `local_service/` incl. the `data_iso` campaign data, `benchmark_queries/`,
+> `fastapi_runtime_assets/`) was removed from the working tree at the user's request. This
+> page is kept as the architectural record; every path below now refers to git history.
 
 ## Purpose
 

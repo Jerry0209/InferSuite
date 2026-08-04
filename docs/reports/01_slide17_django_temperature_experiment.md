@@ -128,3 +128,9 @@ auditing (`"temperature": 0.6`).
 interpreter `$PY` now resolves to the `infersuite-full` conda python (matplotlib/numpy left the
 system interpreter). Nothing in this study's capture or analysis is affected; only the
 interpreter a reproducer invokes. See report 16 §2.2 and CLAUDE.md's updated convention.
+
+**Method update (2026-08-04).** `measure.sh` changed again after this report: the `service`
+campaign dispatch was removed when the repo was narrowed to SWE-agent profiling (the service
+stack, GPU-side kit, banked OpenClaw campaign, and EKS scripts left the working tree; all are
+in git history). The `agents-swe` path this study used is unchanged — nothing in this study's
+capture, analysis, or reproduction recipe is affected.

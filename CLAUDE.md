@@ -4,25 +4,35 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-InferSuite: a Master's-thesis measurement suite that characterizes what the **CPU does DURING
-LLM inference** (the vLLM serving engine) **vs OUTSIDE inference** (RAG retrieval, semantic-cache
-lookup, agent tool execution), in wall-clock time and CPU core-seconds. Three parts:
+InferSuite: a Master's-thesis measurement suite that characterizes what the CPU does during
+**agentic LLM workloads** — agent harness vs tool execution vs model wait — in wall-clock time
+and CPU core-seconds, measured with cgroup fences, zero-mux perf counting, and continuous TMA.
+The active subject is **SWE-agent x GLM-5.2 on SWE-bench (+ Multilingual)**; the OpenClaw
+harness (`agentic/openclaw/`) remains in tree (its `.venv_litellm` also serves the SWE campaign
+proxy, and a fresh `agents-oc` capture would re-create its data root).
 
-1. **The Service** — deployable RAG + semantic-cache + vLLM chatbot on Kubernetes (`src/service/`, `deploy/`).
-2. **The Benchmark Suite** — load generator + CPU (perf/TMA) and GPU (ncu) profiling harness.
-3. **The Agentic Workloads** — SWE-agent on SWE-bench and OpenClaw on WildClawBench (`agentic/`).
+**REPO NARROWED 2026-08-04** (user decision, this chat): the Service stack (`src/`, `deploy/`,
+`local_service/` incl. `data_iso`, `benchmark_queries/`, `fastapi_runtime_assets/`, root
+`setup.sh`/`deploy.sh`/`Dockerfile.service`), the GPU-side profiling (`agentic/inference/`),
+the banked OpenClaw campaign (`local_agents/OC_clean`), and the dead EKS scripts were removed
+from the working tree. **Everything is recoverable from git history** (`git log --follow`, or
+`git checkout <pre-removal-commit> -- <path>`); the curated views under `plots/{service,gpu,
+engine,agents/oc_clean}` and the service/GPU study reports stay as frozen snapshots of that
+work. Do not resurrect the removed trees without the user asking.
 
-**THESIS SCOPE:** the thesis uses ONLY the isolated campaigns — `local_service/data_iso`
-(36-cell k3s service run) and the hardened agent campaigns `local_agents/{SWE_clean,OC_clean}`
-(GLM-5.2 under nohz_full boot, ISO-PROOF gate, shuffled zero-mux rotation, continuous TMA).
-The superseded soft-isolated agent campaigns live at
-`archive/glm_softiso_long_campaigns/{SWE_long,OC_long}` (still read by the cross-campaign
-harness-scaling figure). Older H100 / EKS / exploratory artifacts live in `archive/` — do not
-resurrect them into the main tree. The thesis itself is a separate repo at
-`~/thesis/InferSuite_thesis` (LaTeX; approved figures are copied into its `figure/swe_clean`,
-`figure/oc_clean`, `figure/service_iso` trees). The AWS account from the EKS era has been fully
-torn down. If `HANDOFF.md` exists at the repo root it is the current session-state document —
-read it first when resuming thesis work (it is gitignored; never commit it).
+**THESIS SCOPE:** the thesis uses ONLY the isolated campaigns — the hardened agent campaign
+`local_agents/SWE_clean` (GLM-5.2 under nohz_full boot, ISO-PROOF gate, shuffled zero-mux
+rotation, continuous TMA), plus the multilingual per-window extension in
+`local_agents/ML_multiling` and the reproduced Python tasks in `local_agents/superseded_40min`
+(both gitignored data — irreplaceable, never delete). The superseded soft-isolated campaigns
+live at `archive/glm_softiso_long_campaigns/{SWE_long,OC_long}` (still read by the
+cross-campaign harness-scaling figure). Older H100 / EKS / exploratory artifacts live in
+`archive/` — do not resurrect them into the main tree. The thesis itself is a separate repo at
+`~/thesis/InferSuite_thesis` (LaTeX; approved figures are copied into its `figure/` trees; its
+`figure/oc_clean` and `figure/service_iso` trees predate the 2026-08-04 narrowing). The AWS
+account from the EKS era has been fully torn down. If `HANDOFF.md` exists at the repo root it
+is the current session-state document — read it first when resuming thesis work (it is
+gitignored; never commit it).
 
 ## Knowledge wiki
 
@@ -44,8 +54,7 @@ nothing is reimplemented in it):
 ```bash
 ./measure.sh agents-swe preflight      # env checks, no spend, no state change
 ./measure.sh agents-swe campaign       # SWE-agent x GLM-5.2 capture (SWE_clean)
-./measure.sh agents-oc  campaign       # OpenClaw x GLM-5.2 capture (OC_clean)
-./measure.sh service    campaign       # local k3s isolated service campaign
+./measure.sh agents-oc  campaign       # OpenClaw x GLM-5.2 capture (re-creates OC data root)
 ./measure.sh plots [set]               # regenerate figures from banked data (no capture)
 ./measure.sh validate [set]            # run validators over banked data
 ./measure.sh help
@@ -53,8 +62,8 @@ nothing is reimplemented in it):
 
 Stages run in order the first time: `preflight → dryrun → smoke → campaign → validate`.
 Per-campaign knobs are env vars with certified defaults, e.g.
-`SWE_INSTANCES=… SWE_DRAIN_S=… ./measure.sh agents-swe campaign`, `OC_TASKS=…`,
-`TIERS=… REC_SEC=…` for service. `SWE_TEMP` defaults to 0.6 — temp 0.0 makes agents
+`SWE_INSTANCES=… SWE_DRAIN_S=… ./measure.sh agents-swe campaign`, `OC_TASKS=…`.
+`SWE_TEMP` defaults to 0.6 — temp 0.0 makes agents
 degenerate (truncated narration, quits after 1–2 turns); never run agent campaigns greedy.
 The GLM API key lives at `~/.glm_key` — never print or echo it.
 
@@ -64,15 +73,6 @@ Figure-vs-data audit and the exploratory figure sets (not covered by `measure.sh
 PLOT_SPEC=local_agents/SWE_clean/plot_spec.json python3 local_agents/scripts/glm/audit_plots.py
 PLOT_SPEC=local_agents/SWE_clean/plot_spec.json python3 local_agents/scripts/glm/plot_exploratory.py
 python3 local_agents/scripts/glm/plot_harness_scaling.py       # cross-campaign turns^~2.7 law
-python3 local_service/scripts/iso/plot_service_exploratory.py  # service extra set
-```
-
-Deploying the service (two scripts, one config file):
-
-```bash
-cp deploy/config.env.example deploy/config.env   # cluster target, registry, model
-./setup.sh && ./deploy.sh
-python3 scripts/chat_cli.py --show-debug         # talk to the deployed service
 ```
 
 Optional boot-time isolation before a campaign: `sudo scripts/harden_isolation.sh --on` + reboot
@@ -81,8 +81,8 @@ thread on one core; the script's nohz_full+rcu_nocbs mode is the correct one. Ru
 (cpuset split, governor, no-turbo) is applied, verified by the ISO-PROOF gate, and restored by
 the kits automatically. Never reboot or apply GRUB changes without explicit user confirmation.
 
-There is no test suite or linter; validation is the campaign validators
-(`local_agents/scripts/glm/validate_glm_agents.py`, `local_service/scripts/iso/validate_service.py`)
+There is no test suite or linter; validation is the campaign validator
+(`local_agents/scripts/glm/validate_glm_agents.py`)
 plus the figure audit (`audit_plots.py` independently recomputes every plotted number from raw
 data and must report ALL MATCH before figures are trusted).
 
@@ -91,14 +91,6 @@ in this repo or the thesis repo. Do not commit Claude session artifacts (HANDOFF
 
 ## Architecture
 
-**Service data path** (`src/service/`): FastAPI orchestrator (`orchestrator/chat.py`, routes in
-`api/`) → exact cache (Valkey) / semantic cache (`cache/`: BGE embed → Milvus → MongoDB) → RAG
-(`rag/`: BGE embed → Milvus → SeaweedFS chunk store, per-tenant routing) → llm-d gateway → vLLM
-(`clients/vllm_client.py`). Embeddings (`embeddings/bge.py`, bge-base-en-v1.5) run on the CPU;
-generation model is set in `deploy/config.env`. Deploy targets: managed cloud cluster or
-single-machine k3s/minikube. Kustomize bases in `deploy/k8s-*`; vendored llm-d/vLLM Helm charts
-in `deploy/llmd-local/`; only the FastAPI image is built here (`Dockerfile.service`).
-
 **Campaign kits** (the code `measure.sh` dispatches to):
 - `local_agents/scripts/glm/` — GLM-5.2 agent campaigns: `run_glm_campaign.sh` (staged runner
   for SWE, OC, and deterministic replays: isolation shield + ISO-PROOF gate, capture stack,
@@ -106,13 +98,12 @@ in `deploy/llmd-local/`; only the FastAPI image is built here (`Dockerfile.servi
   plotters (`plot_glm_results.py` — writes `values_dump.json` with every displayed number —
   plus `plot_exploratory.py`, `plot_harness_scaling.py`, `plot_internal_tools.py`, …),
   `audit_plots.py`, `gen_lanes_leaf.sh` (derives per-CPU lanes + leaf tables from records).
-- `local_service/scripts/iso/` — isolated service campaign: `run_service_campaign.sh`,
-  `validate_service.py`, `plot_service_iso.py`, `plot_service_exploratory.py`.
 - `agentic/swe_agent/`, `agentic/openclaw/` — the two agent harnesses the campaigns drive
-  (unmodified; all measurement is external to them).
-- `agentic/inference/` — local GPU profiling (ncu roofline / GPU-TMA re-binned into Intel-style
-  buckets from warp-scheduler issue slots) and the phantom-CPU spin-vs-block experiment
-  (`cudasync/`, `serve_sync.sh`).
+  (unmodified; all measurement is external to them). `agentic/openclaw/.venv_litellm` is the
+  litellm proxy binary the SWE campaign launches on the housekeeping cores — openclaw is a
+  hard dependency of the SWE kit even though its own banked campaign was removed.
+(The service data path, its deploy stack, and the GPU-side profiling kit were removed
+2026-08-04 — see the narrowing note at the top; git history has them.)
 
 **Agent measurement design** (the part that takes longest to reconstruct from code alone):
 - **Fences are cgroups.** SWE-agent: a Python harness process on the host (measured slice);
@@ -138,9 +129,9 @@ in `deploy/llmd-local/`; only the FastAPI image is built here (`Dockerfile.servi
   concurrency, silent on distinct cores (the per-CPU lanes data answers that).
 
 **Data and figures**: each campaign banks data next to its kit
-(`local_agents/SWE_clean/data`, `local_agents/OC_clean/data`, `local_service/data_iso/`), with
-figures alongside (`plots/`, `plots_iso/`, exploratory sets under `plots*/extra/`, plus a
-`plot_spec.json` per agent campaign naming the featured runs). Top-level `plots/` and `results/`
+(`local_agents/SWE_clean/data`, `local_agents/ML_multiling/data`,
+`local_agents/superseded_40min/data`), with figures alongside (`plots/`, exploratory sets under
+`plots*/extra/`, plus a `plot_spec.json` per agent campaign naming the featured runs). Top-level `plots/` and `results/`
 are curated *views* synced from the source locations by `scripts/sync_plots.sh` — never edit
 figures there; regenerate at the source and re-sync. Each figure set has a MANIFEST documenting
 definitions. Pipeline: plot_spec → plotters → values_dump.json → audit_plots (ALL MATCH) →
