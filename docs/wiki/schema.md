@@ -28,7 +28,7 @@ profiling conventions, operations — that today is trapped in the long `CLAUDE.
 |---|---|---|---|
 | Raw sources | `docs/raw/` | Human curated | Immutable after ingestion |
 | Wiki | `docs/wiki/` | LLM maintained | Updated whenever knowledge changes |
-| Outputs | `docs/reports/`, top-level `plots/` & `results/` | Generated | Rebuildable from data + wiki |
+| Outputs | `docs/reports/`, top-level `plots/` | Generated | Rebuildable from data + wiki |
 
 Raw sources are ground truth. A source may be moved into `docs/raw/`, but its contents must never
 be reformatted, corrected, or summarized in place — corrections and interpretations belong in the

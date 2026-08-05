@@ -213,8 +213,10 @@ row's "Covers" column; new artifacts add a row).
 | Per-window gallery — phpoffice-bT (PHP, behavioural probe) | https://claude.ai/code/artifact/6b5036f4-efc2-4323-8d52-f2a5c15cb47d | slide 28 / report 17 §2.4 backing detail (within-language pair vs php-cs-fixer) |
 | Method slide — multilingual ⟨language, type⟩ frame & mentor packet | https://claude.ai/code/artifact/de1bab60-e7cc-42f5-bd55-299046bceea7 | slide 28 / report 17 + `sampling_frame/` mentor-packet overview: pipeline, per-language counts, both collapse findings, 16-episode action-mix chart, the three packet documents (2026-07-31) |
 
-Related (not a deck): weekly status page —
-https://claude.ai/code/artifact/7a9d155c-11f6-4e97-9d21-f60f677caca9
+Related (not the results deck): weekly status pages —
+Jul 21–28: https://claude.ai/code/artifact/7a9d155c-11f6-4e97-9d21-f60f677caca9 ·
+Jul 21–Aug 4 (biweekly; mentor action items P0–P2 + harness-window-tagging explainer):
+https://claude.ai/code/artifact/d84a326e-090b-4566-a46b-913058df9411 (2026-08-04)
 
 ## 3. Key insights (most → least important)
 

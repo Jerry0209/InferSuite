@@ -1,35 +1,15 @@
 # Figure gallery (curated view)
 
-All figures in one tree, organized **domain → setup → tier/bench**. This directory is a *view*:
-never edit here — regenerate at the source and re-run `scripts/sync_plots.sh`.
+This directory is a *view*: never edit figures here — regenerate at the source and re-run
+`scripts/sync_plots.sh`.
 
-**THESIS SETS (live, resynced):** `agents/swe_long/` (← `local_agents/SWE_long/plots/`),
-`agents/oc_long/` (← `local_agents/OC_long/plots/`), `service/iso/` (← `local_service/plots_iso/`),
-plus `engine/local/` + `gpu/local_a2000/` (← `agentic/inference/plots/`). Each live set carries
-its own MANIFEST at the source.
+**Live set (the only one):** `agents/swe_clean/` ← `local_agents/SWE_clean/plots/` — the
+hardened SWE-agent × GLM-5.2 campaign on SWE-bench (Xeon w5-3425 workstation, nohz_full boot
+isolation, ISO-PROOF gate, zero-mux windowed counters, continuous TMA). The MANIFEST at the
+source documents every figure; `plot_spec.json` there names the featured runs.
 
-**Everything else below is a FROZEN legacy snapshot** (h100/, eks/, local_api/, service/local
-tok-trees, gpu/h100, gpu/l40s): sources archived 2026-07-12 under `archive/`; kept for browsing,
-no longer resynced.
-
-## Setups (what ran where)
-
-| setup | machine | CPU measurement | model |
-|---|---|---|---|
-| `local` | workstation (Xeon w5-3425 bare metal + RTX A2000) | full TMA + perf record | self-served Qwen2.5-7B-AWQ (vLLM/k3s) |
-| `local_api` | workstation CPU only | full TMA + perf record | commercial frontier LLM via API (no local serving) |
-| `h100` | rented H100 PCIe node (KVM guest) | portable suite + perf record (no TMA) | self-hosted Qwen2.5 32B (Coder/Instruct) |
-| `eks` | EKS cluster (c7i.metal CPU node + p5 H100 GPU node) | TMA on CPU pods; GPU node has no PMU | Qwen2.5-Instruct behind llm-d |
-| `l40s` | L40S cloud box | — (GPU ncu study) | Coder-32B-AWQ |
-
-## Layout
-
-```
-service/  local/{tok64,tok192,tok320,idle_control}  + timing_*   (12-cell grid, TMA L1+L2, attribution)
-          h100/                                                   (single-node k3s @32B, attribution + signature)
-          eks/{cross_tier,tok64,tok192,tok320}                    (deployed-cluster benchmark)
-agents/   local_api/                                              (cross-workload figures + tool software view)
-          local/                                                  (self-served 7B during-inference, per agent)
-engine/   local/                                                  (during-inference TMA/donut/signature + phantom)
-gpu/      local_a2000/  h100/  l40s/                              (ncu top-downs per GPU)
-```
+**History:** until 2026-08-05 this tree also carried frozen snapshots of the retired
+service/GPU/engine/OpenClaw studies (`service/`, `gpu/`, `engine/`,
+`agents/{oc_clean,h100,local,local_api}`), and a sibling `results/` tree held a symlink
+data-view. All were deleted in the SWE-narrowing cleanup after verifying them on GitHub —
+recover any of them with `git checkout 8d87e0ee -- <path>`.

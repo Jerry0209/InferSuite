@@ -52,7 +52,7 @@ partition so validator gate **E11** can bound unfenced kernel work.
 plot_spec.json           (names the featured runs per campaign)
   -> plotters            (plot_glm_results.py -> values_dump.json: every displayed number)
   -> audit_plots.py      (independently recomputes each plotted number from raw; must say ALL MATCH)
-  -> sync_plots.sh       (curated top-level plots/ & results/ views)
+  -> sync_plots.sh       (curated top-level plots/ view)
   -> (only after chat approval) thesis figure/ tree
 ```
 

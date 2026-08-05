@@ -16,9 +16,13 @@ the banked OpenClaw campaign (`local_agents/OC_clean`), the OpenClaw harness
 (`agentic/openclaw`, removed in a follow-up the same day after relocating its litellm venv —
 see below), and the dead EKS scripts were removed
 from the working tree. **Everything is recoverable from git history** (`git log --follow`, or
-`git checkout <pre-removal-commit> -- <path>`); the curated views under `plots/{service,gpu,
-engine,agents/oc_clean}` and the service/GPU study reports stay as frozen snapshots of that
-work. Do not resurrect the removed trees without the user asking.
+`git checkout <pre-removal-commit> -- <path>`); the service/GPU study reports stay as frozen
+snapshots of that work. A follow-up cleanup 2026-08-05 also deleted the frozen figure views
+(`plots/{service,gpu,engine}`, `plots/agents/{oc_clean,h100,local,local_api}`), the dead
+`results/` symlink tree, and the service-era `scripts/` (all verified on GitHub @ 8d87e0ee
+first); `plots/` now holds only the live `agents/swe_clean` view and `scripts/` keeps only
+`harden_isolation.sh`, `sync_plots.sh`, `draw_agent_pipeline.py`. Do not resurrect the removed
+trees without the user asking.
 
 **THESIS SCOPE:** the thesis uses ONLY the isolated campaigns — the hardened agent campaign
 `local_agents/SWE_clean` (GLM-5.2 under nohz_full boot, ISO-PROOF gate, shuffled zero-mux
@@ -133,9 +137,10 @@ harness were removed 2026-08-04 — see the narrowing note at the top; git histo
 **Data and figures**: each campaign banks data next to its kit
 (`local_agents/SWE_clean/data`, `local_agents/ML_multiling/data`,
 `local_agents/superseded_40min/data`), with figures alongside (`plots/`, exploratory sets under
-`plots*/extra/`, plus a `plot_spec.json` per agent campaign naming the featured runs). Top-level `plots/` and `results/`
-are curated *views* synced from the source locations by `scripts/sync_plots.sh` — never edit
-figures there; regenerate at the source and re-sync. Each figure set has a MANIFEST documenting
+`plots*/extra/`, plus a `plot_spec.json` per agent campaign naming the featured runs). Top-level
+`plots/` is a curated *view* synced from the source by `scripts/sync_plots.sh` — never edit
+figures there; regenerate at the source and re-sync (the `results/` data view was deleted
+2026-08-05). Each figure set has a MANIFEST documenting
 definitions. Pipeline: plot_spec → plotters → values_dump.json → audit_plots (ALL MATCH) →
 sync_plots → (only after approval in chat) copy into the thesis repo's `figure/` tree.
 
