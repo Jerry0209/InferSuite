@@ -3,7 +3,7 @@
 Produced by a multi-agent workflow (14 agents: adversarial critique → operational taxonomy →
 per-language classification of all 300 instances → validation against the 12 episodes with
 measured tool-fence compositions → sampling plan). Inputs: `../data/multiling_inventory.csv`
-(static features; extractor `local_agents/scripts/glm/multiling_inventory.py`) plus the banked
+(static features; extractor `local_agents/kit/campaign/multiling_inventory.py`) plus the banked
 compositions in `../data/l3_study/`.
 
 - `taxonomy_spec.json`   — categories (B/A/J/I/N + Y placeholder), deterministic decision

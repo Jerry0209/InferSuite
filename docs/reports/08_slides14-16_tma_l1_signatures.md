@@ -48,7 +48,7 @@ chaos that wrecks absolute comparisons.
   metrics (windowed GP groups — different counter hardware, different sampling discipline)
   agree per fence: scikit tool = backend-bound with IPC 0.64–0.69 / DSB 82–84 % / L1I proxy
   at the floor (1.1–1.6); astropy+sympy tools = frontend-bound with L1I proxy 19–31.
-- **All-runs figure diagnostics**: `cmp_tma_allruns.py` marks loop episodes (⟳) and missing
+- **All-runs figure diagnostics**: `cmp_allruns.py --view tma` marks loop episodes (⟳) and missing
   data (—) on the bars, and its loop set is written into the script — the reproducibility
   claim is scoped to clean runs of the same task (plus the harness fence everywhere).
 - **Interpretation hazard**: looped episodes' *tool* fences legitimately differ (his django
@@ -62,15 +62,15 @@ chaos that wrecks absolute comparisons.
 ```bash
 # Featured figures, both campaigns — plot-only: no capture, no API cost, minutes.
 PLOT_SPEC=local_agents/superseded_40min/plot_spec.json \
-  python3 local_agents/scripts/glm/plot_glm_results.py
+  python3 local_agents/kit/plot/plot_glm_results.py
 #   -> plots/glm_tma_l1.png (Fig 4) and plots/glm_signature.png (Fig 5)
 # Mohamad side: same command with a spec whose data= points at his archive and
 #   out= plots/compare/moh_featured/ (runs = his run_1 per task).
 
 # Per-run harvest (23 episodes; ~25 plotter invocations) + all-runs figure
-python3 local_agents/scripts/glm/extract_tma_perrun.py
+python3 local_agents/kit/replay/extract_tma_perrun.py
 #   -> local_agents/superseded_40min/data/l3_study/tma_allruns.json
-python3 local_agents/scripts/glm/cmp_tma_allruns.py
+python3 local_agents/kit/plot/cmp_allruns.py --view tma
 #   -> local_agents/superseded_40min/plots/compare/cmp_tma_l1_allruns.png
 ```
 
@@ -81,14 +81,14 @@ for the plotter), and `SP` (a session temp dir — any writable scratch path wor
 `retiring/fe/bad/be` normalized to 100. What should reproduce on a fresh capture: the bucket
 *shares* per fence and task (to a few points), not any absolute count.
 
-### 2.4 Scripts and artifacts (scripts in `local_agents/scripts/glm/` unless noted)
+### 2.4 Scripts and artifacts (scripts in `local_agents/kit/` unless noted)
 
 | Item | Role |
 |---|---|
 | `run_glm_campaign.sh` (`TMA_EVENTS` ~:69, `start_tma_cont` ~:265, coexistence gate ~:684) | banks `tma_cont.csv` per episode — the census behind every TMA number |
 | `plot_glm_results.py` (`met()` ~:280, Fig 4 TMA L1 ~:584, Fig 5 signature + anchors ~:606) | featured figures + `values_dump.json` (`tma_*`, signature cards) |
 | `extract_tma_perrun.py` | per-run harvest via single-run specs → `tma_allruns.json` |
-| `cmp_tma_allruns.py` | all-runs 2×2 figure (campaign × fence), loop/missing marks |
+| `cmp_allruns.py --view tma` | all-runs 2×2 figure (campaign × fence), loop/missing marks |
 | `events.md` | event → metric → formula reference; co-counted-denominator rule (§ "TMA_EVENTS") |
 | `local_agents/superseded_40min/data/l3_study/tma_allruns.json` | banked per-run TMA (25 entries: 23 + 2 django@0.6) |
 | figures | `local_agents/superseded_40min/plots/{glm_tma_l1,glm_signature}.png`, `plots/compare/moh_featured/` (same names, his data), `plots/compare/cmp_tma_l1_allruns.png` |
@@ -150,7 +150,7 @@ changes in content; the fix exists so the mentor-requested 5- and 6-task cross-c
 variants (`local_agents/cross_campaign/`, report 14) render completely.
 
 **Method update (2026-08-04, litellm venv relocation).** `run_glm_campaign.sh` changed after
-this report: the litellm proxy is now launched from `local_agents/scripts/glm/.venv_litellm`
+this report: the litellm proxy is now launched from `local_agents/kit/campaign/.venv_litellm`
 (the identical venv, moved out of the removed `agentic/openclaw/` tree; exact pins recorded in
 `litellm_venv_freeze.txt`, verified by preflight). The proxy's role, cgroup fencing, and CPU
 placement are byte-for-byte unchanged — nothing in this study's data or analysis is affected.

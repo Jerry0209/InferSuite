@@ -73,10 +73,10 @@ unset K
 ### Figure pipeline
  conda activate infersuite-full
 ./measure.sh plots
-PLOT_SPEC=local_agents/SWE_clean/plot_spec.json python3 local_agents/scripts/glm/audit_plots.py
+PLOT_SPEC=local_agents/SWE_clean/plot_spec.json python3 local_agents/kit/validate/audit_plots.py
 
 ### Superseded set
-cd ~/InferSuite/local_agents/scripts/glm
+cd ~/InferSuite/local_agents/kit
 ./run_glm_campaign.sh preflight        # no spend
 ./run_glm_campaign.sh isolation-test   # applies knobs, verifies, reverts, re-verifies
 ./run_glm_campaign.sh dryrun           # zero-multiplexing gate, all 8 groups 100% enabled
@@ -89,7 +89,7 @@ sudo /usr/local/bin/k3s-killall.sh
 pgrep -af "vllm|EngineCore|milvus|pd-sidecar"    # wait until this prints nothing
 
 
-cd ~/InferSuite/local_agents/scripts/glm
+cd ~/InferSuite/local_agents/kit
 
 ./run_glm_campaign.sh dryrun          # zero-mux gate: all 8 groups must report 100% enabled
 
@@ -111,7 +111,7 @@ SWE_INSTANCES="scikit-learn__scikit-learn-25232 astropy__astropy-14096 sympy__sy
 ├── measure.sh                          # optional entry point (SWE_clean profile: temp 0.6, REPEATS=1)
 │                                       #   ── our reproduction called the kit directly instead
 │
-├── local_agents/scripts/glm/           # ════ THE CAMPAIGN KIT (everything runs from here) ════
+├── local_agents/kit/           # ════ THE CAMPAIGN KIT (everything runs from here) ════
 │   ├── run_glm_campaign.sh             # the runner: preflight → dryrun → isolation+ISO-PROOF →
 │   │                                   #   proxy → episodes → capture stack → teardown; stages+resume
 │   ├── campaign.conf                   # all knobs: instances, REPEATS, SWE_TEMP, CPU partition, key path

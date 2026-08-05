@@ -43,7 +43,7 @@ same per-window stack as 19–25, plus the ownership+adequacy gate in `attribute
 |---|---|---|---|---|
 | 1–2, 4, 14–16 | wall-clock donuts, CPU work, call structure, TMA-L1 right panel — since 2026-07-30 evening these four deck figures come from the **mentor-requested cross-campaign variants** (`local_agents/cross_campaign/`: merged symlink data root + per-variant specs, rendered by the unmodified pipeline, each audited ALL MATCH; task sets: 5t = scikit/astropy/sympy/babel/fmt, calls 6t adds looped django@0, tma4t = Python-only minus django@0.6). Original per-campaign figures untouched; provenance stated on each slide. See `cross_campaign/MANIFEST.md` | 10 Hz `cpu.stat` pollers, three cgroup scopes; TMA census | **exact** (wait = residual) | `run_glm_campaign.sh:226-238`; `plot_glm_results.py:343-430` |
 | 3 | orchestration timelines (cores vs time) | same 10 Hz series, no floor/merge/width-floor | **exact** | `plot_glm_results.py:432-471` |
-| 4, 12 | calls, bursts, heavy bursts, burst duration, turns | trajectory + bursts derived from the 10 Hz series | mixed (energy exact, classes/edges heuristic) | `plot_glm_results.py:171-175, 260-270, 509-540`; `cmp_allruns_absolute.py:33-46` |
+| 4, 12 | calls, bursts, heavy bursts, burst duration, turns | trajectory + bursts derived from the 10 Hz series | mixed (energy exact, classes/edges heuristic) | `plot_glm_results.py:171-175, 260-270, 509-540`; `cmp_allruns.py --view absolute:33-46` |
 | 13 | tool CPU by agent-call class; harness CPU by library | ordinal anchor join; 99 Hz cgroup-scoped `perf record` | heuristic; statistical | `plot_internal_tools.py:33-101`; `run_glm_campaign.sh:279-297` |
 | 14–16, 18 | TMA Level 1 and Level 2 per fence | continuous PERF_METRICS census, whole episode | **exact** (hardware slot accounting) | `run_glm_campaign.sh:69, 265-272`; `plot_glm_results.py:303-318` |
 | 19–28 | per-2 s-window metric distributions, tagged by command | windowed zero-mux counter groups + 2 Hz command sampler | counters exact, tags heuristic | `analyze_l3_windows.py` `tag_of`/`_progs` (basename matching since 2026-07-30) |
@@ -62,7 +62,7 @@ same per-window stack as 19–25, plus the ownership+adequacy gate in `attribute
 - **Wall-clock split.** Tool and harness wedges are `active_wall()` — the sum of *true* sample
   intervals above the detection floor (poll interval is ~0.1021 s, not 0.1; assuming 0.1
   undercounts ~2 %). "Inference" is the residual `wall − tool_s − harn_s`, so simultaneous
-  fence activity is subtracted twice; `cmp_allruns_absolute.py:73` clamps this explicitly.
+  fence activity is subtracted twice; `cmp_allruns.py --view absolute:73` clamps this explicitly.
   litellm has no wall wedge (it runs inside the waits, off-partition) but a real core-second
   figure.
 - **Agent turns** come from the harness log, never from CPU activity: the count of `"STEP "`
@@ -148,7 +148,7 @@ same per-window stack as 19–25, plus the ownership+adequacy gate in `attribute
 ```bash
 # 1. Fence/burst/turn numbers behind slides 1-4, 12 (banked data, no capture, no spend)
 conda activate infersuite-full          # python3 with matplotlib; never the project .venv
-cd ~/InferSuite/local_agents/scripts/glm
+cd ~/InferSuite/local_agents/kit
 python3 plot_glm_results.py             # -> figures + values_dump.json (every displayed number)
 python3 audit_plots.py                  # must end: ALL MATCH
 
@@ -182,10 +182,10 @@ not: absolute minutes/core-seconds (2–3× episode-to-episode) and the specific
 
 | Item | Location | Role |
 |---|---|---|
-| `run_glm_campaign.sh` | `local_agents/scripts/glm/` | fences, ISO-PROOF gate, all four instruments, DSO/leaf tables, teardown |
+| `run_glm_campaign.sh` | `local_agents/kit/` | fences, ISO-PROOF gate, all four instruments, DSO/leaf tables, teardown |
 | `plot_glm_results.py` | same dir | burst vocabulary, wall/CPU/timeline/call figures, TMA normalisation → `values_dump.json` |
 | `plot_internal_tools.py` | same dir | agent-call classes + the ordinal anchor join (slide 13, upper row) |
-| `cmp_allruns_absolute.py`, `cmp_allruns_shares.py`, `cmp_tma_allruns.py` | same dir | all-runs comparison figures (slides 8–13, 16) |
+| `cmp_allruns.py --view absolute`, `cmp_allruns.py --view shares`, `cmp_allruns.py --view tma` | same dir | all-runs comparison figures (slides 8–13, 16) |
 | `analyze_l3_windows.py` | same dir | 2 Hz command tagger, per-window counters → `all_windows_<task>.csv` |
 | `audit_plots.py` | same dir | recomputes every displayed number from raw captures → ALL MATCH |
 | `cmdlog.tsv`, `tma_cont.csv`, `cpustat_scope{1,2,3}.tsv`, `scopeN_dso.txt`, `agent.log`, `traj/` | per run dir | the banked evidence every number in this report was read from |

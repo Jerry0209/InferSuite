@@ -106,7 +106,7 @@ win, t0, dur, fence, instructions, tag, metric, value), `tma_intervals_<task>.cs
 ### 2.3 Reproduction recipe
 
 ```bash
-cd local_agents/scripts/glm
+cd local_agents/kit
 # capture: 11 dedicated-group passes for one task (~35-50 min, no API cost)
 PROF_GROUPS="fe_lat fe fpbr cache mlp core_ports dram_bw mem_bound fe_l3x priv fe_miss" \
 SHORT=scikit-learn SRC=1 \
@@ -126,7 +126,7 @@ carries), `windows.tsv` (epoch brackets), `group_<g>_wNNN.txt` (exact per-fence 
 (records stay local per repo policy), `metadata.json`. Fence naming for parsers:
 harness cgroup contains `glm-rep`, tool contains `docker-`.
 
-### 2.4 Scripts used (all in `local_agents/scripts/glm/` unless noted)
+### 2.4 Scripts used (all in `local_agents/kit/` unless noted)
 
 | Script | Role |
 |---|---|
@@ -187,7 +187,7 @@ report 16 §2.2. The method as described in this report is what was in force whe
 data was captured.
 
 **Method update (2026-08-04, litellm venv relocation).** `run_glm_campaign.sh` changed after
-this report: the litellm proxy is now launched from `local_agents/scripts/glm/.venv_litellm`
+this report: the litellm proxy is now launched from `local_agents/kit/campaign/.venv_litellm`
 (the identical venv, moved out of the removed `agentic/openclaw/` tree; exact pins recorded in
 `litellm_venv_freeze.txt`, verified by preflight). The proxy's role, cgroup fencing, and CPU
 placement are byte-for-byte unchanged — nothing in this study's data or analysis is affected.

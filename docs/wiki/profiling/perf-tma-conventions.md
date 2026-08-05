@@ -4,8 +4,8 @@
 |---|---|
 | Owner | LLM maintained, human reviewed |
 | Status | Validated |
-| Last updated | 2026-07-29 |
-| Sources | [CLAUDE.md](../../../CLAUDE.md), [events.md](../../../local_agents/scripts/glm/events.md), [Intel TMA](https://www.intel.com/content/www/us/en/docs/vtune-profiler/cookbook/current/top-down-microarchitecture-analysis-method.html) |
+| Last updated | 2026-08-05 |
+| Sources | [CLAUDE.md](../../../CLAUDE.md), [events.md](../../../local_agents/kit/events.md), [Intel TMA](https://www.intel.com/content/www/us/en/docs/vtune-profiler/cookbook/current/top-down-microarchitecture-analysis-method.html) |
 
 ## Purpose
 
@@ -57,5 +57,5 @@ data (`./measure.sh plots`).
 ## Related pages
 
 - [Measurement ontology](../concepts/measurement-ontology.md) — what the counters mean.
-- The counter-event reference [events.md](../../../local_agents/scripts/glm/events.md) — every
+- The counter-event reference [events.md](../../../local_agents/kit/events.md) — every
   group, where it is defined, and which figure metric it feeds.

@@ -76,7 +76,7 @@ each metric lives in its own pass and its own windows survive the floors.
 ### 2.3 Reproduction recipe
 
 ```bash
-cd local_agents/scripts/glm
+cd local_agents/kit
 # capture (only if CSVs absent) — Report 04 §2.3; the memory subset alone:
 PROF_GROUPS="cache mlp dram_bw mem_bound fe_l3x" SHORT=scikit-learn SRC=1 \
 DATA_ROOT=$HOME/InferSuite/local_agents/superseded_40min/data ./replay_l3_profile.sh
@@ -96,7 +96,7 @@ m = d[(d.metric=="tma_l1_bound_pct") & (d.fence=="tool")]
 print(m.value.median(), m.groupby("tag").value.median())   # 14.39 overall; pytest 14.39
 ```
 
-### 2.4 Scripts and artifacts (same set as Report 09; all scripts in `local_agents/scripts/glm/`)
+### 2.4 Scripts and artifacts (same set as Report 09; all scripts in `local_agents/kit/`)
 
 | Item | Location / role |
 |---|---|

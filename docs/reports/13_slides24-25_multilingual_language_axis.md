@@ -94,7 +94,7 @@ wall/core-seconds across campaigns are not (Report 06); (c) window ≠ call (Rep
 ### 2.3 Reproduction recipe
 
 ```bash
-cd local_agents/scripts/glm
+cd local_agents/kit
 DR=$HOME/InferSuite/local_agents/SWE_clean/data
 G="fe_lat fe fpbr cache mlp core_ports dram_bw mem_bound fe_l3x priv fe_miss"
 
@@ -120,7 +120,7 @@ Fence naming for parsers: harness cgroup contains `glm-rep`, tool contains `dock
 
 | Item | Location | Role |
 |---|---|---|
-| `localize_traj.py` | `local_agents/scripts/glm/` | **new**: rewrites foreign tool-bundle paths into a `*.local.traj` copy |
+| `localize_traj.py` | `local_agents/kit/` | **new**: rewrites foreign tool-bundle paths into a `*.local.traj` copy |
 | `run_glm_campaign.sh` (`TRAJ_OVERRIDE`, `replay-one`) | same dir | **extended**: explicit trajectory selection; glob excludes localized copies |
 | `replay_l3_profile.sh` | same dir | pass orchestrator (passes `TRAJ_OVERRIDE` through) |
 | `analyze_l3_windows.py` | same dir | windows × counters × tags → CSVs + per-metric figures (both fences) |

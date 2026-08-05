@@ -74,11 +74,11 @@ local_agents/ML_multiling/data/**/rec_*.data
 local_agents/ML_multiling/data/glm_swe_prometheus/run_1/traj/prometheus__prometheus-9248/prometheus__prometheus-9248.traj
 
 # kit runtime state (gate markers, dryrun outputs) — per-machine, never committed
-local_agents/scripts/glm/.state/
+local_agents/kit/campaign/.state/
 # behavioural-probe trajectory over GitHub's 100 MB hard limit (same policy as the sympy and
 # prometheus trajectories above; the realized label it supports is banked in
 # sampling_frame/behavior_ledger.tsv and docs/reports/17)
 local_agents/ML_multiling/data/glm_swe_hashicorp-bE/run_1/traj/hashicorp__terraform-35543/hashicorp__terraform-35543.traj
 
 # litellm proxy venv (moved 2026-08-04 from agentic/openclaw; pins in litellm_venv_freeze.txt)
-local_agents/scripts/glm/.venv_litellm/
+local_agents/kit/campaign/.venv_litellm/

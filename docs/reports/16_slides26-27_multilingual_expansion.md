@@ -109,7 +109,7 @@ G/pass); "bundler dominates Ruby" and "vue is JIT-only" (defect 6).
 # per language: episode (paid; 6–29 min agent wall) -> gate probe (free) -> passes (free ~50 min)
 SWE_SUBSET=multilingual SWE_INSTANCES="<owner__repo-NNN>" REPEATS=1 \
   DATA_ROOT=$REPO/local_agents/ML_multiling/data ./measure.sh agents-swe campaign
-K=$REPO/local_agents/scripts/glm
+K=$REPO/local_agents/kit
 SHORT=<owner> SRC=1 DATA_ROOT=$REPO/local_agents/ML_multiling/data WINSEC=2 \
   PROF_GROUPS="fe_miss" "$K/replay_l3_profile.sh"                      # gate probe -> run_1
 PY=~/miniforge3/envs/infersuite-full/bin/python3                       # NOT system python3
@@ -128,7 +128,7 @@ PROBE) and `cross_task_grid.py` (LANG/NAME/ROOT/ORDER/TCOL) — currently manual
 
 | Item | Repo location | Role |
 |---|---|---|
-| `run_glm_campaign.sh` | `local_agents/scripts/glm/` | episode runner; this study added `dry_python()`, ISO-PROOF settle-retry, `swe_max_step()` liveness |
+| `run_glm_campaign.sh` | `local_agents/kit/` | episode runner; this study added `dry_python()`, ISO-PROOF settle-retry, `swe_max_step()` liveness |
 | `replay_l3_profile.sh` · `analyze_l3_windows.py` | same dir | per-group passes; window CSVs + figures; **basename tagger** (`_progs()`) |
 | `attribute_windows.py` | same dir | ownership+adequacy gate (`probe`), per-pass composition (`mix`), cross-task tables |
 | `cross_task_grid.py` | same dir | 12-task grids; `TASKS_ONLY`/`GRID_SUFFIX` freeze subset grids so deck figures can't drift from captions |

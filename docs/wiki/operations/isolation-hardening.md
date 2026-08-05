@@ -4,8 +4,8 @@
 |---|---|
 | Owner | LLM maintained, human reviewed |
 | Status | Validated |
-| Last updated | 2026-07-29 |
-| Sources | [CLAUDE.md](../../../CLAUDE.md), [harden_isolation.sh](../../../scripts/harden_isolation.sh), [run_glm_campaign.sh](../../../local_agents/scripts/glm/run_glm_campaign.sh) |
+| Last updated | 2026-08-05 |
+| Sources | [CLAUDE.md](../../../CLAUDE.md), [harden_isolation.sh](../../../scripts/harden_isolation.sh), [run_glm_campaign.sh](../../../local_agents/kit/campaign/run_glm_campaign.sh) |
 
 ## Purpose
 

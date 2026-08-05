@@ -39,7 +39,7 @@ disguises itself as "the model failed the task" on any leaderboard.
 | `DATA_ROOT` | set explicitly | **Critical footgun:** invoking via `measure.sh` defaults `DATA_ROOT` to `SWE_clean/data` and each episode begins with `rm -rf` of its output dir — it would destroy certified thesis runs. Always call the raw runner with `DATA_ROOT` when reproducing |
 | Pre-spend balance check | 1-token real completion | Preflight's endpoint gate only calls `GET /models`, which returns 200 **even with zero balance** (learned the hard way: error 1113 killed an earlier campaign 22 s in). A `POST /chat/completions` with `max_tokens:1` is the only honest balance probe |
 
-Exact invocation (from `local_agents/scripts/glm/`):
+Exact invocation (from `local_agents/kit/`):
 
 ```bash
 DATA_ROOT=$HOME/InferSuite/local_agents/superseded_40min/data \
@@ -91,7 +91,7 @@ auditing (`"temperature": 0.6`).
 
 | Item | Location | Role |
 |---|---|---|
-| `run_glm_campaign.sh` | `local_agents/scripts/glm/` | campaign runner (isolation, capture, loop guard, teardown) |
+| `run_glm_campaign.sh` | `local_agents/kit/` | campaign runner (isolation, capture, loop guard, teardown) |
 | `campaign.conf` | same dir | defaults; env vars override |
 | `plot_glm_results.py` + `plot_spec.json` | same dir; spec in `local_agents/superseded_40min/` | renders django@0.6 as a 5th column, `outcome: "submit-blocked"` tags the title |
 | `audit_plots.py` | same dir | figure-vs-raw audit (ALL MATCH before trusting figures) |

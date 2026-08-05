@@ -77,7 +77,7 @@ search-dominated, etc.) are priors with unknown per-language accuracy until epis
 ```bash
 cd $REPO/agentic/swe_agent   # needs the datasets package from this venv
 taskset -c 0,1,12,13 .venv/bin/python \
-  $REPO/local_agents/scripts/glm/multiling_inventory.py        # -> data/multiling_inventory.csv
+  $REPO/local_agents/kit/campaign/multiling_inventory.py        # -> data/multiling_inventory.csv
 # reapply the taxonomy without any LLM: taxonomy_spec.json §decision_procedure over the CSV
 # artifacts: local_agents/ML_multiling/sampling_frame/{taxonomy_spec,classifications}.json
 ```
@@ -90,13 +90,13 @@ no API spend; the *resulting* campaign costs ~1.5 h exclusive-core time per cell
 
 | Item | Repo location | Role |
 |---|---|---|
-| `multiling_inventory.py` | `local_agents/scripts/glm/` | inventory + static features; language counts assertion-checked |
+| `multiling_inventory.py` | `local_agents/kit/` | inventory + static features; language counts assertion-checked |
 | `multiling_inventory.csv` | `local_agents/ML_multiling/data/` | 300 rows × 20 features |
 | `taxonomy_spec.json` | `local_agents/ML_multiling/sampling_frame/` | categories, deterministic decision procedure, ambiguity/risk rules, known limits |
 | `classifications.json` | same dir | all 300 assignments + per-language representatives with runners-up |
 | `validation.md` | same dir | agree/disagree table vs measured compositions; accuracy verdict |
 | `plan.md` | same dir | ⟨language, type⟩ matrix + run list (numeric corrections noted in its README) |
-| `attribute_windows.py mix/probe` | `local_agents/scripts/glm/` | the post-episode instrument that confirms a cell's realized type |
+| `attribute_windows.py mix/probe` | `local_agents/kit/` | the post-episode instrument that confirms a cell's realized type |
 
 
 ### 2.4 The falsification probes (executed 2026-07-30)

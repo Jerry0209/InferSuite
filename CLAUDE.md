@@ -65,7 +65,7 @@ nothing is reimplemented in it):
 
 Stages run in order the first time: `preflight → dryrun → smoke → campaign → validate`.
 Per-campaign knobs are env vars with certified defaults, e.g.
-`SWE_INSTANCES=… SWE_DRAIN_S=… ./measure.sh agents-swe campaign`, `OC_TASKS=…`.
+`SWE_INSTANCES=… SWE_DRAIN_S=… ./measure.sh agents-swe campaign`.
 `SWE_TEMP` defaults to 0.6 — temp 0.0 makes agents
 degenerate (truncated narration, quits after 1–2 turns); never run agent campaigns greedy.
 The GLM API key lives at `~/.glm_key` — never print or echo it.
@@ -73,9 +73,9 @@ The GLM API key lives at `~/.glm_key` — never print or echo it.
 Figure-vs-data audit and the exploratory figure sets (not covered by `measure.sh plots`):
 
 ```bash
-PLOT_SPEC=local_agents/SWE_clean/plot_spec.json python3 local_agents/scripts/glm/audit_plots.py
-PLOT_SPEC=local_agents/SWE_clean/plot_spec.json python3 local_agents/scripts/glm/plot_exploratory.py
-python3 local_agents/scripts/glm/plot_harness_scaling.py       # cross-campaign turns^~2.7 law
+PLOT_SPEC=local_agents/SWE_clean/plot_spec.json python3 local_agents/kit/validate/audit_plots.py
+PLOT_SPEC=local_agents/SWE_clean/plot_spec.json python3 local_agents/kit/plot/plot_exploratory.py
+python3 local_agents/kit/plot/plot_harness_scaling.py       # cross-campaign turns^~2.7 law
 ```
 
 Optional boot-time isolation before a campaign: `sudo scripts/harden_isolation.sh --on` + reboot
@@ -85,7 +85,7 @@ thread on one core; the script's nohz_full+rcu_nocbs mode is the correct one. Ru
 the kits automatically. Never reboot or apply GRUB changes without explicit user confirmation.
 
 There is no test suite or linter; validation is the campaign validator
-(`local_agents/scripts/glm/validate_glm_agents.py`)
+(`local_agents/kit/validate/validate_glm_agents.py`)
 plus the figure audit (`audit_plots.py` independently recomputes every plotted number from raw
 data and must report ALL MATCH before figures are trusted).
 
@@ -94,18 +94,25 @@ in this repo or the thesis repo. Do not commit Claude session artifacts (HANDOFF
 
 ## Architecture
 
-**Campaign kits** (the code `measure.sh` dispatches to):
-- `local_agents/scripts/glm/` — GLM-5.2 agent campaigns: `run_glm_campaign.sh` (staged runner
-  for SWE, OC, and deterministic replays: isolation shield + ISO-PROOF gate, capture stack,
-  loop guard, teardown), `oc_lineage_watcher.py`, `validate_glm_agents.py` (gates E1–E11),
-  plotters (`plot_glm_results.py` — writes `values_dump.json` with every displayed number —
-  plus `plot_exploratory.py`, `plot_harness_scaling.py`, `plot_internal_tools.py`, …),
-  `audit_plots.py`, `gen_lanes_leaf.sh` (derives per-CPU lanes + leaf tables from records).
+**The measurement kit** (the code `measure.sh` dispatches to; reorganized 2026-08-05 from the
+flat `local_agents/scripts/glm/` into pipeline-stage subdirs, OC code paths removed same day):
+- `local_agents/kit/campaign/` — `run_glm_campaign.sh` (staged runner for SWE episodes and
+  deterministic replays: isolation shield + ISO-PROOF gate, capture stack, loop guard,
+  teardown), `campaign.conf`, litellm proxy config + venv, `multiling_inventory.py`.
+- `local_agents/kit/replay/` — dedicated-group replay + per-window derivation:
+  `replay_l3_profile.sh`, `analyze_l3_windows.py` (2-s windows, 2 Hz command tagger),
+  `attribute_windows.py`, `gen_lanes_leaf.sh` (per-CPU lanes + leaf tables from records),
+  behaviour probes (`behavior_campaign.sh`/`behavior_classify.py`), `localize_traj.py`,
+  `dump_all_metrics.py`, `extract_tma_perrun.py`.
+- `local_agents/kit/plot/` — plotters (`plot_glm_results.py` — writes `values_dump.json` with
+  every displayed number — plus `plot_exploratory.py`, `plot_harness_scaling.py`,
+  `plot_internal_tools.py`, `cross_task_grid.py`, `cmp_allruns.py`, `build_deck.py`, …).
+- `local_agents/kit/validate/` — `validate_glm_agents.py` (gates E1–E11), `audit_plots.py`.
 - `agentic/swe_agent/` — the SWE-agent harness the campaigns drive (unmodified; all
   measurement is external to it). The litellm proxy the campaign launches on the
-  housekeeping cores lives at `local_agents/scripts/glm/.venv_litellm` (gitignored venv;
+  housekeeping cores lives at `local_agents/kit/campaign/.venv_litellm` (gitignored venv;
   python 3.13.13, litellm 1.89.4 — exact pins in
-  `local_agents/scripts/glm/litellm_venv_freeze.txt`, rebuild with
+  `local_agents/kit/campaign/litellm_venv_freeze.txt`, rebuild with
   `python3.13 -m venv .venv_litellm && .venv_litellm/bin/pip install -r litellm_venv_freeze.txt`).
   It was moved 2026-08-04 out of `agentic/openclaw/` before that harness was removed.
 (The service data path, its deploy stack, the GPU-side profiling kit, and the OpenClaw
@@ -115,11 +122,12 @@ harness were removed 2026-08-04 — see the narrowing note at the top; git histo
 - **Fences are cgroups.** SWE-agent: a Python harness process on the host (measured slice);
   every tool action executes inside a per-task docker sandbox container (measured slice); a
   litellm proxy relays model calls to the GLM API (user slice → it runs on the HOUSEKEEPING
-  cores, not the measured partition). OpenClaw: ONE container holds the Node gateway and every
-  tool it spawns — no container boundary exists, so `oc_lineage_watcher.py` splits agent vs
-  toolexec sub-cgroups by process lineage via the kernel's netlink proc connector: a fork by
-  the gateway stays agent-side; the moment it execs a program it becomes a tool root
-  (name-blind; cgroup inheritance carries all its descendants).
+  cores, not the measured partition). OpenClaw (harness + watcher code now in git history
+  only): ONE container held the Node gateway and every tool it spawned — no container boundary
+  existed, so a lineage watcher split agent vs toolexec sub-cgroups by process lineage via the
+  kernel's netlink proc connector: a fork by the gateway stays agent-side; the moment it execs
+  a program it becomes a tool root (name-blind; cgroup inheritance carries all its
+  descendants). See `docs/wiki/decisions/lineage-fork-exec-fencing.md`.
 - **Four instruments run simultaneously per episode**: (1) 10 Hz cgroup `cpu.stat` pollers per
   fence — exact, always-on kernel accounting behind every core-second/timeline/burst figure;
   (2) windowed `perf stat` counting — 8 groups of ~6 events, ONE group per window, zero

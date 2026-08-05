@@ -28,8 +28,8 @@ on the consuming slide/caption. Shares/TMA buckets are the cross-campaign-reprod
 
 ```bash
 PY=~/miniforge3/envs/infersuite-full/bin/python3
-PLOT_SPEC=local_agents/cross_campaign/spec_5t.json $PY local_agents/scripts/glm/plot_glm_results.py
-PLOT_SPEC=local_agents/cross_campaign/spec_5t.json $PY local_agents/scripts/glm/audit_plots.py  # must say ALL MATCH
+PLOT_SPEC=local_agents/cross_campaign/spec_5t.json $PY local_agents/kit/plot/plot_glm_results.py
+PLOT_SPEC=local_agents/cross_campaign/spec_5t.json $PY local_agents/kit/validate/audit_plots.py  # must say ALL MATCH
 ```
 
 Side effect fixed while building this: `plot_glm_results.py`'s harness-anatomy figure had a

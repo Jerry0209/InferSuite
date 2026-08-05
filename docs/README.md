@@ -35,9 +35,9 @@ Companion material elsewhere in the repo:
 
 - [`handwritten_notes/`](handwritten_notes/) — the running working notes: `analysis.md` (the
   prose analysis, Parts 1–7), `reproduce.md`, `metrics.md`, `further_check.md`.
-- `../local_agents/scripts/glm/events.md` — every perf event the kit measures, the derived
+- `../local_agents/kit/events.md` — every perf event the kit measures, the derived
   metric each feeds, and the exact formulas.
-- `../local_agents/scripts/glm/README.md` — the campaign kit itself (stages, knobs, fences).
+- `../local_agents/kit/README.md` — the campaign kit itself (stages, knobs, fences).
 
 ## Campaign & handover documents
 

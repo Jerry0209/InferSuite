@@ -83,7 +83,7 @@ Known hazards / limitations (stated, not fixed):
 ```bash
 # Figures only — banked data, no capture, no spend
 conda activate infersuite-full          # python3 that has matplotlib (never the project .venv)
-cd ~/InferSuite/local_agents/scripts/glm
+cd ~/InferSuite/local_agents/kit
 export PLOT_SPEC=$HOME/InferSuite/local_agents/superseded_40min/plot_spec.json
 python3 plot_glm_results.py             # glm_time_split/cpu_work/timeline/tool_calls (+ rest) + values_dump.json
 python3 plot_call_structure.py; python3 plot_internal_tools.py; python3 plot_calls_vs_bursts.py
@@ -100,7 +100,7 @@ composition. What will not: absolute minutes/core-seconds (2–3× episode-to-ep
 the specific clean/looped outcomes — judge by shares and structure, never one episode's raw
 numbers.
 
-### 2.4 Scripts and artifacts (all in `local_agents/scripts/glm/` except the spec/dump)
+### 2.4 Scripts and artifacts (all in `local_agents/kit/` except the spec/dump)
 
 | Item | Location | Role |
 |---|---|---|

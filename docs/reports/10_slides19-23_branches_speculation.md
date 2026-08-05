@@ -78,7 +78,7 @@ shares come from the continuous PERF_METRICS capture (Report 02 / `analysis.md` 
 ### 2.3 Reproduction recipe
 
 ```bash
-cd local_agents/scripts/glm
+cd local_agents/kit
 # the branch-specific extra pass only (~4–5 min per task, no API cost); full 11-group
 # sweep and analysis: Report 04 §2.3
 PROF_GROUPS="fe_miss" SHORT=scikit-learn SRC=1 \
@@ -95,7 +95,7 @@ medians). During capture, run nothing else — or pin to housekeeping (`taskset 
 
 | Item | Location | Role |
 |---|---|---|
-| `run_glm_campaign.sh` | `local_agents/scripts/glm/` | `GRP[fe_miss]` definition (:58–60); replay-one stage |
+| `run_glm_campaign.sh` | `local_agents/kit/` | `GRP[fe_miss]` definition (:58–60); replay-one stage |
 | `replay_l3_profile.sh` | same dir | pass orchestrator (skip/retry, tagger) |
 | `analyze_l3_windows.py` | same dir | metric formulas (:88, :112, :136–139) → CSVs + figures |
 | `cross_task_grid.py`, `build_metric_gallery.py` | same dir | slide-22/23 grids; per-task HTML galleries |

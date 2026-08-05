@@ -97,7 +97,7 @@ evidence the boundary story is right.
 
 | Item | Location | Role |
 |---|---|---|
-| `run_glm_campaign.sh` | `local_agents/scripts/glm/` | fence creation/resolution, pollers, records |
+| `run_glm_campaign.sh` | `local_agents/kit/` | fence creation/resolution, pollers, records |
 | `plot_internal_tools.py` | same dir | `classify()` + burst detection + ordinal anchor join + coverage stamp |
 | `plot_calls_vs_bursts.py` | same dir | burst vocabulary, calls-vs-bursts accounting |
 | `SWE_clean/plots/MANIFEST.md` | `local_agents/SWE_clean/plots/` | locked burst constants |
@@ -135,7 +135,7 @@ report 16 §2.2. The method as described in this report is what was in force whe
 data was captured.
 
 **Method update (2026-08-04, litellm venv relocation).** `run_glm_campaign.sh` changed after
-this report: the litellm proxy is now launched from `local_agents/scripts/glm/.venv_litellm`
+this report: the litellm proxy is now launched from `local_agents/kit/campaign/.venv_litellm`
 (the identical venv, moved out of the removed `agentic/openclaw/` tree; exact pins recorded in
 `litellm_venv_freeze.txt`, verified by preflight). The proxy's role, cgroup fencing, and CPU
 placement are byte-for-byte unchanged — nothing in this study's data or analysis is affected.

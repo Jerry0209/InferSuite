@@ -69,7 +69,7 @@ local_service/          local k3s service run: per-tier TMA L1+L2, attribution, 
   data_iso/  plots_iso/ banked 36-cell data + figures
 
 local_agents/           local agent campaigns (GLM-5.2 frontier tier)
-  scripts/glm/          campaign kit: run_glm_campaign.sh (SWE + OC), lineage watcher, validate, plotters
+  kit/          campaign kit: run_glm_campaign.sh (SWE + OC), lineage watcher, validate, plotters
   SWE_clean/            hardened long-horizon SWE-agent: data/ plots/ (incl. thesis_ready/) plot_spec.json MANIFEST
   OC_clean/             hardened long-horizon OpenClaw:  data/ plots/ plot_spec.json MANIFEST (lineage-fenced)
 
@@ -148,7 +148,7 @@ Three agents chosen to span different kinds of tool-execution work:
 | SWE-agent (`swe_agent/`) | SWE-bench repo bug-fixing, external SWE-agent harness | repo navigation, edits, builds, test suites |
 | OpenClaw (`openclaw/`) | WildClawBench live browser / computer-use tasks | browser control, documents, images |
 
-The isolated GLM-5.2 campaigns run through the kits in `local_agents/scripts/glm/`
+The isolated GLM-5.2 campaigns run through the kits in `local_agents/kit/`
 (fenced capture, lineage watcher, validators, plotters).
 
 ## Part IV — Measurement methodology
@@ -165,6 +165,6 @@ The isolated GLM-5.2 campaigns run through the kits in `local_agents/scripts/glm
 ## Reproducing
 
 One command for every campaign: `./measure.sh <agents-swe|agents-oc|service|plots|validate> <stage>`
-(see `./measure.sh help`). It dispatches to the proven kits — `local_agents/scripts/glm/` for the
+(see `./measure.sh help`). It dispatches to the proven kits — `local_agents/kit/` for the
 isolated GLM-5.2 agents and `local_service/scripts/iso/` for the isolated service.
 Collection and plotting are separate; figures regenerate from collected data with system `python3`.

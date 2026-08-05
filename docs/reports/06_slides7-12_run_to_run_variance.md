@@ -86,9 +86,9 @@ Hazards a reproducer must know:
 #   local_agents/superseded_40min/data                                (re-run, 12 episodes)
 #   ~/llm-service-kernel-latest/archive/certified_glm_40min           (Mohamad, 12 episodes)
 # (paths are constants MINE/MOH/OUT at the top of each script — edit there if moved)
-python3 local_agents/scripts/glm/cmp_allruns_shares.py    # cmp_wall_split, cmp_cpu_work,
+python3 local_agents/kit/plot/cmp_allruns.py --view shares    # cmp_wall_split, cmp_cpu_work,
                                                           # cmp_timeline_{moh,new}
-python3 local_agents/scripts/glm/cmp_allruns_absolute.py  # cmp_absolute, cmp_callstruct
+python3 local_agents/kit/plot/cmp_allruns.py --view absolute  # cmp_absolute, cmp_callstruct
                                                           # (+ cmp_whats_heavy → slide 13)
 ```
 
@@ -102,8 +102,8 @@ traj/**/*.traj}`.
 
 | Item | Location | Role |
 |---|---|---|
-| `cmp_allruns_shares.py` | `local_agents/scripts/glm/` | raw-cpu.stat recompute, values_dump validation print, share grids (slides 8–9), timeline small-multiples (slide 10) |
-| `cmp_allruns_absolute.py` | `local_agents/scripts/glm/` | absolute wall/core-s grid (slide 11), call/burst structure (slide 12); also emits slide 13's what's-heavy figure |
+| `cmp_allruns.py --view shares` | `local_agents/kit/` | raw-cpu.stat recompute, values_dump validation print, share grids (slides 8–9), timeline small-multiples (slide 10) |
+| `cmp_allruns.py --view absolute` | `local_agents/kit/` | absolute wall/core-s grid (slide 11), call/burst structure (slide 12); also emits slide 13's what's-heavy figure |
 | `values_dump.json` | `local_agents/superseded_40min/plots/` | certified plotter numbers used as the validation reference |
 | Figures `cmp_*.png` | `local_agents/superseded_40min/plots/compare/` | `cmp_wall_split`, `cmp_cpu_work`, `cmp_timeline_moh`, `cmp_timeline_new`, `cmp_absolute`, `cmp_callstruct` |
 | Mohamad campaign data | `~/llm-service-kernel-latest/archive/certified_glm_40min/` | 12 episode dirs (outside this repo) |

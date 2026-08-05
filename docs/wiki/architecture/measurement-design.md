@@ -4,8 +4,8 @@
 |---|---|
 | Owner | LLM maintained, human reviewed |
 | Status | Validated |
-| Last updated | 2026-07-29 |
-| Sources | [CLAUDE.md](../../../CLAUDE.md), [run_glm_campaign.sh](../../../local_agents/scripts/glm/run_glm_campaign.sh), [validate_glm_agents.py](../../../local_agents/scripts/glm/validate_glm_agents.py) |
+| Last updated | 2026-08-05 |
+| Sources | [CLAUDE.md](../../../CLAUDE.md), [run_glm_campaign.sh](../../../local_agents/kit/campaign/run_glm_campaign.sh), [validate_glm_agents.py](../../../local_agents/kit/validate/validate_glm_agents.py) |
 
 ## Purpose
 
@@ -22,11 +22,12 @@ The measured slices ("fences") are Linux cgroups, not process-name filters (*Dec
   inside a per-task **docker sandbox container** (a second measured slice); a **litellm proxy**
   relays model calls to the GLM API and runs on the **housekeeping** cores (user slice), *outside*
   the measured partition.
-- **OpenClaw.** ONE container holds the Node gateway and every tool it spawns — no container
-  boundary exists. `oc_lineage_watcher.py` splits **agent** vs **toolexec** sub-cgroups by process
+- **OpenClaw** (historical — harness and watcher code left the tree 2026-08-04/05, git history
+  has them). ONE container held the Node gateway and every tool it spawned — no container
+  boundary existed. A lineage watcher split **agent** vs **toolexec** sub-cgroups by process
   lineage via the kernel's netlink proc connector: a fork by the gateway stays agent-side; the
   moment it `exec`s a program it becomes a tool root (name-blind; cgroup inheritance carries all
-  descendants).
+  descendants). See [lineage fork/exec fencing](../decisions/lineage-fork-exec-fencing.md).
 
 *Limitation.* litellm on the housekeeping cores means measured-partition capacity claims are
 tool + harness only. Kernel threads belong to no cgroup, so fence totals are lower bounds.

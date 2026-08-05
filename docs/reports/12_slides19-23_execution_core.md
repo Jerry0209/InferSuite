@@ -84,7 +84,7 @@ Group event lists are in `run_glm_campaign.sh` (`GRP[fpbr]`, `GRP[core_ports]`,
 ### 2.3 Reproduction recipe
 
 ```bash
-cd local_agents/scripts/glm
+cd local_agents/kit
 # capture only the three groups this report uses (~10 min/task, no API cost; see Report 04
 # for the full 11-group sweep, serialization, and ISO-PROOF retry behavior)
 PROF_GROUPS="core_ports fpbr priv" SHORT=scikit-learn SRC=1 \
@@ -106,7 +106,7 @@ replays: phenomena and medians reproduce; exact window counts may shift by ±a f
 
 | Item | Location | Role |
 |---|---|---|
-| `replay_l3_profile.sh` / `run_glm_campaign.sh` | `local_agents/scripts/glm/` | pass orchestration; `GRP` table (`fpbr`, `core_ports`, `priv` event lists) |
+| `replay_l3_profile.sh` / `run_glm_campaign.sh` | `local_agents/kit/` | pass orchestration; `GRP` table (`fpbr`, `core_ports`, `priv` event lists) |
 | `analyze_l3_windows.py` | same dir | metric derivations incl. IPC/ports/vecFP/kernel; CSVs; box/timeline figures |
 | `cross_task_grid.py`, `build_metric_gallery.py` | same dir | 12-metric grids; per-task HTML galleries |
 | `plot_glm_results.py` | same dir | episode-sum L3/L4 drill; the locked `PANELS3` ports caveat |
@@ -189,7 +189,7 @@ metrics (and `cross_task_grid.py` a `GRID_LAYOUT=16` rearranged grid) on the men
 additive only; every number this report documents is unchanged. Details: report 11's note.
 
 **Method update (2026-08-04, litellm venv relocation).** `run_glm_campaign.sh` changed after
-this report: the litellm proxy is now launched from `local_agents/scripts/glm/.venv_litellm`
+this report: the litellm proxy is now launched from `local_agents/kit/campaign/.venv_litellm`
 (the identical venv, moved out of the removed `agentic/openclaw/` tree; exact pins recorded in
 `litellm_venv_freeze.txt`, verified by preflight). The proxy's role, cgroup fencing, and CPU
 placement are byte-for-byte unchanged — nothing in this study's data or analysis is affected.

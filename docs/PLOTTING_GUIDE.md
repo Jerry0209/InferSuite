@@ -49,7 +49,7 @@ plot_spec.json  →  plotter  →  figures + values_dump.json  →  audit_plots.
 - `plot_spec.json` names the **featured run** per task (`data` root, `out` dir, `resolved`
   list of `[label, episode_dir, [runs]]`). This is how "which episode does the deck show?"
   stays reproducible.
-- The main plotter is `local_agents/scripts/glm/plot_glm_results.py`. Without `PLOT_SPEC` it
+- The main plotter is `local_agents/kit/plot/plot_glm_results.py`. Without `PLOT_SPEC` it
   renders the certified campaign; with `PLOT_SPEC=<json>` it renders any compatible data root
   (this one env var is the entire variant mechanism — the plotter itself is never edited for
   a variant).
@@ -59,10 +59,10 @@ Standalone equivalents:
 
 ```bash
 PY=~/miniforge3/envs/infersuite-full/bin/python3
-PLOT_SPEC=local_agents/SWE_clean/plot_spec.json $PY local_agents/scripts/glm/plot_glm_results.py
-PLOT_SPEC=local_agents/SWE_clean/plot_spec.json $PY local_agents/scripts/glm/audit_plots.py   # must say ALL MATCH
-$PY local_agents/scripts/glm/plot_exploratory.py        # exploratory set (plots*/extra/)
-$PY local_agents/scripts/glm/plot_harness_scaling.py    # cross-campaign turns-scaling figure
+PLOT_SPEC=local_agents/SWE_clean/plot_spec.json $PY local_agents/kit/plot/plot_glm_results.py
+PLOT_SPEC=local_agents/SWE_clean/plot_spec.json $PY local_agents/kit/validate/audit_plots.py   # must say ALL MATCH
+$PY local_agents/kit/plot/plot_exploratory.py        # exploratory set (plots*/extra/)
+$PY local_agents/kit/plot/plot_harness_scaling.py    # cross-campaign turns-scaling figure
 ```
 
 (The OpenClaw campaign, the service campaign, and the GPU-side kit were removed from the tree
@@ -83,7 +83,7 @@ Data lives under `<campaign>/data/l3_study/`:
   every per-window figure regenerates from it; nothing re-parses raw perf output.
 - `tma_intervals_<task>.csv` — 10-s TMA L1/L2 interval shares per fence.
 
-Scripts (all in `local_agents/scripts/glm/`):
+Scripts (all in `local_agents/kit/`):
 
 ```bash
 # derive/refresh a task's CSVs from its replay passes (+ per-metric box/tag/timeline PNGs)
@@ -149,7 +149,7 @@ caption/MANIFEST every time.
 The team deck is one self-contained HTML with every figure inlined as base64:
 
 ```bash
-DECK_OUT=/tmp/deck.html $PY local_agents/scripts/glm/build_deck.py
+DECK_OUT=/tmp/deck.html $PY local_agents/kit/plot/build_deck.py
 ```
 
 Figures are referenced by **path** in `build_deck.py`'s `IMG` table, so re-running after a

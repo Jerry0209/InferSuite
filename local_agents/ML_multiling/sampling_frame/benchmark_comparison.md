@@ -48,7 +48,7 @@ revision `e5c585e008e2cb5eecc7c64192d855c53279d788` (lastModified 2026-07-22; lo
 2026-07-29; revision re-checked current 2026-07-31). 300 rows, 41 distinct repos, fields:
 repo, instance_id, base_commit, patch, test_patch, problem_statement, hints_text, created_at,
 version, FAIL_TO_PASS, PASS_TO_PASS. Per-language counts are assertion-checked in
-`local_agents/scripts/glm/multiling_inventory.py` (FATAL on unmapped repo) and were
+`local_agents/kit/campaign/multiling_inventory.py` (FATAL on unmapped repo) and were
 independently recomputed from the cached dataset for this document — both agree.
 
 ## 3. Why SWE-bench Multilingual first (the mentor's directive, and four reasons it was right)

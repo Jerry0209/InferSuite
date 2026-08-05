@@ -61,7 +61,7 @@ One-line summary of the whole stack: nohz_full + rcu_nocbs (boot) quiet the tick
 Want me to check how any of these are actually configured in scripts/harden_isolation.sh to confirm the settings match your notes?
 
 
->>>>>> Could you explain the structure of this repository? What does each file do? I want to know, for example, when I run the cd ~/InferSuite/local_agents/scripts/glm
+>>>>>> Could you explain the structure of this repository? What does each file do? I want to know, for example, when I run the cd ~/InferSuite/local_agents/kit
 
 ./run_glm_campaign.sh dryrun          # zero-mux gate: all 8 groups must report 100% enabled
 
@@ -85,7 +85,7 @@ Curated views	plots/, results/	synced-out figures; never edited in place
 Old stuff	archive/	H100/EKS/exploratory; do not resurrect
 Everything normally goes through the single entry point measure.sh, which is just a thin wrapper that sets env vars and calls the real kit. Your command bypasses measure.sh and calls the kit directly, pointing DATA_ROOT at the superseded_40min side campaign instead of the thesis SWE_clean/data.
 
-The GLM agent kit — local_agents/scripts/glm/
+The GLM agent kit — local_agents/kit/
 The one script that does the work is run_glm_campaign.sh (915 lines). Around it:
 
 campaign.conf — sourced config: model id, CPU partition (CPUS_MEASURED/CPUS_HOUSE), endpoints.
@@ -99,7 +99,7 @@ The campaign case dispatch is at run_glm_campaign.sh:900-914.
 
 What your command actually does
 
-cd ~/InferSuite/local_agents/scripts/glm
+cd ~/InferSuite/local_agents/kit
 ./run_glm_campaign.sh dryrun
 DATA_ROOT=$HOME/InferSuite/local_agents/superseded_40min/data \
 SWE_INSTANCES="scikit-learn__scikit-learn-25232" REPEATS=1 \
@@ -147,7 +147,7 @@ Via the wrapper (measure.sh:68-76) — but note this is hardcoded to the thesis 
 Directly, for the superseded_40min set — point PLOT_SPEC at that campaign's spec:
 
 
-PLOT_SPEC=local_agents/superseded_40min/plot_spec.json python3 local_agents/scripts/glm/plot_glm_results.py
+PLOT_SPEC=local_agents/superseded_40min/plot_spec.json python3 local_agents/kit/plot/plot_glm_results.py
 The pipeline (from CLAUDE.md):
 
 
@@ -349,7 +349,7 @@ RCU(Read-Copy-Update,读-拷贝-更新)是一种内核同步机制。当在 RCU 
 >>>>>> 你能讲讲这个仓库的结构吗?每个文件是做什么的?比如说,当我运行
 
 
-cd ~/InferSuite/local_agents/scripts/glm
+cd ~/InferSuite/local_agents/kit
 ./run_glm_campaign.sh dryrun          # 零多路复用门禁:8 个组必须全部报告 100% enabled
 DATA_ROOT=$HOME/InferSuite/local_agents/superseded_40min/data \
 SWE_INSTANCES="scikit-learn__scikit-learn-25232" REPEATS=1 \
@@ -369,7 +369,7 @@ Curated views	plots/、results/	同步出来的图;不在原地编辑
 Old stuff	archive/	H100/EKS/探索性内容;不要复活
 一切通常都经由单一入口 measure.sh,它只是个薄封装,设好环境变量再调用真正的 kit。你的命令绕过了 measure.sh 直接调用 kit,并把 DATA_ROOT 指向 superseded_40min 这个旁支 campaign,而不是论文用的 SWE_clean/data。
 
-GLM agent kit —— local_agents/scripts/glm/
+GLM agent kit —— local_agents/kit/
 真正干活的那个脚本是 run_glm_campaign.sh(915 行)。围绕它的有:
 
 campaign.conf —— 被 source 进来的配置:模型 id、CPU 分区(CPUS_MEASURED/CPUS_HOUSE)、端点。
@@ -383,7 +383,7 @@ campaign 的 case 分派在 run_glm_campaign.sh:900-914。
 
 你的命令实际做了什么
 
-cd ~/InferSuite/local_agents/scripts/glm
+cd ~/InferSuite/local_agents/kit
 ./run_glm_campaign.sh dryrun
 DATA_ROOT=$HOME/InferSuite/local_agents/superseded_40min/data \
 SWE_INSTANCES="scikit-learn__scikit-learn-25232" REPEATS=1 \
@@ -433,7 +433,7 @@ agent 退出时,它停掉所有仪器(先停 records,在任何我们控制的 cg
 直接针对 superseded_40min 集——把 PLOT_SPEC 指向那个 campaign 的 spec:
 
 
-PLOT_SPEC=local_agents/superseded_40min/plot_spec.json python3 local_agents/scripts/glm/plot_glm_results.py
+PLOT_SPEC=local_agents/superseded_40min/plot_spec.json python3 local_agents/kit/plot/plot_glm_results.py
 流水线(出自 CLAUDE.md):
 
 

@@ -4,7 +4,7 @@ One report per study of the team deck ("Agent CPU profiling — GLM-5.2 SWE-agen
 slides), written for reproducibility: each has (1) a key summary, (2) the methodology with
 every load-bearing decision and the scripts used, (3) insights ordered by importance. The
 running prose companion is [`../handwritten_notes/analysis.md`](../handwritten_notes/analysis.md);
-the counter-event reference is `local_agents/scripts/glm/events.md`. Reports are numbered by
+the counter-event reference is `local_agents/kit/events.md`. Reports are numbered by
 creation; the table below is ordered by deck slide.
 
 | Deck slides | Report | Study |

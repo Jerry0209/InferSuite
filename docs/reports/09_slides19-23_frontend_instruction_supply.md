@@ -78,7 +78,7 @@ fetch-latency child (Report 04 D4). A window is not a call (quantified in Report
 ### 2.3 Reproduction recipe
 
 ```bash
-cd local_agents/scripts/glm
+cd local_agents/kit
 # capture: only the four frontend groups (per task ~4 dedicated replay passes, no API cost;
 # completed passes are skipped, re-run to sweep ISO-PROOF aborts)
 PROF_GROUPS="fe_lat fe fe_l3x fe_miss" SHORT=scikit-learn SRC=1 \
@@ -96,7 +96,7 @@ from `local_agents/superseded_40min/data/l3_study/all_windows_<task>.csv` (2,497
 7,064 data rows for scikit-learn / astropy / sympy). Expect phenomena and rankings to
 reproduce, not exact values (replays re-execute real commands on live hardware).
 
-### 2.4 Scripts and artifacts (scripts in `local_agents/scripts/glm/`; data under `local_agents/superseded_40min/data/l3_study/`)
+### 2.4 Scripts and artifacts (scripts in `local_agents/kit/`; data under `local_agents/superseded_40min/data/l3_study/`)
 
 | Item | Location | Role |
 |---|---|---|
@@ -157,7 +157,7 @@ report 16 §2.2. The method as described in this report is what was in force whe
 data was captured.
 
 **Method update (2026-08-04, litellm venv relocation).** `run_glm_campaign.sh` changed after
-this report: the litellm proxy is now launched from `local_agents/scripts/glm/.venv_litellm`
+this report: the litellm proxy is now launched from `local_agents/kit/campaign/.venv_litellm`
 (the identical venv, moved out of the removed `agentic/openclaw/` tree; exact pins recorded in
 `litellm_venv_freeze.txt`, verified by preflight). The proxy's role, cgroup fencing, and CPU
 placement are byte-for-byte unchanged — nothing in this study's data or analysis is affected.

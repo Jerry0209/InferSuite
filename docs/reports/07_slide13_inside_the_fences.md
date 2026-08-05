@@ -37,7 +37,7 @@ command (15.7 core-s total tool fence — the loop's cost lands harness-side).
 | Records sample **`task-clock` at 99 Hz**, cgroup-scoped per fence | DSO percentages are therefore **time-shares** of fence CPU. Chosen for attribution ("where was the instruction pointer"), never for rates — the kit's counted-event windows own all rates. |
 | Featured runs per campaign, fixed: scikit r1/r1, astropy r1/r2, sympy r1/r2, django r2/r2 (Mohamad/new; new campaign's set matches `superseded_40min/plot_spec.json`) | Median-run policy for signature figures; runs are pinned in the plotting code (`FEAT_M`/`FEAT_N`) so the figure is deterministic. |
 | Harness DSO rows bucketed by `dso_cat()`: python interpreter / tiktoken / JSON-pydantic (`_json`, `pydantic_core`, `multidict`) / libc-loader / OS kernel / other | Six buckets make the cross-campaign structural identity readable; raw per-DSO tables stay banked for anyone needing finer grain. |
-| Per-class core-second tables are **hardcoded** in `cmp_allruns_absolute.py` (`TOOL_M`/`TOOL_N`), copied from `plot_internal_tools.py` stdout | Mohamad's data root lives outside this repo (`/home/thu/llm-service-kernel-latest/archive/certified_glm_40min`); freezing the captured tables lets the slide figure regenerate without that mount and makes the numbers auditable in one place. |
+| Per-class core-second tables are **hardcoded** in `cmp_allruns.py --view absolute` (`TOOL_M`/`TOOL_N`), copied from `plot_internal_tools.py` stdout | Mohamad's data root lives outside this repo (`/home/thu/llm-service-kernel-latest/archive/certified_glm_40min`); freezing the captured tables lets the slide figure regenerate without that mount and makes the numbers auditable in one place. |
 
 ### 2.2 Verification and hazards
 
@@ -70,9 +70,9 @@ cd ~/InferSuite   # no new capture; everything reads banked data; free; seconds 
 # per-class tool tables + per-task figure; prints calls/wall/cpu per class, anchor
 # diagnostics, and the coverage stamp (SYSTEM python3, per repo convention)
 PLOT_SPEC=local_agents/superseded_40min/plot_spec.json \
-  python3 local_agents/scripts/glm/plot_internal_tools.py
+  python3 local_agents/kit/plot/plot_internal_tools.py
 # the slide-13 figure (both campaigns, 2x2): tool classes (top) + harness DSO (bottom)
-python3 local_agents/scripts/glm/cmp_allruns_absolute.py   # -> plots/compare/cmp_whats_heavy.png
+python3 local_agents/kit/plot/cmp_allruns.py --view absolute   # -> plots/compare/cmp_whats_heavy.png
 ```
 
 DSO tables are banked per run as `scope1_dso.txt` (harness) / `scope2_dso.txt` (tool)
@@ -81,8 +81,8 @@ under `local_agents/superseded_40min/data/glm_swe_<task>/run_N/` (scope order fi
 `run_glm_campaign.sh` (`perf script -f -F comm,period,ip,sym,dso [--symfs <MergedDir>]`);
 the sandbox must still exist for the symfs path, which is why tables are made at episode
 teardown. Leaf-symbol and per-CPU-lane tables regenerate post-hoc:
-`./local_agents/scripts/glm/gen_lanes_leaf.sh <data_root> --leaf`. Caveat:
-`cmp_allruns_absolute.py` hardcodes Mohamad's data root at
+`./local_agents/kit/replay/gen_lanes_leaf.sh <data_root> --leaf`. Caveat:
+`cmp_allruns.py --view absolute` hardcodes Mohamad's data root at
 `/home/thu/llm-service-kernel-latest/archive/certified_glm_40min` (outside this repo) —
 without that mount the Mohamad harness-DSO panel renders empty; the frozen `TOOL_M` class
 table still renders.
@@ -91,10 +91,10 @@ table still renders.
 
 | Item | Location | Role |
 |---|---|---|
-| `plot_internal_tools.py` | `local_agents/scripts/glm/` | `classify()` + burst spans + ordinal anchor join; prints the per-class calls/wall/cpu table (source of `TOOL_M`/`TOOL_N`) and the coverage stamp |
+| `plot_internal_tools.py` | `local_agents/kit/` | `classify()` + burst spans + ordinal anchor join; prints the per-class calls/wall/cpu table (source of `TOOL_M`/`TOOL_N`) and the coverage stamp |
 | `run_glm_campaign.sh` | same dir | 99 Hz cgroup-scoped `task-clock` records per fence; `mk_tables` → `scopeN_{dso,comm,ksym,leaf,cpulanes,pidtime}` with MergedDir symfs; `kptr_restrict` preflight gate |
 | `gen_lanes_leaf.sh` | same dir | post-hoc per-CPU lanes + leaf-symbol tables from banked records |
-| `cmp_allruns_absolute.py` | same dir | builds the slide figure `compare/cmp_whats_heavy.png` (class stacks + `dso_cat()` DSO stacks, both campaigns) |
+| `cmp_allruns.py --view absolute` | same dir | builds the slide figure `compare/cmp_whats_heavy.png` (class stacks + `dso_cat()` DSO stacks, both campaigns) |
 | `scope{1,2}_dso.txt` per run | `local_agents/superseded_40min/data/.../run_N/` | banked DSO time-share tables (harness / tool) |
 | `cmp_whats_heavy.png` | `local_agents/superseded_40min/plots/compare/` | the slide-13 figure |
 
@@ -140,7 +140,7 @@ report 16 §2.2. The method as described in this report is what was in force whe
 data was captured.
 
 **Method update (2026-08-04, litellm venv relocation).** `run_glm_campaign.sh` changed after
-this report: the litellm proxy is now launched from `local_agents/scripts/glm/.venv_litellm`
+this report: the litellm proxy is now launched from `local_agents/kit/campaign/.venv_litellm`
 (the identical venv, moved out of the removed `agentic/openclaw/` tree; exact pins recorded in
 `litellm_venv_freeze.txt`, verified by preflight). The proxy's role, cgroup fencing, and CPU
 placement are byte-for-byte unchanged — nothing in this study's data or analysis is affected.

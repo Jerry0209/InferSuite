@@ -137,7 +137,7 @@ env — matplotlib is **not** in the system interpreter on this workstation (the
 "plot with system python3" convention in CLAUDE.md is stale).
 
 ```bash
-cd local_agents/scripts/glm
+cd local_agents/kit
 PY=/home/thu/miniforge3/envs/infersuite-full/bin/python3
 
 $PY attribute_windows.py                 # all sections
@@ -158,7 +158,7 @@ phenomena and shares, not exact trajectories or absolute Ginstr.
 
 | Item | Repo location | Role |
 |---|---|---|
-| `attribute_windows.py` | `local_agents/scripts/glm/` | **new** — every number in this report: weighted/median tables, per-tag and per-pass composition, toolchain-presence probe, churn tests, workload identification |
+| `attribute_windows.py` | `local_agents/kit/` | **new** — every number in this report: weighted/median tables, per-tag and per-pass composition, toolchain-presence probe, churn tests, workload identification |
 | `analyze_l3_windows.py` | same dir | `tag_of()` + `TAG_PRIORITY` extended for multilingual toolchains; `tags_present()` replaces the TAGCOL-keyed selection |
 | `cross_task_grid.py` | same dir | `SHORT`/`slang()` replace `LANG[t][:4]` |
 | `build_metric_gallery.py` | same dir | per-task galleries (33 metrics × 4 views) |

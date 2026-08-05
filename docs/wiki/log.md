@@ -53,3 +53,19 @@ With the dependency gone, `agentic/openclaw/` was removed (its `external/WildCla
 checkout was already absent, so no OC capture was runnable anyway); `measure.sh agents-oc` is
 now a stub that explains the restore path. Method-update notes appended to reports
 01–04/07–09/12.
+
+## [2026-08-05] update | Kit reorganized into pipeline-stage subdirs; OC code paths removed
+
+The measurement kit moved from the flat `local_agents/scripts/glm/` to `local_agents/kit/`
+with four stage subdirs: `campaign/` (runner + config + litellm venv, rebuilt from the freeze
+file), `replay/` (deterministic replays, per-window derivation, behaviour probes), `plot/`
+(all plotters; the three `cmp_*` scripts merged into `cmp_allruns.py --view
+{shares,absolute,tma}`), `validate/` (gates E1–E11 + figure audit). Basenames unchanged, so
+bare-name citations still resolve; full-path citations updated across reports/wiki/guides.
+The dead OpenClaw code paths left the tree (oc_episode + loop guard in the runner, both
+watchers, three OC plotters, `my_api_glm.json`), along with `gen_manifest.py`,
+`plot_thread_lanes.py`, and the pre-GLM `agentic/swe_agent` top-level scripts (GLM-era eval
+evidence preserved in `agentic/swe_agent/evals/`). The frozen `glm_plots/` views moved to
+`archive/glm_softiso_long_campaigns/glm_plots/`. Pages touched: measurement-design,
+lineage-fork-exec-fencing (marked historical), zero-mux-windowed-rotation,
+isolation-hardening, perf-tma-conventions.

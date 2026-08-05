@@ -73,7 +73,7 @@ Key properties a reproducer must understand:
 
 ```bash
 # L2 table for any campaign: point a spec at its data, run the plotter, read the dump
-PLOT_SPEC=<spec.json> python3 local_agents/scripts/glm/plot_glm_results.py
+PLOT_SPEC=<spec.json> python3 local_agents/kit/plot/plot_glm_results.py
 python3 -c "import json; d=json.load(open('<out>/values_dump.json'));
 print(d['scikit-learn (Python)']['tma_l2_tool'])"   # order documented above
 ```
@@ -88,11 +88,11 @@ reproduces and refines it; use that script going forward.
 
 | Item | Location | Role |
 |---|---|---|
-| `run_glm_campaign.sh` (`TMA_EVENTS`, `start_tma_cont`) | `local_agents/scripts/glm/` | census capture (already part of every episode) |
+| `run_glm_campaign.sh` (`TMA_EVENTS`, `start_tma_cont`) | `local_agents/kit/` | census capture (already part of every episode) |
 | `plot_glm_results.py` (`TMA_SPLIT`) | same dir | L2 derivation + `glm_tma_l2.png` + values dump |
 | `tma_cont.csv` | every `run_*/` dir | raw census (10 s interval rows per fence) |
 | Mohamad-side figures | `local_agents/superseded_40min/plots/compare/moh_featured/` | same plotter over his archive |
-| `analyze_l3_windows.py` | `local_agents/scripts/glm/` | successor of the window↔command join |
+| `analyze_l3_windows.py` | `local_agents/kit/` | successor of the window↔command join |
 
 ## 3. Key insights (most → least important)
 
@@ -126,7 +126,7 @@ report 16 §2.2. The method as described in this report is what was in force whe
 data was captured.
 
 **Method update (2026-08-04, litellm venv relocation).** `run_glm_campaign.sh` changed after
-this report: the litellm proxy is now launched from `local_agents/scripts/glm/.venv_litellm`
+this report: the litellm proxy is now launched from `local_agents/kit/campaign/.venv_litellm`
 (the identical venv, moved out of the removed `agentic/openclaw/` tree; exact pins recorded in
 `litellm_venv_freeze.txt`, verified by preflight). The proxy's role, cgroup fencing, and CPU
 placement are byte-for-byte unchanged — nothing in this study's data or analysis is affected.

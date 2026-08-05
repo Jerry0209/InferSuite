@@ -3,14 +3,17 @@
 | Field | Value |
 |---|---|
 | Owner | LLM maintained, human reviewed |
-| Status | Validated |
-| Last updated | 2026-07-29 |
-| Sources | [CLAUDE.md](../../../CLAUDE.md), [oc_lineage_watcher.py](../../../local_agents/scripts/glm/oc_lineage_watcher.py) |
+| Status | Validated (historical — implementation left the tree) |
+| Last updated | 2026-08-05 |
+| Sources | [CLAUDE.md](../../../CLAUDE.md), `oc_lineage_watcher.py` (removed 2026-08-05 with the OpenClaw code paths; restore from git history) |
 
 ## Context
 
-OpenClaw runs the Node gateway and every tool it spawns inside **one** container — no container
-boundary separates agent work from tool work. The fences must be reconstructed some other way.
+OpenClaw ran the Node gateway and every tool it spawned inside **one** container — no container
+boundary separates agent work from tool work. The fences had to be reconstructed some other way.
+(The OpenClaw harness and the watcher implementation were removed from the working tree in the
+2026-08-04/05 SWE-narrowing; this page preserves the design decision for the thesis and for any
+revival.)
 
 ## Decision
 

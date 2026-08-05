@@ -17,7 +17,7 @@ Replay anchors: `glm_replay_swe_{django,fmtlib}/run_1` (live↔replay PASS: dso 
 cost 5%/0%).
 
 Regenerate: `PLOT_SPEC=local_agents/SWE_clean/plot_spec.json python3
-local_agents/scripts/glm/plot_glm_results.py` + `plot_call_structure.py` +
+local_agents/kit/plot/plot_glm_results.py` + `plot_call_structure.py` +
 `plot_harness_scaling.py`. Audit: `PLOT_SPEC=... python3 audit_plots.py` (independent
 recompute vs `values_dump.json`). Validate: `python3 validate_glm_agents.py
 local_agents/SWE_clean/data glm`. Curated shortlist: `plots/thesis_ready/`.

@@ -82,9 +82,9 @@ assumed. Multi-SWE-bench per-language counts remain unverified (`benchmark_compa
 **Reproduce every number (no API spend):**
 ```bash
 PY=~/miniforge3/envs/infersuite-full/bin/python3
-$PY local_agents/scripts/glm/multiling_inventory.py       # counts + static features (~1 min)
-$PY local_agents/scripts/glm/behavior_classify.py         # labels | predict | plan | export
-$PY local_agents/scripts/glm/attribute_windows.py probe mix   # gates + compositions
+$PY local_agents/kit/campaign/multiling_inventory.py       # counts + static features (~1 min)
+$PY local_agents/kit/replay/behavior_classify.py         # labels | predict | plan | export
+$PY local_agents/kit/replay/attribute_windows.py probe mix   # gates + compositions
 ```
 Episode + replay recipe: report 16 §2.3. Probe driver: `behavior_campaign.sh`
 (`BREAKER=0` overrides the circuit breaker).
