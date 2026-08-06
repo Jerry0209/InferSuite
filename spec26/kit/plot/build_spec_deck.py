@@ -41,13 +41,18 @@ IMG = {k: uri(f"spec_{k}.png") for k in
         "vs_agentic_frontend", "window_grid", "phase_timelines")}
 
 C = V["comparison"]
+def rot_ratio(key: str) -> float:
+    """agent/SPEC on the ROTATION population — kept available for the slides that use it and
+    for the takeaway contrasting the two populations."""
+    c = C[key]
+    return c["agentic_rotation_median"] / c["spec_median"]
 F = V["frontend"]
 T = V["tma_compare"]
 IV = V["int_vs_fp"]
 ABC = V["capture"]["729.abc_r"]
 
 
-def n(key: str, field: str = "ratio_agentic_over_spec", d: int = 2) -> str:
+def n(key: str, field: str = "ratio_replay_over_spec", d: int = 2) -> str:
     return f"{C[key][field]:.{d}f}"
 
 
@@ -526,17 +531,40 @@ BODY = f"""
     <div class="wrap">
       <p class="eyebrow">Slide 17 · the comparison</p>
       <h2>Same instrument, same formulas, same machine</h2>
-      <p class="lead">Medians on a log axis, because the ratios span 0.07× to 23×. SPEC carries its
-      full 26-benchmark range; the agentic side carries its rotation range, and the
-      dedicated-single-group replays are plotted as an independent second opinion that never
-      shared a run with the rotation episodes.</p>
-      <div class="figcard"><img alt="SPEC vs agentic paired medians on the shared 8 groups" src="__CMP__"></div>
+      <p class="lead"><b>What the green bar is.</b> A <b>dedicated-group replay</b>: SWE-agent
+      re-executes a recorded trajectory in a fresh sandbox with the model never called, and the
+      whole episode counts <b>one</b> counter group. Commands genuinely re-run, so the
+      microarchitecture is real; only the <i>choice</i> of commands is frozen.</p>
+      <p class="lead"><b>Why compare against that.</b> Three reasons, all about removing doubt
+      from the agentic side rather than from SPEC. The group is live at <b>100 % duty</b> for the
+      episode instead of 1/8 of it, so the metric is not a sample. The episode is
+      <b>deterministic</b> and free of API cost, so it can be repeated. And no model latency sits
+      inside the measured interval. What it buys in cleanliness it pays for in breadth — see the
+      caveat below.</p>
+      <div class="figcard"><img alt="SPEC vs agentic-replay paired medians on the shared 8 groups" src="__CMP__"></div>
       <div class="take">
-        <div class="chip agent">instruction supply: L1I MPKI <b>{n('L1I_MPKI')}×</b>, MITE <b>{n('MITE_pct')}×</b>, microcode <b>{n('MS_pct')}×</b></div>
-        <div class="chip agent">system time: kernel <b>{n('kernel_pct')}×</b></div>
-        <div class="chip spec">data side: DRAM read bandwidth <b>{n('DRAM_read_GBs')}×</b> (SPEC moves {1/C['DRAM_read_GBs']['ratio_agentic_over_spec']:.0f}× more), L1D MPKI <b>{n('L1D_MPKI')}×</b></div>
-        <div class="chip mute">latency-model metrics agree: AMAT <b>{n('AMAT_cyc')}×</b>, MLP <b>{n('MLP')}×</b></div>
+        <div class="chip agent">instruction supply: L1I MPKI <b>{n('L1I_MPKI')}×</b>, MITE <b>{n('MITE_pct')}×</b>, microcode <b>{n('MS_pct')}×</b>, branch MPKI <b>{n('brMPKI')}×</b></div>
+        <div class="chip agent">system time: kernel <b>{n('kernel_pct')}×</b> — the largest gap on the slide</div>
+        <div class="chip mute">the data side barely moves: AMAT <b>{n('AMAT_cyc')}×</b>, L1D MPKI <b>{n('L1D_MPKI')}×</b>, MLP <b>{n('MLP')}×</b>. SPEC still reads <b>{1/C['DRAM_read_GBs']['ratio_replay_over_spec']:.1f}×</b> the DRAM bandwidth</div>
       </div>
+      <p class="note"><b>Reading the two counts.</b> <b>n = 19</b> is the whole replay population;
+      <b>n = 7</b> (used on slides 18–19) is the other agentic instrument — episodes that shuffled
+      all 8 groups the way SPEC does. They are not interchangeable and are never merged.
+      <b>The per-row number on the right is the one that matters here:</b> a replay measures one
+      group, so each metric rests on the <b>2–3</b> episodes that ran <i>its</i> group — never on
+      all 19. IPC is the exception (17), because cycles and instructions ride in every group.
+      <br><br><b>Why the whisker is only on the SPEC bar.</b> With 26 benchmarks a range means
+      something — it says whether the gap is the whole suite or one outlier. With 2 episodes a
+      "range" is just the two points, so the figure plots them instead, marked by task. Read them:
+      kernel time is <b>20.7 %</b> on babel against <b>5.0 %</b> on fmtlib, a 4× spread inside a
+      2-point median.
+      <br><br><b>The cost of this choice.</b> The replays cover <b>2 tasks — babel (JavaScript)
+      and fmtlib (C++)</b>. Both Python tasks (django, sympy) are absent, and the rotation
+      population covers 4. Switching to replays therefore <i>strengthens</i> the instruction-supply
+      result (L1I 11.96× → {n('L1I_MPKI')}×, kernel 23.18× → {n('kernel_pct')}×) and
+      <i>weakens</i> the DRAM one (0.07× → {n('DRAM_read_GBs')}×) — and that second move is a
+      task-composition effect, not an instrument effect: fmtlib compiles C++ and moves real memory
+      traffic where the Python tasks do not.</p>
     </div>
   </section>
 
@@ -588,11 +616,14 @@ BODY = f"""
         issue width to within 0.3 % on all 26 episodes; the cgroup accounting and the PMU agree to
         0.005 CPUs; zero windows were multiplexed; known benchmark characters came out as known
         benchmark characters without anyone aiming at them.</li>
-        <li><b>The workloads separate on instruction supply, not on data.</b> Agentic work costs
-        {n('L1I_MPKI')}× the instruction-cache pressure, {n('MITE_pct')}× the legacy decode and
-        {n('kernel_pct')}× the kernel time of the median SPEC benchmark, while moving
-        {1/C['DRAM_read_GBs']['ratio_agentic_over_spec']:.0f}× <i>less</i> DRAM traffic. SPEC is a
-        data-movement benchmark suite; agentic work is an instruction-supply and system-call workload.</li>
+        <li><b>The workloads separate on instruction supply and system time, not on the data side.</b>
+        Against the median SPEC benchmark, agentic work costs {n('L1I_MPKI')}× the instruction-cache
+        pressure, {n('MITE_pct')}× the legacy decode and {n('kernel_pct')}× the kernel time — while
+        AMAT ({n('AMAT_cyc')}×), L1D MPKI ({n('L1D_MPKI')}×) and MLP ({n('MLP')}×) are
+        indistinguishable. The metrics everyone reaches for first are the ones that do not separate.
+        SPEC still reads {1/C['DRAM_read_GBs']['ratio_replay_over_spec']:.1f}× the DRAM bandwidth,
+        but that gap is task-dependent, not a property of agentic work — it is {1/rot_ratio('DRAM_read_GBs'):.0f}× against the
+        Python-heavy rotation episodes and only {1/C['DRAM_read_GBs']['ratio_replay_over_spec']:.1f}× against the C++/JS replays.</li>
         <li><b>Agentic behaviour is uniform where SPEC is diverse.</b> Every agentic episode lands
         in one small region of the TMA plane; the SPEC suite covers it entirely.</li>
       </ul>
@@ -602,9 +633,14 @@ BODY = f"""
       that boundary badly; per-instruction rates survive it far better.
       <b>Contention:</b> SPEC runs one copy on one core with L3 and DRAM to itself; the agentic
       workload ran many concurrent processes and did contend.
-      <b>Population:</b> the primary agentic side is {V['n_agentic_rotation']} full-rotation
-      episodes over 4 tasks — small, and the replay episodes corroborate direction but not
-      magnitude. <b>LLC_MPKI</b> is a demand-miss metric, not a memory-boundedness metric.</p>
+      <b>Population.</b> Two agentic instruments, never merged. <b>Slide 17</b> uses the
+      <b>dedicated-group replays</b>: {V['n_agentic_replay']} episodes over <b>2 tasks</b> (babel,
+      fmtlib), each giving one counter group 100 % duty — so every metric there rests on the 2–3
+      episodes that ran its group. <b>Slides 18–19</b> use the <b>8-group rotation</b>:
+      {V['n_agentic_rotation']} episodes over <b>4 tasks</b> (babel, django, fmtlib, sympy) — the
+      same instrument SPEC runs, so a full metric card comes from one episode. Both are small; the
+      two agree on every direction, which is the strongest statement the populations support.
+      <b>LLC_MPKI</b> is a demand-miss metric, not a memory-boundedness metric.</p>
     </div>
   </section>
 

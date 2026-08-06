@@ -36,10 +36,22 @@ Two SPEC numbers exist for the same episodes and they are **not** interchangeabl
   (26-episode median **2.427** over 11 groups vs **2.418** over 8). Per-event ratios are
   immune — their denominators are already co-counted per group.
 
-The agentic side is likewise split by instrument and never merged:
-**rotation** (7 episodes running the full 8-group shuffle — the same instrument as SPEC, and the
-primary comparison population) and **replay** (19 episodes each dedicating the whole run to one
-group — an independent second opinion that shared no run with the rotation episodes).
+The agentic side is likewise split by instrument and **never merged**:
+
+| Population | n | Tasks | What one episode gives you |
+|---|---|---|---|
+| **rotation** | 7 | 4 — babel, django, fmtlib, sympy | all 8 groups shuffled across the episode, i.e. the same instrument SPEC runs, so one episode yields a full metric card at ~1/8 duty per group |
+| **replay** | 19 | 2 — babel, fmtlib | one group for a whole deterministic episode at 100 % duty, no model in the loop — so **each metric rests on the 2–3 replays that ran its group, never on all 19** (IPC is the exception at 17: cycles and instructions ride in every group) |
+
+`spec_vs_agentic_metrics` uses the **replay** population only (PI decision 2026-08-06) and prints
+the contributing episode count per row; `spec_vs_agentic_tma` shows both plus SPEC;
+`spec_vs_agentic_frontend` and `spec_landscape` use rotation, with replays overlaid.
+
+Switching that figure from rotation to replay strengthens the instruction-supply result
+(L1I MPKI 11.96× → 18.00×, kernel 23.18× → 27.27×) and weakens the DRAM one (0.07× → 0.52×).
+The DRAM move is **task composition, not instrument**: the replays are babel (JS) and fmtlib
+(C++), and fmtlib compiles C++ and moves real memory traffic where the Python rotation tasks
+(django, sympy) do not.
 
 | Figure | What it shows | Population |
 |---|---|---|
@@ -51,7 +63,7 @@ group — an independent second opinion that shared no run with the rotation epi
 | `spec_uop_supply.png` | DSB/MITE/MS/LSD delivery shares beside L1I MPKI | SPEC 26 |
 | `spec_memory_ladder.png` | L1D / LLC / DRAM GB/s / MLP, with the demand-miss caveat | SPEC 26 |
 | `spec_landscape.png` | IPC vs stalled slots, with the agentic median placed in it | SPEC 26 (8 groups) + agentic rotation |
-| `spec_vs_agentic_metrics.png` | paired medians on a log axis, ratios per metric | SPEC 26 (8 groups) + rotation + replay |
+| `spec_vs_agentic_metrics.png` | paired medians on a log axis, ratios per metric; SPEC carries a full-range whisker, the agentic side carries its individual episode points marked by task (a range over 2 points is not a range) | SPEC 26 (8 groups) + **replay only** |
 | `spec_vs_agentic_tma.png` | TMA L1 comparison + every episode as a point | SPEC 26 + rotation + replay |
 | `spec_vs_agentic_frontend.png` | SPEC distributions with agentic episodes overlaid, and the agentic median's SPEC percentile | SPEC 26 (8 groups) + rotation + replay |
 | `spec_window_grid.png` | 12 metrics × 26 benchmarks of **per-window** distributions | SPEC 26, per-window |

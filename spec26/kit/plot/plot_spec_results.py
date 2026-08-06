@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import statistics
 import sys
 
@@ -409,21 +410,31 @@ save(fig, "spec_landscape.png")
 VALUES["landscape"] = {"agentic_median_IPC": ag_ipc, "agentic_median_stall_pct": ag_st}
 
 # ================= Fig 9: the headline comparison ================================================
-# Paired medians on a log axis (the ratios span 0.04x to 14x — a linear axis would show one bar).
-# SPEC carries its full 26-episode range as a whisker; the agentic side carries its rotation
-# range, and the dedicated-group replays are plotted as an independent second opinion.
+# PI decision 2026-08-06: the agentic side of THIS figure is the dedicated-group REPLAY
+# population, not the rotation one. Rationale and its cost are both on the slide — a replay
+# dedicates a whole deterministic episode to ONE counter group, so that group is live at 100 %
+# duty instead of 1/8 of the time, and no model is in the loop; but only babel and fmtlib were
+# replayed, and each metric is therefore carried by the 2-3 episodes that ran its group, not by
+# all 19. So this figure never draws a whisker on the agentic side: with n=2-3 the "range" IS
+# the points, and it plots them individually, marked by task.
 CMPROWS = [("L1I_MPKI", "L1I MPKI", "/1000 insn"),
            ("kernel_pct", "kernel time", "% of cycles"),
-           ("MITE_pct", "MITE (legacy decode)", "% of uops"),
            ("MS_pct", "microcode sequencer", "% of uops"),
+           ("MITE_pct", "MITE (legacy decode)", "% of uops"),
            ("brMPKI", "branch MPKI", "/1000 insn"),
            ("LLC_MPKI", "LLC demand-miss MPKI", "/1000 insn"),
-           ("MLP", "MLP", "outstanding"),
            ("AMAT_cyc", "AMAT", "cycles"),
            ("L1D_MPKI", "L1D-load MPKI", "/1000 insn"),
+           ("MLP", "MLP", "outstanding"),
            ("DSB_pct", "DSB (uop cache)", "% of uops"),
            ("IPC", "IPC", "insn/cycle"),
            ("DRAM_read_GBs", "DRAM read BW", "GB/s")]
+
+TASK_MARK = {"babel": "o", "fmtlib": "s", "django": "^", "sympy": "D"}
+
+
+def task_of(name: str) -> str:
+    return re.sub(r"^glm_(replay_)?swe_", "", name.split("/")[0]).replace("-lite", "")
 
 
 def rng(rows, k):
@@ -432,46 +443,64 @@ def rng(rows, k):
     return (min(v), max(v)) if v else (None, None)
 
 
-fig, ax = plt.subplots(figsize=(12.6, 8.6))
+def points(rows, k):
+    return [(task_of(r["name"]), r["metrics"][k]) for r in rows if r["metrics"].get(k) is not None]
+
+
+REP_TASKS = sorted({task_of(r["name"]) for r in REP})
+fig, ax = plt.subplots(figsize=(13.0, 8.8))
 Y = np.arange(len(CMPROWS))
 h = 0.3
 for i, (k, lab, unit) in enumerate(CMPROWS):
-    s, a = med(SPEC8, k), med(ROT, k)
+    s_, a = med(SPEC8, k), med(REP, k)
     slo, shi = rng(SPEC8, k)
-    alo, ahi = rng(ROT, k)
-    ax.barh(i - h / 2, s, height=h, color=C_SPEC, zorder=3)
+    ax.barh(i - h / 2, s_, height=h, color=C_SPEC, zorder=3)
     ax.barh(i + h / 2, a, height=h, color=C_AGENT, zorder=3)
     ax.plot([max(slo, 1e-3), max(shi, 1e-3)], [i - h / 2] * 2, color="#0d3f63", lw=1.1, zorder=4)
-    ax.plot([max(alo, 1e-3), max(ahi, 1e-3)], [i + h / 2] * 2, color="#0b5c44", lw=1.1, zorder=4)
-    rp = med(REP, k)
-    if rp is not None:
-        ax.plot([rp], [i + h / 2], marker="D", ms=4.5, color="#0b5c44", mfc="white", zorder=5)
-    ratio = a / s if s else float("nan")
-    # get_yaxis_transform() = (axes fraction in x, DATA coordinates in y). transAxes would
-    # need the inverted axis undone by hand and silently prints every ratio against the
-    # wrong row.
-    ax.text(1.006, i, f"{ratio:>5.2f}×", transform=ax.get_yaxis_transform(),
-            va="center", fontsize=9.5,
+    pts = points(REP, k)
+    for t, v in pts:
+        ax.plot([v], [i + h / 2], marker=TASK_MARK.get(t, "x"), ms=5.5, color="#0b5c44",
+                mfc="white", mew=1.2, ls="", zorder=5)
+    ratio = a / s_ if s_ else float("nan")
+    ax.text(1.045, i, f"{ratio:>5.2f}×", transform=ax.get_yaxis_transform(), va="center",
+            ha="right", fontsize=9.5,
             color="#b03a2e" if ratio >= 2 else ("#1e8449" if ratio <= 0.5 else "#555"))
+    # The replay episode count belongs BESIDE the number it qualifies, not tucked under the
+    # axis label where it reads as part of the metric name.
+    ax.text(1.09, i, f"{len(pts)}", transform=ax.get_yaxis_transform(), va="center",
+            ha="center", fontsize=8.6, color="#0b5c44")
     VALUES.setdefault("comparison", {})[k] = {
-        "spec_median": s, "spec_range": [slo, shi], "agentic_rotation_median": a,
-        "agentic_rotation_range": [alo, ahi], "agentic_replay_median": rp,
-        "ratio_agentic_over_spec": ratio}
+        "spec_median": s_, "spec_range": [slo, shi],
+        "agentic_replay_median": a, "agentic_replay_n": len(pts),
+        "agentic_replay_points": [{"task": t, "value": v} for t, v in pts],
+        "agentic_rotation_median": med(ROT, k), "agentic_rotation_n": len(points(ROT, k)),
+        "ratio_replay_over_spec": ratio}
 ax.set_xscale("log")
 ax.set_yticks(Y)
 ax.set_yticklabels([f"{lab}\n({unit})" for _k, lab, unit in CMPROWS], fontsize=9)
 ax.invert_yaxis()
 ax.grid(axis="x", which="both")
 ax.set_xlabel("median value (log scale) — the eight shared counter groups only")
-ax.text(1.006, 1.015, "agent / SPEC", transform=ax.transAxes, fontsize=9, color="#333")
-ax.legend(handles=[Patch(color=C_SPEC, label=f"SPEC CPU 2026 (n={len(SPEC8)})"),
-                   Patch(color=C_AGENT, label=f"agentic, 8-group rotation (n={len(ROT)})"),
-                   plt.Line2D([], [], marker="D", ls="", color="#0b5c44", mfc="white", ms=6,
-                              label=f"agentic, dedicated-group replays (n={len(REP)}) — "
-                                    "independent check")],
-          fontsize=9.5, frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.075), ncol=3)
-ax.set_title("Traditional compute vs agentic work: same instrument, same formulas, same machine",
-             fontsize=12.5, pad=12)
+ax.text(1.045, 1.012, "agent / SPEC", transform=ax.transAxes, fontsize=8.6, color="#333",
+        ha="right")
+ax.text(1.09, 1.012, "replay\nepisodes", transform=ax.transAxes, fontsize=8.2, color="#0b5c44",
+        ha="center")
+ax.legend(handles=[Patch(color=C_SPEC, label=f"SPEC CPU 2026 — median of {len(SPEC8)} benchmarks, "
+                                             "whisker = full range"),
+                   Patch(color=C_AGENT, label="agentic — median of the dedicated-group replay "
+                                              "episodes that measured that metric")]
+                  + [plt.Line2D([], [], marker=TASK_MARK[t], ls="", color="#0b5c44", mfc="white",
+                                mew=1.2, ms=6, label=f"replay episode — {t}") for t in REP_TASKS],
+          fontsize=9, frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.105), ncol=2)
+ax.set_title(f"agentic side = dedicated-group replays ONLY — {len(REP)} episodes over "
+             f"{len(REP_TASKS)} tasks ({', '.join(REP_TASKS)}). Each replay gives ONE counter "
+             "group 100 % duty for a whole\ndeterministic episode, so every metric rests on the "
+             "2–3 episodes that ran ITS group, never on all "
+             f"{len(REP)} — the count is printed per row.",
+             fontsize=8.8, color="#5a6b78", pad=12)
+fig.suptitle("Traditional compute vs agentic work: same instrument, same formulas, same machine",
+             fontsize=12.5, y=0.985)
+fig.tight_layout(rect=(0, 0.02, 1, 0.955))
 save(fig, "spec_vs_agentic_metrics.png")
 
 # ================= Fig 10: TMA comparison ========================================================
