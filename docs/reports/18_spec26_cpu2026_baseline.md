@@ -86,10 +86,18 @@ Defects found and fixed during the study, each of which would have shipped a wro
   system slices to "all online CPUs" instead of what it had snapshotted. It now snapshots and
   restores the real values, per-CPU (governors differ per core; offline CPUs reject writes).
 
-**Known limitations.** (a) **Counting duty is 83.3 %**: re-arming perf costs a fixed ~20 ms per
-window, so a 100 ms window runs 120 ms wall. The dead time sits between windows and is
-uncorrelated with program phase, and the continuous TMA census is unaffected (100 % duty, zero
-GP counters) — but ~17 % of wall is unobserved by the windowed groups. (b) **SMT and contention**
+**Known limitations.** (a) **Counting duty is 83.3 %**: re-arming perf costs a fixed ~22 ms per
+window, so a 100 ms window occupies ~122 ms of wall (measured pitch 0.121–0.125 s across the
+suite). The dead time sits between windows and is uncorrelated with program phase, and the
+continuous TMA census is unaffected (100 % duty, zero GP counters) — but ~17 % of wall is
+unobserved by the windowed groups. **A corollary worth stating because it is asked every time:**
+an episode does not yield `wall / WINSEC` windows. Each one also has a lead-in before the first
+window is armed (median 0.11 s) and a teardown after the benchmark exits (median 1.43 s — TMA
+flush, poller and record stop, scope stop) that carry no windows, so
+`windows = (wall − lead_in − teardown) / pitch`. Every episode lands at **72–82 %** of the naive
+figure (median 80 %); short ones sit lowest because they pay the fixed teardown out of a small
+budget. Worked example, 729.abc_r: (11.74 − 0.16 − 1.00) / 0.123 = **86**, where 11.74 / 0.1
+would suggest 117. The per-episode terms are banked in `values_dump.json` under `capture`. (b) **SMT and contention**
 differ between campaigns (§2.4). (c) The agentic rotation population is **7 episodes over
 4 tasks** — small. (d) `AMAT_cyc` is a fixed-latency model (5/15/50/250 cycles), not a measured
 latency.

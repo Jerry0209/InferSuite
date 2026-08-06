@@ -487,6 +487,44 @@ def duty(rows: list[dict], d: str) -> float | None:
     return min(1.0, counted / (hi - lo))
 
 
+def window_budget(ep: dict) -> dict | None:
+    """Where an episode's wall time went, and why it does not buy wall/WINSEC windows.
+
+    A 100 ms window does NOT occupy 100 ms of wall clock. perf has to be torn down and
+    re-armed between windows (a fixed ~22 ms), so the window PITCH is ~122 ms; on top of
+    that each episode has a lead-in before the first window is armed and a teardown after
+    the benchmark exits (flush the continuous TMA census, stop the pollers and the 99 Hz
+    record, stop the scope) during which no window is running.
+
+        windows = (wall - lead_in - teardown) / pitch
+
+    Short episodes pay the fixed teardown out of a small budget, so they land furthest from
+    the naive wall/WINSEC figure: 729.abc_r gets 86 windows where wall/0.1 would suggest 117.
+    """
+    p = os.path.join(ep["dir"], "windows.tsv")
+    if not os.path.exists(p):
+        return None
+    ts = []
+    for ln in open(p):
+        f = ln.rstrip("\n").split("\t")
+        if len(f) < 4 or f[0] == "win":
+            continue
+        try:
+            ts.append((float(f[2]), float(f[3])))
+        except ValueError:
+            continue
+    meta = ep.get("meta") or {}
+    if not ts or not meta.get("ts_start"):
+        return None
+    lo, hi, n = min(a for a, _ in ts), max(b for _, b in ts), len(ts)
+    winsec = float(meta.get("winsec") or 0.1)
+    return {"wall_s": ep["wall_s"], "lead_in_s": lo - meta["ts_start"],
+            "teardown_s": meta["ts_end"] - hi, "windowing_s": hi - lo,
+            "pitch_s": (hi - lo) / n, "windows": n,
+            "naive_windows": ep["wall_s"] / winsec,
+            "pct_of_naive": 100.0 * n / (ep["wall_s"] / winsec)}
+
+
 def slots_per_cycle(ep: dict, rows: list[dict]) -> float | None:
     """Cross-instrument check: continuous-TMA slots against windowed cycles.
 

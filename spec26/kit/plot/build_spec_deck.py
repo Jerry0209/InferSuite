@@ -44,6 +44,7 @@ C = V["comparison"]
 F = V["frontend"]
 T = V["tma_compare"]
 IV = V["int_vs_fp"]
+ABC = V["capture"]["729.abc_r"]
 
 
 def n(key: str, field: str = "ratio_agentic_over_spec", d: int = 2) -> str:
@@ -290,10 +291,18 @@ BODY = f"""
       55-window floor by 30×. <b>Ordering, here and on the next five figures:</b> the SPECrate
       integer block first, then floating-point, each by SPEC number — the two categories have
       genuinely different profiles, and a figure sorted by measured value hides that.</p>
+      <p class="lead"><b>Why the counts are not wall ÷ 100 ms</b> (the grey ghost bar). A 100 ms
+      window occupies about <b>122 ms</b> of wall clock: perf is torn down and re-armed between
+      windows at a fixed ~22 ms, and that cost sits between windows, not inside them. Each
+      episode also has a lead-in before the first window is armed and a teardown after the
+      benchmark exits — flushing the continuous TMA census, stopping the pollers and the 99 Hz
+      record, stopping the scope — during which no window runs.</p>
       <div class="figcard"><img alt="Per-benchmark wall time and window count" src="__SUITE__"></div>
       <div class="take">
         <div class="chip spec">longest <b>765.roms_r</b> 330 s · <b>2,658</b> windows</div>
         <div class="chip spec">shortest <b>736.ocio_r</b> 9.7 s · <b>70</b> windows</div>
+        <div class="chip warn"><b>729.abc_r worked through:</b> (11.74 s wall − {ABC['lead_in_s']:.2f} lead-in − {ABC['teardown_s']:.2f} teardown) ÷ {ABC['pitch_s']:.3f} s pitch = <b>{ABC['windows']}</b> windows, where wall ÷ 0.1 would suggest {ABC['naive_windows']:.0f}</div>
+        <div class="chip mute">every episode lands at <b>72–82 %</b> of wall ÷ 100 ms (median 80 %). Short episodes pay the fixed ~1–1.5 s teardown out of a small budget, so they sit lowest</div>
         <div class="chip mute">total <b>{sum(c['windows'] for c in V['capture'].values()):,}</b> windows carrying counters ({sum(c['windows_launched'] for c in V['capture'].values()):,} launched) over <b>{sum(c['wall_s'] for c in V['capture'].values())/60:.0f}</b> minutes of benchmark time</div>
       </div>
     </div>

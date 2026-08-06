@@ -32,7 +32,7 @@ from matplotlib.patches import Patch  # noqa: E402
 from spec_common import (  # noqa: E402
     C_AGENT, C_FP, C_INT, C_SPEC, L1COLS, OUT, UOPCOLS,
     agentic_split, cat_divider, cat_sorted, comparison, duty, episodes, n_int, save, series,
-    slots_per_cycle, txtcol, windows,
+    slots_per_cycle, txtcol, window_budget, windows,
 )
 
 EPS = episodes()
@@ -89,19 +89,39 @@ a1.set_yticklabels([e["benchmark"] for e in order], fontsize=8.6)
 a1.set_title("How long each benchmark ran", fontsize=11)
 cat_divider(a1, order)
 
-a2.barh(Y, [e["n_windows"] for e in order], color=[bcol(e) for e in order], height=0.68)
+# The ghost bar is wall/0.1 — the count you get if you assume a 100 ms window costs 100 ms of
+# wall. It does not: perf is re-armed between windows (~22 ms fixed), and each episode has a
+# lead-in and a teardown that carry no windows. Drawing the gap stops the figure from looking
+# like windows went missing.
+BUD = {e["benchmark"]: window_budget(e) for e in EPS}
+a2.barh(Y, [BUD[e["benchmark"]]["naive_windows"] for e in order], color="#c9d4dd", height=0.68,
+        zorder=1)
+a2.barh(Y, [e["n_windows"] for e in order], color=[bcol(e) for e in order], height=0.68, zorder=2)
 for y, e in enumerate(order):
-    a2.text(e["n_windows"] + 25, y, f"{e['n_windows']}", va="center", fontsize=8)
-a2.axvline(55, color="#c0392b", lw=1.2, ls="--")
+    b = BUD[e["benchmark"]]
+    a2.text(b["naive_windows"] + 25, y, f"{e['n_windows']}  ({b['pct_of_naive']:.0f}%)",
+            va="center", fontsize=7.6)
+a2.axvline(55, color="#c0392b", lw=1.2, ls="--", zorder=3)
 a2.text(58, len(order) - 0.6, "MIN_WINDOWS = 55\n(5 full rotations)", fontsize=8, color="#c0392b",
         va="top")
 a2.set_xlabel("100 ms counting windows captured")
-a2.set_xlim(0, max(e["n_windows"] for e in order) * 1.14)
+a2.set_xlim(0, max(BUD[e["benchmark"]]["naive_windows"] for e in order) * 1.22)
 a2.set_title("How much counting that bought", fontsize=11)
+# Below the axis, not inside it: at the top-right the ghost bars run to 3,300 and at the
+# bottom-right the FP bars do, so there is no free corner to put it in.
+a2.text(1.0, -0.072, "a 100 ms window occupies ~122 ms of wall — perf is torn down and re-armed "
+                     "between windows (~22 ms fixed) — and each episode has a lead-in and a "
+                     "teardown that carry none:\n"
+                     "windows = (wall − lead-in − teardown) ÷ pitch.   "
+                     "729.abc_r: (11.74 − 0.16 − 1.00) ÷ 0.123 = 86, where wall ÷ 0.1 would "
+                     "suggest 117.",
+        transform=a2.transAxes, ha="right", va="top", fontsize=8, color="#0d3f63")
 cat_divider(a2, order)
 fig.legend(handles=[Patch(color=C_INT, label=f"SPECrate integer ({n_int(EPS)})"),
-                    Patch(color=C_FP, label=f"SPECrate floating-point ({len(EPS)-n_int(EPS)})")],
-           ncol=2, frameon=False, fontsize=9.5, loc="upper center", bbox_to_anchor=(0.5, 0.965))
+                    Patch(color=C_FP, label=f"SPECrate floating-point ({len(EPS)-n_int(EPS)})"),
+                    Patch(color="#c9d4dd", label="wall ÷ 100 ms — the count if a window cost no "
+                                                 "more than it counts")],
+           ncol=3, frameon=False, fontsize=9.2, loc="upper center", bbox_to_anchor=(0.5, 0.965))
 fig.suptitle(f"SPEC CPU 2026 baseline capture — {len(EPS)} benchmarks, "
              f"{sum(e['n_windows'] for e in EPS):,} windows "
              "(integer block, then floating-point, each by SPEC number)", fontsize=12.5, y=1.0)
@@ -119,9 +139,13 @@ def n_launched(e: dict) -> int:
 
 
 VALUES["capture"] = {e["benchmark"]: {"wall_s": e["wall_s"], "windows": e["n_windows"],
-                                  "windows_launched": n_launched(e),
-                                  "fp": e["fp"], "cmd_index": e["meta"].get("cmd_index"),
-                                  "size": e["meta"].get("size")} for e in EPS}
+                                      "windows_launched": n_launched(e),
+                                      "fp": e["fp"], "cmd_index": e["meta"].get("cmd_index"),
+                                      "size": e["meta"].get("size"),
+                                      **{k: v for k, v in (window_budget(e) or {}).items()
+                                         if k in ("lead_in_s", "teardown_s", "pitch_s",
+                                                  "naive_windows", "pct_of_naive")}}
+                     for e in EPS}
 
 # ================= Fig 2: the instrument checking itself =========================================
 # Three independent statements about the capture, none of which uses the metric values:
