@@ -26,10 +26,11 @@ creation; the table below is ordered by deck slide.
 | 26–27 | [16 — nine-language expansion](16_slides26-27_multilingual_expansion.md) | Seven new languages via episode → ownership+adequacy gate → 11 replay passes: composition reproduces (~1 %) while magnitude is episode noise (5.33×); within-Go compile-vs-test front-end split; Java's JIT best front end; six silent harness/tagger defects found and fixed; three instances rejected by automated gates |
 | 28 | [17 — ⟨language, type⟩ sampling frame](17_slide28_language_type_sampling_frame.md) | The mentor's frame operationalised: 300-instance inventory (assertion-checked counts), deterministic taxonomy validated against 12 measured compositions — mechanism-type is nested in language (9 cells, all covered), so the next campaign samples the open behavioural axis with realized-type crediting |
 | 1–25 | [14 — instrument-to-figure reference](14_slides1-25_instrument_to_figure_reference.md) | Cross-cutting: which instrument produced each deck number, exact vs heuristic layer, and the code site of every constant — plus the JS command-tagger gap that qualifies babel's tag mix on 24–25, and the published slide links |
+| own deck | [18 — SPEC CPU 2026 baseline](18_spec26_cpu2026_baseline.md) | The traditional-workload baseline the agentic numbers are measured against: 26 benchmarks, ref inputs, 1 copy on 1 isolated SMT-free core, same 8 certified groups and same code. Method validated (slots/cycle 6.00–6.02 vs an issue width of 6; known benchmark characters reproduced); the families separate on instruction supply (L1I 11.96×, kernel 23.18×) not on data (DRAM 0.07×) |
 
 **Reading order for a newcomer:** 14 (which instrument produced what) → 03 (what a "tool call"
 is in this data) → 05 → 06 → 07 → 08 → 02 → 04 → 09/10/11/12 (any order) → **15 (why the tasks
-differ at all — read before drawing conclusions from 09–12)** → 13 → 16 → 17 → 01.
+differ at all — read before drawing conclusions from 09–12)** → 13 → 16 → 17 → 01, then **18** (the SPEC baseline that anchors 08–12).
 
 **Numbering note:** 01–04 were written first (slides 17+); 05–12 filled in the earlier deck
 sections and the per-window metric groups; 13 covers the multilingual extension; 14 is the

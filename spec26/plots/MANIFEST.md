@@ -1,0 +1,75 @@
+# SPEC CPU 2026 baseline — figure manifest
+
+Data: `~/spec26-infra/infra/data/` (26 episodes, 22,413 windows of 100 ms, ref inputs, 1 copy on
+1 isolated SMT-free core). Regenerate with
+`/home/thu/miniforge3/envs/infersuite-full/bin/python spec26/kit/plot/plot_spec_results.py`.
+Every number any figure displays is also written to `values_dump.json`, so a reader can check a
+bar without reading pixels.
+
+## Which population each figure uses
+
+Two SPEC numbers exist for the same episodes and they are **not** interchangeable:
+
+- **11 groups** (the episode's `metrics.json`) — the richest SPEC number. Used by every
+  SPEC-only figure.
+- **8 shared groups** (`comparison.json`, reloaded by `compare_spec_agentic.py`) — used by
+  every SPEC-vs-agentic figure, because the agentic campaign only ever rotated those eight.
+  IPC is the metric that actually moves: it is total instructions over total cycles across
+  *all* windows, so a different group mix samples a different part of the program
+  (26-episode median **2.427** over 11 groups vs **2.418** over 8). Per-event ratios are
+  immune — their denominators are already co-counted per group.
+
+The agentic side is likewise split by instrument and never merged:
+**rotation** (7 episodes running the full 8-group shuffle — the same instrument as SPEC, and the
+primary comparison population) and **replay** (19 episodes each dedicating the whole run to one
+group — an independent second opinion that shared no run with the rotation episodes).
+
+| Figure | What it shows | Population |
+|---|---|---|
+| `spec_suite_overview.png` | wall time and windows captured per benchmark, with the 55-window floor | SPEC 26 |
+| `spec_instrument.png` | slots/cycle vs the core's issue width · counting duty · rotation balance | SPEC 26 (no metric value used) |
+| `spec_tma_l1.png` | TMA Level 1 across the suite, sorted by total stall | SPEC 26 |
+| `spec_tma_l2.png` | TMA Level 2 — which half of each L1 bucket carries the stall | SPEC 26 |
+| `spec_signature.png` | 10-metric signature heatmap on **absolute** reference scales | SPEC 26 (11 groups) |
+| `spec_uop_supply.png` | DSB/MITE/MS/LSD delivery shares beside L1I MPKI | SPEC 26 |
+| `spec_memory_ladder.png` | L1D / LLC / DRAM GB/s / MLP, with the demand-miss caveat | SPEC 26 |
+| `spec_landscape.png` | IPC vs stalled slots, with the agentic median placed in it | SPEC 26 (8 groups) + agentic rotation |
+| `spec_vs_agentic_metrics.png` | paired medians on a log axis, ratios per metric | SPEC 26 (8 groups) + rotation + replay |
+| `spec_vs_agentic_tma.png` | TMA L1 comparison + every episode as a point | SPEC 26 + rotation + replay |
+| `spec_vs_agentic_frontend.png` | SPEC distributions with agentic episodes overlaid, and the agentic median's SPEC percentile | SPEC 26 (8 groups) + rotation + replay |
+| `spec_window_grid.png` | 12 metrics × 26 benchmarks of **per-window** distributions | SPEC 26, per-window |
+| `spec_phase_timelines.png` | per-window IPC over the episode for 6 benchmarks | SPEC 26, per-window |
+
+## Reference scales in `spec_signature.png`
+
+Shade is position on a **fixed** domain range, never per-column min–max, so a cell means the
+same thing here as in the agentic `glm_signature.png`. Anchors are hardware ceilings where they
+exist, otherwise the span the performance literature treats as low..severe:
+
+| Column | Range | Anchor |
+|---|---|---|
+| IPC | 0–6 | Golden Cove retire width |
+| Branch MPKI | 0–20 | <1 well-predicted; ~20 severe |
+| DSB coverage % | 0–100 | share of delivered uops |
+| L1I MPKI | 0–20 | >20 = datacenter "instruction-footprint wall" |
+| L1D-load MPKI | 0–40 | >40 = genuinely memory-intensive load streams |
+| LLC MPKI | 0–10 | ~10 = fully memory-bound territory |
+| AMAT | 5–50 | L1-hit latency .. L3 territory |
+| MLP | 1–16 | 16 L1D fill buffers |
+| DRAM read GB/s | 0–12 | measured suite ceiling (fotonik3d/roms ≈ 11.3) |
+| kernel % | 0–20 | 0 = pure user-space; 20 covers the agentic range |
+
+`AMAT_cyc` is a **fixed-latency model** (5/15/50/250 cycles for L1/L2/L3/DRAM hits weighted by
+retired-load counts), not a measured latency — it is a comparable composite, and is labelled as
+such wherever it appears.
+
+## Standing caveats for every cross-campaign figure
+
+- **SMT.** Agentic runs are SMT-ON on 20 logical CPUs; SPEC is SMT-OFF on 8 physical cores.
+  Cycle-normalised metrics (IPC, port utilisation, frontend bandwidth shares) cross that
+  boundary badly; per-instruction rates survive it far better.
+- **Contention.** SPEC runs one copy on one core with L3 and DRAM to itself. The agentic
+  workload ran many concurrent processes and did contend.
+- **Population size.** The primary agentic side is 7 full-rotation episodes over 4 tasks. The
+  19 replay episodes corroborate every direction but not magnitude.
+- **`LLC_MPKI`** counts retired demand loads that missed L3 — not memory-boundedness.

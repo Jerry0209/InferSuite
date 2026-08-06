@@ -192,7 +192,8 @@ not: absolute minutes/core-seconds (2–3× episode-to-episode) and the specific
 
 Published Claude artifacts (live slide links; private unless shared). **This table is the
 canonical slide-link registry**: every deck/gallery artifact published for this project must
-have a row here (the `study-report` skill's Step 3 enforces it — new slides register the deck
+have a row here — including the SPEC CPU 2026 baseline deck (report 18), which is a **separate
+deck** with its own slide numbering and is not part of slides 1–28 (the `study-report` skill's Step 3 enforces it — new slides register the deck
 row's "Covers" column; new artifacts add a row).
 
 | Artifact | Link | Covers |
@@ -212,6 +213,15 @@ row's "Covers" column; new artifacts add a row).
 | Per-window gallery — php-cs-fixer (PHP) | https://claude.ai/code/artifact/e6a80616-9410-446f-b1d7-fc1eeac751b2 | slide 26 backing detail |
 | Per-window gallery — phpoffice-bT (PHP, behavioural probe) | https://claude.ai/code/artifact/6b5036f4-efc2-4323-8d52-f2a5c15cb47d | slide 28 / report 17 §2.4 backing detail (within-language pair vs php-cs-fixer) |
 | Method slide — multilingual ⟨language, type⟩ frame & mentor packet | https://claude.ai/code/artifact/de1bab60-e7cc-42f5-bd55-299046bceea7 | slide 28 / report 17 + `sampling_frame/` mentor-packet overview: pipeline, per-language counts, both collapse findings, 16-episode action-mix chart, the three packet documents (2026-07-31) |
+| **SPEC CPU 2026 — the traditional-workload baseline** (a SECOND deck, **21 slides**) | https://claude.ai/code/artifact/5a6ac70c-b2e4-4969-b2f0-1ec0a8de6e78 | the whole SPEC baseline study — report 18. Not part of the agent deck's slide numbering |
+| Per-window gallery — 749.fotonik3d_r (SPEC) | https://claude.ai/code/artifact/38a39910-5629-4073-b02d-7dda179c1bee | report 18 backing detail — most memory-bound |
+| Per-window gallery — 782.lbm_r (SPEC) | https://claude.ai/code/artifact/91f043be-d23f-45cc-911c-9284c77941ba | report 18 backing detail — streaming; the LLC demand-miss caveat |
+| Per-window gallery — 723.llvm_r (SPEC) | https://claude.ai/code/artifact/3f7a6f76-cb54-45dd-bd34-85b5b4eb2a4c | report 18 backing detail — most frontend-bound |
+| Per-window gallery — 714.cpython_r (SPEC) | https://claude.ai/code/artifact/616a5aec-782e-4fee-a1e7-55c547e35432 | report 18 backing detail — interpreter dispatch, closest to an agent harness |
+| Per-window gallery — 709.cactus_r (SPEC) | https://claude.ai/code/artifact/0a46c434-84f0-4c20-83f0-bd5c391dff98 | report 18 backing detail — extreme instruction footprint |
+| Per-window gallery — 750.sealcrypto_r (SPEC) | https://claude.ai/code/artifact/10499fe5-fd0b-41f1-bed7-58ddb8550f16 | report 18 backing detail — compute-dense, IPC 4.15 |
+| Per-window gallery — 729.abc_r (SPEC) | https://claude.ai/code/artifact/d0a0ff27-e08a-42e1-9b80-7fd786925197 | report 18 backing detail — 49 % bad speculation |
+| Per-window gallery — 765.roms_r (SPEC) | https://claude.ai/code/artifact/89c20c12-0ee5-4eed-a851-f8bb43a9ab4f | report 18 backing detail — longest episode, 2,658 windows |
 
 Related (not the results deck): weekly status pages —
 Jul 21–28: https://claude.ai/code/artifact/7a9d155c-11f6-4e97-9d21-f60f677caca9 ·

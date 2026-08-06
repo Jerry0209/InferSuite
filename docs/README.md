@@ -30,6 +30,7 @@ Full index and reading order: **[reports/README.md](reports/README.md)**.
 | 26–27 | [16 — nine-language expansion](reports/16_slides26-27_multilingual_expansion.md) | 9 languages / 12 workloads, gated (ownership 92–99 %); composition reproduces ~1 %, magnitude 5.33× episode noise; six silent defects fixed |
 | 28 | [17 — ⟨language, type⟩ sampling frame](reports/17_slide28_language_type_sampling_frame.md) | 300 instances inventoried + classified; mechanism-type nested in language (9/9 cells covered); next campaign samples the behavioural axis |
 | 1–25 | [14 — instrument-to-figure reference](reports/14_slides1-25_instrument_to_figure_reference.md) | Which instrument produced each deck number, exact vs heuristic, code site of every constant; JS-tagger gap; published slide links |
+| own deck | [18 — SPEC CPU 2026 baseline](reports/18_spec26_cpu2026_baseline.md) | Traditional-workload baseline on the same instrument: method validated, and the two families separate on instruction supply (L1I 11.96×, kernel 23.18×), not on data (DRAM 0.07×) |
 
 Companion material elsewhere in the repo:
 
