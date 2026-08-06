@@ -45,7 +45,8 @@ made = 0
 for e in EPS:
     rows = windows(e["dir"])
     col = C_FP if e["fp"] else C_INT
-    b = e["short"]
+    b = e["short"]          # filenames only
+    bn = e["benchmark"]     # everything a reader sees carries the full SPEC name
     n_metrics = 0
     for k in GALLERY_ORDER:
         t, v = series(rows, k)
@@ -73,7 +74,7 @@ for e in EPS:
         ax.set_xticklabels([f"{len(v)} windows\n(group: {grp})"], fontsize=8)
         ax.set_ylabel(unit, fontsize=8.5)
         ax.tick_params(axis="y", labelsize=8)
-        ax.set_title(f"{b} — {k}", fontsize=10)
+        ax.set_title(f"{bn} — {k}", fontsize=10)
         ax.text(0.02, 0.985, f"median {np.median(v):.3g}\nIQR {np.percentile(v,25):.3g}–"
                              f"{np.percentile(v,75):.3g}\n5–95% {np.percentile(v,5):.3g}–"
                              f"{np.percentile(v,95):.3g}",
@@ -90,11 +91,11 @@ for e in EPS:
         ax.set_xlabel("seconds into the episode", fontsize=8.5)
         ax.set_ylabel(unit, fontsize=8.5)
         ax.tick_params(labelsize=8)
-        ax.set_title(f"{b} — {k} over the episode "
+        ax.set_title(f"{bn} — {k} over the episode "
                      f"({len(v)} windows carrying group '{grp}')", fontsize=10)
         fig.savefig(os.path.join(WINOUT, f"timeline_{b}_{k}.png"), bbox_inches="tight")
         plt.close(fig)
         made += 2
-    print(f"  {b:<12} {n_metrics:>2} metrics")
+    print(f"  {bn:<16} {n_metrics:>2} metrics")
 
 print(f"{made} figures written to {WINOUT}")

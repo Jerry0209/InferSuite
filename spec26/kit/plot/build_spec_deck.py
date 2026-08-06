@@ -43,6 +43,7 @@ IMG = {k: uri(f"spec_{k}.png") for k in
 C = V["comparison"]
 F = V["frontend"]
 T = V["tma_compare"]
+IV = V["int_vs_fp"]
 
 
 def n(key: str, field: str = "ratio_agentic_over_spec", d: int = 2) -> str:
@@ -286,12 +287,14 @@ BODY = f"""
       <p class="lead">Every benchmark ran its <b>ref</b> (refrate) input at a single copy. Where a
       benchmark defines several ref command lines, exactly one runs — index 0 — and all of them are
       banked alongside the episode. At 100 ms windows even the 9.7 s episode clears the
-      55-window floor by 30×.</p>
+      55-window floor by 30×. <b>Ordering, here and on the next five figures:</b> the SPECrate
+      integer block first, then floating-point, each by SPEC number — the two categories have
+      genuinely different profiles, and a figure sorted by measured value hides that.</p>
       <div class="figcard"><img alt="Per-benchmark wall time and window count" src="__SUITE__"></div>
       <div class="take">
-        <div class="chip spec">longest <b>roms</b> 330 s · <b>2,658</b> windows</div>
-        <div class="chip spec">shortest <b>ocio</b> 9.7 s · <b>70</b> windows</div>
-        <div class="chip mute">total <b>{sum(c['windows_launched'] for c in V['capture'].values()):,}</b> windows over <b>{sum(c['wall_s'] for c in V['capture'].values())/60:.0f}</b> minutes of benchmark time</div>
+        <div class="chip spec">longest <b>765.roms_r</b> 330 s · <b>2,658</b> windows</div>
+        <div class="chip spec">shortest <b>736.ocio_r</b> 9.7 s · <b>70</b> windows</div>
+        <div class="chip mute">total <b>{sum(c['windows'] for c in V['capture'].values()):,}</b> windows carrying counters ({sum(c['windows_launched'] for c in V['capture'].values()):,} launched) over <b>{sum(c['wall_s'] for c in V['capture'].values())/60:.0f}</b> minutes of benchmark time</div>
       </div>
     </div>
   </section>
@@ -350,9 +353,11 @@ BODY = f"""
       makes it the safest thing to carry across to the agentic comparison.</p>
       <div class="figcard"><img alt="TMA level 1 stacked bars, 26 benchmarks" src="__TMA1__"></div>
       <div class="take">
-        <div class="chip spec">most stalled: <b>fotonik3d</b> 80 % backend-bound, <b>roms</b> 70 %</div>
-        <div class="chip spec">most frontend-bound: <b>llvm</b> 40 %, <b>cpython</b> 39 %, <b>cactus</b> 37 %</div>
-        <div class="chip warn">most speculation-bound: <b>abc</b> 49 % bad speculation, <b>ntest</b> 24 %</div>
+        <div class="chip warn"><b>INT vs FP — bad speculation {IV['tma_bad_spec']['int_median']:.1f} % vs {IV['tma_bad_spec']['fp_median']:.1f} %</b> ({IV['tma_bad_spec']['int_over_fp']:.1f}×). {IV['n_badspec_over_10pct']['int']}/14 integer benchmarks lose more than 10 % of slots to it; only {IV['n_badspec_over_10pct']['fp']}/12 FP ones do</div>
+        <div class="chip spec"><b>INT vs FP — backend-bound {IV['tma_be_bound']['int_median']:.1f} % vs {IV['tma_be_bound']['fp_median']:.1f} %</b>. The categories stall in different places, and the block ordering shows it before a number is read</div>
+        <div class="chip spec">most stalled: <b>749.fotonik3d_r</b> 80 % backend-bound, <b>765.roms_r</b> 70 %</div>
+        <div class="chip spec">most frontend-bound: <b>723.llvm_r</b> 40 %, <b>714.cpython_r</b> 39 %, <b>709.cactus_r</b> 37 %</div>
+        <div class="chip warn">most speculation-bound: <b>729.abc_r</b> 49 % bad speculation, <b>707.ntest_r</b> 24 %</div>
       </div>
     </div>
   </section>
@@ -367,9 +372,9 @@ BODY = f"""
       meanings.</p>
       <div class="figcard"><img alt="TMA level 2 stacked bars, 26 benchmarks" src="__TMA2__"></div>
       <div class="take">
-        <div class="chip spec"><b>fotonik3d</b> 55 % memory-bound vs 25 % core-bound — the stall is DRAM</div>
-        <div class="chip spec"><b>lbm</b> 8 % memory-bound but 45 % core-bound — streaming that the prefetcher already solved</div>
-        <div class="chip spec"><b>llvm</b> 22 % fetch-latency vs 18 % fetch-bandwidth; <b>cactus</b> 29 % fetch-latency — instruction supply, two different ways</div>
+        <div class="chip spec"><b>749.fotonik3d_r</b> 55 % memory-bound vs 25 % core-bound — the stall is DRAM</div>
+        <div class="chip spec"><b>782.lbm_r</b> 8 % memory-bound but 45 % core-bound — streaming that the prefetcher already solved</div>
+        <div class="chip spec"><b>723.llvm_r</b> 22 % fetch-latency vs 18 % fetch-bandwidth; <b>709.cactus_r</b> 29 % fetch-latency — instruction supply, two different ways</div>
       </div>
     </div>
   </section>
@@ -380,12 +385,14 @@ BODY = f"""
       <h2>SPEC runs almost entirely out of the uop cache</h2>
       <p class="lead">The decoded-uop cache (DSB) covers a median <b>{C['DSB_pct']['spec_median']:.1f} %</b>
       of delivered uops across the suite. Legacy decode (MITE) is a rounding error for most
-      benchmarks — and the exceptions are exactly the ones you would predict.</p>
+      benchmarks — and the exceptions are exactly the ones you would predict: compilers, a
+      simulator, and an interpreter.</p>
       <div class="figcard"><img alt="uop delivery shares and L1I MPKI, 26 benchmarks" src="__UOP__"></div>
       <div class="take">
-        <div class="chip spec"><b>lbm, abc, roms, nest</b>: 99–100 % DSB, L1I MPKI ≈ 0.03–0.15 — tight loops that fit</div>
-        <div class="chip warn"><b>cactus</b>: 86 % MITE, L1I MPKI <b>93.3</b> — a code footprint that overruns everything</div>
-        <div class="chip warn"><b>cpython</b>: 55 % MITE, L1I MPKI 26.9 — the interpreter dispatch loop, and the closest thing in SPEC to what an agent harness runs</div>
+        <div class="chip spec"><b>INT vs FP — L1I MPKI {IV['L1I_MPKI']['int_median']:.1f} vs {IV['L1I_MPKI']['fp_median']:.2f}</b> ({IV['L1I_MPKI']['int_over_fp']:.1f}×) and frontend-bound {IV['tma_fe_bound']['int_median']:.1f} % vs {IV['tma_fe_bound']['fp_median']:.1f} %. Integer code is the harder instruction-supply problem — with two loud FP exceptions</div>
+        <div class="chip spec"><b>782.lbm_r, 729.abc_r, 765.roms_r, 767.nest_r</b>: 99–100 % DSB, L1I MPKI ≈ 0.03–0.15 — tight loops that fit</div>
+        <div class="chip warn"><b>709.cactus_r</b> (FP): 86 % MITE, L1I MPKI <b>93.3</b> — a code footprint that overruns everything</div>
+        <div class="chip warn"><b>714.cpython_r</b>: 55 % MITE, L1I MPKI 26.9 — the interpreter dispatch loop, and the closest thing in SPEC to what an agent harness runs. <b>735.gem5_r</b> (36.8) and <b>748.flightdm_r</b> (22.1) are the other footprint-heavy cases</div>
       </div>
     </div>
   </section>
@@ -396,10 +403,13 @@ BODY = f"""
       <h2>The memory ladder — and one rung that lies</h2>
       <p class="lead">L1D → L2 → LLC demand misses, the modelled access latency, memory-level
       parallelism, and real DRAM traffic. The four panels disagree with each other, and the
-      disagreement is the lesson.</p>
+      disagreement is the lesson. The block ordering adds a second one: <b>DRAM read bandwidth is
+      an FP phenomenon</b> — median {IV['DRAM_read_GBs']['fp_median']:.2f} GB/s against
+      {IV['DRAM_read_GBs']['int_median']:.2f} for integer, and {IV['n_dram_over_4GBs']['int']} of 14
+      integer benchmarks exceed 4 GB/s against {IV['n_dram_over_4GBs']['fp']} of 12 FP ones.</p>
       <div class="figcard"><img alt="memory ladder: L1D, LLC, DRAM bandwidth, MLP" src="__MEM__"></div>
       <p class="note"><b>LLC_MPKI is not a memory-boundedness metric.</b> It counts <i>retired
-      demand loads</i> that missed L3. <b>lbm</b> reads 0.01 LLC MPKI while streaming <b>4.3 GB/s</b>
+      demand loads</i> that missed L3. <b>782.lbm_r</b> reads 0.01 LLC MPKI while streaming <b>4.3 GB/s</b>
       from DRAM — the hardware prefetcher fetched every line before the load retired, so the
       demand counter never fires. Read LLC_MPKI as "how often the prefetcher failed", and use
       <code>DRAM_read_GBs</code> or TMA <code>mem_bound</code> for memory pressure. This one
@@ -456,7 +466,11 @@ BODY = f"""
       <h2>Every metric, per 100 ms window, per benchmark</h2>
       <p class="lead">Everything so far has been an episode sum. Underneath each of those numbers
       is a distribution over hundreds of windows — and a benchmark that averages 1.6 IPC because
-      it alternates between 0.5 and 2.1 is a very different object from one that sits at 1.6.</p>
+      it alternates between 0.5 and 2.1 is a very different object from one that sits at 1.6.
+      Read down the <b>brMPKI</b> panel: the integer block sits one to three decades above the
+      floating-point block, median <b>{IV['brMPKI']['int_median']:.2f} vs {IV['brMPKI']['fp_median']:.3f}</b>
+      mispredicts per 1000 instructions — a <b>{IV['brMPKI']['int_over_fp']:.0f}×</b> gap that is the
+      single sharpest INT/FP separation in the whole capture.</p>
       <div class="figcard"><img alt="per-window distributions across the suite" src="__GRID__"></div>
       <p class="note">Box = IQR, orange = median, whiskers = 5–95 %. Each metric's distribution is
       over the windows that carried <i>its</i> counter group — about 1/11 of the episode, scattered
@@ -474,9 +488,9 @@ BODY = f"""
       episode value describes none of them.</p>
       <div class="figcard"><img alt="per-window IPC timelines for six benchmarks" src="__PHASE__"></div>
       <div class="take">
-        <div class="chip warn"><b>llvm</b> episode IPC {V['phases']['llvm']['episode_IPC']:.2f}, windows span {V['phases']['llvm']['window_min']:.2f}–{V['phases']['llvm']['window_max']:.2f}</div>
-        <div class="chip warn"><b>fotonik3d</b> episode IPC {V['phases']['fotonik3d']['episode_IPC']:.2f}, windows span {V['phases']['fotonik3d']['window_min']:.2f}–{V['phases']['fotonik3d']['window_max']:.2f}</div>
-        <div class="chip spec"><b>lbm</b> episode IPC {V['phases']['lbm']['episode_IPC']:.2f}, windows span {V['phases']['lbm']['window_min']:.2f}–{V['phases']['lbm']['window_max']:.2f} — genuinely one state</div>
+        <div class="chip warn"><b>723.llvm_r</b> episode IPC {V['phases']['723.llvm_r']['episode_IPC']:.2f}, windows span {V['phases']['723.llvm_r']['window_min']:.2f}–{V['phases']['723.llvm_r']['window_max']:.2f}</div>
+        <div class="chip warn"><b>749.fotonik3d_r</b> episode IPC {V['phases']['749.fotonik3d_r']['episode_IPC']:.2f}, windows span {V['phases']['749.fotonik3d_r']['window_min']:.2f}–{V['phases']['749.fotonik3d_r']['window_max']:.2f}</div>
+        <div class="chip spec"><b>782.lbm_r</b> episode IPC {V['phases']['782.lbm_r']['episode_IPC']:.2f}, windows span {V['phases']['782.lbm_r']['window_min']:.2f}–{V['phases']['782.lbm_r']['window_max']:.2f} — genuinely one state</div>
       </div>
       <p class="note">This is also why a per-window median is <i>not</i> the episode value: the
       episode value is a ratio of sums, weighted by where the cycles actually went. Both are

@@ -101,12 +101,57 @@ FP_BENCH = {"709.cactus_r", "722.palm_r", "731.astcenc_r", "736.ocio_r", "737.gm
 
 
 def short(b: str) -> str:
-    """706.stockfish_r -> stockfish (figures get crowded fast at 26 rows)."""
+    """706.stockfish_r -> stockfish. FILENAMES ONLY.
+
+    Figures always carry the full SPEC name (`7xx.workload_r`, the form spec.org publishes),
+    because that is the identifier a reader can look up; the bare stem is ambiguous across
+    suites and versions. This helper survives only to keep per-window PNG filenames short.
+    """
     return re.sub(r"^\d+\.", "", b).removesuffix("_r")
 
 
 def is_fp(b: str) -> bool:
     return b in FP_BENCH
+
+
+# ---------------- categorical (INT then FP) ordering --------------------------------------------
+# The suite splits into SPECrate integer and SPECrate floating-point, and the two categories have
+# genuinely different microarchitectural profiles — integer codes stress branch prediction and
+# instruction supply, FP codes stress the memory system. A figure ordered by measured value mixes
+# them and hides that; a figure ordered by category shows it before a single number is read.
+# Within a category, order by the SPEC number (which is also alphabetical-by-label order).
+def cat_sorted(eps: list[dict]) -> list[dict]:
+    """INT block first, then FP; each block ordered by SPEC benchmark number."""
+    return sorted(eps, key=lambda e: (bool(e["fp"]), e["benchmark"]))
+
+
+def n_int(eps: list[dict]) -> int:
+    return sum(1 for e in eps if not e["fp"])
+
+
+def cat_divider(ax, eps: list[dict], axis: str = "y", offset: float = 0.0, label: bool = True):
+    """Draw the INT|FP boundary on an axis whose ticks are cat_sorted(eps).
+
+    `offset` is the coordinate of the first row: 0 for bar charts drawn at np.arange(n),
+    1 for boxplots whose positions start at 1. Assumes the axis is already inverted for
+    horizontal bars (top = first row), which is how every figure here draws them.
+    """
+    k = n_int(eps)
+    if k == 0 or k == len(eps):
+        return
+    b = k - 0.5 + offset
+    line = ax.axhline if axis == "y" else ax.axvline
+    line(b, color="#7a8a99", lw=1.1, ls=(0, (4, 3)), zorder=5)
+    if not label:
+        return
+    # Outside the right spine, not inside it: a bar that reaches 100 % would otherwise sit
+    # under the label. clip_on=False is what lets it live past the axes edge.
+    txt = dict(fontsize=8.4, color="#5a6b78", fontweight="bold", zorder=6, clip_on=False)
+    if axis == "y":
+        ax.text(1.014, (offset - 0.5 + b) / 2, "INT", transform=ax.get_yaxis_transform(),
+                ha="left", va="center", rotation=90, **txt)
+        ax.text(1.014, (b + len(eps) - 0.5 + offset) / 2, "FP",
+                transform=ax.get_yaxis_transform(), ha="left", va="center", rotation=90, **txt)
 
 
 # ---------------- level 1: whole-episode metrics -------------------------------------------------

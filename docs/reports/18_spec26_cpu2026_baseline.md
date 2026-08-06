@@ -21,8 +21,8 @@ It answers both questions it was built for. **The method is sound**: two instrum
 no counter agree on the core's issue width to 0.3 % on all 26 episodes (slots/cycle 6.00–6.02
 against a Golden Cove width of 6); cgroup accounting and the PMU agree to 0.005 CPUs; zero
 windows were multiplexed; and benchmarks with documented characters came out with those
-characters without anyone aiming at them (fotonik3d 80 % backend-bound at 11.3 GB/s, cpython
-55 % legacy-decode, abc 49 % bad speculation). **The comparison separates cleanly**: against the
+characters without anyone aiming at them (749.fotonik3d_r 80 % backend-bound at 11.3 GB/s, 714.cpython_r
+55 % legacy-decode, 729.abc_r 49 % bad speculation). **The comparison separates cleanly**: against the
 median SPEC benchmark, agentic work costs **11.96× the L1I MPKI, 4.26× the legacy decode and
 23.18× the kernel time** while moving **14× less DRAM traffic**. SPEC stalls on the back end
 (be 26.7 % vs fe 18.3 %); the agent stalls on the front end (fe 28.1 % vs be 23.8 %), and 19
@@ -30,7 +30,7 @@ dedicated-group replay episodes that shared no run with the rotation episodes pu
 those directions further, not back.
 
 One qualifier, which sharpens the result rather than weakening it: the agent is in SPEC's
-**tail**, not outside its range (L1I MPKI at SPEC p73 — the compilers, cactus and cpython are
+**tail**, not outside its range (L1I MPKI at SPEC p73 — the compilers, 709.cactus_r and 714.cpython_r are
 worse). SPEC does contain instruction-supply-starved members; they are the minority and are
 frontend-bound only in phases, whereas the agent is there on every task, for the whole episode.
 Only kernel time genuinely leaves the suite (p96).
@@ -48,6 +48,7 @@ Only kernel time genuinely leaves the suite (p96).
 | D5 | Counter groups | 11, **one per window, reshuffled every cycle** | ≤4 GP events per group fits the per-thread budget, so perf never time-shares and never scales. 8 groups are byte-identical to the agentic campaign (that identity is what licenses the comparison); 3 drill groups are SPEC-only and never enter a cross-campaign figure. |
 | D6 | Partition | measured **4–11** (SMT siblings offlined), house **0–3, 12–15** | Adopted, not imposed: the machine is shared and was booted into another campaign's partition. `isolcpus` was rejected outright — it removes cores from scheduler load balancing. |
 | D7 | Fence | transient systemd scope under `measured.slice` | A cgroup catches every child the benchmark forks; a PID list does not. cpusets are hierarchical, so the scope must live under a top-level slice. |
+| D9 | Figure labelling + ordering | full `7xx.workload_r` names; **INT block, then FP**, each by SPEC number | PI decision 2026-08-06. The published SPEC name is the identifier a reader can look up; a bare stem is ambiguous across suites. Ordering by category rather than by measured value puts the suite's own structure on the axis — and the two categories do behave differently (insight 2), which a value-sorted axis interleaves and hides. Applied to the capture, both TMA, instruction-supply, memory-ladder and per-window-grid figures. |
 | D8 | Comparison population | agentic split by **instrument** | 7 episodes ran the full 8-group rotation (same instrument as SPEC — the primary population); 19 dedicated a whole run to one group. Merging them would mix two instruments in one median. |
 
 ### 2.2 Verification, and the defects it caught
@@ -58,7 +59,7 @@ complete cycles, co-counted denominators 10.9–11.1× smaller than the episode 
 on all 26), ISO-PROOF max busy 0.0 %, cpu.stat-vs-PMU median |ΔCPUs| ≤ 0.005, unfenced residual
 ≤ 0.03 % of partition capacity.
 
-**Three NO PROOFs (vpr, gem5, marian).** Their specdiff targets are built by a post-processing
+**Three NO PROOFs (734.vpr_r, 735.gem5_r, 772.marian_r).** Their specdiff targets are built by a post-processing
 step that lives outside every ref command line, so running one line directly — the whole design
 — never produces them. Output correctness is *untestable*, not failed; exit status was 0 and the
 counters are as clean as the rest. Reported as missing rather than silently passed.
@@ -95,8 +96,8 @@ latency.
 
 **Reproducibility control.** Two independent full-suite captures at 100 ms (`data/` and
 `data_100ms_dirtyrundirs/`, both banked) differ by a median **2.12 %** across 11 metrics × 26
-benchmarks — 0.30 % for the steadiest benchmark (stockfish, 678 windows) and 13.8 % for the
-noisiest (vpr, 329 windows). Short, phase-heavy episodes vary most, which is the expected shape.
+benchmarks — 0.30 % for the steadiest benchmark (706.stockfish_r, 678 windows) and 13.8 % for the
+noisiest (734.vpr_r, 329 windows). Short, phase-heavy episodes vary most, which is the expected shape.
 
 ### 2.3 Reproduction recipe
 
@@ -181,34 +182,51 @@ of them can be published on request.
    less** DRAM traffic and showing an indistinguishable AMAT (0.99×) and MLP (1.05×). SPEC is a
    data-movement suite; agentic work is an instruction-supply and system-call workload. The
    memory-hierarchy metrics everyone reaches for first are exactly the ones that do not separate.
-2. **The direction holds under an independent instrument.** The 19 dedicated-single-group replay
+2. **The two SPEC categories are themselves different machines — which is why the figures are
+   ordered INT-then-FP.** Branch prediction is the sharpest separation in the whole capture:
+   integer median **2.36** mispredicts per 1000 instructions against
+   **0.059** for floating-point, a **40×**
+   gap, and TMA bad speculation follows it at **14.5 % vs
+   1.5 %** (10/14 integer
+   benchmarks lose more than a tenth of their slots to it, against
+   3/12 FP). The FP block trades that for the memory system:
+   backend-bound **42.0 % vs 19.4 %**,
+   DRAM read bandwidth **3.45 vs 0.87 GB/s**
+   (6/12 FP benchmarks exceed 4 GB/s; **0/14**
+   integer ones do). Integer code also carries the harder instruction-supply problem
+   (L1I MPKI 3.9 vs 0.53,
+   frontend-bound 25.6 % vs 8.9 %) —
+   with two loud FP exceptions, 709.cactus_r and 748.flightdm_r. IPC, notably, does **not**
+   separate them (2.35 vs 2.45): the categories
+   reach similar throughput by failing in different places.
+3. **The direction holds under an independent instrument.** The 19 dedicated-single-group replay
    episodes never shared a run with the 7 rotation episodes, and they push every direction
    further: L1I MPKI 17.70 vs 11.76, kernel 12.85 % vs 10.92 %, MITE 34.98 % vs 31.53 %, TMA
    frontend-bound 34.8 % vs 28.1 %. Two instruments, one conclusion.
-3. **The agent sits in SPEC's tail, not outside its range — and that is the sharper claim.**
+4. **The agent sits in SPEC's tail, not outside its range — and that is the sharper claim.**
    L1I MPKI at SPEC p73 (7/26 worse), MITE at p73, DSB at p27. SPEC *does* contain
-   instruction-supply-starved members — llvm, gcc, cactus, cpython — but they are the minority
+   instruction-supply-starved members — 723.llvm_r, 721.gcc_r, 709.cactus_r, 714.cpython_r — but they are the minority
    and are frontend-bound only in phases. Only kernel time genuinely leaves the suite (p96, 1/26
    higher). Ratios against a median flatter; the percentile is the defensible statistic.
-4. **Agentic behaviour is uniform where SPEC behaviour is diverse.** On the TMA plane every
+5. **Agentic behaviour is uniform where SPEC behaviour is diverse.** On the TMA plane every
    agentic episode lands in one tight cluster (fe 26–36 %, be 15–30 %) while the 26 SPEC
    benchmarks spray across the whole space (fe 0.5–40 %, be 2.5–80 %). Medians alone hide this,
    and it is arguably the strongest argument that "agentic workload" names a real, single
    microarchitectural regime.
-5. **The method validates: known characters came out as known characters.** Nothing was targeted
-   — every row is the first ref command line at index 0 under the same rotation. fotonik3d
-   IPC 0.77 / 80 % backend / 55 % memory-bound / 11.3 GB/s; roms 70 % backend at 11.3 GB/s; lbm
-   4.3 GB/s but LLC MPKI 0.01 and 45 % core-bound; llvm L1I MPKI 21.7 with 40 % frontend-bound;
-   cpython 55 % MITE and 3 % backend-bound; sealcrypto IPC 4.15 with 74 % retiring; abc 49 % bad
+6. **The method validates: known characters came out as known characters.** Nothing was targeted
+   — every row is the first ref command line at index 0 under the same rotation. 749.fotonik3d_r
+   IPC 0.77 / 80 % backend / 55 % memory-bound / 11.3 GB/s; 765.roms_r 70 % backend at 11.3 GB/s; 782.lbm_r
+   4.3 GB/s but LLC MPKI 0.01 and 45 % core-bound; 723.llvm_r L1I MPKI 21.7 with 40 % frontend-bound;
+   714.cpython_r 55 % MITE and 3 % backend-bound; 750.sealcrypto_r IPC 4.15 with 74 % retiring; 729.abc_r 49 % bad
    speculation.
-6. **Two instruments that share no counter agree on the machine itself.** TMA slots ÷ windowed
+7. **Two instruments that share no counter agree on the machine itself.** TMA slots ÷ windowed
    cycles = **6.00–6.02** on all 26 episodes against the Golden Cove issue width of 6 — a check
    that uses no metric value at all, and the one that caught the 10 % `priv`-group denominator
    bias in the validator (§2.2).
-7. **The episode value is a sum over states, not a description of one.** llvm's episode IPC of
-   1.61 is assembled from windows spanning 0.02–3.54, fotonik3d's 0.77 from 0.10–3.06, while lbm
+8. **The episode value is a sum over states, not a description of one.** 723.llvm_r's episode IPC of
+   1.61 is assembled from windows spanning 0.02–3.54, 749.fotonik3d_r's 0.77 from 0.10–3.06, while 782.lbm_r
    is genuinely one state (2.80 from 1.98–3.99). This is also why a per-window median is not the
    episode value: the latter is a ratio of sums, weighted by where the cycles went.
-8. **`LLC_MPKI` reverses the suite's memory ranking if read as memory-boundedness.** lbm reads
-   0.01 while streaming 4.3 GB/s; fotonik3d reads 18.0 at 11.3 GB/s. It measures how often the
+9. **`LLC_MPKI` reverses the suite's memory ranking if read as memory-boundedness.** 782.lbm_r reads
+   0.01 while streaming 4.3 GB/s; 749.fotonik3d_r reads 18.0 at 11.3 GB/s. It measures how often the
    prefetcher failed, not how much memory traffic exists.

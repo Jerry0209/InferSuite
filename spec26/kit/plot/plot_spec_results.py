@@ -31,7 +31,8 @@ from matplotlib.patches import Patch  # noqa: E402
 
 from spec_common import (  # noqa: E402
     C_AGENT, C_FP, C_INT, C_SPEC, L1COLS, OUT, UOPCOLS,
-    agentic_split, comparison, duty, episodes, save, series, slots_per_cycle, txtcol, windows,
+    agentic_split, cat_divider, cat_sorted, comparison, duty, episodes, n_int, save, series,
+    slots_per_cycle, txtcol, windows,
 )
 
 EPS = episodes()
@@ -74,8 +75,8 @@ def medtma(rows: list[dict], k: str):
 # The suite before any microarchitecture: how long each benchmark ran and how many windows that
 # bought. A metric's credibility here is bounded by its window count, so the count is a figure,
 # not a footnote.
-order = sorted(EPS, key=lambda e: -e["wall_s"])
-fig, (a1, a2) = plt.subplots(1, 2, figsize=(13.4, 8.2), sharey=True)
+order = cat_sorted(EPS)
+fig, (a1, a2) = plt.subplots(1, 2, figsize=(13.8, 8.2), sharey=True)
 Y = np.arange(len(order))
 a1.barh(Y, [e["wall_s"] for e in order], color=[bcol(e) for e in order], height=0.68)
 for y, e in enumerate(order):
@@ -84,8 +85,9 @@ a1.set_xlabel("episode wall time (s) — one ref command line, 1 copy")
 a1.set_xlim(0, max(e["wall_s"] for e in order) * 1.14)
 a1.invert_yaxis()
 a1.set_yticks(Y)
-a1.set_yticklabels([e["short"] for e in order], fontsize=9)
+a1.set_yticklabels([e["benchmark"] for e in order], fontsize=8.6)
 a1.set_title("How long each benchmark ran", fontsize=11)
+cat_divider(a1, order)
 
 a2.barh(Y, [e["n_windows"] for e in order], color=[bcol(e) for e in order], height=0.68)
 for y, e in enumerate(order):
@@ -96,11 +98,13 @@ a2.text(58, len(order) - 0.6, "MIN_WINDOWS = 55\n(5 full rotations)", fontsize=8
 a2.set_xlabel("100 ms counting windows captured")
 a2.set_xlim(0, max(e["n_windows"] for e in order) * 1.14)
 a2.set_title("How much counting that bought", fontsize=11)
-fig.legend(handles=[Patch(color=C_INT, label="SPECrate integer (14)"),
-                    Patch(color=C_FP, label="SPECrate floating-point (12)")],
+cat_divider(a2, order)
+fig.legend(handles=[Patch(color=C_INT, label=f"SPECrate integer ({n_int(EPS)})"),
+                    Patch(color=C_FP, label=f"SPECrate floating-point ({len(EPS)-n_int(EPS)})")],
            ncol=2, frameon=False, fontsize=9.5, loc="upper center", bbox_to_anchor=(0.5, 0.965))
 fig.suptitle(f"SPEC CPU 2026 baseline capture — {len(EPS)} benchmarks, "
-             f"{sum(e['n_windows'] for e in EPS):,} windows", fontsize=12.5, y=1.0)
+             f"{sum(e['n_windows'] for e in EPS):,} windows "
+             "(integer block, then floating-point, each by SPEC number)", fontsize=12.5, y=1.0)
 save(fig, "spec_suite_overview.png")
 def n_launched(e: dict) -> int:
     """Windows the kit LAUNCHED, from windows.tsv (one banked row per window).
@@ -114,7 +118,7 @@ def n_launched(e: dict) -> int:
     return max(0, sum(1 for _ in open(p)) - 1) if os.path.exists(p) else e["n_windows"]
 
 
-VALUES["capture"] = {e["short"]: {"wall_s": e["wall_s"], "windows": e["n_windows"],
+VALUES["capture"] = {e["benchmark"]: {"wall_s": e["wall_s"], "windows": e["n_windows"],
                                   "windows_launched": n_launched(e),
                                   "fp": e["fp"], "cmd_index": e["meta"].get("cmd_index"),
                                   "size": e["meta"].get("size")} for e in EPS}
@@ -127,17 +131,17 @@ VALUES["capture"] = {e["short"]: {"wall_s": e["wall_s"], "windows": e["n_windows
 #       cost is a property of the tool, so it must be reported, not hidden.
 #   (c) rotation balance — every group must get a fair share of windows, or a metric is
 #       systematically sampled from a different part of the program than its neighbours.
-sp = {e["short"]: slots_per_cycle(e, WIN[e["benchmark"]]) for e in EPS}
-dt = {e["short"]: duty(WIN[e["benchmark"]], e["dir"]) for e in EPS}
+sp = {e["benchmark"]: slots_per_cycle(e, WIN[e["benchmark"]]) for e in EPS}
+dt = {e["benchmark"]: duty(WIN[e["benchmark"]], e["dir"]) for e in EPS}
 fig, axes = plt.subplots(1, 3, figsize=(15.6, 5.6))
-names = [e["short"] for e in EPS]
+names = [e["benchmark"] for e in EPS]
 X = np.arange(len(names))
 
 ax = axes[0]
 ax.axhline(6.0, color="#c0392b", lw=1.4)
 ax.plot(X, [sp[n] for n in names], "o", color=C_SPEC, ms=5)
 ax.set_xticks(X)
-ax.set_xticklabels(names, rotation=90, fontsize=7.5)
+ax.set_xticklabels(names, rotation=90, fontsize=6.6)
 ax.set_ylim(5.6, 6.4)
 ax.set_ylabel("TMA slots / windowed cycle")
 ax.set_title("(a) two instruments agree on the core", fontsize=11)
@@ -151,7 +155,7 @@ ax = axes[1]
 ax.bar(X, [100 * dt[n] for n in names], color=C_SPEC, width=0.7)
 ax.axhline(100 * statistics.median([dt[n] for n in names]), color="#c0392b", lw=1.2, ls="--")
 ax.set_xticks(X)
-ax.set_xticklabels(names, rotation=90, fontsize=7.5)
+ax.set_xticklabels(names, rotation=90, fontsize=6.6)
 ax.set_ylim(0, 100)
 ax.set_ylabel("% of episode with counters installed")
 ax.set_title("(b) counting duty at 100 ms windows", fontsize=11)
@@ -192,7 +196,7 @@ VALUES["instrument"] = {"slots_per_cycle": sp, "duty": dt,
                         "duty_median": statistics.median([dt[n] for n in names])}
 
 # ================= Fig 3: TMA level 1 ============================================================
-rows = sorted(EPS, key=lambda e: -(e["tma"]["l1"]["be_bound"] + e["tma"]["l1"]["fe_bound"]))
+rows = cat_sorted(EPS)
 fig, ax = plt.subplots(figsize=(9.6, 0.42 * len(rows) + 2.4))
 Y = np.arange(len(rows))
 left = np.zeros(len(rows))
@@ -205,15 +209,16 @@ for key, lab, col in L1COLS:
                     color=txtcol(col), fontweight="bold")
     left += v
 ax.set_yticks(Y)
-ax.set_yticklabels([f"{e['short']}{' ·fp' if e['fp'] else ''}" for e in rows], fontsize=9)
+ax.set_yticklabels([e["benchmark"] for e in rows], fontsize=8.6)
 ax.invert_yaxis()
 ax.set_xlim(0, 100)
 ax.grid(axis="x")
+cat_divider(ax, rows)
 ax.set_xlabel("pipeline slots (%) — continuous census, whole episode, zero GP counters")
 ax.legend(ncol=4, fontsize=9, loc="upper center", bbox_to_anchor=(0.5, -0.055), frameon=False)
-ax.set_title("TMA Level 1 across the suite (sorted by total stall)", fontsize=12, pad=10)
+ax.set_title("TMA Level 1 — integer block, then floating-point", fontsize=12, pad=10)
 save(fig, "spec_tma_l1.png")
-VALUES["tma_l1"] = {e["short"]: e["tma"]["l1"] for e in EPS}
+VALUES["tma_l1"] = {e["benchmark"]: e["tma"]["l1"] for e in EPS}
 
 # ================= Fig 4: TMA level 2 ============================================================
 L2COLS = [("light_ops", "Light ops", "#009E73"), ("heavy_ops", "Heavy ops", "#00614a"),
@@ -232,15 +237,16 @@ for key, lab, col in L2COLS:
                     color=txtcol(col), fontweight="bold")
     left += v
 ax.set_yticks(Y)
-ax.set_yticklabels([e["short"] for e in rows], fontsize=9)
+ax.set_yticklabels([e["benchmark"] for e in rows], fontsize=8.6)
 ax.invert_yaxis()
 ax.set_xlim(0, 100)
 ax.grid(axis="x")
+cat_divider(ax, rows)
 ax.set_xlabel("pipeline slots (%) — L2 siblings computed as remainders, as in the agentic kit")
 ax.legend(ncol=4, fontsize=8.5, loc="upper center", bbox_to_anchor=(0.5, -0.055), frameon=False)
 ax.set_title("TMA Level 2 — which half of each L1 bucket carries the stall", fontsize=12, pad=10)
 save(fig, "spec_tma_l2.png")
-VALUES["tma_l2"] = {e["short"]: e["tma"]["l2"] for e in EPS}
+VALUES["tma_l2"] = {e["benchmark"]: e["tma"]["l2"] for e in EPS}
 
 # ================= Fig 5: signature heatmap on ABSOLUTE scales ===================================
 # Identical construction to the agentic signature figure: shade = position on a FIXED domain
@@ -272,19 +278,20 @@ for i, e in enumerate(srows):
 ax.set_xticks(range(len(COLS)))
 ax.set_xticklabels([f"{lab}\n[{lo:g}–{hi:g}]" for _k, lab, lo, hi, _f in COLS], fontsize=8.4)
 ax.set_yticks(range(len(srows)))
-ax.set_yticklabels([f"{e['short']}{' ·fp' if e['fp'] else ''}" for e in srows], fontsize=8.6)
+ax.set_yticklabels([f"{e['benchmark']}{'  ·FP' if e['fp'] else ''}" for e in srows],
+                   fontsize=8.4)
 ax.grid(False)
 ax.set_title("Per-benchmark hardware signature on absolute reference scales (sorted by IPC)",
              fontsize=12, pad=12)
 cb = fig.colorbar(im, ax=ax, fraction=0.02, pad=0.015)
 cb.set_label("position on the absolute scale (0 = low ref, 1 = high ref)", fontsize=9)
 save(fig, "spec_signature.png")
-VALUES["signature"] = {e["short"]: {k: m(e, k) for k, *_x in COLS} for e in EPS}
+VALUES["signature"] = {e["benchmark"]: {k: m(e, k) for k, *_x in COLS} for e in EPS}
 
 # ================= Fig 6: instruction supply =====================================================
 fig, (ax, ax2) = plt.subplots(1, 2, figsize=(14.2, 8.0), sharey=True,
                               gridspec_kw={"width_ratios": [1.55, 1]})
-urows = sorted(EPS, key=lambda e: -(m(e, "DSB_pct") or 0))
+urows = cat_sorted(EPS)
 Y = np.arange(len(urows))
 left = np.zeros(len(urows))
 for key, lab, col in UOPCOLS:
@@ -296,9 +303,10 @@ for key, lab, col in UOPCOLS:
                     color=txtcol(col), fontweight="bold")
     left += v
 ax.set_yticks(Y)
-ax.set_yticklabels([e["short"] for e in urows], fontsize=9)
+ax.set_yticklabels([e["benchmark"] for e in urows], fontsize=8.6)
 ax.invert_yaxis()
 ax.set_xlim(0, 100)
+cat_divider(ax, urows)
 ax.set_xlabel("share of delivered uops (%)")
 ax.legend(ncol=4, fontsize=8.6, loc="upper center", bbox_to_anchor=(0.5, -0.06), frameon=False)
 ax.set_title("Where uops come from", fontsize=11.5)
@@ -309,11 +317,12 @@ for y, e in enumerate(urows):
     ax2.text(v + 0.6, y, f"{v:.1f}", va="center", fontsize=7.8)
 ax2.set_xlabel("L1I MPKI (L2 code reads / 1000 insn)")
 ax2.set_xlim(0, max(m(e, "L1I_MPKI") or 0 for e in urows) * 1.2)
+cat_divider(ax2, urows)
 ax2.set_title("What it costs to feed them", fontsize=11.5)
-fig.suptitle("Instruction supply across the suite — SPEC runs almost entirely out of the uop cache",
+fig.suptitle("Instruction supply — integer block, then floating-point (SPEC runs almost entirely out of the uop cache)",
              fontsize=12.5, y=0.995)
 save(fig, "spec_uop_supply.png")
-VALUES["uop_supply"] = {e["short"]: {k: m(e, k) for k in
+VALUES["uop_supply"] = {e["benchmark"]: {k: m(e, k) for k in
                                      ("DSB_pct", "MITE_pct", "MS_pct", "LSD_pct", "L1I_MPKI")}
                         for e in EPS}
 
@@ -321,8 +330,8 @@ VALUES["uop_supply"] = {e["short"]: {k: m(e, k) for k in
 PANELS = [("L1D_MPKI", "L1D-load MPKI", False), ("LLC_MPKI", "LLC (demand-load) MPKI", True),
           ("DRAM_read_GBs", "DRAM read bandwidth (GB/s)", False), ("MLP", "MLP (outstanding)", False)]
 fig, axes = plt.subplots(2, 2, figsize=(14.4, 10.4))
+rr = cat_sorted(EPS)
 for axx, (k, lab, logx) in zip(axes.ravel(), PANELS):
-    rr = sorted(EPS, key=lambda e: -(m(e, k) or 0))
     Yv = np.arange(len(rr))
     vals_ = [m(e, k) or 0.0 for e in rr]
     axx.barh(Yv, vals_, color=[bcol(e) for e in rr], height=0.68)
@@ -332,19 +341,19 @@ for axx, (k, lab, logx) in zip(axes.ravel(), PANELS):
         axx.text(v * (1.08 if logx else 1.0) + (0 if logx else max(vals_) * 0.012), y,
                  f"{v:.2f}" if v < 10 else f"{v:.1f}", va="center", fontsize=7.4)
     axx.set_yticks(Yv)
-    axx.set_yticklabels([e["short"] for e in rr], fontsize=7.8)
+    axx.set_yticklabels([e["benchmark"] for e in rr], fontsize=7.4)
     axx.invert_yaxis()
-    axx.set_xlabel(lab)
-    axx.set_title(lab, fontsize=11)
+    cat_divider(axx, rr)
+    axx.set_title(lab, fontsize=11)   # the title IS the axis label here; don't print it twice
 axes[0][1].text(0.5, -0.135, "LLC_MPKI counts DEMAND loads that missed L3. Prefetch-friendly "
                 "streaming code moves GB/s while reading ~0 here — read the DRAM panel for "
                 "memory pressure.", transform=axes[0][1].transAxes, ha="center", fontsize=8.2,
                 color="#a04000")
-fig.suptitle("The memory ladder — and why one rung must not be read as the whole ladder",
+fig.suptitle("The memory ladder (integer block, then floating-point) — and why one rung must not be read as the whole ladder",
              fontsize=12.5, y=0.995)
 fig.tight_layout(rect=(0, 0, 1, 0.97))
 save(fig, "spec_memory_ladder.png")
-VALUES["memory"] = {e["short"]: {k: m(e, k) for k, *_x in PANELS} for e in EPS}
+VALUES["memory"] = {e["benchmark"]: {k: m(e, k) for k, *_x in PANELS} for e in EPS}
 
 # ================= Fig 8: the landscape ==========================================================
 # The agent appears on this figure, so BOTH axes must be comparable: IPC comes from the
@@ -355,7 +364,7 @@ for e in EPS:
     x, y = IPC8[e["benchmark"]], e["tma"]["l1"]["be_bound"] + e["tma"]["l1"]["fe_bound"]
     ax.scatter(x, y, s=28 + 90 * np.sqrt(e["wall_s"] / max(q["wall_s"] for q in EPS)),
                color=bcol(e), alpha=0.85, edgecolor="white", linewidth=0.8, zorder=3)
-    ax.annotate(e["short"], (x, y), textcoords="offset points", xytext=(6, 4), fontsize=8.2,
+    ax.annotate(e["benchmark"], (x, y), textcoords="offset points", xytext=(6, 4), fontsize=7.4,
                 color="#333")
 ag_ipc, ag_st = med(ROT, "IPC"), (medtma(ROT, "be_bound") + medtma(ROT, "fe_bound"))
 ax.scatter([ag_ipc], [ag_st], marker="*", s=520, color=C_AGENT, edgecolor="white", linewidth=1.2,
@@ -550,7 +559,7 @@ save(fig, "spec_vs_agentic_frontend.png")
 # so a benchmark that averages 1.6 IPC because it alternates 0.5 and 2.1 stops looking steady.
 GRID = ["IPC", "DSB_pct", "MITE_pct", "L1I_MPKI", "brMPKI", "L1D_MPKI",
         "LLC_MPKI", "MLP", "stalls_l3_miss_pct", "bound_on_loads_pct", "ports_0_pct", "kernel_pct"]
-gorder = sorted(EPS, key=lambda e: -(m(e, "IPC") or 0))
+gorder = cat_sorted(EPS)
 fig, axes = plt.subplots(3, 4, figsize=(19.6, 15.2))
 for axx, k in zip(axes.ravel(), GRID):
     data, labs, cols = [], [], []
@@ -558,7 +567,7 @@ for axx, k in zip(axes.ravel(), GRID):
         _t, v = series(WIN[e["benchmark"]], k)
         if len(v) >= 5:
             data.append(v)
-            labs.append(e["short"])
+            labs.append(e["benchmark"])
             cols.append(bcol(e))
     bp = axx.boxplot(data, orientation="horizontal", widths=0.62, patch_artist=True, whis=(5, 95),
                      showfliers=False, medianprops=dict(color="#d95f02", lw=1.4))
@@ -567,8 +576,10 @@ for axx, k in zip(axes.ravel(), GRID):
         patch.set_alpha(0.45)
         patch.set_edgecolor(c)
     axx.set_yticks(range(1, len(labs) + 1))
-    axx.set_yticklabels(labs, fontsize=7.2)
+    axx.set_yticklabels(labs, fontsize=6.8)
     axx.invert_yaxis()
+    # boxplot positions start at 1, so the INT|FP boundary shifts by one
+    cat_divider(axx, [e for e in gorder if e["benchmark"] in set(labs)], offset=1, label=False)
     if k in ("L1I_MPKI", "LLC_MPKI", "brMPKI", "kernel_pct"):
         # symlog spans zero symmetrically by default and draws a negative decade that no
         # rate can occupy; clamp it back to the physical domain.
@@ -579,8 +590,9 @@ for axx, k in zip(axes.ravel(), GRID):
 fig.legend(handles=[Patch(color=C_INT, alpha=0.45, label="SPECrate integer"),
                     Patch(color=C_FP, alpha=0.45, label="SPECrate floating-point")],
            ncol=2, frameon=False, fontsize=11, loc="upper center", bbox_to_anchor=(0.5, 0.983))
-fig.suptitle("Per-window distributions across the suite — box = IQR, orange = median, "
-             "whiskers = 5–95 %, one box per benchmark (100 ms windows)", fontsize=13, y=0.997)
+fig.suptitle("Per-window distributions — integer block, then floating-point · box = IQR, "
+             "orange = median, whiskers = 5–95 %, one box per benchmark (100 ms windows)",
+             fontsize=13, y=0.997)
 fig.tight_layout(rect=(0, 0, 1, 0.973))
 save(fig, "spec_window_grid.png")
 
@@ -588,11 +600,12 @@ save(fig, "spec_window_grid.png")
 # Why the distribution layer exists at all: some benchmarks are a single steady state and some
 # walk through several. The episode number is the same object in both cases and hides the
 # difference; a timeline does not.
-PHASE = ["llvm", "gcc", "cactus", "omnetpp", "fotonik3d", "lbm"]
-byshort = {e["short"]: e for e in EPS}
+PHASE = ["721.gcc_r", "723.llvm_r", "710.omnetpp_r", "709.cactus_r", "749.fotonik3d_r",
+         "782.lbm_r"]
+byname = {e["benchmark"]: e for e in EPS}
 fig, axes = plt.subplots(len(PHASE), 1, figsize=(13.4, 2.05 * len(PHASE)), sharex=False)
 for axx, nm in zip(axes, PHASE):
-    e = byshort[nm]
+    e = byname[nm]
     t, v = series(WIN[e["benchmark"]], "IPC")
     axx.plot(t, v, lw=0.55, color=bcol(e), alpha=0.9)
     ep = m(e, "IPC")
@@ -607,10 +620,43 @@ fig.suptitle("Phases are real: the episode number is a sum over states, not a de
              fontsize=12.5, y=0.998)
 fig.tight_layout(rect=(0, 0, 1, 0.975))
 save(fig, "spec_phase_timelines.png")
-VALUES["phases"] = {nm: {"episode_IPC": m(byshort[nm], "IPC"),
-                         "window_min": float(np.min(series(WIN[byshort[nm]["benchmark"]], "IPC")[1])),
-                         "window_max": float(np.max(series(WIN[byshort[nm]["benchmark"]], "IPC")[1]))}
+VALUES["phases"] = {nm: {"episode_IPC": m(byname[nm], "IPC"),
+                         "window_min": float(np.min(series(WIN[byname[nm]["benchmark"]], "IPC")[1])),
+                         "window_max": float(np.max(series(WIN[byname[nm]["benchmark"]], "IPC")[1]))}
                     for nm in PHASE}
+
+# ================= INT vs FP: the categorical contrast, banked =================================
+# The figures are ordered INT-then-FP precisely so this contrast is visible before a number is
+# read. Bank it so the deck prose and the report quote a computed value, never an eyeballed one.
+def int_fp(getter):
+    i = [v for e in EPS if not e["fp"] and (v := getter(e)) is not None]
+    f = [v for e in EPS if e["fp"] and (v := getter(e)) is not None]
+    if not i or not f:
+        return None
+    mi, mf = statistics.median(i), statistics.median(f)
+    return {"int_median": mi, "fp_median": mf, "int_n": len(i), "fp_n": len(f),
+            "int_over_fp": (mi / mf) if mf else None,
+            "int_range": [min(i), max(i)], "fp_range": [min(f), max(f)]}
+
+
+VALUES["int_vs_fp"] = {
+    **{f"tma_{k}": int_fp(lambda e, k=k: e["tma"]["l1"][k])
+       for k in ("retiring", "fe_bound", "bad_spec", "be_bound")},
+    **{k: int_fp(lambda e, k=k: m(e, k))
+       for k in ("IPC", "brMPKI", "DSB_pct", "MITE_pct", "L1I_MPKI", "L1D_MPKI", "LLC_MPKI",
+                 "MLP", "DRAM_read_GBs", "kernel_pct")},
+    "n_badspec_over_10pct": {
+        "int": sum(1 for e in EPS if not e["fp"] and e["tma"]["l1"]["bad_spec"] > 10),
+        "fp": sum(1 for e in EPS if e["fp"] and e["tma"]["l1"]["bad_spec"] > 10)},
+    "n_dram_over_4GBs": {
+        "int": sum(1 for e in EPS if not e["fp"] and (m(e, "DRAM_read_GBs") or 0) > 4),
+        "fp": sum(1 for e in EPS if e["fp"] and (m(e, "DRAM_read_GBs") or 0) > 4)},
+}
+iv = VALUES["int_vs_fp"]
+print(f"  INT vs FP — branch MPKI {iv['brMPKI']['int_median']:.2f} vs "
+      f"{iv['brMPKI']['fp_median']:.3f} ({iv['brMPKI']['int_over_fp']:.0f}x) · "
+      f"bad-spec {iv['tma_bad_spec']['int_median']:.1f}% vs {iv['tma_bad_spec']['fp_median']:.1f}% · "
+      f"backend {iv['tma_be_bound']['int_median']:.1f}% vs {iv['tma_be_bound']['fp_median']:.1f}%")
 
 # ================= audit dump ====================================================================
 json.dump(VALUES, open(os.path.join(OUT, "values_dump.json"), "w"), indent=1, default=float)
