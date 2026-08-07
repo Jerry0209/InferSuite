@@ -47,7 +47,14 @@ SPEC_INFRA = os.path.expanduser("~/spec26-infra/infra")
 DATA = os.environ.get("SPEC_DATA", os.path.join(SPEC_INFRA, "data"))
 OUT = os.environ.get("SPEC_PLOTS", os.path.join(REPO, "spec26", "plots"))
 WINOUT = os.environ.get("SPEC_WIN", os.path.join(SPEC_INFRA, "plots", "windows"))
-COMPARISON = os.environ.get("SPEC_COMPARISON", os.path.join(SPEC_INFRA, "comparison.json"))
+# PRIMARY agentic side (2026-08-07): the re-capture on the SPEC configuration — cores 4-11
+# SMT-off, 100 ms windows, same partition, same window length. That retires the SMT and
+# window-size caveats instead of carrying them in prose.
+COMPARISON = os.environ.get("SPEC_COMPARISON", os.path.join(SPEC_INFRA, "comparison_iso8.json"))
+# LEGACY agentic side: SMT-ON on 20 logical CPUs at 2 s / 5 s windows. Kept because the pair
+# MEASURES what the old caveat was worth (IPC 1.59 -> 1.89 SMT-off, +18.8 %).
+COMPARISON_LEGACY = os.environ.get("SPEC_COMPARISON_LEGACY",
+                                   os.path.join(SPEC_INFRA, "comparison.json"))
 
 # ---------------- style: identical family to local_agents/kit/plot/plot_glm_results.py ----------
 plt.rcParams.update({
@@ -185,6 +192,17 @@ def comparison() -> dict:
     difference between workloads, not between two people's idea of what brMPKI means.
     """
     return json.load(open(COMPARISON))
+
+
+def comparison_legacy() -> dict | None:
+    """The pre-2026-08-07 agentic capture (SMT-ON, 20 logical CPUs, 2 s/5 s windows).
+
+    Same SPEC side, same code, different agentic CONFIGURATION — so the difference between
+    this and comparison() is the configuration, and nothing else.
+    """
+    if not os.path.exists(COMPARISON_LEGACY):
+        return None
+    return json.load(open(COMPARISON_LEGACY))
 
 
 def is_replay(r: dict) -> bool:

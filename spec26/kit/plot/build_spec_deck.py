@@ -41,13 +41,15 @@ IMG = {k: uri(f"spec_{k}.png") for k in
         "vs_agentic_frontend", "window_grid", "phase_timelines")}
 
 C = V["comparison"]
-def rot_ratio(key: str) -> float:
-    """agent/SPEC on the ROTATION population — kept available for the slides that use it and
-    for the takeaway contrasting the two populations."""
+def legacy_ratio(key: str) -> float:
+    """agent/SPEC on the LEGACY (SMT-ON, 2 s) replays — the configuration control, used where a
+    slide contrasts the two captures."""
     c = C[key]
-    return c["agentic_rotation_median"] / c["spec_median"]
+    return c["agentic_legacy_median"] / c["spec_median"]
 F = V["frontend"]
 T = V["tma_compare"]
+TS, TM = T["spec"], T["agentic_matched"]
+TL = T["agentic_legacy_replay"] or TM
 IV = V["int_vs_fp"]
 ABC = V["capture"]["729.abc_r"]
 
@@ -521,9 +523,9 @@ BODY = f"""
       of the suite on the axes everyone quotes, which is exactly why the axes everyone quotes are
       not the interesting ones.</p>
       <div class="figcard"><img alt="IPC vs stalled slots landscape with agentic median" src="__LAND__"></div>
-      <p class="note">Agentic point: median of the {V['n_agentic_rotation']} SWE-agent × GLM-5.2
-      episodes that ran the full 8-group rotation — the same instrument as SPEC. Read on for the
-      metrics where the two workloads genuinely separate.</p>
+      <p class="note">Agentic point: median of the {V['n_agentic_replay']} SWE-agent × GLM-5.2
+      dedicated-group replays captured under the SPEC configuration (cores 4–11, SMT off, 100 ms
+      windows). Read on for the metrics where the two workloads genuinely separate.</p>
     </div>
   </section>
 
@@ -580,19 +582,31 @@ BODY = f"""
   <section class="slide">
     <div class="wrap">
       <p class="eyebrow">Slide 18 · the comparison</p>
-      <h2>SPEC stalls on the back end. The agent stalls on the front end.</h2>
-      <p class="lead">TMA is the cleanest cross-campaign view available: it comes from a separate
-      continuous census, it needs no general-purpose counters, and it is the least sensitive of all
-      these metrics to the SMT difference between the two campaigns.</p>
-      <div class="figcard"><img alt="TMA level 1 comparison and per-episode scatter" src="__CMPTMA__"></div>
+      <h2>SPEC stalls on the back end. The agent stalls on the front end — and mis-speculates.</h2>
+      <p class="lead">All four Level-1 buckets on one radar, because the question is the
+      <i>shape</i> of the profile rather than its composition. TMA is the cleanest cross-campaign
+      view available: it comes from a separate continuous census and needs no general-purpose
+      counters. Bad speculation is on the radar at the mentor's request — and it earns its axis.</p>
+      <div class="figcard"><img alt="TMA radar and per-episode bad speculation" src="__CMPTMA__"></div>
       <div class="take">
-        <div class="chip spec">SPEC: frontend {T['spec']['fe_bound']:.0f} % · backend {T['spec']['be_bound']:.0f} % — backend by {T['spec']['be_bound']-T['spec']['fe_bound']:.0f} points</div>
-        <div class="chip agent">agent (rotation): frontend {T['agentic_rotation']['fe_bound']:.0f} % · backend {T['agentic_rotation']['be_bound']:.0f} %</div>
-        <div class="chip agent">agent (replays, independent): frontend {T['agentic_replay']['fe_bound']:.0f} % · backend {T['agentic_replay']['be_bound']:.0f} % — same direction, further</div>
+        <div class="chip agent">frontend-bound <b>{TM['fe_bound']:.1f} %</b> vs SPEC <b>{TS['fe_bound']:.1f} %</b> — the agent's defining stall</div>
+        <div class="chip warn">bad speculation <b>{TM['bad_spec']:.1f} %</b> vs SPEC <b>{TS['bad_spec']:.1f} %</b> ({TM['bad_spec']/TS['bad_spec']:.1f}×) — a second, independent front-end cost</div>
+        <div class="chip spec">backend-bound <b>{TM['be_bound']:.1f} %</b> vs SPEC <b>{TS['be_bound']:.1f} %</b>; retiring <b>{TM['retiring']:.1f} %</b> vs <b>{TS['retiring']:.1f} %</b></div>
       </div>
-      <p class="note">The scatter matters as much as the bars: the SPEC suite sprays across the
-      whole plane, while every agentic episode lands in one tight cluster. Agentic behaviour is
-      far more <i>uniform</i> than SPEC behaviour — a fact the medians alone would hide.</p>
+      <p class="note">The four axes are <b>per-episode medians</b>, so they do not sum to 100 %
+      (SPEC: 91.1). Read each axis on its own.
+      <br><br><b>The right-hand panel is the honest version of the bad-speculation claim.</b> The
+      agent's 15.4 % is high but not extreme for the suite: <b>729.abc_r</b> loses 49 % of its
+      slots to mis-speculation and six more SPEC benchmarks exceed 20 %. What separates the agent
+      is the <i>combination</i> — it sits in the top-right region, high on frontend-bound
+      <b>and</b> high on bad speculation, where only 706.stockfish_r and 723.llvm_r keep it
+      company. SPEC's speculation-heavy members (777.zstd_r, 707.ntest_r, 731.astcenc_r) pay it
+      while feeding the front end comfortably.
+      <br><br><b>The dashed grey outline is the retired configuration</b> — the same replays under
+      SMT-ON on 20 logical CPUs at 2 s windows. It sits almost on top of the matched one
+      (frontend {TL['fe_bound']:.1f} vs {TM['fe_bound']:.1f}, bad-spec {TL['bad_spec']:.1f} vs
+      {TM['bad_spec']:.1f}), which is the evidence that the TMA conclusions never depended on the
+      SMT caveat.</p>
     </div>
   </section>
 
@@ -630,10 +644,10 @@ BODY = f"""
         pressure, {n('MITE_pct')}× the legacy decode and {n('kernel_pct')}× the kernel time — while
         AMAT ({n('AMAT_cyc')}×), L1D MPKI ({n('L1D_MPKI')}×) and MLP ({n('MLP')}×) are
         indistinguishable. The metrics everyone reaches for first are the ones that do not separate.
-        DRAM read bandwidth is the clearest case that a single ratio can mislead: SPEC reads
-        {1/rot_ratio('DRAM_read_GBs'):.0f}× more than the Python-heavy rotation episodes but only
-        {1/C['DRAM_read_GBs']['ratio_replay_over_spec']:.1f}× more than the C++/JS replays. That is task
-        composition, not a property of agentic work.</li>
+        DRAM read bandwidth no longer separates them at all once the configuration matches:
+        {n('DRAM_read_GBs')}× (it read {legacy_ratio('DRAM_read_GBs'):.2f}× under the retired
+        SMT-ON capture). The apparent DRAM gap was configuration and task composition, not a
+        property of agentic work.</li>
         <li><b>Agentic behaviour is uniform where SPEC is diverse.</b> Every agentic episode lands
         in one small region of the TMA plane; the SPEC suite covers it entirely.</li>
       </ul>
@@ -643,13 +657,22 @@ BODY = f"""
       that boundary badly; per-instruction rates survive it far better.
       <b>Contention:</b> SPEC runs one copy on one core with L3 and DRAM to itself; the agentic
       workload ran many concurrent processes and did contend.
-      <b>Population.</b> Two agentic instruments, never merged. <b>Slide 17</b> uses the
-      <b>dedicated-group replays</b>: {V['n_agentic_replay']} episodes over <b>2 tasks</b> (babel,
-      fmtlib), each giving one counter group 100 % duty — so every metric there rests on the 2
-      episodes that ran its group. <b>Slides 18–19</b> use the <b>8-group rotation</b>:
-      {V['n_agentic_rotation']} episodes over <b>4 tasks</b> (babel, django, fmtlib, sympy) — the
-      same instrument SPEC runs, so a full metric card comes from one episode. Both are small; the
-      two agree on every direction, which is the strongest statement the populations support.
+      <b>SMT and contention — no longer a caveat, a measurement.</b> The agentic replays were
+      re-captured on 2026-08-07 under the SPEC configuration exactly: measured cores <b>4–11 with
+      SMT off</b>, <b>100 ms</b> windows, same partition, same fence. Every comparison figure now
+      uses that matched capture, so IPC and the frontend-bandwidth shares no longer cross an SMT
+      boundary. Putting the two captures side by side prices the old caveat: agentic IPC rises
+      from <b>1.591</b> (SMT-ON, sibling stealing issue slots) to <b>1.890</b> (SMT-off), a
+      <b>+18.8 %</b> move — while the TMA shape barely shifts. Contention remains: SPEC runs one
+      copy alone, the agent runs a harness and a container.
+      <br><br><b>Population.</b> Two agentic instruments, never merged. <b>Slide 17</b> uses the
+      <b>dedicated-group replays</b> at the matched configuration: {V['n_agentic_replay']} episodes
+      over <b>2 tasks</b> (babel, fmtlib), each giving one counter group 100 % duty — so every
+      metric there rests on the 2 episodes that ran its group. Slides 18–19 add the
+      <b>{V['n_agentic_legacy_replay']} legacy replays</b> (SMT-ON, 2 s) as the configuration
+      control. The population is small and covers 2 tasks, both non-Python; the
+      {V['n_agentic_legacy_rotation']} live 8-group rotation episodes over 4 tasks remain the
+      broader-but-noisier cross-check.
       <b>LLC_MPKI</b> is a demand-miss metric, not a memory-boundedness metric.</p>
     </div>
   </section>

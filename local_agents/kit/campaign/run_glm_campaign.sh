@@ -120,12 +120,41 @@ sys.exit(1 if bad else 0)
 PY
 }
 
+# Expand /sys/devices/system/cpu/online ("0-15" / "0-3,12-15") into a CPU list. Offline
+# CPUs reject governor writes with EBUSY, so every per-CPU loop must be driven from this.
+online_cpus(){
+  python3 - <<'PYEOF'
+spec = open("/sys/devices/system/cpu/online").read().strip()
+out = []
+for part in spec.split(","):
+    a, _, b = part.partition("-")
+    out += list(range(int(a), int(b or a) + 1))
+print(" ".join(map(str, out)))
+PYEOF
+}
+
 apply_isolation(){
   if [ -f "$STATE/iso_applied" ]; then
     log "ISOLATION: iso_applied present — keeping existing baseline snapshot (crash-rerun safe)"
   else
     log "ISOLATION: snapshotting baseline -> $STATE"
-    cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor > "$STATE/governor"
+    rm -f "$STATE/governor" "$STATE"/gov_cpu* "$STATE"/cpuset_*
+    # PER-CPU governor snapshot. Reading cpu0 and writing that one value back to every CPU
+    # flattens a per-core policy: measured 2026-08-07, cpu0/1/12/15 were powersave while the
+    # measured cores 4-11 were performance, so a single-value restore would have silently
+    # downgraded the measured cores. Same defect fixed in the SPEC sibling kit 2026-08-05.
+    local gc
+    for gc in $(online_cpus); do
+      [ -e "/sys/devices/system/cpu/cpu$gc/cpufreq/scaling_governor" ] && \
+        cat "/sys/devices/system/cpu/cpu$gc/cpufreq/scaling_governor" > "$STATE/gov_cpu$gc"
+    done
+    # The ORIGINAL slice cpusets. Restoring these to "all online CPUs" destroys a housekeeping
+    # partition someone else configured — it reset an operator's 0-3,12-15 split to 0-15 and
+    # let OS work back onto the measured cores.
+    local sl
+    for sl in system.slice user.slice init.scope "$MSLICE"; do
+      systemctl show "$sl" -p AllowedCPUs --value 2>/dev/null > "$STATE/cpuset_${sl%%.*}"
+    done
     cat /sys/devices/system/cpu/intel_pstate/no_turbo          > "$STATE/no_turbo"
     grep -o '\[.*\]' /sys/kernel/mm/transparent_hugepage/enabled | tr -d '[]' > "$STATE/thp"
     grep -o '\[.*\]' /sys/kernel/mm/transparent_hugepage/defrag  | tr -d '[]' > "$STATE/thp_defrag"
@@ -182,7 +211,8 @@ PY
   local iso_fail=0
   [ "$(cat /sys/fs/cgroup/system.slice/cpuset.cpus.effective)" = "$CPUS_HOUSE" ] || { log "ISO-PROOF FAIL: system.slice cpuset"; iso_fail=1; }
   [ "$(cat /sys/fs/cgroup/user.slice/cpuset.cpus.effective)" = "$CPUS_HOUSE" ]   || { log "ISO-PROOF FAIL: user.slice cpuset"; iso_fail=1; }
-  [ "$(cat /sys/devices/system/cpu/cpu2/cpufreq/scaling_governor)" = performance ] || { log "ISO-PROOF FAIL: governor"; iso_fail=1; }
+  local GOVCPU="${CPUS_MEASURED%%[-,]*}"   # first measured core (was hardcoded cpu2, a house core since the 2026-08-05 re-partition)
+  [ "$(cat /sys/devices/system/cpu/cpu$GOVCPU/cpufreq/scaling_governor)" = performance ] || { log "ISO-PROOF FAIL: governor (cpu$GOVCPU)"; iso_fail=1; }
   [ "$(cat /sys/devices/system/cpu/intel_pstate/no_turbo)" = 1 ] || { log "ISO-PROOF FAIL: no_turbo"; iso_fail=1; }
   # Settle-and-retry (2026-07-29): the check runs ~1 s after the cpuset migration, so it used to
   # sample DURING the drain of whatever was still on the measured partition (interactive tooling,
@@ -210,7 +240,14 @@ PY
 
 restore_isolation(){
   log "ISOLATION: restoring"
-  [ -f "$STATE/governor" ] && cat "$STATE/governor" | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor >/dev/null
+  local gf gc
+  for gf in "$STATE"/gov_cpu*; do
+    [ -f "$gf" ] || continue
+    gc=${gf##*/gov_cpu}
+    sudo tee "/sys/devices/system/cpu/cpu$gc/cpufreq/scaling_governor" < "$gf" >/dev/null 2>&1 || true
+    rm -f "$gf"
+  done
+  rm -f "$STATE/governor"
   [ -f "$STATE/no_turbo" ] && cat "$STATE/no_turbo" | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo >/dev/null
   [ -f "$STATE/thp" ]        && cat "$STATE/thp"        | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null
   [ -f "$STATE/thp_defrag" ] && cat "$STATE/thp_defrag" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag  >/dev/null
@@ -223,12 +260,22 @@ restore_isolation(){
     cat "$f" | sudo tee "/proc/irq/$n/smp_affinity" >/dev/null 2>&1 || true
     rm -f "$f"
   done
-  # NB: AllowedCPUs="" is NOT honored as a reset, and nproc lies under our own shield
-  # (affinity-sensitive) — use the kernel's online range (verified 2026-07-08)
-  local ALLCPUS; ALLCPUS=$(cat /sys/devices/system/cpu/online)
-  sudo systemctl set-property --runtime system.slice AllowedCPUs="$ALLCPUS"
-  sudo systemctl set-property --runtime user.slice   AllowedCPUs="$ALLCPUS"
-  sudo systemctl set-property --runtime "$MSLICE"    AllowedCPUs="$ALLCPUS"
+  # Restore the cpusets we SNAPSHOTTED, not "all online CPUs": this box is shared and boots
+  # into a housekeeping partition (0-3,12-15) that is not ours to widen. AllowedCPUs="" is not
+  # honoured as a reset, so an empty snapshot — the unit had no explicit cpuset — falls back to
+  # the online range for that unit alone.
+  local sl sf want
+  for sl in system.slice user.slice init.scope "$MSLICE"; do
+    sf="$STATE/cpuset_${sl%%.*}"
+    [ -f "$sf" ] || continue
+    want=$(tr -d '\n' < "$sf")
+    if [ -n "$want" ]; then
+      sudo systemctl set-property --runtime "$sl" AllowedCPUs="$want" 2>/dev/null
+    else
+      sudo systemctl set-property --runtime "$sl" AllowedCPUs="$(cat /sys/devices/system/cpu/online)" 2>/dev/null
+    fi
+    rm -f "$sf"
+  done
   if [ -f "$STATE/daemon.json.orig" ]; then sudo cp "$STATE/daemon.json.orig" /etc/docker/daemon.json
   else sudo rm -f /etc/docker/daemon.json; fi
   sudo systemctl reset-failed docker.service docker.socket 2>/dev/null
@@ -390,7 +437,12 @@ rev = subprocess.run(["git","-C",os.environ["REPO"],"rev-parse","--short","HEAD"
 json.dump({"workload":wl,"config":cfg,"run":int(run),"model":os.environ["MODEL_ID"],
   "endpoint":os.environ["GLM_ENDPOINT"],"thinking":os.environ["THINKING"],
   "cpus_measured":os.environ["CPUS_MEASURED"],"cpus_house":os.environ["CPUS_HOUSE"],
-  "winsec":int(os.environ["WINSEC"]),"repo_rev":rev,"kernel":os.uname().release,
+  # float, not int: WINSEC is sub-second at 100 ms and int("0.1") raises, which killed the
+  # whole metadata writer — silently, since it runs in a background heredoc. Symptom is a
+  # run with windows but no metadata.json, which also starves the 2 Hz command tagger
+  # (it waits for that file before it can learn the tool cgroup). Fixed 2026-08-07;
+  # the SPEC sibling kit had the same bug.
+  "winsec":float(os.environ["WINSEC"]),"repo_rev":rev,"kernel":os.uname().release,
   "gorder":os.environ.get("GORDER",""),"rotation":"shuffled","tma_cont":True,
   "ts_start":time.time(),"extra":json.loads(extra or "{}")}, open(f"{out}/metadata.json","w"), indent=1)
 PY
@@ -569,6 +621,47 @@ stage_preflight(){
   if systemctl is-active k3s >/dev/null 2>&1; then
     [ -x /usr/local/bin/k3s-killall.sh ] || { log "FAIL: k3s active but k3s-killall.sh missing (pods would escape the shield)"; fail=1; }
   fi
+  # Topology gate (2026-08-05, post-reboot partition): the boot-time CPU layout is a hard
+  # precondition — verify it explicitly instead of discovering it mid-campaign. Checks:
+  # (a) system.slice/user.slice effective cpusets == CPUS_HOUSE, (b) every measured core is
+  # online, (c) no measured core has an ONLINE SMT sibling (an online sibling shares the
+  # physical core -> interference inside the measured partition; offline siblings vanish
+  # from thread_siblings_list, so "list == just itself" is exactly the guarantee we need),
+  # (d) measured and house sets don't overlap.
+  python3 - "$CPUS_MEASURED" "$CPUS_HOUSE" <<'PY' || fail=1
+import sys
+def parse(spec):
+    out = []
+    for part in spec.split(","):
+        a, _, b = part.partition("-")
+        out += list(range(int(a), int(b or a) + 1))
+    return out
+meas, house = parse(sys.argv[1]), parse(sys.argv[2])
+def rd(p):
+    try: return open(p).read().strip()
+    except OSError: return None
+bad = []
+for sl in ("system", "user"):
+    eff = rd(f"/sys/fs/cgroup/{sl}.slice/cpuset.cpus.effective")
+    if eff is None or parse(eff) != house:
+        bad.append(f"{sl}.slice effective cpuset is '{eff}', want CPUS_HOUSE ({sys.argv[2]})")
+if set(meas) & set(house):
+    bad.append(f"CPUS_MEASURED overlaps CPUS_HOUSE: {sorted(set(meas) & set(house))}")
+for c in meas:
+    online = rd(f"/sys/devices/system/cpu/cpu{c}/online")   # cpu0 has no online file
+    if c != 0 and online != "1":
+        bad.append(f"measured cpu{c} is OFFLINE"); continue
+    sibs = parse(rd(f"/sys/devices/system/cpu/cpu{c}/topology/thread_siblings_list") or str(c))
+    for s in sibs:
+        if s != c:
+            bad.append(f"measured cpu{c} has ONLINE SMT sibling cpu{s} (sibling interference)")
+for m in bad:
+    print(f"  TOPOLOGY FAIL: {m}")
+print(f"  topology gate: measured={sys.argv[1]} house={sys.argv[2]} — "
+      + ("OK (house slices pinned, measured cores online, no online SMT siblings)"
+         if not bad else f"{len(bad)} problem(s)"))
+sys.exit(1 if bad else 0)
+PY
   [ $fail -eq 0 ] && log "PREFLIGHT OK" || { log "PREFLIGHT FAILED"; exit 1; }
 }
 

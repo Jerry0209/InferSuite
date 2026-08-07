@@ -32,14 +32,20 @@ from matplotlib.patches import Patch  # noqa: E402
 
 from spec_common import (  # noqa: E402
     C_AGENT, C_FP, C_INT, C_SPEC, L1COLS, OUT, UOPCOLS,
-    agentic_split, cat_divider, cat_sorted, comparison, duty, episodes, n_int, save, series,
-    slots_per_cycle, txtcol, window_budget, windows,
+    agentic_split, cat_divider, cat_sorted, comparison, comparison_legacy, duty, episodes,
+    n_int, save, series, slots_per_cycle, txtcol, window_budget, windows,
 )
 
 EPS = episodes()
 WIN = {e["benchmark"]: windows(e["dir"]) for e in EPS}
 CMP = comparison()
 ROT, REP = agentic_split(CMP)
+# The SAME agentic episodes captured under the OLD configuration (SMT-ON, 20 logical CPUs,
+# 2 s windows). Same workload, same code, same SPEC side — so the delta between LEG_REP and
+# REP is the configuration and nothing else, which is how the old caveat gets measured
+# instead of asserted.
+LEG = comparison_legacy()
+LEG_ROT, LEG_REP = agentic_split(LEG) if LEG else ([], [])
 # SPEC-only figures use all 11 counter groups (the richest SPEC number). Every SPEC-vs-agentic
 # figure must instead use SPEC8 — the same episodes reloaded over the eight CERTIFIED shared
 # groups, because the agentic campaign only ever rotated those eight. IPC is the metric that
@@ -48,8 +54,11 @@ ROT, REP = agentic_split(CMP)
 # 11 groups vs 2.418 over 8). Per-event ratios are immune — their denominators are already
 # co-counted per group — but mixing the two sources in one bar chart is indefensible anyway.
 SPEC8 = CMP["spec"]
-VALUES: dict = {"n_spec": len(EPS), "n_agentic_rotation": len(ROT), "n_agentic_replay": len(REP)}
-print(f"SPEC episodes {len(EPS)} · agentic rotation {len(ROT)} · agentic replay {len(REP)}")
+VALUES: dict = {"n_spec": len(EPS), "n_agentic_replay": len(REP),
+                "n_agentic_legacy_replay": len(LEG_REP),
+                "n_agentic_legacy_rotation": len(LEG_ROT)}
+print(f"SPEC episodes {len(EPS)} · agentic matched replay {len(REP)} · "
+      f"legacy replay {len(LEG_REP)} · legacy rotation {len(LEG_ROT)}")
 os.makedirs(OUT, exist_ok=True)
 
 
@@ -391,9 +400,9 @@ for e in EPS:
                color=bcol(e), alpha=0.85, edgecolor="white", linewidth=0.8, zorder=3)
     ax.annotate(e["benchmark"], (x, y), textcoords="offset points", xytext=(6, 4), fontsize=7.4,
                 color="#333")
-ag_ipc, ag_st = med(ROT, "IPC"), (medtma(ROT, "be_bound") + medtma(ROT, "fe_bound"))
+ag_ipc, ag_st = med(REP, "IPC"), (medtma(REP, "be_bound") + medtma(REP, "fe_bound"))
 ax.scatter([ag_ipc], [ag_st], marker="*", s=520, color=C_AGENT, edgecolor="white", linewidth=1.2,
-           zorder=4, label=f"agentic median (n={len(ROT)} rotation episodes)")
+           zorder=4, label=f"agentic median (n={len(REP)} matched-config episodes)")
 ax.annotate("SWE-agent × GLM-5.2", (ag_ipc, ag_st), textcoords="offset points", xytext=(10, -14),
             fontsize=10, color=C_AGENT, fontweight="bold")
 ax.set_xlabel("IPC (instructions per cycle)")
@@ -402,7 +411,7 @@ ax.set_title("The landscape: 26 SPEC benchmarks and where the agent sits in it",
 ax.legend(handles=[Patch(color=C_INT, label="SPECrate integer"),
                    Patch(color=C_FP, label="SPECrate floating-point"),
                    plt.Line2D([], [], marker="*", ls="", color=C_AGENT, ms=15,
-                              label=f"agentic median (n={len(ROT)})")],
+                              label=f"agentic median (n={len(REP)})")],
           fontsize=9.5, frameon=False, loc="lower left")
 ax.text(0.99, 0.02, "marker area ∝ √(episode wall time)", transform=ax.transAxes, ha="right",
         fontsize=8.2, color="#777")
@@ -473,7 +482,7 @@ for i, (k, lab, unit) in enumerate(CMPROWS):
         "spec_median": s_, "spec_range": [slo, shi],
         "agentic_replay_median": a, "agentic_replay_n": len(pts),
         "agentic_replay_points": [{"task": t, "value": v} for t, v in pts],
-        "agentic_rotation_median": med(ROT, k), "agentic_rotation_n": len(points(ROT, k)),
+        "agentic_legacy_median": med(LEG_REP, k), "agentic_legacy_n": len(points(LEG_REP, k)),
         "ratio_replay_over_spec": ratio}
 ax.set_xscale("log")
 ax.set_yticks(Y)
@@ -503,54 +512,91 @@ fig.suptitle("Traditional compute vs agentic work: same instrument, same formula
 fig.tight_layout(rect=(0, 0.02, 1, 0.955))
 save(fig, "spec_vs_agentic_metrics.png")
 
-# ================= Fig 10: TMA comparison ========================================================
-fig, (axa, axb) = plt.subplots(1, 2, figsize=(14.0, 5.4), gridspec_kw={"width_ratios": [1, 1.25]})
-bars = [(f"SPEC CPU 2026\nmedian of {len(EPS)}", {k: med(EPS, "IPC") for k in ()},
-         {k: statistics.median([e["tma"]["l1"][k] for e in EPS]) for k, *_x in L1COLS}),
-        (f"agentic — rotation\nmedian of {len(ROT)}",
-         {}, {k: medtma(ROT, k) for k, *_x in L1COLS}),
-        (f"agentic — replays\nmedian of {len(REP)}",
-         {}, {k: medtma(REP, k) for k, *_x in L1COLS})]
-Y = np.arange(len(bars))
-left = np.zeros(len(bars))
-for key, lab, col in L1COLS:
-    v = np.array([b[2][key] for b in bars])
-    axa.barh(Y, v, left=left, color=col, height=0.55, label=lab, edgecolor="white", linewidth=0.8)
-    for y, (l, vv) in enumerate(zip(left, v)):
-        if vv >= 7:
-            axa.text(l + vv / 2, y, f"{vv:.0f}", ha="center", va="center", fontsize=9,
-                     color=txtcol(col), fontweight="bold")
-    left += v
-axa.set_yticks(Y)
-axa.set_yticklabels([b[0] for b in bars], fontsize=9.5)
-axa.invert_yaxis()
-axa.set_xlim(0, 100)
-axa.set_xlabel("pipeline slots (%)")
-axa.legend(ncol=2, fontsize=8.8, loc="upper center", bbox_to_anchor=(0.5, -0.14), frameon=False)
-axa.set_title("TMA Level 1 — the least SMT-sensitive view", fontsize=11.5)
+# ================= Fig 10: TMA radar (all four L1 buckets) =======================================
+# Mentor's request 2026-08-07: show BAD SPECULATION alongside frontend- and backend-bound, on a
+# radar. Four independent axes rather than a stacked bar, because the question is the SHAPE of
+# the profile, not its composition — and a stack forces the eye to compare segment lengths at
+# different offsets. Note the medians are per-episode medians, so the four axes do NOT sum to
+# 100 % (SPEC: 91.1); each axis is read on its own.
+TMA_AXES = [("retiring", "Retiring"), ("fe_bound", "Frontend-\nbound"),
+            ("bad_spec", "Bad\nspeculation"), ("be_bound", "Backend-\nbound")]
 
-# per-episode scatter: the medians above are not hiding a bimodal suite
-axb.scatter([e["tma"]["l1"]["fe_bound"] for e in EPS], [e["tma"]["l1"]["be_bound"] for e in EPS],
-            s=46, color=C_SPEC, alpha=0.85, edgecolor="white", linewidth=0.7, label="SPEC episode")
-axb.scatter([r["tma_l1"]["fe_bound"] for r in ROT], [r["tma_l1"]["be_bound"] for r in ROT],
-            s=70, color=C_AGENT, alpha=0.9, edgecolor="white", linewidth=0.7, marker="*",
-            label="agentic rotation episode")
-axb.scatter([r["tma_l1"]["fe_bound"] for r in REP], [r["tma_l1"]["be_bound"] for r in REP],
-            s=26, facecolor="none", edgecolor=C_AGENT, linewidth=1.0, label="agentic replay episode")
-lim = max(axb.get_xlim()[1], axb.get_ylim()[1])
-axb.plot([0, lim], [0, lim], color="#bbb", lw=1, ls="--", zorder=0)
-axb.text(lim * 0.72, lim * 0.78, "backend = frontend", fontsize=8.5, color="#999", rotation=45)
+
+def tma_profile(rows):
+    return [medtma(rows, k) for k, _lab in TMA_AXES]
+
+
+SERIES = [("SPEC CPU 2026", tma_profile(SPEC8), C_SPEC, "-", 1.0),
+          (f"agentic — matched config (n={len(REP)})", tma_profile(REP), C_AGENT, "-", 1.0)]
+if LEG_REP:
+    SERIES.append((f"agentic — legacy SMT-ON, 2 s (n={len(LEG_REP)})", tma_profile(LEG_REP),
+                   "#9aa8b2", "--", 0.0))
+
+ang = np.linspace(0, 2 * np.pi, len(TMA_AXES), endpoint=False).tolist()
+ang += ang[:1]
+fig = plt.figure(figsize=(14.2, 6.4))
+ax = fig.add_subplot(1, 2, 1, polar=True)
+RMAX = 40
+for si, (lab, vals, col, ls, alpha) in enumerate(SERIES):
+    v = list(vals) + [vals[0]]
+    ax.plot(ang, v, color=col, lw=2.0, ls=ls, label=lab, zorder=3)
+    if alpha:
+        ax.fill(ang, v, color=col, alpha=0.13, zorder=2)
+    for a, x in zip(ang[:-1], vals):
+        if not alpha:
+            continue
+        # Two filled series print a value at nearly the same point on every axis (backend-bound
+        # differs by 4.7 pp). Stagger them along the radius so neither is unreadable.
+        dy = 9 if si == 0 else -11
+        ax.annotate(f"{x:.1f}", (a, x), textcoords="offset points", xytext=(0, dy),
+                    ha="center", fontsize=8.8, color=col, fontweight="bold", zorder=6)
+ax.set_theta_offset(np.pi / 2)
+ax.set_theta_direction(-1)
+ax.set_xticks(ang[:-1])
+ax.set_xticklabels([lab for _k, lab in TMA_AXES], fontsize=10)
+ax.set_ylim(0, RMAX)
+ax.set_yticks([10, 20, 30, 40])
+ax.set_yticklabels(["10 %", "20 %", "30 %", "40 %"], fontsize=8, color="#777")
+ax.grid(color="#cfd8dc", lw=0.7)
+ax.set_rlabel_position(22)          # keep the % ring labels off the frontend-bound spoke
+ax.set_title("TMA Level 1 profile — share of pipeline slots", fontsize=11.5, pad=26)
+ax.legend(fontsize=8.8, frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.06))
+
+# right: bad speculation gets its own axis against frontend-bound, per episode
+axb = fig.add_subplot(1, 2, 2)
+axb.scatter([e["tma"]["l1"]["fe_bound"] for e in EPS], [e["tma"]["l1"]["bad_spec"] for e in EPS],
+            s=46, color=C_SPEC, alpha=0.85, edgecolor="white", linewidth=0.7,
+            label=f"SPEC benchmark (n={len(EPS)})")
+axb.scatter([r["tma_l1"]["fe_bound"] for r in REP], [r["tma_l1"]["bad_spec"] for r in REP],
+            s=64, color=C_AGENT, marker="*", edgecolor="white", linewidth=0.6,
+            label=f"agentic replay, matched config (n={len(REP)})")
+if LEG_REP:
+    axb.scatter([r["tma_l1"]["fe_bound"] for r in LEG_REP],
+                [r["tma_l1"]["bad_spec"] for r in LEG_REP], s=26, facecolor="none",
+                edgecolor="#9aa8b2", linewidth=1.0,
+                label=f"agentic replay, legacy SMT-ON (n={len(LEG_REP)})")
+for e in EPS:
+    if e["tma"]["l1"]["bad_spec"] > 18 or e["tma"]["l1"]["fe_bound"] > 35:
+        axb.annotate(e["benchmark"], (e["tma"]["l1"]["fe_bound"], e["tma"]["l1"]["bad_spec"]),
+                     textcoords="offset points", xytext=(5, 3), fontsize=7.2, color="#555")
 axb.set_xlabel("frontend-bound (% of slots)")
-axb.set_ylabel("backend-bound (% of slots)")
-axb.legend(fontsize=9, frameon=False, loc="upper right")
-axb.set_title("Every episode, not just the medians", fontsize=11.5)
-fig.suptitle("Where the pipeline slots go: SPEC stalls on the back end, the agent on the front end",
-             fontsize=12.5, y=1.02)
+axb.set_ylabel("bad speculation (% of slots)")
+axb.legend(fontsize=8.8, frameon=False, loc="upper right")
+axb.set_title("Bad speculation on its own axis, per episode", fontsize=11.5)
+fig.suptitle("Where the pipeline slots go — the agent is frontend-bound AND mis-speculates more",
+             fontsize=12.5, y=1.0)
+fig.tight_layout(rect=(0, 0.02, 1, 0.94))
 save(fig, "spec_vs_agentic_tma.png")
 VALUES["tma_compare"] = {
-    "spec": {k: statistics.median([e["tma"]["l1"][k] for e in EPS]) for k, *_x in L1COLS},
-    "agentic_rotation": {k: medtma(ROT, k) for k, *_x in L1COLS},
-    "agentic_replay": {k: medtma(REP, k) for k, *_x in L1COLS}}
+    "axes": [k for k, _l in TMA_AXES],
+    "spec": dict(zip([k for k, _l in TMA_AXES], tma_profile(SPEC8))),
+    "agentic_matched": dict(zip([k for k, _l in TMA_AXES], tma_profile(REP))),
+    "agentic_legacy_replay": (dict(zip([k for k, _l in TMA_AXES], tma_profile(LEG_REP)))
+                              if LEG_REP else None),
+    "agentic_legacy_rotation": (dict(zip([k for k, _l in TMA_AXES], tma_profile(LEG_ROT)))
+                                if LEG_ROT else None),
+    "note": "per-episode medians; the four axes do not sum to 100 %",
+}
 
 # ================= Fig 11: the frontend story, in distributions ==================================
 # The headline claim is "the agent is frontend-bound and SPEC is not". A median bar can be an
@@ -561,8 +607,8 @@ FRONT = [("L1I_MPKI", "L1I MPKI", "log"), ("MITE_pct", "MITE (legacy decode) %",
 fig, axes = plt.subplots(1, 4, figsize=(15.4, 5.6))
 for axx, (k, lab, scale) in zip(axes, FRONT):
     sv = [r["metrics"][k] for r in SPEC8 if r["metrics"].get(k) is not None]
-    av = [r["metrics"][k] for r in ROT if r["metrics"].get(k) is not None]
-    bv = [r["metrics"][k] for r in REP if r["metrics"].get(k) is not None]
+    av = [r["metrics"][k] for r in REP if r["metrics"].get(k) is not None]
+    bv = [r["metrics"][k] for r in LEG_REP if r["metrics"].get(k) is not None]
     axx.boxplot([sv], orientation="vertical", widths=0.42, positions=[0], patch_artist=True,
                 boxprops=dict(facecolor=C_SPEC, alpha=0.35, edgecolor=C_SPEC),
                 medianprops=dict(color="#d95f02", lw=2), whis=(5, 95), showfliers=False)
@@ -575,8 +621,8 @@ for axx, (k, lab, scale) in zip(axes, FRONT):
     if scale == "log":
         axx.set_yscale("log")
     axx.set_xticks([0, 1])
-    axx.set_xticklabels([f"SPEC\n(n={len(sv)})", f"agentic\n(rot {len(av)} · replay {len(bv)})"],
-                        fontsize=9)
+    axx.set_xticklabels([f"SPEC\n(n={len(sv)})",
+                         f"agentic\n(matched {len(av)} · legacy {len(bv)})"], fontsize=9)
     axx.set_xlim(-0.5, 1.5)
     axx.set_title(lab, fontsize=11)
     # The honest statement is a RANK, not a "beyond the range". SPEC's spread is enormous
@@ -598,9 +644,9 @@ for axx, (k, lab, scale) in zip(axes, FRONT):
 fig.legend(handles=[plt.Line2D([], [], marker="o", ls="", color=C_SPEC, ms=6,
                                label="one SPEC benchmark"),
                     plt.Line2D([], [], marker="*", ls="", color=C_AGENT, ms=12,
-                               label="agentic episode — 8-group rotation"),
+                               label="agentic episode — matched config (SMT-off, 100 ms)"),
                     plt.Line2D([], [], marker="o", ls="", mfc="none", color=C_AGENT, ms=6,
-                               label="agentic episode — dedicated-group replay")],
+                               label="agentic episode — legacy config (SMT-on, 2 s)")],
            ncol=3, frameon=False, fontsize=9.5, loc="lower center", bbox_to_anchor=(0.5, 0.015))
 fig.suptitle("Instruction supply and system time: the agent sits in the SPEC suite's tail, "
              "not in its middle", fontsize=12.5, y=1.0)

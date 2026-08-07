@@ -1,0 +1,23 @@
+{
+ "workload": "swe_replay",
+ "config": "fmtlib",
+ "run": 7,
+ "model": "glm-5.2",
+ "endpoint": "https://api.z.ai/api/paas/v4",
+ "thinking": "enabled",
+ "cpus_measured": "4-11",
+ "cpus_house": "0-3,12-15",
+ "winsec": 0.1,
+ "repo_rev": "afa4faad",
+ "kernel": "6.17.0-1030-oem",
+ "gorder": "dram_bw",
+ "rotation": "shuffled",
+ "tma_cont": true,
+ "ts_start": 1786103396.1668475,
+ "extra": {
+  "source_run": 1,
+  "traj": "/home/thu/InferSuite/local_agents/SWE_clean/data/glm_swe_fmtlib/run_1/traj/fmtlib__fmt-3248/fmtlib__fmt-3248.local.traj",
+  "harness_cg": "measured.slice/glm-rep-fmtlib-r7.scope",
+  "tool_cg": "measured.slice/docker-8372765272a47946b8aad2a4dcc01908c2262be66f1726e87bbba20e37838570.scope"
+ }
+}

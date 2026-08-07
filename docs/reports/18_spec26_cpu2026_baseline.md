@@ -50,6 +50,7 @@ Only kernel time genuinely leaves the suite (p96).
 | D7 | Fence | transient systemd scope under `measured.slice` | A cgroup catches every child the benchmark forks; a PID list does not. cpusets are hierarchical, so the scope must live under a top-level slice. |
 | D9 | Figure labelling + ordering | full `7xx.workload_r` names; **INT block, then FP**, each by SPEC number | PI decision 2026-08-06. The published SPEC name is the identifier a reader can look up; a bare stem is ambiguous across suites. Ordering by category rather than by measured value puts the suite's own structure on the axis — and the two categories do behave differently (insight 2), which a value-sorted axis interleaves and hides. Applied to the capture, both TMA, instruction-supply, memory-ladder and per-window-grid figures. |
 | D8 | Comparison population | agentic split by **instrument**, never merged | **Rotation, n=7 over 4 tasks** (babel, django, fmtlib, sympy): all 8 groups shuffled, the same instrument SPEC runs, so one episode yields a full metric card (6 live + 1 replay anchor). **Replay, n=16 over 2 tasks** (babel, fmtlib): one group per whole deterministic episode at 100 % duty, no model in the loop; each task was replayed 11 times, once per counter group, of which the 8 shared ones enter here. Live single-group probes belong to NEITHER — see §2.2. Merging them would mix two instruments in one median. |
+| D11 | Agentic side re-captured at the **SPEC configuration** | cores 4–11, SMT off, 100 ms windows | PI request 2026-08-07. Retires the SMT and window-length caveats instead of carrying them in prose, and prices them: agentic IPC **1.591 → 1.890 (+18.8 %)** once the sibling thread stops stealing issue slots, while the TMA shape barely moves (frontend-bound 34.1 → 32.7 %, bad speculation 15.8 → 15.4 %) — i.e. the TMA conclusions never depended on the caveat, and the IPC ones did. 16 dedicated-group replays (8 shared groups × babel, fmtlib), ~350 windows per babel pass and ~1,110 per fmtlib pass. Contention is NOT retired: SPEC still runs one copy alone. |
 | D10 | Headline comparison figure uses **replays only** | `spec_vs_agentic_metrics` | PI decision 2026-08-06: the replay measures its group at 100 % duty on a deterministic, model-free episode, which is the cleanest per-metric agentic number available. Cost, stated on the slide: only 2 tasks, and each metric rests on the **2** replays that ran its group (IPC 14), not on all 16 — so the figure prints that count per row and plots the individual episode points instead of a whisker. It also shifts the result: instruction supply strengthens (L1I 11.96× → 17.31×, kernel 23.18× → 27.27×) and DRAM all but disappears (0.07× → 0.92×), the latter being task composition — fmtlib compiles C++ and moves real memory traffic where the Python rotation tasks do not. |
 
 ### 2.2 Verification, and the defects it caught
@@ -90,6 +91,16 @@ Defects found and fixed during the study, each of which would have shipped a wro
   drops them (19 → 16) and moves two rows of the headline figure: L1I MPKI 18.00× → **17.31×**,
   and DRAM read bandwidth 0.52× → **0.92×**, i.e. from "SPEC reads 1.9× more" to near parity.
   Every other row is unchanged. Live single-group probes now belong to neither population.
+- **The agentic kit would have destroyed the operator's partition (found 2026-08-07).** Before
+  the re-capture could run, `apply_isolation` snapshotted the governor from **cpu0 only**
+  (`powersave`) and `restore_isolation` wrote that single value to `cpu*` — which would have left
+  the measured cores 4–11 in powersave; and restore reset `system.slice`, `user.slice` and
+  `measured.slice` to `AllowedCPUs=<all online>`, wiping the 0–3,12–15 house split. Both are the
+  same defects fixed in the SPEC kit on 2026-08-05, ported across before any capture ran and
+  verified on a smoke pass (partition byte-identical afterwards).
+- **`int(WINSEC)` in the agentic metadata writer.** `int("0.1")` raised inside a background
+  heredoc, so a run produced 363 windows and **no `metadata.json`** — which also starved the 2 Hz
+  command tagger, since it waits for that file to learn the tool cgroup. Now `float()`.
 - **Restore path destroyed the operator's partition.** An early isolation-restore reset the
   system slices to "all online CPUs" instead of what it had snapshotted. It now snapshots and
   restores the real values, per-CPU (governors differ per core; offline CPUs reject writes).
