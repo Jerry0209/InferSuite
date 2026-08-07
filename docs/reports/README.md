@@ -27,10 +27,13 @@ creation; the table below is ordered by deck slide.
 | 28 | [17 — ⟨language, type⟩ sampling frame](17_slide28_language_type_sampling_frame.md) | The mentor's frame operationalised: 300-instance inventory (assertion-checked counts), deterministic taxonomy validated against 12 measured compositions — mechanism-type is nested in language (9 cells, all covered), so the next campaign samples the open behavioural axis with realized-type crediting |
 | 1–25 | [14 — instrument-to-figure reference](14_slides1-25_instrument_to_figure_reference.md) | Cross-cutting: which instrument produced each deck number, exact vs heuristic layer, and the code site of every constant — plus the JS command-tagger gap that qualifies babel's tag mix on 24–25, and the published slide links |
 | own deck | [18 — SPEC CPU 2026 baseline](18_spec26_cpu2026_baseline.md) | The traditional-workload baseline the agentic numbers are measured against: 26 benchmarks, ref inputs, 1 copy on 1 isolated SMT-free core, same 8 certified groups and same code. Method validated (slots/cycle 6.00–6.02 vs an issue width of 6; known benchmark characters reproduced); the families separate on instruction supply (L1I 11.96×, kernel 23.18×) not on data (DRAM 0.07×) |
+| own deck | [19 — SPEC vs agentic headline comparison](19_spec_vs_agentic_headline_comparison.md) | Twelve metrics, one implementation, shared 8 groups, matched configuration: the families separate on instruction supply (L1I 15.31×, kernel 28.04×, microcode 9.56×) and **not** on the memory ladder (AMAT 0.99×, MLP 0.97×, DRAM 0.79×) |
+| own deck | [20 — TMA profile & bad speculation](20_tma_profile_bad_speculation_radar.md) | All four L1 buckets on a radar: agent frontend-bound 32.7 % vs SPEC 18.3 %, and bad speculation 15.4 % vs 10.0 % — a second, independent front-end cost. Also prices the retired SMT caveat: IPC +18.8 %, TMA shape unchanged |
+| own deck | [21 — the agent's position in the SPEC distribution](21_agent_position_in_spec_distribution.md) | Ranks, not ratios: L1I MPKI p77 (6/26 worse), MITE p65, DSB p27 — the agent sits in SPEC's tail beside the compilers and the interpreter. Only kernel time leaves the suite (p96, 1/26) |
 
 **Reading order for a newcomer:** 14 (which instrument produced what) → 03 (what a "tool call"
 is in this data) → 05 → 06 → 07 → 08 → 02 → 04 → 09/10/11/12 (any order) → **15 (why the tasks
-differ at all — read before drawing conclusions from 09–12)** → 13 → 16 → 17 → 01, then **18** (the SPEC baseline that anchors 08–12).
+differ at all — read before drawing conclusions from 09–12)** → 13 → 16 → 17 → 01, then **18** (the SPEC baseline that anchors 08–12) → **19 → 20 → 21** (the comparison studies; 19 first, it fixes the population the other two use).
 
 **Numbering note:** 01–04 were written first (slides 17+); 05–12 filled in the earlier deck
 sections and the per-window metric groups; 13 covers the multilingual extension; 14 is the

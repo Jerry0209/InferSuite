@@ -31,6 +31,9 @@ Full index and reading order: **[reports/README.md](reports/README.md)**.
 | 28 | [17 — ⟨language, type⟩ sampling frame](reports/17_slide28_language_type_sampling_frame.md) | 300 instances inventoried + classified; mechanism-type nested in language (9/9 cells covered); next campaign samples the behavioural axis |
 | 1–25 | [14 — instrument-to-figure reference](reports/14_slides1-25_instrument_to_figure_reference.md) | Which instrument produced each deck number, exact vs heuristic, code site of every constant; JS-tagger gap; published slide links |
 | own deck | [18 — SPEC CPU 2026 baseline](reports/18_spec26_cpu2026_baseline.md) | Traditional-workload baseline on the same instrument: method validated, and the two families separate on instruction supply (L1I 11.96×, kernel 23.18×), not on data (DRAM 0.07×) |
+| own deck | [19 — SPEC vs agentic headline comparison](reports/19_spec_vs_agentic_headline_comparison.md) | Twelve metrics on the matched configuration: separation is instruction supply + kernel time (L1I 15.31×, kernel 28.04×), never the memory ladder (AMAT 0.99×, DRAM 0.79×) |
+| own deck | [20 — TMA profile & bad speculation](reports/20_tma_profile_bad_speculation_radar.md) | TMA radar incl. bad speculation (15.4 % vs 10.0 %); prices the retired SMT caveat — IPC +18.8 %, TMA shape unchanged |
+| own deck | [21 — the agent's position in the SPEC distribution](reports/21_agent_position_in_spec_distribution.md) | Ranks not ratios: L1I p77, MITE p65, DSB p27 — the agent is in SPEC's tail; only kernel time leaves the suite (p96) |
 
 Companion material elsewhere in the repo:
 
