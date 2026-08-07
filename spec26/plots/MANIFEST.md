@@ -41,7 +41,7 @@ The agentic side is likewise split by instrument and **never merged**:
 | Population | n | Tasks | What one episode gives you |
 |---|---|---|---|
 | **legacy rotation** | 7 | 4 — babel, django, fmtlib, sympy | all 8 groups shuffled across the episode, i.e. the same instrument SPEC runs, so one episode yields a full metric card at ~1/8 duty per group. 6 live + 1 replay anchor |
-| **matched replay** (primary) | 16 | 2 — babel, fmtlib | one group for a whole deterministic episode (2 s windows) at 100 % duty, model never called — so **each metric rests on the 2 replays that ran its group, never on all 16** (IPC is the exception at 14: cycles and instructions ride in every group). Each task was replayed 11 times, once per counter group; the 8 shared with SPEC enter here |
+| **matched replay** (primary) | 96 | **12 — astropy, babel, fmtlib, gson, jq, php-cs-fixer, prometheus, rubocop, scikit-learn, sympy, tokio, vue (10 languages)** | one group for a whole deterministic episode (2 s windows) at 100 % duty, model never called — so **each metric rests on the 12 replays that ran its group, never on all 96** (IPC is the exception at 84: cycles and instructions ride in every group). Each task was replayed 8 times, once per shared counter group |
 
 **Configuration (2026-08-07).** The agentic replays were re-captured on the SPEC configuration —
 measured cores **4–11 with SMT off**, **100 ms** windows, same partition, same fence — and that
@@ -49,8 +49,10 @@ matched capture (`comparison_iso8.json`) is now the agentic side of every compar
 retired SMT-ON / 2 s capture (`comparison.json`) is kept as the configuration control, because
 the pair *measures* what the old caveat was worth: agentic IPC **1.591 → 1.890 (+18.8 %)** with
 the sibling thread gone, while the TMA shape barely moves (frontend-bound 34.1 → 32.7 %,
-bad speculation 15.8 → 15.4 %). SPEC-vs-agentic ratios on the matched capture: L1I MPKI 15.3×,
-kernel 28.0×, MITE 4.2×, microcode 9.3×, branch MPKI 3.4×, DRAM 0.79×, AMAT 0.99×, MLP 0.97×.
+bad speculation 15.8 → 15.4 %). SPEC-vs-agentic ratios on the matched 12-task capture: kernel **31.7×**,
+microcode **13.7×**, L1I MPKI **11.7×**, MITE **3.2×**, branch MPKI **3.0×** — against
+AMAT **0.99×**, MLP **1.02×**, DRAM **0.84×**, DSB **0.79×**, L1D **0.60×**. Widening from
+2 tasks to 12 held every direction and moved magnitudes within ~30 %.
 
 Populations are selected by **provenance**, not by counter-group count. Three *live* episodes
 (`glm_swe_babel` run_2/4/5) also dedicate a whole episode to one group via `GORDER_OVERRIDE` —
@@ -60,12 +62,11 @@ they are method probes with the model in the loop, and belong to neither populat
 the contributing episode count per row; `spec_vs_agentic_tma` shows both plus SPEC;
 `spec_vs_agentic_frontend` and `spec_landscape` use rotation, with replays overlaid.
 
-Switching that figure from rotation to replay strengthens the instruction-supply result
-(L1I MPKI 11.96× → 17.31×, kernel 23.18× → 27.27×) and all but erases the DRAM one
-(0.07× → 0.92×).
-The DRAM move is **task composition, not instrument**: the replays are babel (JS) and fmtlib
-(C++), and fmtlib compiles C++ and moves real memory traffic where the Python rotation tasks
-(django, sympy) do not.
+Earlier populations are recorded so an older figure can be dated: rotation-only gave L1I
+11.96× / kernel 23.18× / DRAM 0.07×; the 2-task replay population gave 15.31× / 28.04× / 0.79×;
+the 12-task population gives 11.73× / 31.74× / 0.84×. The DRAM number moved because of **task
+composition, not instrument** — the 2-task sample was babel (JS) and fmtlib (C++), and fmtlib
+compiles C++ and moves real memory traffic where the Python tasks do not.
 
 | Figure | What it shows | Population |
 |---|---|---|

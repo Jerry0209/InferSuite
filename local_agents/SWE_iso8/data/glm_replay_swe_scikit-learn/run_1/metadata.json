@@ -1,0 +1,23 @@
+{
+ "workload": "swe_replay",
+ "config": "scikit-learn",
+ "run": 1,
+ "model": "glm-5.2",
+ "endpoint": "https://api.z.ai/api/paas/v4",
+ "thinking": "enabled",
+ "cpus_measured": "4-11",
+ "cpus_house": "0-3,12-15",
+ "winsec": 0.1,
+ "repo_rev": "9edfd45e",
+ "kernel": "6.17.0-1030-oem",
+ "gorder": "fpbr",
+ "rotation": "shuffled",
+ "tma_cont": true,
+ "ts_start": 1786124166.681994,
+ "extra": {
+  "source_run": 1,
+  "traj": "/home/thu/InferSuite/local_agents/superseded_40min/data/glm_swe_scikit-learn/run_1/traj/scikit-learn__scikit-learn-25232/scikit-learn__scikit-learn-25232.traj",
+  "harness_cg": "measured.slice/glm-rep-scikit-learn-r1.scope",
+  "tool_cg": "measured.slice/docker-11fe608a15d69a0cbf9524f320a1b2bd7bb5476f89ceb66ead81af41957ad4ab.scope"
+ }
+}

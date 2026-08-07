@@ -1,0 +1,23 @@
+{
+ "workload": "swe_replay",
+ "config": "sympy",
+ "run": 1,
+ "model": "glm-5.2",
+ "endpoint": "https://api.z.ai/api/paas/v4",
+ "thinking": "enabled",
+ "cpus_measured": "4-11",
+ "cpus_house": "0-3,12-15",
+ "winsec": 0.1,
+ "repo_rev": "9edfd45e",
+ "kernel": "6.17.0-1030-oem",
+ "gorder": "fpbr",
+ "rotation": "shuffled",
+ "tma_cont": true,
+ "ts_start": 1786129683.1094615,
+ "extra": {
+  "source_run": 1,
+  "traj": "/home/thu/InferSuite/local_agents/superseded_40min/data/glm_swe_sympy/run_1/traj/sympy__sympy-14248/sympy__sympy-14248.traj",
+  "harness_cg": "measured.slice/glm-rep-sympy-r1.scope",
+  "tool_cg": "measured.slice/docker-a4c19f5eb5669d33dee508e63b0dc40d26983b883e8c98405d0879d7faa6358d.scope"
+ }
+}

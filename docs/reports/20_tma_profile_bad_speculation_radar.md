@@ -2,7 +2,7 @@
 
 **Date of study:** 2026-08-07 · **Author of record:** Tianrui (Jerry), with Claude Code
 **Feeds:** SPEC deck slide 18 · `spec26/plots/spec_vs_agentic_tma.png` · the deck's caveat slide
-**Data:** SPEC `~/spec26-infra/infra/data/*/tma_cont.csv` (26) · agentic matched `local_agents/SWE_iso8/` (16) · agentic legacy `local_agents/SWE_clean/` (16)
+**Data:** SPEC `~/spec26-infra/infra/data/*/tma_cont.csv` (26) · agentic matched `local_agents/SWE_iso8/` (**96 over 12 tasks**) · agentic legacy `local_agents/SWE_clean/` (16 over 2 tasks)
 **Prerequisite:** report 19 (population and configuration)
 
 ---
@@ -19,18 +19,19 @@ Median over episodes, share of pipeline slots:
 
 | | Retiring | Frontend-bound | Bad speculation | Backend-bound |
 |---|---|---|---|---|
-| **SPEC CPU 2026** (26) | 36.0 % | 18.3 % | **10.0 %** | 26.7 % |
-| **agentic, matched config** (16) | 29.9 % | **32.7 %** | **15.4 %** | 22.0 % |
-| agentic, legacy SMT-ON (16) | 31.3 % | 34.1 % | 15.8 % | 18.3 % |
+| **SPEC CPU 2026** (26 benchmarks) | 36.0 % | 18.3 % | **10.0 %** | 26.7 % |
+| **agentic, matched config** (96 replays, 12 tasks) | 30.9 % | **29.2 %** | **14.1 %** | 24.2 % |
+| agentic, legacy SMT-ON (16 replays, 2 tasks) | 31.3 % | 34.1 % | 15.8 % | 18.3 % |
 
-SPEC stalls on the back end; the agent stalls on the **front end** (1.8×) and additionally
-**mis-speculates 1.5× more**. Bad speculation earns the axis the mentor asked for: it is a
+SPEC stalls on the back end; the agent stalls on the **front end** (1.6×) and additionally
+**mis-speculates 1.4× more**. Bad speculation earns the axis the mentor asked for: it is a
 second, independent front-end cost, and it does not follow from frontend-bound — the two are
 different mechanisms (fetch cannot deliver, versus fetch delivered the wrong path).
 
 This study also **prices the retired SMT caveat**. The legacy row is the same replays under
-SMT-ON on 20 logical CPUs at 2 s windows. The TMA shape barely moves (frontend-bound 34.1 →
-32.7, bad speculation 15.8 → 15.4), while **IPC moves 1.591 → 1.890, +18.8 %**. So the TMA
+SMT-ON on 20 logical CPUs at 2 s windows. The TMA shape barely moves (the legacy 2-task pair reads
+frontend-bound 34.1 and bad speculation 15.8 against the 12-task 29.2 and 14.1), while **IPC
+moves 1.591 → 1.902, +19.5 %**. So the TMA
 conclusions never depended on the SMT caveat and the IPC ones did — which is exactly the kind of
 statement that used to be a hedge in prose and is now a measurement.
 
@@ -41,7 +42,7 @@ statement that used to be a hedge in prose and is now a measurement.
 | # | Decision | Value | Why |
 |---|---|---|---|
 | D1 | Radar, not stacked bars | 4 axes | A stack forces the eye to compare segment lengths at different offsets. The claim is about profile shape, so give each bucket its own axis. |
-| D2 | **Include bad speculation** | 4th axis | Mentor's request 2026-08-07. It earned it: 1.5×, and mechanistically independent of frontend-bound. |
+| D2 | **Include bad speculation** | 4th axis | Mentor's request 2026-08-07. It earned it: 1.4×, and mechanistically independent of frontend-bound. |
 | D3 | Radial scale fixed 0–40 % | not auto-scaled | An auto-scaled radar makes any two profiles look equally different. 40 % clears the largest value (36.0). |
 | D4 | Legacy capture drawn as a dashed outline | no fill, no value labels | It is a *control*, not a third result. Filling it would imply three findings. |
 | D5 | Per-episode scatter beside the radar | frontend-bound × bad speculation | Medians can hide a bimodal suite. This panel is also where the honest version of the bad-speculation claim lives (§3.2). |
@@ -58,7 +59,7 @@ Level-2 discussion.
 be read on its own. This is stated on the slide and in the values dump, because a radar
 *looks* like a composition.
 
-**The bad-speculation claim needs the scatter to stay honest.** The agent's 15.4 % is high but
+**The bad-speculation claim needs the scatter to stay honest.** The agent's 14.1 % is high but
 not extreme for the suite: **`729.abc_r` loses 49 % of its slots to mis-speculation**, and six
 more SPEC benchmarks exceed 20 %. What isolates the agent is the *combination* — high
 frontend-bound **and** high bad speculation simultaneously — a corner it shares only with
@@ -71,10 +72,13 @@ frontend-bound **and** high bad speculation simultaneously — a corner it share
 §2.2): the `priv` group counts `cycles:u`/`cycles:k` instead of plain `cycles`, so a naive sum
 dropped one group of 11 and read 6.62.
 
-**Known limitations.** (a) Agentic n=16 over **2 tasks**; the four TMA values per episode come
-from the census, so unlike the windowed metrics every one of the 16 contributes to every axis.
-(b) Contention is not retired. (c) The legacy control differs in *two* variables at once (SMT
-and window length), so it prices the pair, not SMT alone.
+**Known limitations.** (a) Agentic n=**96 over 12 tasks / 10 languages**; the four TMA values
+per episode come from the census, so unlike the windowed metrics **every one of the 96
+contributes to every axis** — this is the best-supported comparison in the study.
+(b) Contention is not retired. (c) The legacy control differs in *three* variables at once
+(SMT, window length, and task set — 2 tasks vs 12), so it prices the bundle, not SMT alone.
+Its frontend-bound of 34.1 % vs the matched 29.2 % is therefore partly the babel/fmtlib task
+mix, not purely configuration.
 
 ### 2.3 Reproduction recipe
 
@@ -82,7 +86,7 @@ and window length), so it prices the pair, not SMT alone.
 # Prerequisite: the captures from report 19 §2.3 exist.
 cd ~/spec26-infra/infra
 SPEC_COMPARISON_OUT=$PWD/comparison_iso8.json python3 scripts/compare_spec_agentic.py data \
-    ~/InferSuite/local_agents/SWE_iso8/data/*/run_*/     # matched  -> comparison_iso8.json
+    ~/InferSuite/local_agents/SWE_iso8/data/*/run_*/     # matched, 12 tasks -> comparison_iso8.json
 python3 scripts/compare_spec_agentic.py data \
     ~/InferSuite/local_agents/SWE_clean/data/*/run_*/    # legacy   -> comparison.json
 
@@ -106,24 +110,25 @@ python3 scripts/compare_spec_agentic.py data \
 
 ## 3. Key insights (most → least important)
 
-1. **The agent is frontend-bound where SPEC is backend-bound, and the gap is large.** 32.7 % vs
-   18.3 % frontend-bound; 22.0 % vs 26.7 % backend-bound. This is the TMA restatement of report
+1. **The agent is frontend-bound where SPEC is backend-bound, and the gap is large.** 29.2 % vs
+   18.3 % frontend-bound; 24.2 % vs 26.7 % backend-bound. Measured across 12 tasks and 10
+   languages, so this is not a property of one runtime. This is the TMA restatement of report
    19's instruction-supply result, from a completely different instrument (PERF_METRICS, no GP
    counters), which is why the two together are stronger than either alone.
-2. **Bad speculation is a second, independent front-end cost: 15.4 % vs 10.0 %.** It deserves its
+2. **Bad speculation is a second, independent front-end cost: 14.1 % vs 10.0 %.** It deserves its
    own axis because it is a different mechanism from frontend-bound — the front end delivering
    the *wrong* instructions rather than failing to deliver any. Adding it changes the story from
    "the agent can't fetch fast enough" to "the agent can't fetch fast enough *and* frequently
    fetches the wrong path".
 3. **The retired SMT caveat is now priced, and it mattered only where we suspected.** IPC
-   1.591 → 1.890 (**+18.8 %**) once the sibling thread stops stealing issue slots; TMA shape
-   essentially unchanged. Every TMA conclusion drawn under the old configuration survives; every
+   1.591 → 1.902 (**+19.5 %**) once the sibling thread stops stealing issue slots; TMA shape
+   moved far less than the configuration change might suggest. Every TMA conclusion drawn under the old configuration survives; every
    IPC number from it was ~19 % low.
-4. **Retiring is lower for the agent (29.9 % vs 36.0 %) but that is a consequence, not a
+4. **Retiring is lower for the agent (30.9 % vs 36.0 %) but that is a consequence, not a
    finding.** Slots lost to the front end and to mis-speculation have to come from somewhere.
    Quote it as context, never as an independent result.
 5. **The suite's spread dwarfs the agent's position on any single axis.** SPEC bad speculation
-   runs 0 % to 49 %; the agent's 15.4 % sits inside that. The separation is in *which corner of
+   runs 0 % to 49 %; the agent's 14.1 % sits inside that. The separation is in *which corner of
    the plane* the agent occupies, which is why the scatter panel ships alongside the radar.
 6. **The census is the most trustworthy instrument in the study.** Zero GP counters means it
    never competes with the rotation, never multiplexes, and covers 100 % of the episode where

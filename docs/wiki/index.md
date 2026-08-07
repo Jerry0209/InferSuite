@@ -44,6 +44,10 @@ architecture, then the decisions that shaped it.
 1. [Isolation & hardening](operations/isolation-hardening.md): nohz_full (never isolcpus), runtime
    cpuset split, and the ISO-PROOF silence gate.
 
+2. [Isolation setup runbook](operations/isolation-setup-runbook.md): step-by-step procedure to bring
+   a host to the campaign isolation state — SMT off, DVFS pinned, cores fenced — with the full list
+   of files modified and how to undo them.
+
 ## Studies (per-study methodology)
 
 The reproducibility study reports are indexed separately and written by the

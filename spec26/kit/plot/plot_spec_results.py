@@ -439,7 +439,15 @@ CMPROWS = [("L1I_MPKI", "L1I MPKI", "/1000 insn"),
            ("IPC", "IPC", "insn/cycle"),
            ("DRAM_read_GBs", "DRAM read BW", "GB/s")]
 
-TASK_MARK = {"babel": "o", "fmtlib": "s", "django": "^", "sympy": "D"}
+# The replay population grew from 2 tasks to 12 (2026-08-07), so markers are ASSIGNED from a
+# cycle rather than hard-coded per task — a fixed dict silently KeyError'd the moment a new
+# language landed. Order is the sorted task list, so a task keeps its marker across re-runs.
+_MARKERS = ["o", "s", "^", "D", "v", "P", "X", "*", "<", ">", "h", "p"]
+
+
+def task_marks(rows) -> dict:
+    ts = sorted({task_of(r["name"]) for r in rows})
+    return {t: _MARKERS[i % len(_MARKERS)] for i, t in enumerate(ts)}
 
 
 def task_of(name: str) -> str:
@@ -457,6 +465,7 @@ def points(rows, k):
 
 
 REP_TASKS = sorted({task_of(r["name"]) for r in REP})
+TASK_MARK = task_marks(REP)
 fig, ax = plt.subplots(figsize=(13.0, 8.8))
 Y = np.arange(len(CMPROWS))
 h = 0.3
@@ -498,14 +507,17 @@ ax.legend(handles=[Patch(color=C_SPEC, label=f"SPEC CPU 2026 — median of {len(
                                              "whisker = full range"),
                    Patch(color=C_AGENT, label="agentic — median of the dedicated-group replay "
                                               "episodes that measured that metric")]
-                  + [plt.Line2D([], [], marker=TASK_MARK[t], ls="", color="#0b5c44", mfc="white",
-                                mew=1.2, ms=6, label=f"replay episode — {t}") for t in REP_TASKS],
-          fontsize=9, frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.105), ncol=2)
+                  + [plt.Line2D([], [], marker="o", ls="", color="#0b5c44", mfc="white",
+                                mew=1.2, ms=6,
+                                label=f"one replay episode — {len(REP_TASKS)} tasks, "
+                                      "marker per task")],
+          fontsize=9, frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.105), ncol=3)
 ax.set_title(f"agentic side = dedicated-group replays ONLY — {len(REP)} episodes over "
              f"{len(REP_TASKS)} tasks ({', '.join(REP_TASKS)}). Each replay gives ONE counter "
-             "group 100 % duty for a whole\ndeterministic episode, so every metric rests on the "
-             "2–3 episodes that ran ITS group, never on all "
-             f"{len(REP)} — the count is printed per row.",
+             "group 100 % duty for a whole\ndeterministic episode, so every metric rests on "
+             f"the {min(len(points(REP, k)) for k, _l, _u in CMPROWS)}–"
+             f"{max(len(points(REP, k)) for k, _l, _u in CMPROWS)} episodes that ran ITS group, "
+             f"never on all {len(REP)} — the count is printed per row.",
              fontsize=8.8, color="#5a6b78", pad=12)
 fig.suptitle("Traditional compute vs agentic work: same instrument, same formulas, same machine",
              fontsize=12.5, y=0.985)

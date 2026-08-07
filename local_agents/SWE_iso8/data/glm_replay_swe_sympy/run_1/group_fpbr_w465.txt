@@ -1,0 +1,18 @@
+
+ Performance counter stats for 'system wide':
+
+         4,399,519      cycles                           measured.slice/glm-rep-sympy-r1.scope                                      
+         1,757,803      instructions                     measured.slice/glm-rep-sympy-r1.scope #    0.40  insn per cycle            
+                97      fp_arith_inst_retired.scalar     measured.slice/glm-rep-sympy-r1.scope                                      
+                 0      fp_arith_inst_retired.vector     measured.slice/glm-rep-sympy-r1.scope                                      
+           322,534      branches                         measured.slice/glm-rep-sympy-r1.scope                                      
+            35,212      branch-misses                    measured.slice/glm-rep-sympy-r1.scope #   10.92% of all branches           
+       335,289,487      cycles                           measured.slice/docker-a4c19f5eb5669d33dee508e63b0dc40d26983b883e8c98405d0879d7faa6358d.scope                                      
+       403,771,436      instructions                     measured.slice/docker-a4c19f5eb5669d33dee508e63b0dc40d26983b883e8c98405d0879d7faa6358d.scope #    1.20  insn per cycle            
+             1,202      fp_arith_inst_retired.scalar     measured.slice/docker-a4c19f5eb5669d33dee508e63b0dc40d26983b883e8c98405d0879d7faa6358d.scope                                      
+                 0      fp_arith_inst_retired.vector     measured.slice/docker-a4c19f5eb5669d33dee508e63b0dc40d26983b883e8c98405d0879d7faa6358d.scope                                      
+        75,353,310      branches                         measured.slice/docker-a4c19f5eb5669d33dee508e63b0dc40d26983b883e8c98405d0879d7faa6358d.scope                                      
+         1,891,396      branch-misses                    measured.slice/docker-a4c19f5eb5669d33dee508e63b0dc40d26983b883e8c98405d0879d7faa6358d.scope #    2.51% of all branches           
+
+       0.101547683 seconds time elapsed
+

@@ -30,6 +30,17 @@ for g in $PROF_GROUPS; do
     log "skip pass $n ($g) — DONE"; continue
   fi
   grep -q "^GRP\[$g\]=" "$KIT/../campaign/run_glm_campaign.sh" || { log "FATAL: unknown group '$g'"; exit 1; }
+  # SHARED MACHINE GUARD (2026-08-07). This box has other users profiling the same cores, and
+  # the PMU's general-purpose counters plus PERF_METRICS are a single shared resource: running
+  # concurrently corrupts BOTH measurements. Check per PASS, not per sweep — a sweep is hours
+  # and a colleague can start at any point inside it. Never kill their collectors; just stop.
+  FOREIGN=$(for pp in $(pgrep -x perf 2>/dev/null); do
+              [ "$(stat -c %u "/proc/$pp" 2>/dev/null)" != "$(id -u)" ] && echo "$pp"; done | head -1)
+  if [ -n "$FOREIGN" ]; then
+    log "STOP at pass $n/$NG ($g): foreign perf pid $FOREIGN is on the box — refusing to compete"
+    log "      completed passes are banked and DONE-marked; re-run to resume from here"
+    exit 3
+  fi
   log "===== pass $n/$NG: group=$g -> run_$n ====="
   rm -rf "$OUT"
   sleep 30   # settle: let the previous pass's teardown fully drain before ISO-PROOF
@@ -53,7 +64,7 @@ print(d.get('tool_cg') or d.get('extra',{}).get('tool_cg') or '')" 2>/dev/null)
     done
   ) &
   TAGGER=$!
-  taskset -pc 0,1,12,13 $TAGGER >/dev/null 2>&1
+  taskset -pc "${CPUS_HOUSE:-0-3,12-15}" $TAGGER >/dev/null 2>&1   # keep the tagger off the measured cores
 
   GORDER_OVERRIDE="$g" "$KIT/../campaign/run_glm_campaign.sh" replay-one "$SHORT" "$SRC" "$n"
   rc=$?

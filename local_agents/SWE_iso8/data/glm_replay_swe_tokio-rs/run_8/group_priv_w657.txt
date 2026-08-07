@@ -1,0 +1,22 @@
+
+ Performance counter stats for 'system wide':
+
+              5.16 msec task-clock                       measured.slice/glm-rep-tokio-rs-r8.scope #    0.051 CPUs utilized             
+                 2      context-switches                 measured.slice/glm-rep-tokio-rs-r8.scope #  387.230 /sec                      
+                 0      cpu-migrations                   measured.slice/glm-rep-tokio-rs-r8.scope #    0.000 /sec                      
+                 0      page-faults                      measured.slice/glm-rep-tokio-rs-r8.scope #    0.000 /sec                      
+        14,901,580      cycles:u                         measured.slice/glm-rep-tokio-rs-r8.scope                                      
+         1,450,941      cycles:k                         measured.slice/glm-rep-tokio-rs-r8.scope                                      
+        27,231,177      instructions:u                   measured.slice/glm-rep-tokio-rs-r8.scope #    1.83  insn per cycle            
+         1,037,544      instructions:k                   measured.slice/glm-rep-tokio-rs-r8.scope #    0.72  insn per cycle            
+             43.05 msec task-clock                       measured.slice/docker-5e3dd5d665116a60232a042c912dd1f28ab1005b28872b102a5909422bc9f415.scope #    0.423 CPUs utilized             
+                46      context-switches                 measured.slice/docker-5e3dd5d665116a60232a042c912dd1f28ab1005b28872b102a5909422bc9f415.scope #    1.069 K/sec                     
+                 2      cpu-migrations                   measured.slice/docker-5e3dd5d665116a60232a042c912dd1f28ab1005b28872b102a5909422bc9f415.scope #   46.460 /sec                      
+             2,719      page-faults                      measured.slice/docker-5e3dd5d665116a60232a042c912dd1f28ab1005b28872b102a5909422bc9f415.scope #   63.162 K/sec                     
+        81,880,363      cycles:u                         measured.slice/docker-5e3dd5d665116a60232a042c912dd1f28ab1005b28872b102a5909422bc9f415.scope                                      
+        54,715,677      cycles:k                         measured.slice/docker-5e3dd5d665116a60232a042c912dd1f28ab1005b28872b102a5909422bc9f415.scope                                      
+       111,416,528      instructions:u                   measured.slice/docker-5e3dd5d665116a60232a042c912dd1f28ab1005b28872b102a5909422bc9f415.scope #    1.36  insn per cycle            
+        65,019,454      instructions:k                   measured.slice/docker-5e3dd5d665116a60232a042c912dd1f28ab1005b28872b102a5909422bc9f415.scope #    1.19  insn per cycle            
+
+       0.101851821 seconds time elapsed
+

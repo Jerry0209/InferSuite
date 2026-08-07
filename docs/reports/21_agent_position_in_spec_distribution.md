@@ -2,7 +2,7 @@
 
 **Date of study:** 2026-08-06 → 2026-08-07 · **Author of record:** Tianrui (Jerry), with Claude Code
 **Feeds:** SPEC deck slide 19 · `spec26/plots/spec_vs_agentic_frontend.png` · the deck's takeaway slide
-**Data:** SPEC `~/spec26-infra/infra/data/` (26, shared-8 reload) · agentic matched + legacy replays
+**Data:** SPEC `~/spec26-infra/infra/data/` (26, shared-8 reload) · agentic matched (96 replays, 12 tasks) + legacy replays
 **Prerequisite:** report 19 (population, configuration, the ratios this report qualifies)
 
 ---
@@ -16,10 +16,10 @@ agent actually fall?**
 
 | Metric | SPEC median | agentic | agent's SPEC percentile | SPEC benchmarks more extreme |
 |---|---|---|---|---|
-| L1I MPKI | 0.98 | 15.05 | **p77** | 6 / 26 |
-| MITE (legacy decode) % | 7.40 | 30.81 | **p65** | 9 / 26 |
-| DSB (uop cache) % | 92.51 | 67.65 | **p27** | 7 / 26 |
-| kernel time % | 0.47 | 13.21 | **p96** | **1 / 26** |
+| L1I MPKI | 0.98 | 11.53 | **p73** | 7 / 26 |
+| MITE (legacy decode) % | 7.40 | 23.94 | **p58** | 11 / 26 |
+| DSB (uop cache) % | 92.51 | 72.65 | **p38** | 10 / 26 |
+| kernel time % | 0.47 | 14.95 | **p96** | **1 / 26** |
 
 So the honest claim is **not** "the agent is outside the suite". It is: on instruction supply
 the agent sits in SPEC's **tail** — the corner occupied by the compilers (`723.llvm_r`,
@@ -30,7 +30,7 @@ This sharpens the finding rather than weakening it. SPEC *does* contain
 instruction-supply-starved members, but they are the minority and they are frontend-bound only
 in phases (report 18, insight 7: `723.llvm_r`'s per-window IPC spans 0.02–3.54). The agent is
 there **on every task, in every episode, for the whole episode** — and it is there while also
-paying 28× the kernel time, which no SPEC benchmark does.
+paying 31.7× the kernel time, which no SPEC benchmark does.
 
 ## 2. Methodology
 
@@ -38,7 +38,7 @@ paying 28× the kernel time, which no SPEC benchmark does.
 
 | # | Decision | Value | Why |
 |---|---|---|---|
-| D1 | Report a **rank**, not only a ratio | percentile + count more extreme | A ratio against a median is uninterpretable without the reference spread. With SPEC L1I MPKI spanning 3,000×, "15×" and "p77" are both true and tell opposite stories about how unusual the agent is. |
+| D1 | Report a **rank**, not only a ratio | percentile + count more extreme | A ratio against a median is uninterpretable without the reference spread. With SPEC L1I MPKI spanning 3,000×, "11.7×" and "p73" are both true and tell opposite stories about how unusual the agent is. |
 | D2 | Direction-aware "more extreme" | `<` for DSB, `>` for the rest | DSB coverage is good when high; the others are costs. A single comparison operator would score DSB backwards. |
 | D3 | Box + all 26 points, not a summary box | strip over box | 26 is few enough to draw every benchmark. The reader can see that the SPEC "distribution" is a handful of clusters, not a smooth density. |
 | D4 | Log axis for L1I MPKI and kernel % | — | Both span 3 decades across the suite. |
@@ -56,12 +56,13 @@ uninformative) with the percentile and the count of more-extreme benchmarks.
 this report's SPEC side is identical to report 19's. Using the 11-group values would shift IPC
 and nothing else, but the two must not be mixed in one claim.
 
-**Known limitations.** (a) With **n=2** agentic episodes per metric, "the agentic median" is the
-mean of two numbers; the percentile of a 2-point median is a coarse statistic. It is reported
-because it is *less* misleading than the ratio alone, not because it is precise. (b) 26 is a
-small reference distribution — a percentile has a resolution of ~4 points. (c) Both tasks are
-non-Python. (d) The suite is not a random sample of software; SPEC is curated, so "p77 of SPEC"
-means p77 of a deliberately diverse benchmark suite, not of software in general.
+**Known limitations.** (a) With **n=12** agentic episodes per metric — one per task, 10 languages —
+the median is now a real central estimate rather than the mean of two numbers, but the spread
+between tasks is large (kernel time 4.63 %–37.4 %), so the percentile locates the *typical*
+task, not every task. (b) 26 is a
+small reference distribution — a percentile has a resolution of ~4 points. (c) Language coverage is broad (10) but repo coverage is thin (one
+instance per task). (d) The suite is not a random sample of software; SPEC is curated, so "p73 of SPEC"
+means p73 of a deliberately diverse benchmark suite, not of software in general.
 
 ### 2.3 Reproduction recipe
 
@@ -97,11 +98,15 @@ from 26 fixed benchmarks, so they are exact given the same captures.
 ## 3. Key insights (most → least important)
 
 1. **Kernel time is the only metric on which the agent leaves the suite.** p96, with just
-   **1 of 26** SPEC benchmarks higher. Everything else places the agent inside SPEC's range.
+   **1 of 26** SPEC benchmarks higher — and it is the one rank that did **not** move when the
+   population grew 6×, which is the strongest evidence in the study that it is a property of
+   agentic work rather than of a task sample. Everything else places the agent inside SPEC's range.
    If the study needs one metric that says "this is a different kind of workload", it is this
    one — and it is also the least dependent on microarchitectural interpretation.
-2. **On instruction supply the agent is in SPEC's tail, not beyond it: L1I MPKI p77, MITE p65,
-   DSB p27.** The right sentence is "the agent looks like SPEC's compilers and interpreter",
+2. **On instruction supply the agent is in SPEC's tail, not beyond it: L1I MPKI p73, MITE p58,
+   DSB p38.** Widening from 2 tasks to 12 moved every one of these *toward the middle* — MITE
+   p65 → p58, DSB p27 → p38 — because the 2-task sample happened to be drawn from the harsher
+   end. The claim is weaker and better supported than it was. The right sentence is "the agent looks like SPEC's compilers and interpreter",
    not "the agent is unlike anything in SPEC". That is a *more* useful claim — it names the
    mechanism and gives a reader a familiar reference point.
 3. **What separates the agent is persistence, not peak.** SPEC's frontend-heavy members reach
@@ -109,7 +114,7 @@ from 26 fixed benchmarks, so they are exact given the same captures.
    replays sit in a tight cluster: every episode, whole episode. A future study should quantify
    this directly — per-window *dispersion* of L1I MPKI, agent vs SPEC — which the banked
    per-window layer already supports.
-4. **Ratios and ranks must be reported together.** 15.31× (report 19) and p77 (here) are both
+4. **Ratios and ranks must be reported together.** 11.73× (report 19) and p73 (here) are both
    correct and, quoted alone, lead to different conclusions. The deck now carries both on
    adjacent slides for exactly this reason.
 5. **The agent's rank is robust to the configuration change even where its value is not.**

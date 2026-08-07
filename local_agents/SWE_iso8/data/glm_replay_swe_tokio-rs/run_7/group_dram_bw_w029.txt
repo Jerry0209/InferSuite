@@ -1,0 +1,16 @@
+
+ Performance counter stats for 'system wide':
+
+       106,277,813      cycles                           measured.slice/glm-rep-tokio-rs-r7.scope                                      
+       281,046,275      instructions                     measured.slice/glm-rep-tokio-rs-r7.scope #    2.64  insn per cycle            
+         3,006,002      cpu/offcore_requests_outstanding.data_rd,cmask=4/ measured.slice/glm-rep-tokio-rs-r7.scope                                      
+        15,746,068      offcore_requests_outstanding.cycles_with_data_rd measured.slice/glm-rep-tokio-rs-r7.scope                                      
+           171,157      offcore_requests.data_rd         measured.slice/glm-rep-tokio-rs-r7.scope                                      
+        18,707,471      cycles                           measured.slice/docker-7b695984e7306b428f4919b613b2d2bf6f561ff85714da3849c363babb732109.scope                                      
+        17,892,481      instructions                     measured.slice/docker-7b695984e7306b428f4919b613b2d2bf6f561ff85714da3849c363babb732109.scope #    0.96  insn per cycle            
+         1,514,703      cpu/offcore_requests_outstanding.data_rd,cmask=4/ measured.slice/docker-7b695984e7306b428f4919b613b2d2bf6f561ff85714da3849c363babb732109.scope                                      
+         7,923,655      offcore_requests_outstanding.cycles_with_data_rd measured.slice/docker-7b695984e7306b428f4919b613b2d2bf6f561ff85714da3849c363babb732109.scope                                      
+            84,631      offcore_requests.data_rd         measured.slice/docker-7b695984e7306b428f4919b613b2d2bf6f561ff85714da3849c363babb732109.scope                                      
+
+       0.101504328 seconds time elapsed
+

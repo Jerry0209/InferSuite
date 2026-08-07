@@ -1,0 +1,18 @@
+
+ Performance counter stats for 'system wide':
+
+         4,046,093      cycles                           measured.slice/glm-rep-scikit-learn-r1.scope                                      
+         1,773,222      instructions                     measured.slice/glm-rep-scikit-learn-r1.scope #    0.44  insn per cycle            
+                94      fp_arith_inst_retired.scalar     measured.slice/glm-rep-scikit-learn-r1.scope                                      
+                 0      fp_arith_inst_retired.vector     measured.slice/glm-rep-scikit-learn-r1.scope                                      
+           325,670      branches                         measured.slice/glm-rep-scikit-learn-r1.scope                                      
+            35,361      branch-misses                    measured.slice/glm-rep-scikit-learn-r1.scope #   10.86% of all branches           
+        19,243,870      cycles                           measured.slice/docker-11fe608a15d69a0cbf9524f320a1b2bd7bb5476f89ceb66ead81af41957ad4ab.scope                                      
+        18,929,315      instructions                     measured.slice/docker-11fe608a15d69a0cbf9524f320a1b2bd7bb5476f89ceb66ead81af41957ad4ab.scope #    0.98  insn per cycle            
+               126      fp_arith_inst_retired.scalar     measured.slice/docker-11fe608a15d69a0cbf9524f320a1b2bd7bb5476f89ceb66ead81af41957ad4ab.scope                                      
+                 0      fp_arith_inst_retired.vector     measured.slice/docker-11fe608a15d69a0cbf9524f320a1b2bd7bb5476f89ceb66ead81af41957ad4ab.scope                                      
+         3,466,041      branches                         measured.slice/docker-11fe608a15d69a0cbf9524f320a1b2bd7bb5476f89ceb66ead81af41957ad4ab.scope                                      
+           136,237      branch-misses                    measured.slice/docker-11fe608a15d69a0cbf9524f320a1b2bd7bb5476f89ceb66ead81af41957ad4ab.scope #    3.93% of all branches           
+
+       0.101396543 seconds time elapsed
+

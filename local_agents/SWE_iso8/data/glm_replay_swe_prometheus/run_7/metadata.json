@@ -1,0 +1,23 @@
+{
+ "workload": "swe_replay",
+ "config": "prometheus",
+ "run": 7,
+ "model": "glm-5.2",
+ "endpoint": "https://api.z.ai/api/paas/v4",
+ "thinking": "enabled",
+ "cpus_measured": "4-11",
+ "cpus_house": "0-3,12-15",
+ "winsec": 0.1,
+ "repo_rev": "9edfd45e",
+ "kernel": "6.17.0-1030-oem",
+ "gorder": "dram_bw",
+ "rotation": "shuffled",
+ "tma_cont": true,
+ "ts_start": 1786134215.7569852,
+ "extra": {
+  "source_run": 1,
+  "traj": "/home/thu/InferSuite/local_agents/ML_multiling/data/glm_swe_prometheus/run_1/traj/prometheus__prometheus-9248/prometheus__prometheus-9248.traj",
+  "harness_cg": "measured.slice/glm-rep-prometheus-r7.scope",
+  "tool_cg": "measured.slice/docker-427151a7ed653192f039914d871ad27c13fe519965cf119de6764dbee1005714.scope"
+ }
+}

@@ -1,0 +1,23 @@
+{
+ "workload": "swe_replay",
+ "config": "astropy",
+ "run": 3,
+ "model": "glm-5.2",
+ "endpoint": "https://api.z.ai/api/paas/v4",
+ "thinking": "enabled",
+ "cpus_measured": "4-11",
+ "cpus_house": "0-3,12-15",
+ "winsec": 0.1,
+ "repo_rev": "9edfd45e",
+ "kernel": "6.17.0-1030-oem",
+ "gorder": "mlp",
+ "rotation": "shuffled",
+ "tma_cont": true,
+ "ts_start": 1786127806.4017475,
+ "extra": {
+  "source_run": 1,
+  "traj": "/home/thu/InferSuite/local_agents/superseded_40min/data/glm_swe_astropy/run_1/traj/astropy__astropy-14096/astropy__astropy-14096.traj",
+  "harness_cg": "measured.slice/glm-rep-astropy-r3.scope",
+  "tool_cg": "measured.slice/docker-faff37812a3295ca498c8232a098e29068d345eb5306a1dd85c3c1f5b23a9ad1.scope"
+ }
+}

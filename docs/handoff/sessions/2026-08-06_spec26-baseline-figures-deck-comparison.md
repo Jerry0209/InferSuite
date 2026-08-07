@@ -23,6 +23,7 @@ episodes, 22,413 windows of 100 ms, ref inputs, 1 copy, 26/26 passing every eval
 | 7 | Agentic side **re-captured at the SPEC configuration** — cores 4–11 SMT-off, 100 ms | Retires the SMT and window-length caveats instead of carrying them in prose, and prices them | **PI** |
 | 8 | Slide 18 becomes a **TMA radar** including bad speculation | Mentor: the question is the shape of the profile, not its composition | **PI's mentor** |
 | 9 | Publish 8 of 26 galleries, chosen to span the behavioural space | 26 artifacts is excessive; all 26 are built locally and any can be published on request | Claude |
+| 11 | Extend the matched capture from 2 tasks to **12** (3 Python + babel + fmtlib + 7 multilingual) | The comparison rested on 2 non-Python tasks; the figure the PI showed has 12. 4.4 h of machine time, no API cost | **PI** |
 | 10 | Commit the SPEC scope only; leave the isolation-runbook workstream's pending edits alone | The report checker's 7 freshness warnings are pre-existing and unrelated; PI chose to override for the SPEC scope only | **PI** |
 
 ## What changed
@@ -31,9 +32,11 @@ episodes, 22,413 windows of 100 ms, ref inputs, 1 copy, 26/26 passing every eval
 build_spec_gallery,build_spec_deck}.py`, `plots/` (13 figures + `values_dump.json` +
 `MANIFEST.md`), `README.md`. Curated view `plots/spec26/` wired into `scripts/sync_plots.sh`.
 
-**New agentic capture:** `local_agents/SWE_iso8/` — 16 dedicated-group replays (8 shared groups ×
-babel, fmtlib) at the SPEC configuration; ~350 windows per babel pass, ~1,110 per fmtlib pass.
-Driver `run_iso8_languages.sh`. Raw `rec_*.data` gitignored.
+**New agentic capture:** `local_agents/SWE_iso8/` at the SPEC configuration (cores 4–11 SMT-off,
+100 ms). Started as 16 replays over babel + fmtlib; extended 2026-08-07 to **96 replays over 12
+tasks / 10 languages, 107,362 windows**, 8/8 passes each, zero failures. Driver
+`run_iso8_languages.sh` (shortest-first, resumable, stops on a foreign `perf`). Raw `rec_*.data`
+gitignored; window text tracked.
 
 **Docs:** report 18 (`docs/reports/18_spec26_cpu2026_baseline.md`), registered in both indexes
 and in report 14's artifact registry.
@@ -42,7 +45,7 @@ and in report 14's artifact registry.
 
 **Pushed:** `62bb7325` (baseline) → `2bac6a2c` (labels + INT/FP order) → `a65c51e9` (window
 budget) → `bbebedf0` (slide 17 replay-only) → `afa4faad` (provenance fix) → `922d3f69` (matched
-capture + radar).
+capture + radar) → `9edfd45e` (handoff protocol + reports 19–21) → 12-task capture.
 
 ## Defects found
 
@@ -81,16 +84,16 @@ Each with the number it would have shipped.
 
 ## Open threads
 
-1. **Nine-language re-capture — NOT DONE, stopped on PI instruction.** Only babel (JS) and
-   fmtlib (C++) exist at the matched configuration. Trajectories are banked for 8 more
-   languages (astropy/Python — PI's pick — prometheus/Go, gson/Java, jq/C, php-cs-fixer/PHP,
-   tokio/Rust, rubocop/Ruby, vuejs/TS); ~3 h of machine time, no API cost. Driver ready at
-   `local_agents/SWE_iso8/run_iso8_languages.sh`; it skips completed tasks. **Blocked on the
-   shared box being free.** Its foreign-`perf` guard currently fires only between tasks — make
-   it fire before every *pass* before relaunching.
-2. **Comparison figures still rest on 2 tasks**, both non-Python. Per-metric `n` on slide 17 is
-   2. Expect magnitudes to move when (1) lands; report 16 suggests composition reproduces across
-   languages at ~1 %.
+1. ~~Nine-language re-capture~~ **DONE 2026-08-07** (18:08→22:33, 4.4 h). All 12 tasks of the
+   per-window figure now exist at the matched configuration: 3 Python (scikit-learn, astropy,
+   sympy) + babel/JS + fmtlib/C++ + 7 multilingual (vue/TS, gson/Java, tokio/Rust,
+   prometheus/Go, jq/C, rubocop/Ruby, php-cs-fixer/PHP). **96 replays, 107,362 windows, 8/8
+   passes each, zero failures.** Per-metric `n` on slide 17 went 2 → 12. Every direction held;
+   magnitudes moved within ~30 % (L1I 15.31 → 11.73×, kernel 28.04 → 31.74×). The
+   foreign-`perf` guard now fires **before every pass**, as required.
+2. **Run-to-run variance is still uncovered.** `n=12` is one *task* each, not repetitions — the
+   between-task spread is large (kernel time 4.63 %–37.4 %) but within-task variance is unknown
+   at this configuration.
 3. **SWE-bench Multilingual ⟨language, type⟩ selection.** PI wants ≤30 representatives chosen
    from a *classification-only* live run (no perf/TMA). Report 17 already found the discrete
    matrix collapses (16/16 episodes search-led; static prediction 1/10 on realized behaviour).

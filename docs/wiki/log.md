@@ -1,5 +1,27 @@
 # Wiki log
 
+## [2026-08-05] ingest | Isolation setup runbook — SMT, DVFS, core isolation
+
+Added [isolation setup runbook](operations/isolation-setup-runbook.md), the procedural companion to
+the existing conceptual [isolation & hardening](operations/isolation-hardening.md) page. Compiled
+from the two campaign kits' `apply_isolation()`/`restore_isolation()`
+([run_glm_campaign.sh](../../local_agents/kit/campaign/run_glm_campaign.sh) and the SPEC CPU 2026
+sibling kit at `~/spec26-infra/infra/scripts/run_spec_campaign.sh`),
+[harden_isolation.sh](../../scripts/harden_isolation.sh), and live w5-3425 state read on this date.
+
+Three layers documented in application order — GRUB cmdline, per-boot SMT/DVFS, per-campaign
+runtime shield — each with verification commands and a teardown. Records the full table of files
+modified at each layer.
+
+Facts worth flagging that this compile surfaced: SMT is off on the measured cores by **offlining
+siblings 16-23**, not via `smt/control` or BIOS, so `lscpu` and `/sys/devices/system/cpu/smt/control`
+both still report SMT on — only a per-core `thread_siblings_list` check is honest, which is why the
+kits bank `smt` and `smt_host` separately in `metadata.json`. Governor alone does not pin frequency
+on this HWP part; `scaling_min_freq == scaling_max_freq` is required. Layers 1-2 on the current host
+are owned by a co-tenant `agentic-benchmark` systemd stack, whose apply script is not readable — the
+resulting state is confirmed, the mechanism is inferred from its world-readable profile config.
+C-states remain uncontrolled (`intel_idle`, C1/C1E/C6 all enabled), logged as a limitation.
+
 ## [2026-07-29] ingest | Instantiate the LLM Wiki for InferSuite
 
 Adopted the [LLM Wiki framework](../raw/llm-wiki.md) as the governing knowledge-base pattern,

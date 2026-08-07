@@ -1,0 +1,16 @@
+
+ Performance counter stats for 'system wide':
+
+         4,504,766      cycles                           measured.slice/glm-rep-scikit-learn-r7.scope                                      
+         1,778,840      instructions                     measured.slice/glm-rep-scikit-learn-r7.scope #    0.39  insn per cycle            
+           614,685      cpu/offcore_requests_outstanding.data_rd,cmask=4/ measured.slice/glm-rep-scikit-learn-r7.scope                                      
+         2,804,307      offcore_requests_outstanding.cycles_with_data_rd measured.slice/glm-rep-scikit-learn-r7.scope                                      
+            22,435      offcore_requests.data_rd         measured.slice/glm-rep-scikit-learn-r7.scope                                      
+        66,321,089      cycles                           measured.slice/docker-742c2c1256101205ddc4157b774b6a18a06cdce9733ebe3b615cf5799fc2fcde.scope                                      
+        88,302,133      instructions                     measured.slice/docker-742c2c1256101205ddc4157b774b6a18a06cdce9733ebe3b615cf5799fc2fcde.scope #    1.33  insn per cycle            
+        11,539,932      cpu/offcore_requests_outstanding.data_rd,cmask=4/ measured.slice/docker-742c2c1256101205ddc4157b774b6a18a06cdce9733ebe3b615cf5799fc2fcde.scope                                      
+        43,362,099      offcore_requests_outstanding.cycles_with_data_rd measured.slice/docker-742c2c1256101205ddc4157b774b6a18a06cdce9733ebe3b615cf5799fc2fcde.scope                                      
+           525,261      offcore_requests.data_rd         measured.slice/docker-742c2c1256101205ddc4157b774b6a18a06cdce9733ebe3b615cf5799fc2fcde.scope                                      
+
+       0.101694492 seconds time elapsed
+

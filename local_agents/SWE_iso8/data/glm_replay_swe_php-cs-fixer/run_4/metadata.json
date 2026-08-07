@@ -1,0 +1,23 @@
+{
+ "workload": "swe_replay",
+ "config": "php-cs-fixer",
+ "run": 4,
+ "model": "glm-5.2",
+ "endpoint": "https://api.z.ai/api/paas/v4",
+ "thinking": "enabled",
+ "cpus_measured": "4-11",
+ "cpus_house": "0-3,12-15",
+ "winsec": 0.1,
+ "repo_rev": "9edfd45e",
+ "kernel": "6.17.0-1030-oem",
+ "gorder": "fe",
+ "rotation": "shuffled",
+ "tma_cont": true,
+ "ts_start": 1786126072.285984,
+ "extra": {
+  "source_run": 1,
+  "traj": "/home/thu/InferSuite/local_agents/ML_multiling/data/glm_swe_php-cs-fixer/run_1/traj/php-cs-fixer__php-cs-fixer-7523/php-cs-fixer__php-cs-fixer-7523.traj",
+  "harness_cg": "measured.slice/glm-rep-php-cs-fixer-r4.scope",
+  "tool_cg": "measured.slice/docker-ea7e973df91fb81c99d2eeda32a72a82c324506849e81b7b2b62be93cea10286.scope"
+ }
+}

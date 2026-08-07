@@ -1,0 +1,18 @@
+
+ Performance counter stats for 'system wide':
+
+         4,039,965      cycles                           measured.slice/glm-rep-google-r5.scope                                      
+         1,834,478      instructions                     measured.slice/glm-rep-google-r5.scope #    0.45  insn per cycle            
+           813,899      icache_data.stalls               measured.slice/glm-rep-google-r5.scope                                      
+           214,240      icache_tag.stalls                measured.slice/glm-rep-google-r5.scope                                      
+           803,370      int_misc.clear_resteer_cycles    measured.slice/glm-rep-google-r5.scope                                      
+           181,792      l2_rqsts.all_code_rd             measured.slice/glm-rep-google-r5.scope                                      
+        17,116,146      cycles                           measured.slice/docker-9601192d03500170172a8bd489e1fd79b4863a542792a43aba864b19f2dbdf7d.scope                                      
+        15,546,342      instructions                     measured.slice/docker-9601192d03500170172a8bd489e1fd79b4863a542792a43aba864b19f2dbdf7d.scope #    0.91  insn per cycle            
+         2,450,702      icache_data.stalls               measured.slice/docker-9601192d03500170172a8bd489e1fd79b4863a542792a43aba864b19f2dbdf7d.scope                                      
+           387,853      icache_tag.stalls                measured.slice/docker-9601192d03500170172a8bd489e1fd79b4863a542792a43aba864b19f2dbdf7d.scope                                      
+         2,042,483      int_misc.clear_resteer_cycles    measured.slice/docker-9601192d03500170172a8bd489e1fd79b4863a542792a43aba864b19f2dbdf7d.scope                                      
+           773,625      l2_rqsts.all_code_rd             measured.slice/docker-9601192d03500170172a8bd489e1fd79b4863a542792a43aba864b19f2dbdf7d.scope                                      
+
+       0.101820718 seconds time elapsed
+

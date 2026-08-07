@@ -1,6 +1,6 @@
 {
  "n_spec": 26,
- "n_agentic_replay": 16,
+ "n_agentic_replay": 96,
  "n_agentic_legacy_replay": 16,
  "n_agentic_legacy_rotation": 7,
  "capture": {
@@ -1483,8 +1483,8 @@
   }
  },
  "landscape": {
-  "agentic_median_IPC": 1.8899815614375899,
-  "agentic_median_stall_pct": 54.66938197809503
+  "agentic_median_IPC": 1.9018878184965207,
+  "agentic_median_stall_pct": 53.395349425304886
  },
  "comparison": {
   "L1I_MPKI": {
@@ -1493,9 +1493,13 @@
     0.03109765981400189,
     93.27897556946385
    ],
-   "agentic_replay_median": 15.052692886556194,
-   "agentic_replay_n": 2,
+   "agentic_replay_median": 11.53319693812751,
+   "agentic_replay_n": 12,
    "agentic_replay_points": [
+    {
+     "task": "astropy",
+     "value": 4.573472915279729
+    },
     {
      "task": "babel",
      "value": 15.691062520504632
@@ -1503,11 +1507,47 @@
     {
      "task": "fmtlib",
      "value": 14.414323252607756
+    },
+    {
+     "task": "google",
+     "value": 10.908449479734394
+    },
+    {
+     "task": "jqlang",
+     "value": 12.157944396520625
+    },
+    {
+     "task": "php-cs-fixer",
+     "value": 10.862517973813487
+    },
+    {
+     "task": "prometheus",
+     "value": 8.807548147103288
+    },
+    {
+     "task": "rubocop",
+     "value": 17.66616788468192
+    },
+    {
+     "task": "scikit-learn",
+     "value": 4.01110435785104
+    },
+    {
+     "task": "sympy",
+     "value": 4.176868842536204
+    },
+    {
+     "task": "tokio-rs",
+     "value": 24.58891517869402
+    },
+    {
+     "task": "vuejs",
+     "value": 19.98593184866955
     }
    ],
    "agentic_legacy_median": 17.019323235119778,
    "agentic_legacy_n": 2,
-   "ratio_replay_over_spec": 15.307150577535216
+   "ratio_replay_over_spec": 11.728159439827342
   },
   "kernel_pct": {
    "spec_median": 0.47101950700822914,
@@ -1515,9 +1555,13 @@
     0.2480223993507665,
     15.430725157024403
    ],
-   "agentic_replay_median": 13.205095962461153,
-   "agentic_replay_n": 2,
+   "agentic_replay_median": 14.952065036086232,
+   "agentic_replay_n": 12,
    "agentic_replay_points": [
+    {
+     "task": "astropy",
+     "value": 37.432943547823776
+    },
     {
      "task": "babel",
      "value": 21.77993553780176
@@ -1525,11 +1569,47 @@
     {
      "task": "fmtlib",
      "value": 4.630256387120547
+    },
+    {
+     "task": "google",
+     "value": 4.691322016461317
+    },
+    {
+     "task": "jqlang",
+     "value": 25.224816922491556
+    },
+    {
+     "task": "php-cs-fixer",
+     "value": 37.01073108022854
+    },
+    {
+     "task": "prometheus",
+     "value": 13.050118551195705
+    },
+    {
+     "task": "rubocop",
+     "value": 8.133605053647932
+    },
+    {
+     "task": "scikit-learn",
+     "value": 14.042927698790324
+    },
+    {
+     "task": "sympy",
+     "value": 14.938031750511668
+    },
+    {
+     "task": "tokio-rs",
+     "value": 14.966098321660796
+    },
+    {
+     "task": "vuejs",
+     "value": 17.112882451381573
     }
    ],
    "agentic_legacy_median": 12.846812293546726,
    "agentic_legacy_n": 2,
-   "ratio_replay_over_spec": 28.035136052720738
+   "ratio_replay_over_spec": 31.744046294509424
   },
   "MS_pct": {
    "spec_median": 0.1616863895482441,
@@ -1537,9 +1617,13 @@
     0.014843088282385898,
     2.5171208154043696
    ],
-   "agentic_replay_median": 1.545961532288598,
-   "agentic_replay_n": 2,
+   "agentic_replay_median": 2.2123717105889744,
+   "agentic_replay_n": 12,
    "agentic_replay_points": [
+    {
+     "task": "astropy",
+     "value": 4.330433442846397
+    },
     {
      "task": "babel",
      "value": 2.1498013521026387
@@ -1547,11 +1631,47 @@
     {
      "task": "fmtlib",
      "value": 0.9421217124745572
+    },
+    {
+     "task": "google",
+     "value": 0.7257615049625912
+    },
+    {
+     "task": "jqlang",
+     "value": 2.67322589958149
+    },
+    {
+     "task": "php-cs-fixer",
+     "value": 4.146707772043016
+    },
+    {
+     "task": "prometheus",
+     "value": 1.761014143134702
+    },
+    {
+     "task": "rubocop",
+     "value": 1.3916021322838212
+    },
+    {
+     "task": "scikit-learn",
+     "value": 3.7393287296807554
+    },
+    {
+     "task": "sympy",
+     "value": 1.5328535422802387
+    },
+    {
+     "task": "tokio-rs",
+     "value": 2.2749420690753097
+    },
+    {
+     "task": "vuejs",
+     "value": 2.3401350212529795
     }
    ],
    "agentic_legacy_median": 1.651636323096037,
    "agentic_legacy_n": 2,
-   "ratio_replay_over_spec": 9.561482179223953
+   "ratio_replay_over_spec": 13.683104167087889
   },
   "MITE_pct": {
    "spec_median": 7.401530646722259,
@@ -1559,9 +1679,13 @@
     0.23900795135830352,
     85.54851176897148
    ],
-   "agentic_replay_median": 30.806803473200556,
-   "agentic_replay_n": 2,
+   "agentic_replay_median": 23.943723368412478,
+   "agentic_replay_n": 12,
    "agentic_replay_points": [
+    {
+     "task": "astropy",
+     "value": 18.447067792473
+    },
     {
      "task": "babel",
      "value": 30.409471388729433
@@ -1569,11 +1693,47 @@
     {
      "task": "fmtlib",
      "value": 31.20413555767168
+    },
+    {
+     "task": "google",
+     "value": 18.67428891802567
+    },
+    {
+     "task": "jqlang",
+     "value": 26.398626595178236
+    },
+    {
+     "task": "php-cs-fixer",
+     "value": 21.488820141646716
+    },
+    {
+     "task": "prometheus",
+     "value": 19.510989116922957
+    },
+    {
+     "task": "rubocop",
+     "value": 32.599601571915485
+    },
+    {
+     "task": "scikit-learn",
+     "value": 12.022657705470902
+    },
+    {
+     "task": "sympy",
+     "value": 16.4691853450082
+    },
+    {
+     "task": "tokio-rs",
+     "value": 44.98232404186113
+    },
+    {
+     "task": "vuejs",
+     "value": 31.14068556291904
     }
    ],
    "agentic_legacy_median": 34.976673803885326,
    "agentic_legacy_n": 2,
-   "ratio_replay_over_spec": 4.162220619439472
+   "ratio_replay_over_spec": 3.234969158577472
   },
   "brMPKI": {
    "spec_median": 1.1759237381725907,
@@ -1581,9 +1741,13 @@
     0.0024342165079232424,
     11.847980412230582
    ],
-   "agentic_replay_median": 4.014660920346822,
-   "agentic_replay_n": 2,
+   "agentic_replay_median": 3.5020925443753512,
+   "agentic_replay_n": 12,
    "agentic_replay_points": [
+    {
+     "task": "astropy",
+     "value": 1.0965567256045248
+    },
     {
      "task": "babel",
      "value": 3.5715079775049485
@@ -1591,11 +1755,47 @@
     {
      "task": "fmtlib",
      "value": 4.4578138631886945
+    },
+    {
+     "task": "google",
+     "value": 4.595012295197843
+    },
+    {
+     "task": "jqlang",
+     "value": 3.7796850174908307
+    },
+    {
+     "task": "php-cs-fixer",
+     "value": 3.008067955946457
+    },
+    {
+     "task": "prometheus",
+     "value": 3.050052602969549
+    },
+    {
+     "task": "rubocop",
+     "value": 3.4326771112457535
+    },
+    {
+     "task": "scikit-learn",
+     "value": 0.5205131867719524
+    },
+    {
+     "task": "sympy",
+     "value": 1.0744289459628078
+    },
+    {
+     "task": "tokio-rs",
+     "value": 3.621021002766819
+    },
+    {
+     "task": "vuejs",
+     "value": 4.5907649615872534
     }
    ],
    "agentic_legacy_median": 4.231450125732539,
    "agentic_legacy_n": 2,
-   "ratio_replay_over_spec": 3.4140487091328615
+   "ratio_replay_over_spec": 2.978162980039568
   },
   "LLC_MPKI": {
    "spec_median": 0.10011636881981643,
@@ -1603,9 +1803,13 @@
     2.088787920569287e-05,
     18.015595398467386
    ],
-   "agentic_replay_median": 0.20022146498566495,
-   "agentic_replay_n": 2,
+   "agentic_replay_median": 0.18933889518643773,
+   "agentic_replay_n": 12,
    "agentic_replay_points": [
+    {
+     "task": "astropy",
+     "value": 0.34638683650488
+    },
     {
      "task": "babel",
      "value": 0.20778233617767272
@@ -1613,11 +1817,47 @@
     {
      "task": "fmtlib",
      "value": 0.19266059379365716
+    },
+    {
+     "task": "google",
+     "value": 0.09109054240589763
+    },
+    {
+     "task": "jqlang",
+     "value": 0.07849025159465685
+    },
+    {
+     "task": "php-cs-fixer",
+     "value": 0.16526229768019618
+    },
+    {
+     "task": "prometheus",
+     "value": 0.2917427527706731
+    },
+    {
+     "task": "rubocop",
+     "value": 0.1860171965792183
+    },
+    {
+     "task": "scikit-learn",
+     "value": 0.01834843774547226
+    },
+    {
+     "task": "sympy",
+     "value": 0.7049191082319224
+    },
+    {
+     "task": "tokio-rs",
+     "value": 0.2893905900183923
+    },
+    {
+     "task": "vuejs",
+     "value": 0.14877187639260372
     }
    ],
    "agentic_legacy_median": 0.22835675562982383,
    "agentic_legacy_n": 2,
-   "ratio_replay_over_spec": 1.9998874044863912
+   "ratio_replay_over_spec": 1.8911881984773016
   },
   "AMAT_cyc": {
    "spec_median": 5.5129199028896085,
@@ -1625,9 +1865,13 @@
     5.013511284240522,
     21.2893458700531
    ],
-   "agentic_replay_median": 5.4337929198323565,
-   "agentic_replay_n": 2,
+   "agentic_replay_median": 5.443417671181537,
+   "agentic_replay_n": 12,
    "agentic_replay_points": [
+    {
+     "task": "astropy",
+     "value": 5.46954084945838
+    },
     {
      "task": "babel",
      "value": 5.3695618605180915
@@ -1635,11 +1879,47 @@
     {
      "task": "fmtlib",
      "value": 5.4980239791466206
+    },
+    {
+     "task": "google",
+     "value": 5.364914857652007
+    },
+    {
+     "task": "jqlang",
+     "value": 5.276403087239331
+    },
+    {
+     "task": "php-cs-fixer",
+     "value": 5.442771563332504
+    },
+    {
+     "task": "prometheus",
+     "value": 5.444063779030571
+    },
+    {
+     "task": "rubocop",
+     "value": 5.455748370443664
+    },
+    {
+     "task": "scikit-learn",
+     "value": 5.074929482616515
+    },
+    {
+     "task": "sympy",
+     "value": 5.9460559014826835
+    },
+    {
+     "task": "tokio-rs",
+     "value": 5.5424057460284155
+    },
+    {
+     "task": "vuejs",
+     "value": 5.295163107783087
     }
    ],
    "agentic_legacy_median": 5.5005942727234185,
    "agentic_legacy_n": 2,
-   "ratio_replay_over_spec": 0.9856469920747847
+   "ratio_replay_over_spec": 0.9873928457274262
   },
   "L1D_MPKI": {
    "spec_median": 6.709179222001973,
@@ -1647,9 +1927,13 @@
     0.2303886017672179,
     117.9002151085243
    ],
-   "agentic_replay_median": 5.43389538890326,
-   "agentic_replay_n": 2,
+   "agentic_replay_median": 3.9984503216452154,
+   "agentic_replay_n": 12,
    "agentic_replay_points": [
+    {
+     "task": "astropy",
+     "value": 2.8014231489516668
+    },
     {
      "task": "babel",
      "value": 3.9525562532242176
@@ -1657,11 +1941,47 @@
     {
      "task": "fmtlib",
      "value": 6.915234524582303
+    },
+    {
+     "task": "google",
+     "value": 7.232071525439605
+    },
+    {
+     "task": "jqlang",
+     "value": 4.044344390066213
+    },
+    {
+     "task": "php-cs-fixer",
+     "value": 5.415452591790348
+    },
+    {
+     "task": "prometheus",
+     "value": 3.0452638446426916
+    },
+    {
+     "task": "rubocop",
+     "value": 5.108205626363572
+    },
+    {
+     "task": "scikit-learn",
+     "value": 0.8803417216670293
+    },
+    {
+     "task": "sympy",
+     "value": 3.26023032380156
+    },
+    {
+     "task": "tokio-rs",
+     "value": 4.999387419548241
+    },
+    {
+     "task": "vuejs",
+     "value": 3.6943321812922707
     }
    ],
    "agentic_legacy_median": 6.333579101583049,
    "agentic_legacy_n": 2,
-   "ratio_replay_over_spec": 0.8099195459086013
+   "ratio_replay_over_spec": 0.5959671353736926
   },
   "MLP": {
    "spec_median": 1.869192437696499,
@@ -1669,9 +1989,13 @@
     1.132478113521782,
     7.376842123673991
    ],
-   "agentic_replay_median": 1.8103879172134933,
-   "agentic_replay_n": 2,
+   "agentic_replay_median": 1.914656991773287,
+   "agentic_replay_n": 12,
    "agentic_replay_points": [
+    {
+     "task": "astropy",
+     "value": 2.3903229904023817
+    },
     {
      "task": "babel",
      "value": 1.9083608044088918
@@ -1679,11 +2003,47 @@
     {
      "task": "fmtlib",
      "value": 1.712415030018095
+    },
+    {
+     "task": "google",
+     "value": 1.7411529692961192
+    },
+    {
+     "task": "jqlang",
+     "value": 1.9209531791376822
+    },
+    {
+     "task": "php-cs-fixer",
+     "value": 1.9800972111690913
+    },
+    {
+     "task": "prometheus",
+     "value": 1.9482475005082427
+    },
+    {
+     "task": "rubocop",
+     "value": 1.6826457897097917
+    },
+    {
+     "task": "scikit-learn",
+     "value": 2.854981003894778
+    },
+    {
+     "task": "sympy",
+     "value": 2.641733498318987
+    },
+    {
+     "task": "tokio-rs",
+     "value": 1.8867146375463604
+    },
+    {
+     "task": "vuejs",
+     "value": 1.7976404699051167
     }
    ],
    "agentic_legacy_median": 1.7269907638775837,
    "agentic_legacy_n": 2,
-   "ratio_replay_over_spec": 0.9685401463770774
+   "ratio_replay_over_spec": 1.0243230997300719
   },
   "DSB_pct": {
    "spec_median": 92.50667758438692,
@@ -1691,9 +2051,13 @@
     13.918591751599783,
     99.73471938141336
    ],
-   "agentic_replay_median": 67.64723499451085,
-   "agentic_replay_n": 2,
+   "agentic_replay_median": 72.64630979577527,
+   "agentic_replay_n": 12,
    "agentic_replay_points": [
+    {
+     "task": "astropy",
+     "value": 77.22249876468061
+    },
     {
      "task": "babel",
      "value": 67.44072725916793
@@ -1701,11 +2065,47 @@
     {
      "task": "fmtlib",
      "value": 67.85374272985376
+    },
+    {
+     "task": "google",
+     "value": 80.59994957701174
+    },
+    {
+     "task": "jqlang",
+     "value": 70.92814750524028
+    },
+    {
+     "task": "php-cs-fixer",
+     "value": 74.36447208631027
+    },
+    {
+     "task": "prometheus",
+     "value": 78.72799673994234
+    },
+    {
+     "task": "rubocop",
+     "value": 66.00879629580069
+    },
+    {
+     "task": "scikit-learn",
+     "value": 84.23801356484834
+    },
+    {
+     "task": "sympy",
+     "value": 81.99796111271156
+    },
+    {
+     "task": "tokio-rs",
+     "value": 52.74273388906355
+    },
+    {
+     "task": "vuejs",
+     "value": 66.51917941582798
     }
    ],
    "agentic_legacy_median": 63.37168987301864,
    "agentic_legacy_n": 2,
-   "ratio_replay_over_spec": 0.73126866904069
+   "ratio_replay_over_spec": 0.7853088197822852
   },
   "IPC": {
    "spec_median": 2.4184445905868155,
@@ -1713,9 +2113,37 @@
     0.7739543382557061,
     4.149726334858841
    ],
-   "agentic_replay_median": 1.8899815614375899,
-   "agentic_replay_n": 14,
+   "agentic_replay_median": 1.9018878184965207,
+   "agentic_replay_n": 84,
    "agentic_replay_points": [
+    {
+     "task": "astropy",
+     "value": 2.4079273870868168
+    },
+    {
+     "task": "astropy",
+     "value": 2.405436581155463
+    },
+    {
+     "task": "astropy",
+     "value": 2.4109820671313065
+    },
+    {
+     "task": "astropy",
+     "value": 2.411509512748876
+    },
+    {
+     "task": "astropy",
+     "value": 2.4129387491235517
+    },
+    {
+     "task": "astropy",
+     "value": 2.4087849662387777
+    },
+    {
+     "task": "astropy",
+     "value": 2.4092822963898737
+    },
     {
      "task": "babel",
      "value": 1.911842025359477
@@ -1771,11 +2199,263 @@
     {
      "task": "fmtlib",
      "value": 1.87140480105556
+    },
+    {
+     "task": "google",
+     "value": 1.9008249969766022
+    },
+    {
+     "task": "google",
+     "value": 1.8999654638503147
+    },
+    {
+     "task": "google",
+     "value": 1.8970585535831934
+    },
+    {
+     "task": "google",
+     "value": 1.8905476832350465
+    },
+    {
+     "task": "google",
+     "value": 1.8963535447081143
+    },
+    {
+     "task": "google",
+     "value": 1.9029506400164389
+    },
+    {
+     "task": "google",
+     "value": 1.8963827699852402
+    },
+    {
+     "task": "jqlang",
+     "value": 2.004331024346317
+    },
+    {
+     "task": "jqlang",
+     "value": 1.9979446561847998
+    },
+    {
+     "task": "jqlang",
+     "value": 2.0007397041360164
+    },
+    {
+     "task": "jqlang",
+     "value": 1.9981856007367802
+    },
+    {
+     "task": "jqlang",
+     "value": 1.9979516221448899
+    },
+    {
+     "task": "jqlang",
+     "value": 1.9960639380048035
+    },
+    {
+     "task": "jqlang",
+     "value": 1.994406234301788
+    },
+    {
+     "task": "php-cs-fixer",
+     "value": 1.946215579037485
+    },
+    {
+     "task": "php-cs-fixer",
+     "value": 1.9406794298257553
+    },
+    {
+     "task": "php-cs-fixer",
+     "value": 1.9410125072598334
+    },
+    {
+     "task": "php-cs-fixer",
+     "value": 1.9391180698280275
+    },
+    {
+     "task": "php-cs-fixer",
+     "value": 1.9409669262613911
+    },
+    {
+     "task": "php-cs-fixer",
+     "value": 1.951391521388078
+    },
+    {
+     "task": "php-cs-fixer",
+     "value": 1.9460371598561736
+    },
+    {
+     "task": "prometheus",
+     "value": 2.035056554512048
+    },
+    {
+     "task": "prometheus",
+     "value": 2.0347817642280033
+    },
+    {
+     "task": "prometheus",
+     "value": 2.0341268909990404
+    },
+    {
+     "task": "prometheus",
+     "value": 2.0327222693230875
+    },
+    {
+     "task": "prometheus",
+     "value": 2.0323461930235744
+    },
+    {
+     "task": "prometheus",
+     "value": 2.037518346403916
+    },
+    {
+     "task": "prometheus",
+     "value": 2.0392847372686993
+    },
+    {
+     "task": "rubocop",
+     "value": 1.861036535684016
+    },
+    {
+     "task": "rubocop",
+     "value": 1.874484153293931
+    },
+    {
+     "task": "rubocop",
+     "value": 1.872829199365584
+    },
+    {
+     "task": "rubocop",
+     "value": 1.865673550421606
+    },
+    {
+     "task": "rubocop",
+     "value": 1.8765751171391838
+    },
+    {
+     "task": "rubocop",
+     "value": 1.867215418310942
+    },
+    {
+     "task": "rubocop",
+     "value": 1.867053702064078
+    },
+    {
+     "task": "scikit-learn",
+     "value": 1.0012756024612586
+    },
+    {
+     "task": "scikit-learn",
+     "value": 0.9869112322862145
+    },
+    {
+     "task": "scikit-learn",
+     "value": 1.0145181525032216
+    },
+    {
+     "task": "scikit-learn",
+     "value": 0.9960021206932989
+    },
+    {
+     "task": "scikit-learn",
+     "value": 0.9885328336820228
+    },
+    {
+     "task": "scikit-learn",
+     "value": 0.9988685051357271
+    },
+    {
+     "task": "scikit-learn",
+     "value": 0.9937294441859681
+    },
+    {
+     "task": "sympy",
+     "value": 2.452993255125479
+    },
+    {
+     "task": "sympy",
+     "value": 2.457395962402195
+    },
+    {
+     "task": "sympy",
+     "value": 2.4469611909219426
+    },
+    {
+     "task": "sympy",
+     "value": 2.458051028935995
+    },
+    {
+     "task": "sympy",
+     "value": 2.4429540393767155
+    },
+    {
+     "task": "sympy",
+     "value": 2.4533932593473304
+    },
+    {
+     "task": "sympy",
+     "value": 2.4423453551303043
+    },
+    {
+     "task": "tokio-rs",
+     "value": 1.6841294407108045
+    },
+    {
+     "task": "tokio-rs",
+     "value": 1.6796782279240636
+    },
+    {
+     "task": "tokio-rs",
+     "value": 1.679609930215372
+    },
+    {
+     "task": "tokio-rs",
+     "value": 1.6771726895304067
+    },
+    {
+     "task": "tokio-rs",
+     "value": 1.6828747591777833
+    },
+    {
+     "task": "tokio-rs",
+     "value": 1.6878939169071216
+    },
+    {
+     "task": "tokio-rs",
+     "value": 1.6847174210966644
+    },
+    {
+     "task": "vuejs",
+     "value": 1.6295938156675756
+    },
+    {
+     "task": "vuejs",
+     "value": 1.6288102613994215
+    },
+    {
+     "task": "vuejs",
+     "value": 1.6270469330318875
+    },
+    {
+     "task": "vuejs",
+     "value": 1.6271933138906658
+    },
+    {
+     "task": "vuejs",
+     "value": 1.6245122230386764
+    },
+    {
+     "task": "vuejs",
+     "value": 1.6281579338392176
+    },
+    {
+     "task": "vuejs",
+     "value": 1.6266059817981173
     }
    ],
    "agentic_legacy_median": 1.5914370772993434,
    "agentic_legacy_n": 14,
-   "ratio_replay_over_spec": 0.7814864019601133
+   "ratio_replay_over_spec": 0.7864095071266625
   },
   "DRAM_read_GBs": {
    "spec_median": 1.6826822901408471,
@@ -1783,9 +2463,13 @@
     0.0018378400000000003,
     11.331270021005595
    ],
-   "agentic_replay_median": 1.3339196698117708,
-   "agentic_replay_n": 2,
+   "agentic_replay_median": 1.4055195378447944,
+   "agentic_replay_n": 12,
    "agentic_replay_points": [
+    {
+     "task": "astropy",
+     "value": 1.292802734800436
+    },
     {
      "task": "babel",
      "value": 0.6951775938853464
@@ -1793,11 +2477,47 @@
     {
      "task": "fmtlib",
      "value": 1.9726617457381954
+    },
+    {
+     "task": "google",
+     "value": 2.4303262785184963
+    },
+    {
+     "task": "jqlang",
+     "value": 0.6911766243593134
+    },
+    {
+     "task": "php-cs-fixer",
+     "value": 1.0553993609756351
+    },
+    {
+     "task": "prometheus",
+     "value": 1.6928555216858165
+    },
+    {
+     "task": "rubocop",
+     "value": 1.050291500062295
+    },
+    {
+     "task": "scikit-learn",
+     "value": 0.3966921418137868
+    },
+    {
+     "task": "sympy",
+     "value": 1.5182363408891528
+    },
+    {
+     "task": "tokio-rs",
+     "value": 1.7887356551683646
+    },
+    {
+     "task": "vuejs",
+     "value": 2.6277293846648613
     }
    ],
    "agentic_legacy_median": 1.5461266264,
    "agentic_legacy_n": 2,
-   "ratio_replay_over_spec": 0.792734123148177
+   "ratio_replay_over_spec": 0.835285155183482
   }
  },
  "tma_compare": {
@@ -1814,10 +2534,10 @@
    "be_bound": 26.664921946944855
   },
   "agentic_matched": {
-   "retiring": 29.906838502013656,
-   "fe_bound": 32.66497448132769,
-   "bad_spec": 15.421016562840698,
-   "be_bound": 22.004407496767346
+   "retiring": 30.868275039273406,
+   "fe_bound": 29.165387984451492,
+   "bad_spec": 14.117946569752961,
+   "be_bound": 24.229961440853398
   },
   "agentic_legacy_replay": {
    "retiring": 31.319667615442818,
@@ -1839,62 +2559,102 @@
    "spec_max": 93.27897556946385,
    "spec_median": 0.9833765474710581,
    "agentic_rotation": [
+    4.573472915279729,
     15.691062520504632,
-    14.414323252607756
+    14.414323252607756,
+    10.908449479734394,
+    12.157944396520625,
+    10.862517973813487,
+    8.807548147103288,
+    17.66616788468192,
+    4.01110435785104,
+    4.176868842536204,
+    24.58891517869402,
+    19.98593184866955
    ],
    "agentic_replay": [
     17.813936809529494,
     16.224709660710058
    ],
-   "agentic_rotation_median": 15.052692886556194,
-   "spec_percentile_of_agentic_median": 76.92307692307692,
-   "n_spec_more_extreme": 6
+   "agentic_rotation_median": 11.53319693812751,
+   "spec_percentile_of_agentic_median": 73.07692307692308,
+   "n_spec_more_extreme": 7
   },
   "MITE_pct": {
    "spec_min": 0.23900795135830352,
    "spec_max": 85.54851176897148,
    "spec_median": 7.401530646722259,
    "agentic_rotation": [
+    18.447067792473,
     30.409471388729433,
-    31.20413555767168
+    31.20413555767168,
+    18.67428891802567,
+    26.398626595178236,
+    21.488820141646716,
+    19.510989116922957,
+    32.599601571915485,
+    12.022657705470902,
+    16.4691853450082,
+    44.98232404186113,
+    31.14068556291904
    ],
    "agentic_replay": [
     34.73849533545185,
     35.2148522723188
    ],
-   "agentic_rotation_median": 30.806803473200556,
-   "spec_percentile_of_agentic_median": 65.38461538461539,
-   "n_spec_more_extreme": 9
+   "agentic_rotation_median": 23.943723368412478,
+   "spec_percentile_of_agentic_median": 57.69230769230769,
+   "n_spec_more_extreme": 11
   },
   "DSB_pct": {
    "spec_min": 13.918591751599783,
    "spec_max": 99.73471938141336,
    "spec_median": 92.50667758438692,
    "agentic_rotation": [
+    77.22249876468061,
     67.44072725916793,
-    67.85374272985376
+    67.85374272985376,
+    80.59994957701174,
+    70.92814750524028,
+    74.36447208631027,
+    78.72799673994234,
+    66.00879629580069,
+    84.23801356484834,
+    81.99796111271156,
+    52.74273388906355,
+    66.51917941582798
    ],
    "agentic_replay": [
     63.00391071331933,
     63.73946903271794
    ],
-   "agentic_rotation_median": 67.64723499451085,
-   "spec_percentile_of_agentic_median": 26.923076923076923,
-   "n_spec_more_extreme": 7
+   "agentic_rotation_median": 72.64630979577527,
+   "spec_percentile_of_agentic_median": 38.46153846153846,
+   "n_spec_more_extreme": 10
   },
   "kernel_pct": {
    "spec_min": 0.2480223993507665,
    "spec_max": 15.430725157024403,
    "spec_median": 0.47101950700822914,
    "agentic_rotation": [
+    37.432943547823776,
     21.77993553780176,
-    4.630256387120547
+    4.630256387120547,
+    4.691322016461317,
+    25.224816922491556,
+    37.01073108022854,
+    13.050118551195705,
+    8.133605053647932,
+    14.042927698790324,
+    14.938031750511668,
+    14.966098321660796,
+    17.112882451381573
    ],
    "agentic_replay": [
     20.726575446085207,
     4.967049141008248
    ],
-   "agentic_rotation_median": 13.205095962461153,
+   "agentic_rotation_median": 14.952065036086232,
    "spec_percentile_of_agentic_median": 96.15384615384616,
    "n_spec_more_extreme": 1
   }
