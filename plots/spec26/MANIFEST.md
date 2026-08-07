@@ -40,15 +40,20 @@ The agentic side is likewise split by instrument and **never merged**:
 
 | Population | n | Tasks | What one episode gives you |
 |---|---|---|---|
-| **rotation** | 7 | 4 — babel, django, fmtlib, sympy | all 8 groups shuffled across the episode, i.e. the same instrument SPEC runs, so one episode yields a full metric card at ~1/8 duty per group |
-| **replay** | 19 | 2 — babel, fmtlib | one group for a whole deterministic episode at 100 % duty, no model in the loop — so **each metric rests on the 2–3 replays that ran its group, never on all 19** (IPC is the exception at 17: cycles and instructions ride in every group) |
+| **rotation** | 7 | 4 — babel, django, fmtlib, sympy | all 8 groups shuffled across the episode, i.e. the same instrument SPEC runs, so one episode yields a full metric card at ~1/8 duty per group. 6 live + 1 replay anchor |
+| **replay** | 16 | 2 — babel, fmtlib | one group for a whole deterministic episode (2 s windows) at 100 % duty, model never called — so **each metric rests on the 2 replays that ran its group, never on all 16** (IPC is the exception at 14: cycles and instructions ride in every group). Each task was replayed 11 times, once per counter group; the 8 shared with SPEC enter here |
+
+Populations are selected by **provenance**, not by counter-group count. Three *live* episodes
+(`glm_swe_babel` run_2/4/5) also dedicate a whole episode to one group via `GORDER_OVERRIDE` —
+they are method probes with the model in the loop, and belong to neither population.
 
 `spec_vs_agentic_metrics` uses the **replay** population only (PI decision 2026-08-06) and prints
 the contributing episode count per row; `spec_vs_agentic_tma` shows both plus SPEC;
 `spec_vs_agentic_frontend` and `spec_landscape` use rotation, with replays overlaid.
 
 Switching that figure from rotation to replay strengthens the instruction-supply result
-(L1I MPKI 11.96× → 18.00×, kernel 23.18× → 27.27×) and weakens the DRAM one (0.07× → 0.52×).
+(L1I MPKI 11.96× → 17.31×, kernel 23.18× → 27.27×) and all but erases the DRAM one
+(0.07× → 0.92×).
 The DRAM move is **task composition, not instrument**: the replays are babel (JS) and fmtlib
 (C++), and fmtlib compiles C++ and moves real memory traffic where the Python rotation tasks
 (django, sympy) do not.

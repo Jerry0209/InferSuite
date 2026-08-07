@@ -187,18 +187,36 @@ def comparison() -> dict:
     return json.load(open(COMPARISON))
 
 
+def is_replay(r: dict) -> bool:
+    """Deterministic replay (trajectory re-executed, model never called) vs a LIVE episode.
+
+    Provenance, not group count. Splitting on group count alone was wrong and shipped a wrong
+    figure on 2026-08-06: three LIVE episodes (glm_swe_babel run_2/4/5) also dedicate a whole
+    episode to one group via GORDER_OVERRIDE — they are the kit's method probes — so a
+    "dedicated-group replay" population selected by group count silently contained three
+    model-in-the-loop episodes. It moved the DRAM row materially (0.52x -> 0.92x).
+    """
+    return "glm_replay_swe_" in (r.get("dir") or "") or r.get("name", "").startswith("glm_replay_")
+
+
 def agentic_split(c: dict) -> tuple[list[dict], list[dict]]:
     """Split the agentic side by INSTRUMENT, because the two kinds are not interchangeable.
 
-    rotation  — 8 counter groups shuffled across the episode, exactly SPEC's instrument.
-                This is the primary comparison population.
-    replay    — one dedicated group for a whole deterministic replay episode (the l3_study
-                per-window captures). Each measures one group at 100 % duty, so it cannot
-                supply a full metric card on its own, but taken together the replays are an
-                INDEPENDENT check on every direction the rotation episodes report.
+    rotation  — 8 counter groups shuffled across the episode, exactly SPEC's instrument, so one
+                episode yields a full metric card. n=7: six live episodes plus one replay
+                anchor (glm_replay_swe_django/run_1, the live-vs-replay agreement check).
+    replay    — one dedicated group for a whole DETERMINISTIC REPLAY episode: that group is
+                live at 100 % duty and no model call sits inside the measured interval. Each
+                supplies one metric family, so the population is read per metric, never as a
+                whole.
+
+    LIVE single-group probes are returned in NEITHER population — they share the replay's
+    instrument but not its determinism, and they are method probes rather than measurements
+    (see local_agents/SWE_clean/plots/MANIFEST.md). Excluding them is why `rot` + `rep` does
+    not equal the loaded episode count.
     """
     rot = [r for r in c["agentic"] if len(r["groups"]) == 8]
-    rep = [r for r in c["agentic"] if len(r["groups"]) == 1]
+    rep = [r for r in c["agentic"] if len(r["groups"]) == 1 and is_replay(r)]
     return rot, rep
 
 

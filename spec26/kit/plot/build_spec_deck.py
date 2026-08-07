@@ -533,8 +533,9 @@ BODY = f"""
       <h2>Same instrument, same formulas, same machine</h2>
       <p class="lead"><b>What the green bar is.</b> A <b>dedicated-group replay</b>: SWE-agent
       re-executes a recorded trajectory in a fresh sandbox with the model never called, and the
-      whole episode counts <b>one</b> counter group. Commands genuinely re-run, so the
-      microarchitecture is real; only the <i>choice</i> of commands is frozen.</p>
+      whole episode counts <b>one</b> counter group at 2 s windows. Commands genuinely re-run, so
+      the microarchitecture is real; only the <i>choice</i> of commands is frozen. Each task was
+      replayed <b>11 times, once per counter group</b>; the eight shared with SPEC appear here.</p>
       <p class="lead"><b>Why compare against that.</b> Three reasons, all about removing doubt
       from the agentic side rather than from SPEC. The group is live at <b>100 % duty</b> for the
       episode instead of 1/8 of it, so the metric is not a sample. The episode is
@@ -545,24 +546,32 @@ BODY = f"""
       <div class="take">
         <div class="chip agent">instruction supply: L1I MPKI <b>{n('L1I_MPKI')}×</b>, MITE <b>{n('MITE_pct')}×</b>, microcode <b>{n('MS_pct')}×</b>, branch MPKI <b>{n('brMPKI')}×</b></div>
         <div class="chip agent">system time: kernel <b>{n('kernel_pct')}×</b> — the largest gap on the slide</div>
-        <div class="chip mute">the data side barely moves: AMAT <b>{n('AMAT_cyc')}×</b>, L1D MPKI <b>{n('L1D_MPKI')}×</b>, MLP <b>{n('MLP')}×</b>. SPEC still reads <b>{1/C['DRAM_read_GBs']['ratio_replay_over_spec']:.1f}×</b> the DRAM bandwidth</div>
+        <div class="chip mute">the data side does not separate at all: AMAT <b>{n('AMAT_cyc')}×</b>, L1D MPKI <b>{n('L1D_MPKI')}×</b>, MLP <b>{n('MLP')}×</b>, DRAM read <b>{n('DRAM_read_GBs')}×</b></div>
       </div>
-      <p class="note"><b>Reading the two counts.</b> <b>n = 19</b> is the whole replay population;
-      <b>n = 7</b> (used on slides 18–19) is the other agentic instrument — episodes that shuffled
-      all 8 groups the way SPEC does. They are not interchangeable and are never merged.
-      <b>The per-row number on the right is the one that matters here:</b> a replay measures one
-      group, so each metric rests on the <b>2–3</b> episodes that ran <i>its</i> group — never on
-      all 19. IPC is the exception (17), because cycles and instructions ride in every group.
+      <p class="note"><b>Reading the two counts.</b> <b>n = {V['n_agentic_replay']}</b> is the
+      dedicated-group replay population — 8 shared groups × 2 tasks. <b>n = 7</b> (used on
+      slides 18–19) is the other agentic instrument: episodes that shuffled all 8 groups the way
+      SPEC does, so one episode yields a full metric card. They are not interchangeable and are
+      never merged. <b>The per-row number on the right is the one that matters here:</b> a replay
+      measures one group, so each metric rests on the <b>2</b> episodes that ran <i>its</i> group
+      — never on all {V['n_agentic_replay']}. IPC is the exception ({C['IPC']['agentic_replay_n']}),
+      because cycles and instructions ride in every group.
       <br><br><b>Why the whisker is only on the SPEC bar.</b> With 26 benchmarks a range means
       something — it says whether the gap is the whole suite or one outlier. With 2 episodes a
       "range" is just the two points, so the figure plots them instead, marked by task. Read them:
       kernel time is <b>20.7 %</b> on babel against <b>5.0 %</b> on fmtlib, a 4× spread inside a
       2-point median.
+      <br><br><b>A correction to the version shown on 2026-08-06.</b> That figure selected the
+      replay population by counter-group count, which also swept in three <i>live</i> single-group
+      probe episodes — model in the loop, not replays. Selecting by provenance drops them and
+      moves two rows: L1I MPKI 18.00× → <b>{n('L1I_MPKI')}×</b>, and DRAM read bandwidth
+      0.52× → <b>{n('DRAM_read_GBs')}×</b>, i.e. from "SPEC reads 1.9× more" to near parity.
+      Every other row is unchanged.
       <br><br><b>The cost of this choice.</b> The replays cover <b>2 tasks — babel (JavaScript)
       and fmtlib (C++)</b>. Both Python tasks (django, sympy) are absent, and the rotation
       population covers 4. Switching to replays therefore <i>strengthens</i> the instruction-supply
       result (L1I 11.96× → {n('L1I_MPKI')}×, kernel 23.18× → {n('kernel_pct')}×) and
-      <i>weakens</i> the DRAM one (0.07× → {n('DRAM_read_GBs')}×) — and that second move is a
+      <i>erases</i> the DRAM one (0.07× → {n('DRAM_read_GBs')}×) — and that second move is a
       task-composition effect, not an instrument effect: fmtlib compiles C++ and moves real memory
       traffic where the Python tasks do not.</p>
     </div>
@@ -621,9 +630,10 @@ BODY = f"""
         pressure, {n('MITE_pct')}× the legacy decode and {n('kernel_pct')}× the kernel time — while
         AMAT ({n('AMAT_cyc')}×), L1D MPKI ({n('L1D_MPKI')}×) and MLP ({n('MLP')}×) are
         indistinguishable. The metrics everyone reaches for first are the ones that do not separate.
-        SPEC still reads {1/C['DRAM_read_GBs']['ratio_replay_over_spec']:.1f}× the DRAM bandwidth,
-        but that gap is task-dependent, not a property of agentic work — it is {1/rot_ratio('DRAM_read_GBs'):.0f}× against the
-        Python-heavy rotation episodes and only {1/C['DRAM_read_GBs']['ratio_replay_over_spec']:.1f}× against the C++/JS replays.</li>
+        DRAM read bandwidth is the clearest case that a single ratio can mislead: SPEC reads
+        {1/rot_ratio('DRAM_read_GBs'):.0f}× more than the Python-heavy rotation episodes but only
+        {1/C['DRAM_read_GBs']['ratio_replay_over_spec']:.1f}× more than the C++/JS replays. That is task
+        composition, not a property of agentic work.</li>
         <li><b>Agentic behaviour is uniform where SPEC is diverse.</b> Every agentic episode lands
         in one small region of the TMA plane; the SPEC suite covers it entirely.</li>
       </ul>
@@ -635,7 +645,7 @@ BODY = f"""
       workload ran many concurrent processes and did contend.
       <b>Population.</b> Two agentic instruments, never merged. <b>Slide 17</b> uses the
       <b>dedicated-group replays</b>: {V['n_agentic_replay']} episodes over <b>2 tasks</b> (babel,
-      fmtlib), each giving one counter group 100 % duty — so every metric there rests on the 2–3
+      fmtlib), each giving one counter group 100 % duty — so every metric there rests on the 2
       episodes that ran its group. <b>Slides 18–19</b> use the <b>8-group rotation</b>:
       {V['n_agentic_rotation']} episodes over <b>4 tasks</b> (babel, django, fmtlib, sympy) — the
       same instrument SPEC runs, so a full metric card comes from one episode. Both are small; the
