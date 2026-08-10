@@ -55,6 +55,10 @@ IMG = {k: uri(v) for k, v in {
     # _12t = the slide's frozen 12-workload population; an unsuffixed grid16 run would now
     # absorb the 13th task (phpoffice-bT) under a caption that says "twelve".
     "ml_grid12": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/cross_task_grid16_tool_12t.png",
+    # 2026-08-10: the matched-configuration re-capture and the SPEC baseline comparison.
+    "cfg_effect": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/agentic_config_effect.png",
+    "spec_cmp": "/home/thu/InferSuite/spec26/plots/spec_vs_agentic_metrics.png",
+    "spec_tma": "/home/thu/InferSuite/spec26/plots/spec_vs_agentic_tma.png",
     "go_uop_tl": "/home/thu/InferSuite/local_agents/ML_multiling/data/l3_study/plots/timeline_prometheus_uopCache_MPKI.png",
     "ml_tl_babel": "/home/thu/InferSuite/local_agents/SWE_clean/data/l3_study/plots/timeline_babel_codeRead_MPKI_L1I.png",
     "ml_tl_fmt": "/home/thu/InferSuite/local_agents/SWE_clean/data/l3_study/plots/timeline_fmtlib_codeRead_MPKI_L1I.png",
@@ -175,7 +179,7 @@ update();
 
 BODY = """
 <div class="progress"></div>
-<div class="counter">01 / 28</div>
+<div class="counter">01 / 31</div>
 <div class="hint">↓ / space · arrow keys to navigate</div>
 <div class="deck">
 
@@ -792,6 +796,82 @@ BODY = """
     </div>
   </section>
 
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Matched configuration · what the caveat was worth</p>
+      <h2>The SMT caveat is now a measurement, not a footnote</h2>
+      <p class="lead">Every cross-workload figure used to carry the same disclaimer: this campaign
+      ran <b>SMT-ON on 20 logical CPUs at 2 s windows</b>, so cycle-normalised metrics could not be
+      compared cleanly against anything captured differently. On 2026-08-07/08 the replays were
+      re-captured on the reference configuration — <b>measured cores 4–11 with SMT off, 100 ms
+      windows</b>, same partition, same fence, same trajectories, model never called. The disclaimer
+      became a number.</p>
+      <div class="figcard"><img alt="Configuration effect: same tasks, SMT-ON 2 s vs SMT-off 100 ms" src="__CFGEFFECT__"></div>
+      <div class="take">
+        <div class="chip tool">IPC <b>1.591 → 1.890</b> (+18.8 %) — the sibling thread was taking about a fifth of the issue slots</div>
+        <div class="chip harness">every shared resource improves: L1I MPKI <b>-11.6 %</b>, L1D <b>-14.2 %</b>, LLC <b>-12.3 %</b>, DRAM <b>-13.7 %</b></div>
+        <div class="chip wait">TMA shape holds: frontend-bound <b>-1.4 pp</b>, bad speculation <b>-0.4 pp</b>, backend-bound <b>+3.7 pp</b></div>
+      </div>
+      <p class="note"><b>Confound control.</b> The matched capture covers 12 tasks and the retired
+      one covers 2, so comparing the populations wholesale would mix a configuration change with a
+      task-set change. This figure uses only the two tasks present in <i>both</i> — babel and fmtlib
+      — replayed from the same trajectories through the same kit, so the configuration is the only
+      thing that differs.
+      <br><br><b>What it means for everything before this slide.</b> The TMA conclusions never
+      depended on the caveat: removing the sibling moves the shape by at most
+      3.7 pp. The <i>throughput</i> ones did —
+      any absolute IPC quoted from the SMT-ON capture is ~19 % low. Contention within the agent
+      (harness + container on the same partition) is unchanged and remains real.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Matched configuration · the traditional-workload baseline</p>
+      <h2>Against SPEC CPU 2026, on one configuration</h2>
+      <p class="lead">With the agent and the baseline now captured identically, the comparison needs
+      no asterisk. SPEC CPU 2026: 26 benchmarks, ref inputs, 1 copy on 1 isolated SMT-free core,
+      the same eight certified counter groups and the same code computing every ratio. Agent:
+      <b>96 dedicated-group replays over 12 tasks in 10 languages</b>, each giving one counter
+      group 100 % duty.</p>
+      <div class="figcard"><img alt="SPEC vs agentic paired medians, matched configuration" src="__SPECCMP__"></div>
+      <div class="take">
+        <div class="chip tool">instruction supply: L1I MPKI <b>11.7×</b>, microcode <b>13.7×</b>, MITE <b>3.2×</b></div>
+        <div class="chip harness">system time: kernel <b>31.7×</b> — the largest gap of all</div>
+        <div class="chip wait">the data side does not separate: AMAT <b>0.99×</b>, MLP <b>1.02×</b>, DRAM <b>0.84×</b></div>
+      </div>
+      <p class="note">The metrics everyone reaches for first — cache misses, memory bandwidth,
+      access latency — are exactly the ones that do <i>not</i> tell the two workloads apart. What
+      separates agentic work from a compute benchmark is how hard it is to <b>feed instructions to
+      the core</b> and how much time it spends in the <b>kernel</b>. Each row rests on the 12
+      episodes that ran its counter group, one per task; the count is printed per row, and the
+      individual episode markers show the spread across languages.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Matched configuration · where the slots go</p>
+      <h2>Frontend-bound — and mis-speculating</h2>
+      <p class="lead">All four Level-1 buckets on one radar, so the profile is read as a shape
+      rather than a stack. TMA is the safest cross-workload view available: separate continuous
+      census, zero general-purpose counters, and — as the previous slide showed — almost
+      insensitive to the configuration change.</p>
+      <div class="figcard"><img alt="TMA radar including bad speculation, plus per-episode scatter" src="__SPECTMA__"></div>
+      <div class="take">
+        <div class="chip tool">frontend-bound <b>29.2 %</b> vs SPEC <b>18.3 %</b></div>
+        <div class="chip proxy">bad speculation <b>14.1 %</b> vs SPEC <b>10.0 %</b> — a second, independent front-end cost</div>
+        <div class="chip harness">backend-bound <b>24.2 %</b> vs SPEC <b>26.7 %</b>; retiring <b>30.9 %</b> vs <b>36.0 %</b></div>
+      </div>
+      <p class="note">The right panel is the honest version of the bad-speculation claim: the
+      agent's 14.1 % is high but not extreme for the suite —
+      729.abc_r loses 49 % of its slots to mis-speculation and six more SPEC benchmarks exceed
+      20 %. What isolates agentic work is the <b>combination</b>: high frontend-bound <i>and</i>
+      high bad speculation at once, a corner it shares with only two of the 26 benchmarks.
+      The four axes are per-episode medians and do not sum to 100 % — read each on its own.</p>
+    </div>
+  </section>
+
 </div>
 <div class="progress-spacer"></div>
 """
@@ -810,7 +890,10 @@ BODY = (BODY.replace("__SPLIT__", IMG["split"]).replace("__CPU__", IMG["cpu"])
             .replace("__WX__", IMG["w_x"]).replace("__WXH__", IMG["w_xh"]).replace("__WDUR__", IMG["w_dur"])
             .replace("__MLGRID__", IMG["ml_grid"]).replace("__MLGRIDH__", IMG["ml_gridh"])
             .replace("__MLTLB__", IMG["ml_tl_babel"]).replace("__MLTLF__", IMG["ml_tl_fmt"])
-            .replace("__MLGRID12__", IMG["ml_grid12"]).replace("__GOUOPTL__", IMG["go_uop_tl"]))
+            .replace("__MLGRID12__", IMG["ml_grid12"]).replace("__GOUOPTL__", IMG["go_uop_tl"])
+            .replace("__CFGEFFECT__", IMG["cfg_effect"])
+            .replace("__SPECCMP__", IMG["spec_cmp"])
+            .replace("__SPECTMA__", IMG["spec_tma"]))
 
 HTML = ('<title>Agent CPU profiling — GLM-5.2 SWE-agent</title>\n'
         '<style>' + CSS + '</style>\n' + BODY + '\n<script>' + JS + '</script>\n')

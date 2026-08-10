@@ -198,7 +198,7 @@ row's "Covers" column; new artifacts add a row).
 
 | Artifact | Link | Covers |
 |---|---|---|
-| Agent CPU profiling — GLM-5.2 SWE-agent (the deck, **28 slides**) | https://claude.ai/code/artifact/e93ebcb7-015d-4f40-8f83-62fe21777e62 | slides 1–28 (26–28 added 2026-07-30: nine-language axis, composition-vs-magnitude, sampling frame — reports 16/17; since 2026-07-31 the five per-window grid slides show the 4×4 `grid16` layout with cache miss rates, per-slide populations frozen via `_py3`/`_5t`/`_12t`) |
+| Agent CPU profiling — GLM-5.2 SWE-agent (the deck, **31 slides**) | https://claude.ai/code/artifact/e93ebcb7-015d-4f40-8f83-62fe21777e62 | slides 1–31 (**29–31 added 2026-08-10: the matched-configuration re-capture — cores 4–11 SMT-off, 100 ms windows — what the SMT caveat was worth, and the SPEC CPU 2026 baseline comparison incl. the TMA radar with bad speculation; see report 18**) (26–28 added 2026-07-30: nine-language axis, composition-vs-magnitude, sampling frame — reports 16/17; since 2026-07-31 the five per-window grid slides show the 4×4 `grid16` layout with cache miss rates, per-slide populations frozen via `_py3`/`_5t`/`_12t`) |
 | Per-window gallery — scikit-learn | https://claude.ai/code/artifact/c12b01c1-7ac7-4f2e-8729-b1c90f5ef63b | slides 19–23 backing detail |
 | Per-window gallery — astropy | https://claude.ai/code/artifact/3b68efd2-f9f0-49ad-b047-20ac27bb3c68 | slides 19–23 backing detail |
 | Per-window gallery — sympy | https://claude.ai/code/artifact/704ab3b2-3b63-4c57-b087-88dcdcf968ff | slides 19–23 backing detail |
