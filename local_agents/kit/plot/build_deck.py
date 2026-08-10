@@ -56,6 +56,7 @@ IMG = {k: uri(v) for k, v in {
     # absorb the 13th task (phpoffice-bT) under a caption that says "twelve".
     "ml_grid12": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/cross_task_grid16_tool_12t.png",
     # 2026-08-10: the matched-configuration re-capture and the SPEC baseline comparison.
+    "tma_fences": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/agentic_tma_l1_fences.png",
     "cfg_effect": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/agentic_config_effect.png",
     "spec_cmp": "/home/thu/InferSuite/spec26/plots/spec_vs_agentic_metrics.png",
     "spec_tma": "/home/thu/InferSuite/spec26/plots/spec_vs_agentic_tma.png",
@@ -179,7 +180,7 @@ update();
 
 BODY = """
 <div class="progress"></div>
-<div class="counter">01 / 31</div>
+<div class="counter">01 / 32</div>
 <div class="hint">↓ / space · arrow keys to navigate</div>
 <div class="deck">
 
@@ -872,6 +873,38 @@ BODY = """
     </div>
   </section>
 
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Matched configuration · TMA Level 1 per fence</p>
+      <h2>The front-end problem belongs to the tools, not the harness</h2>
+      <p class="lead">The same TMA Level 1 view as earlier in the deck, rebuilt on the matched
+      capture — <b>12 tasks in 10 languages</b>, cores 4–11 with SMT off, 100 ms windows — and with
+      the two fences kept apart. They are different programs doing different work, and pooling them
+      hides the result.</p>
+      <div class="figcard"><img alt="TMA Level 1 per fence across 12 tasks and 10 languages" src="__TMAFENCES__"></div>
+      <div class="take">
+        <div class="chip tool">tool fence: frontend-bound <b>32.5 %</b>, bad speculation <b>15.9 %</b>, retiring <b>29.0 %</b></div>
+        <div class="chip harness">harness fence: frontend-bound <b>18.7 %</b>, bad speculation <b>11.7 %</b>, retiring <b>38.4 %</b></div>
+        <div class="chip wait">the gap is <b>13.8 pp</b> of frontend-bound and <b>4.2 pp</b> of bad speculation — same machine, same episode, different fence</div>
+      </div>
+      <p class="note"><b>This qualifies the headline.</b> "Agentic work is frontend-bound" is really
+      a statement about the <b>tool</b> fence — the commands the agent spawns. The harness (the
+      SWE-agent Python process) looks much more like a conventional program: it retires more, stalls
+      on the back end, and mis-speculates less. The whole-episode number is a blend of the two, so a
+      figure that pools them understates how frontend-starved the tool side actually is.
+      <br><br><b>The consistency across languages is the striking part.</b> Every tool fence except
+      one sits at 29–37 % frontend-bound and 13–19 % bad speculation, across Python, JavaScript,
+      TypeScript, C++, C, Go, Java, Rust, Ruby and PHP. The exception is <b>scikit-learn</b> at
+      64 % backend-bound — its test suite is numeric (BLAS), so it behaves like SPEC's FP
+      benchmarks rather than like a tool workload. That row is the control: when an agent happens
+      to run genuinely numeric code, the instrument says so.
+      <br><br>Source: the continuous PERF_METRICS census, read <code>--for-each-cgroup</code> and
+      therefore already attributed per fence, consuming no general-purpose counter. Each task pools
+      its 8 replay episodes; the per-episode spread is banked in
+      <code>tma_l1_fences_values.json</code>.</p>
+    </div>
+  </section>
+
 </div>
 <div class="progress-spacer"></div>
 """
@@ -893,7 +926,8 @@ BODY = (BODY.replace("__SPLIT__", IMG["split"]).replace("__CPU__", IMG["cpu"])
             .replace("__MLGRID12__", IMG["ml_grid12"]).replace("__GOUOPTL__", IMG["go_uop_tl"])
             .replace("__CFGEFFECT__", IMG["cfg_effect"])
             .replace("__SPECCMP__", IMG["spec_cmp"])
-            .replace("__SPECTMA__", IMG["spec_tma"]))
+            .replace("__SPECTMA__", IMG["spec_tma"])
+            .replace("__TMAFENCES__", IMG["tma_fences"]))
 
 HTML = ('<title>Agent CPU profiling — GLM-5.2 SWE-agent</title>\n'
         '<style>' + CSS + '</style>\n' + BODY + '\n<script>' + JS + '</script>\n')
