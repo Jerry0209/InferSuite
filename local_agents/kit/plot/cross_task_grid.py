@@ -33,6 +33,19 @@ SHORT = {"Python": "Py", "JavaScript": "JS", "TypeScript": "TS", "C++": "C++", "
          "Java": "Java", "Ruby": "Rb", "PHP": "PHP", "Rust": "Rs", "Go": "Go"}
 def slang(t):
     return SHORT.get(LANG[t], LANG[t])
+# GRID_ROOT=<l3_study dir> points every task at ONE campaign instead of the historical
+# per-task mix. Added 2026-08-10 for the matched-configuration re-capture (SWE_iso8: cores 4-11
+# SMT off, 100 ms windows), where all twelve tasks live in a single tree — so the figure no
+# longer has to state a per-task provenance, because there is only one.
+_GRID_ROOT = os.environ.get("GRID_ROOT")
+# The window length used to be hard-coded as "2-s" in the suptitle. That silently became a
+# false caption the moment the campaign was re-captured at 100 ms, so it is now a parameter:
+# GRID_WINSEC in seconds, rendered as ms below 1 s.
+_WS = float(os.environ.get("GRID_WINSEC", "2"))
+WINLAB = f"{_WS*1000:.0f} ms" if _WS < 1 else f"{_WS:g} s"
+# GRID_PROV replaces the per-task provenance footer when every task comes from ONE campaign —
+# listing twelve tasks under one label is noise, and the interesting fact is the configuration.
+_PROV = os.environ.get("GRID_PROV")
 ROOT = {"scikit-learn": D, "astropy": D, "sympy": D, "babel": DM, "fmtlib": DM,
         "tokio-rs": DML, "jqlang": DML, "gin-gonic": DML, "google": DML,
         "rubocop": DML, "briannesbitt": DML, "vuejs": DML, "prometheus": DML, "php-cs-fixer": DML, "phpoffice-bT": DML}
@@ -40,6 +53,9 @@ ROOT = {"scikit-learn": D, "astropy": D, "sympy": D, "babel": DM, "fmtlib": DM,
 # language order. A task with no banked CSV is skipped, so this list can name work not yet run.
 ORDER = ["scikit-learn", "astropy", "sympy", "babel", "fmtlib",
          "vuejs", "google", "tokio-rs", "prometheus", "jqlang", "rubocop", "php-cs-fixer", "phpoffice-bT"]
+if _GRID_ROOT:
+    ROOT = {t: _GRID_ROOT for t in ROOT}
+    OUTD = os.environ.get("GRID_OUT", _GRID_ROOT)
 TASKS = [t for t in ORDER if os.path.exists(f"{ROOT[t]}/all_windows_{t}.csv")]
 # TASKS_ONLY="a,b,c" restricts the grid; GRID_SUFFIX names the output so a restricted grid can be
 # FROZEN for a deck slide whose prose describes that subset. Added when the 12-task grid silently
@@ -113,24 +129,27 @@ for fence in ("tool", "harness"):
     axes = axes.flatten()
     for ax, (m, ttl) in zip(axes, panels):
         data = [vals(t, m, fence) for t in TASKS]
-        bp = ax.boxplot(data, tick_labels=[f"{tname(t)}\n{slang(t)}\n(n={len(d)})"
+        # n on its own line and comma-grouped: at 12 tasks the four-digit counts of a 100 ms
+        # capture ran together into "(n=826)(n=1359)" and could not be read.
+        bp = ax.boxplot(data, tick_labels=[f"{tname(t)}\n{slang(t)}\n{len(d):,}"
                                           for t, d in zip(TASKS, data)],
                         showmeans=True, patch_artist=True, whis=(5, 95))
         for box, t in zip(bp["boxes"], TASKS):
             box.set_facecolor(TCOL[t]); box.set_alpha(.7)
         ax.set_title(ttl, fontsize=10.5); ax.grid(axis="y", alpha=.3)
+        ax.set_xlabel("task · language · windows", fontsize=7.5, labelpad=1)
         ax.tick_params(labelsize=7 if len(TASKS) > 8 else 8)
     for ax in axes[len(panels):]: ax.axis("off")
-    fig.suptitle(f"Per-window distributions across tasks and languages — {fence} fence, 2-s "
-                 f"windows (box = IQR, orange = median, ▲ = mean, whiskers = 5–95%, ○ = outliers)",
-                 fontsize=12.5, y=1.0)
+    fig.suptitle(f"Per-window distributions across tasks and languages — {fence} fence, "
+                 f"{WINLAB} windows (box = IQR, orange = median, ▲ = mean, whiskers = 5–95%, "
+                 "○ = outliers)", fontsize=12.5, y=1.0)
     # Provenance is built from the task set actually plotted. Hard-coding it (it used to name
     # "babel + fmt" as the only multilingual tasks) silently becomes a false caption the moment
     # another language is added — the same failure mode as the truncated "Java" label.
     def prov(root, label):
         ts = [f"{tname(t)} ({LANG[t]})" for t in TASKS if ROOT[t] == root]
         return f"{label}: {', '.join(ts)}" if ts else ""
-    fig.text(0.5, -0.004, " · ".join(x for x in [
+    fig.text(0.5, -0.004, _PROV or " · ".join(x for x in [
         prov(D, "reproduced superseded_40min campaign"),
         prov(DM, "certified SWE_clean campaign"),
         prov(DML, "SWE-bench Multilingual language pilots (ML_multiling)")] if x),

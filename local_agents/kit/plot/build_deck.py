@@ -56,6 +56,7 @@ IMG = {k: uri(v) for k, v in {
     # absorb the 13th task (phpoffice-bT) under a caption that says "twelve".
     "ml_grid12": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/cross_task_grid16_tool_12t.png",
     # 2026-08-10: the matched-configuration re-capture and the SPEC baseline comparison.
+    "grid_iso8": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/plots/cross_task_grid16_tool_iso8.png",
     "tma_fences": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/agentic_tma_l1_fences.png",
     "cfg_effect": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/agentic_config_effect.png",
     "spec_cmp": "/home/thu/InferSuite/spec26/plots/spec_vs_agentic_metrics.png",
@@ -180,7 +181,7 @@ update();
 
 BODY = """
 <div class="progress"></div>
-<div class="counter">01 / 32</div>
+<div class="counter">01 / 33</div>
 <div class="hint">↓ / space · arrow keys to navigate</div>
 <div class="deck">
 
@@ -905,6 +906,36 @@ BODY = """
     </div>
   </section>
 
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Matched configuration · per-window distributions</p>
+      <h2>Every metric, per 100 ms window, across ten languages</h2>
+      <p class="lead">The cross-task distribution grid rebuilt on the matched capture. The earlier
+      version of this figure used <b>2-second</b> windows; at <b>100 ms</b> the same episodes yield
+      roughly <b>ten times</b> as many windows — <b>307–1,359</b>
+      per task, <b>10,014</b> in total for the tool fence — so the tails and the outliers are
+      resolved rather than averaged away.</p>
+      <div class="figcard"><img alt="Per-window distribution grid, tool fence, 100 ms windows, 12 tasks" src="__GRIDISO8__"></div>
+      <div class="take">
+        <div class="chip tool">one campaign, one configuration: cores 4–11 SMT off, 100 ms windows, 12 tasks in 10 languages</div>
+        <div class="chip harness">the harness-fence grid is the companion figure — same axes, same populations</div>
+        <div class="chip wait">13 of 16 panels: BTB MPKI, µop-cache MPKI and branch-direction MPKI need the <code>fe_miss</code> counter group, which this capture does not include</div>
+      </div>
+      <p class="note"><b>What changed besides the window length.</b> The earlier grids drew their
+      twelve tasks from <i>three different campaigns</i> — the reproduced superseded_40min run for
+      Python, the certified SWE_clean run for babel and fmt, and the multilingual pilots for the
+      rest — and every figure had to state that provenance in its caption. Here all twelve come
+      from one tree captured under one configuration, so the caption is a statement about the
+      machine rather than an apology for the data.
+      <br><br><b>The three missing panels are missing on purpose, not silently.</b> This capture
+      ran the eight counter groups shared with the SPEC baseline, which is what the cross-workload
+      comparison needs; the three frontend-miss metrics live in a ninth group. Adding them is
+      twelve more replay passes and no API spend — the earlier frozen grids
+      (<code>_py3</code>, <code>_5t</code>, <code>_12t</code>) keep all sixteen and are untouched,
+      so nothing that a previous slide references has moved.</p>
+    </div>
+  </section>
+
 </div>
 <div class="progress-spacer"></div>
 """
@@ -927,7 +958,8 @@ BODY = (BODY.replace("__SPLIT__", IMG["split"]).replace("__CPU__", IMG["cpu"])
             .replace("__CFGEFFECT__", IMG["cfg_effect"])
             .replace("__SPECCMP__", IMG["spec_cmp"])
             .replace("__SPECTMA__", IMG["spec_tma"])
-            .replace("__TMAFENCES__", IMG["tma_fences"]))
+            .replace("__TMAFENCES__", IMG["tma_fences"])
+            .replace("__GRIDISO8__", IMG["grid_iso8"]))
 
 HTML = ('<title>Agent CPU profiling — GLM-5.2 SWE-agent</title>\n'
         '<style>' + CSS + '</style>\n' + BODY + '\n<script>' + JS + '</script>\n')
