@@ -9,7 +9,9 @@ protocol says exactly what gets written down, where it goes, and when.
 
 It is written to be read by **both a person and an agent**. Agents: this file is the contract;
 `.claude/skills/handoff/SKILL.md` is a thin wrapper that points here. If the two ever disagree,
-this file wins, because this one is committed and the skill directory is gitignored.
+**this file wins** — it is the copy a person finds without knowing Claude Code's directory
+layout, and the one a reviewer reads in a diff. (Both ship: `.claude/skills/` has been tracked
+since 2026-08-10. Only `.claude/settings.local.json` stays untracked, being per-developer.)
 
 ---
 

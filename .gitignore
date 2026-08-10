@@ -24,7 +24,11 @@ loadgen/benchmark/results/
 # Backups
 *.bak
 # local assistant/session artifacts — never publish
-.claude/
+# .claude/ skills ARE tracked (2026-08-10): they encode the lab's workflow — the report
+# checker, the wiki/study-report/handoff protocols — and a colleague cloning this repo
+# needs them. Only the personal, machine-local permission allowlist stays out; it is
+# per-developer and would conflict on every pull.
+.claude/settings.local.json
 HANDOFF.md
 HANDOFF*.md
 *_handoff.md
