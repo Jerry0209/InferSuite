@@ -59,6 +59,23 @@ windows (~4 per window) are the *harness fence idle* signal: `parse_window` sums
 cgroups in each file, and a fence with nothing running contributes nothing. Expected, and the
 reason the agentic numbers are harness+tool combined.
 
+**Placement verified from banked samples, not from the config (2026-08-07).** The agentic
+replays could in principle have run off the isolated partition: the tool sandbox is created by
+dockerd, not by our `systemd-run`, so it is fenced only because `apply_isolation` swaps docker's
+`cgroup-parent` to the measured slice — exactly the kind of indirection that can silently stop
+working. Checked two independent ways over all 96 runs:
+
+| Check | Result |
+|---|---|
+| CPU of every 99 Hz sample (`scope*_cpulanes.tsv`) | **1,714,325** samples, 192 per-fence records, CPUs observed **4–11**, **0** off the measured set |
+| Busy time on cores 4–11 not owned by any fence | **0.3 %** agentic (55.7 of 18,834 core-s); **0.14 %** SPEC |
+
+Per-run residuals come out slightly **negative** (≈ −0.5 %) and that is not an error: `cpu.stat`
+counts microseconds while `/proc/stat` counts 10 ms USER_HZ ticks, so the coarser instrument
+rounds down. Only the aggregate is meaningful. Kernel threads belong to no cgroup, so the fence
+totals are a lower bound by construction. This settles *where* the work ran; it does **not**
+retire contention (see below).
+
 **Known limitations.** (a) **12 tasks over 10 languages, one instance each** — broad in
 language coverage, thin in repo coverage; a per-metric `n` of 12 is one *task*, not one
 repetition, so within-task run-to-run variance is not captured here. (b) **Contention is not retired**: SPEC runs one copy with L3 and DRAM to
@@ -101,6 +118,8 @@ trajectories. Expect ~2 % drift on episode metrics (report 18 §2.2).
 | Figure | [`spec26/kit/plot/plot_spec_results.py`](../../spec26/kit/plot/plot_spec_results.py) | Fig 9 → `spec_vs_agentic_metrics.png` |
 | Loading + populations | [`spec26/kit/plot/spec_common.py`](../../spec26/kit/plot/spec_common.py) | `agentic_split()`, `is_replay()` |
 | Which population feeds which figure | [`spec26/plots/MANIFEST.md`](../../spec26/plots/MANIFEST.md) | — |
+| Placement + residual verifier | [`spec26/kit/validate/verify_placement.py`](../../spec26/kit/validate/verify_placement.py) | proves the capture ran on the measured cores and inside its fences; exit 1 if any sample escaped |
+| Banked placement evidence | `spec26/plots/placement_agentic.json` | per-fence CPU histogram + per-run residual |
 | Audit dump (every displayed number) | `spec26/plots/values_dump.json` | key `comparison` |
 
 ## 3. Key insights (most → least important)

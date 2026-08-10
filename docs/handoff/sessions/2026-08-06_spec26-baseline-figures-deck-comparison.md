@@ -79,6 +79,13 @@ Each with the number it would have shipped.
 - **Window budget.** An episode yields `(wall − lead_in − teardown)/pitch` windows, **72–82 %**
   of naive `wall/WINSEC`. Worked example `729.abc_r`: (11.74 − 0.16 − 1.00)/0.123 = 86, where
   11.74/0.1 would suggest 117.
+- **Isolation placement (2026-08-07, PI question: did the *replays* land on the isolated
+  cores, or only the live runs?).** Verified from banked samples, not from the config:
+  **1,714,325** 99 Hz samples across 192 per-fence records, CPUs observed **4–11**, **0** off
+  the measured set — including `scope2`, the docker sandbox, on all 12 tasks. Unfenced busy
+  time on the partition: **0.3 %** agentic, **0.14 %** SPEC. Verifier promoted into the repo at
+  `spec26/kit/validate/verify_placement.py`; evidence banked at
+  `spec26/plots/placement_agentic.json`. Settles placement; does **not** retire contention.
 - **Reproducibility control.** Two independent full-suite captures differ by a median **2.12 %**
   across 11 metrics × 26 benchmarks (0.30 % steadiest, 13.8 % noisiest).
 

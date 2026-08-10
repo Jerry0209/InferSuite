@@ -52,6 +52,8 @@ TS, TM = T["spec"], T["agentic_matched"]
 TL = T["agentic_legacy_replay"] or TM
 IV = V["int_vs_fp"]
 ABC = V["capture"]["729.abc_r"]
+PLACE = json.load(open(P / "placement_agentic.json"))
+PL, RS = PLACE["placement"], PLACE["residual"]
 
 
 def n(key: str, field: str = "ratio_replay_over_spec", d: int = 2) -> str:
@@ -237,6 +239,21 @@ BODY = f"""
       silent</i>. A <code>/proc/stat</code> witness then bounds what the cgroup could not see
       (kernel threads belong to no cgroup): worst case across the suite, <b>0.03 %</b> of
       partition capacity unaccounted for.</p>
+      <div class="take">
+        <div class="chip spec"><b>Both campaigns verified ON the partition, from banked samples —
+        not from the config.</b> Every 99 Hz sample carries the CPU it ran on:
+        <b>{PL['samples']:,}</b> agentic samples across {PL['cpulanes_files']} per-fence records,
+        CPUs observed <b>{PL['cpus_observed'][0]}–{PL['cpus_observed'][-1]}</b>,
+        <b>{PL['samples_off_partition']}</b> off the measured set</div>
+        <div class="chip spec">Work on the measured cores that belonged to <b>no fence</b>:
+        <b>{RS['residual_pct']:.1f} %</b> agentic ({RS['residual_core_s']:.0f} of
+        {RS['busy_core_s']:,.0f} core-s) and <b>0.14 %</b> SPEC. Kernel threads belong to no
+        cgroup, so the fence totals are a lower bound by construction</div>
+        <div class="chip warn">The tool sandbox is the one that could have escaped — dockerd
+        creates it, not our <code>systemd-run</code>, so it is fenced only because isolation
+        swaps docker's <code>cgroup-parent</code> to the measured slice. Verified for all
+        12 tasks</div>
+      </div>
     </div>
   </section>
 
@@ -655,7 +672,13 @@ BODY = f"""
       that boundary badly; per-instruction rates survive it far better.
       <b>Contention:</b> SPEC runs one copy on one core with L3 and DRAM to itself; the agentic
       workload ran many concurrent processes and did contend.
-      <b>SMT and contention — no longer a caveat, a measurement.</b> The agentic replays were
+      <b>Placement is verified, contention is not retired.</b> Every sample of both campaigns
+      ran on cores 4–11 and ≥99.7 % of the partition's busy time sat inside a fence (slide 2).
+      That settles <i>where</i> the work ran. It does not settle contention: SPEC runs one copy
+      with L3 and DRAM to itself, while the agent runs a harness process and a container that
+      compete with each other <i>inside</i> the partition. Cross-campaign IPC and any
+      shared-resource metric still carry that.
+      <br><br><b>SMT and window length — no longer a caveat, a measurement.</b> The agentic replays were
       re-captured on 2026-08-07 under the SPEC configuration exactly: measured cores <b>4–11 with
       SMT off</b>, <b>100 ms</b> windows, same partition, same fence. Every comparison figure now
       uses that matched capture, so IPC and the frontend-bandwidth shares no longer cross an SMT
