@@ -55,9 +55,12 @@ derived tables), `cpustat_scopeN.tsv` (10 Hz cpu.stat timeline), `procstat_parti
 
 ## Isolation (runtime-only, restored by trap on ANY exit)
 
-- CPUs 2-11,14-23 = measured partition (`measured.slice`, docker cgroup-parent switched to it);
-  CPUs 0-1,12-13 = housekeeping (system.slice + user.slice shielded there, IRQs steered there,
-  proxy/pollers/perf writers pinned there).
+- CPUs 4-11 = measured partition (`measured.slice`, docker cgroup-parent switched to it) with
+  their SMT siblings 16-23 offline; CPUs 0-3,12-15 = housekeeping (system.slice + user.slice
+  shielded there, IRQs steered there, proxy/pollers/perf writers pinned there). Re-partitioned
+  2026-08-05 (boot); the preflight topology gate verifies slices, online state, and
+  no-online-SMT-sibling before any spend. (The certified campaigns ran the older
+  2-11,14-23 / 0-1,12-13 split with SMT on — capacity numbers aren't directly comparable.)
 - performance governor + no_turbo=1 (fixed ~base clock), THP never, NMI watchdog off
   (frees a GP counter), k3s stopped, stale perf killed.
 - Hard guarantee about kernel per-cpu threads requires isolcpus (reboot) — deliberately NOT
