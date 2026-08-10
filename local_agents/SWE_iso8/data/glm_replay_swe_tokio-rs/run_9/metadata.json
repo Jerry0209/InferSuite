@@ -1,0 +1,23 @@
+{
+ "workload": "swe_replay",
+ "config": "tokio-rs",
+ "run": 9,
+ "model": "glm-5.2",
+ "endpoint": "https://api.z.ai/api/paas/v4",
+ "thinking": "enabled",
+ "cpus_measured": "4-11",
+ "cpus_house": "0-3,12-15",
+ "winsec": 0.1,
+ "repo_rev": "5e4db23b2",
+ "kernel": "6.17.0-1030-oem",
+ "gorder": "fe_miss",
+ "rotation": "shuffled",
+ "tma_cont": true,
+ "ts_start": 1786371989.466788,
+ "extra": {
+  "source_run": 1,
+  "traj": "/home/thu/InferSuite/local_agents/ML_multiling/data/glm_swe_tokio-rs/run_1/traj/tokio-rs__tokio-6551/tokio-rs__tokio-6551.traj",
+  "harness_cg": "measured.slice/glm-rep-tokio-rs-r9.scope",
+  "tool_cg": "measured.slice/docker-a4ffbbaca507b94a45cf33b1835fe07c41fce3d070be664a056282d910e64149.scope"
+ }
+}

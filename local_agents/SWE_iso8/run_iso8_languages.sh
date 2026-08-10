@@ -24,7 +24,10 @@ KIT="$REPO/local_agents/kit/replay/replay_l3_profile.sh"
 export DATA_ROOT="$REPO/local_agents/SWE_iso8/data"
 export TIER_PREFIX=glm WINSEC=0.1 SKIP_K3S=1
 export CPUS_MEASURED=4-11 CPUS_HOUSE=0-3,12-15
-export PROF_GROUPS="fpbr cache mlp fe fe_lat core_ports dram_bw priv"
+# Overridable so a later pass can APPEND a group without re-running the eight already banked.
+# Order is load-bearing: replay_l3_profile.sh maps group i -> run_i, and runs 1-8 skip only
+# because their DONE marker and l3group.txt still match this order. Never reorder it.
+export PROF_GROUPS="${PROF_GROUPS:-fpbr cache mlp fe fe_lat core_ports dram_bw priv}"
 LOG="${LOG:-$REPO/local_agents/SWE_iso8/sweep.log}"
 
 # task|source tree|trajectory basename   (ordered short-first so a stop loses the least work)

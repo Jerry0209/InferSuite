@@ -56,6 +56,9 @@ IMG = {k: uri(v) for k, v in {
     # absorb the 13th task (phpoffice-bT) under a caption that says "twelve".
     "ml_grid12": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/cross_task_grid16_tool_12t.png",
     # 2026-08-10: the matched-configuration re-capture and the SPEC baseline comparison.
+    "wall12": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/agentic_wall_split_12t.png",
+    "cpu12": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/agentic_cpu_work_12t.png",
+    "grid_iso8_h": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/plots/cross_task_grid16_harness_iso8.png",
     "grid_iso8": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/plots/cross_task_grid16_tool_iso8.png",
     "tma_fences": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/agentic_tma_l1_fences.png",
     "cfg_effect": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/agentic_config_effect.png",
@@ -181,7 +184,7 @@ update();
 
 BODY = """
 <div class="progress"></div>
-<div class="counter">01 / 33</div>
+<div class="counter">01 / 36</div>
 <div class="hint">↓ / space · arrow keys to navigate</div>
 <div class="deck">
 
@@ -936,6 +939,90 @@ BODY = """
     </div>
   </section>
 
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Rebuilt · wall-clock, all twelve tasks</p>
+      <h2>Model wait dominates in every language, not just Python</h2>
+      <p class="lead">Slide 1 rebuilt across the full task set: <b>12 tasks in 10 languages</b>
+      instead of five. The pattern is not a Python artefact — inference is
+      <b>74–86%</b> of wall clock everywhere, median
+      <b>81%</b>, from a 4-minute TypeScript episode to an 81-minute
+      Python one.</p>
+      <div class="figcard"><img alt="Wall-clock split donuts across 12 tasks and 10 languages" src="__WALL12__"></div>
+      <div class="take">
+        <div class="chip wait">inference 74–86% of wall · median 81% · 12/12 tasks above 74%</div>
+        <div class="chip tool">tool execution never exceeds <b>23%</b> of wall</div>
+        <div class="chip harness">harness <b>3–15%</b></div>
+      </div>
+      <p class="note"><b>Why this figure is NOT from the matched re-capture, and does not need to
+      be.</b> The re-capture is made of deterministic replays, and a replay never calls the model —
+      its inference share is zero <i>by construction</i>, so the grey segment that dominates this
+      slide cannot exist there. It also does not need to: this split is wall time plus cgroup
+      <code>cpu.stat</code> accounting, with <b>no PMU counter anywhere in it</b>. SMT and window
+      length change what the counters see, not how long the agent waited. So what is new here is
+      the <b>population</b> — ten languages instead of two — and the earlier five-task figure
+      remains valid rather than superseded.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Rebuilt · CPU work, all twelve tasks</p>
+      <h2>Flip to CPU work and the model vanishes</h2>
+      <p class="lead">Slide 2 rebuilt on the same twelve tasks, with the matched-configuration
+      replays beside it. Model wait costs essentially <b>zero core-seconds</b> — it is pure
+      waiting — so the CPU-work view tells the opposite story to the wall-clock one, and the
+      split between tool and harness is where the variation lives.</p>
+      <div class="figcard"><img alt="CPU work by fence, live and matched-config replay, 12 tasks" src="__CPU12__"></div>
+      <div class="take">
+        <div class="chip tool">tool share spans <b>19%</b> (sympy) to <b>100%</b> (scikit-learn) — the widest spread of any measure in this deck</div>
+        <div class="chip harness">two tasks are harness-dominated: <b>sympy</b> at 81% and <b>astropy</b> at 33% non-tool</div>
+        <div class="chip wait">the litellm proxy is negligible everywhere — at most <b>5.3%</b> of core-seconds</div>
+      </div>
+      <p class="note"><b>The right panel is the honest cross-check.</b> Removing the model drops
+      total CPU work by roughly 2–3× (scikit 1,449 → 507 core-seconds), because the harness stops
+      doing the work of issuing and parsing model turns. But the <b>tool share is preserved</b>
+      almost exactly — sympy 19 % → 18 %, astropy 67 % → 62 %, fmt 91 % → 96 % — which is what
+      licenses using the replays for every microarchitecture slide in this deck: they execute the
+      same commands in the same proportion, just without the waiting.
+      <br><br>Absolute core-seconds are episode draws and will not reproduce; the shares are the
+      reproducible layer.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Matched configuration · per-window distributions, harness fence</p>
+      <h2>The same grid for the harness — and why its boxes are wider</h2>
+      <p class="lead">The companion to the previous slide: identical axes, identical populations,
+      the other fence. Read the <b>medians</b> against the tool grid — they are what the per-fence
+      TMA slide rests on. Do not read the box widths the same way, for a reason that is
+      measurable rather than aesthetic.</p>
+      <div class="figcard"><img alt="Per-window distribution grid, harness fence, 100 ms windows, 12 tasks" src="__GRIDISO8H__"></div>
+      <div class="take">
+        <div class="chip harness">harness: <b>15–54%</b> of windows carry under 10 M instructions</div>
+        <div class="chip tool">tool: only <b>0–12%</b> do — median window 95–2198 M instructions against 5–492 M</div>
+        <div class="chip wait">so a wide harness box is often <b>too little work to measure</b>, not erratic behaviour</div>
+      </div>
+      <p class="note"><b>What the wide boxes actually are.</b> The harness issues a command and then
+      waits, so on the short tasks — babel, fmt, gson, jq — roughly <b>54%</b> of its
+      100 ms windows contain fewer than 10 M instructions. An MPKI or a DSB share computed over
+      that few instructions is dominated by sampling noise. That is what produces the extreme
+      spreads in the harness Branch-MPKI panel (IQR running from ~0 to 20) and in L1I MPKI: those
+      panels are not saying the harness behaves erratically, they are saying many windows had
+      almost nothing in them.
+      <br><br><b>The medians survive it</b> — they are robust to that low-activity tail, which is
+      why the per-fence TMA result (harness 18.7 % frontend-bound against the tool fence's 32.5 %)
+      is unaffected. It is the whiskers and box widths on this figure that overstate variability.
+      <br><br><b>Not filtered, deliberately.</b> Applying an activity floor — dropping windows
+      below, say, 10 M instructions — would tighten these boxes considerably, but it is a
+      methodology choice that has to be declared on the figure rather than applied quietly, and it
+      would remove ~54% of harness windows on the short tasks while removing almost
+      nothing from the tool grid. Both fences are shown unfiltered so the two grids remain
+      comparable.</p>
+    </div>
+  </section>
+
 </div>
 <div class="progress-spacer"></div>
 """
@@ -959,7 +1046,10 @@ BODY = (BODY.replace("__SPLIT__", IMG["split"]).replace("__CPU__", IMG["cpu"])
             .replace("__SPECCMP__", IMG["spec_cmp"])
             .replace("__SPECTMA__", IMG["spec_tma"])
             .replace("__TMAFENCES__", IMG["tma_fences"])
-            .replace("__GRIDISO8__", IMG["grid_iso8"]))
+            .replace("__GRIDISO8__", IMG["grid_iso8"])
+            .replace("__WALL12__", IMG["wall12"])
+            .replace("__CPU12__", IMG["cpu12"])
+            .replace("__GRIDISO8H__", IMG["grid_iso8_h"]))
 
 HTML = ('<title>Agent CPU profiling — GLM-5.2 SWE-agent</title>\n'
         '<style>' + CSS + '</style>\n' + BODY + '\n<script>' + JS + '</script>\n')
