@@ -1,0 +1,14 @@
+# litellm_glm_typeid.yaml — litellm_glm.yaml + per-request usage logging (ML_typeid).
+# Identical model path; adds the usage_logger callback (JSONL row per completed call,
+# path from USAGE_LOG env). The certified campaigns keep litellm_glm.yaml untouched.
+model_list:
+  - model_name: glm-5.2
+    litellm_params:
+      model: openai/glm-5.2
+      api_base: https://api.z.ai/api/paas/v4
+      api_key: os.environ/GLM_API_KEY
+litellm_settings:
+  drop_params: true
+  callbacks: usage_logger.proxy_handler_instance
+general_settings:
+  store_model_in_db: false

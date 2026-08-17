@@ -89,3 +89,11 @@ local_agents/ML_multiling/data/glm_swe_hashicorp-bE/run_1/traj/hashicorp__terraf
 
 # litellm proxy venv (moved 2026-08-04 from agentic/openclaw; pins in litellm_venv_freeze.txt)
 local_agents/kit/campaign/.venv_litellm/
+
+# ML_typeid first-live-run classification sweep (2026-08-10, branch multiling-type-id):
+# per-episode raw data stays local on the type-id machine (some trajs exceed GitHub
+# limits); the tracked products are typing_ledger.tsv + the kit + README.
+local_agents/ML_typeid/data/
+local_agents/ML_typeid/logs/
+local_agents/ML_typeid/sweep.log
+local_agents/ML_typeid/STOP

@@ -63,6 +63,12 @@ nothing is reimplemented in it):
 ./measure.sh help
 ```
 
+The `typeid` campaign (branch `multiling-type-id`, 2026-08-10) is the exception to the
+P7 conventions by design: `./measure.sh typeid sweep` runs the first-live-run TYPE
+IDENTIFICATION pass over SWE-bench Multilingual on a non-P7 machine — no isolation, no
+perf/TMA; cgroup pollers + argv cmdlog + per-call token JSONL only; magnitudes are coarse
+bins re-judged on P7. Protocol: `local_agents/ML_typeid/README.md`.
+
 Stages run in order the first time: `preflight → dryrun → smoke → campaign → validate`.
 Per-campaign knobs are env vars with certified defaults, e.g.
 `SWE_INSTANCES=… SWE_DRAIN_S=… ./measure.sh agents-swe campaign`.

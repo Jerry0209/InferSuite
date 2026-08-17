@@ -34,6 +34,7 @@ Full index and reading order: **[reports/README.md](reports/README.md)**.
 | own deck | [19 — SPEC vs agentic headline comparison](reports/19_spec_vs_agentic_headline_comparison.md) | Twelve metrics on the matched configuration: separation is instruction supply + kernel time (L1I 15.31×, kernel 28.04×), never the memory ladder (AMAT 0.99×, DRAM 0.79×) |
 | own deck | [20 — TMA profile & bad speculation](reports/20_tma_profile_bad_speculation_radar.md) | TMA radar incl. bad speculation (15.4 % vs 10.0 %); prices the retired SMT caveat — IPC +18.8 %, TMA shape unchanged |
 | own deck | [21 — the agent's position in the SPEC distribution](reports/21_agent_position_in_spec_distribution.md) | Ranks not ratios: L1I p77, MITE p65, DSB p27 — the agent is in SPEC's tail; only kernel time leaves the suite (p96) |
+| — (feeds the P7 selection) | [22 — type identification over SWE-bench Multilingual](reports/22_multiling_typeid_sweep.md) | 285 classification-only live episodes, zero failures: behaviour collapses to search-led (E/B lead 0), PHP/Ruby carry the only co-dominant structure, magnitude nests by mechanism — the measured frame for the ≤30 P7 representatives |
 
 Companion material elsewhere in the repo:
 

@@ -77,6 +77,7 @@ cleanup(){
   local rc=$?
   if [ "$RAN_WORK" = 1 ]; then
     sudo systemctl stop 'glm-swe-*.scope' 2>/dev/null
+    systemctl --user stop 'glm-tid-*.scope' 2>/dev/null   # TYPEID user-scoped episodes
     [ -n "$TMACONT_PID" ] && kill -INT "$TMACONT_PID" 2>/dev/null
     [ ${#REC_PIDS[@]} -gt 0 ] && kill -TERM "${REC_PIDS[@]}" 2>/dev/null
     [ ${#POLL_PIDS[@]} -gt 0 ] && kill "${POLL_PIDS[@]}" 2>/dev/null
@@ -466,13 +467,13 @@ start_proxy(){
   PROXY_UNIT="glm-proxy-$$"
   systemd-run --user --scope --unit="$PROXY_UNIT" --collect -- \
     taskset -c "$CPUS_HOUSE" "$KIT/.venv_litellm/bin/litellm" \
-    --config "$KIT/litellm_glm.yaml" --port "$PROXY_PORT" > "$KIT/proxy.log" 2>&1 &
+    --config "${PROXY_CFG:-$KIT/litellm_glm.yaml}" --port "$PROXY_PORT" > "$KIT/proxy.log" 2>&1 &
   local i; for i in $(seq 1 30); do
     curl -sf "localhost:$PROXY_PORT/health/liveliness" >/dev/null 2>&1 && break; sleep 2
   done
   curl -sf "localhost:$PROXY_PORT/health/liveliness" >/dev/null 2>&1 \
     || { log "FATAL: litellm proxy did not start (see $KIT/proxy.log)"; exit 1; }
-  local pp=$(pgrep -u "$USER" -f "litellm --config $KIT/litellm_glm.yaml" | head -1)
+  local pp=$(pgrep -u "$USER" -f "litellm --config ${PROXY_CFG:-$KIT/litellm_glm.yaml}" | head -1)
   PROXY_CG=$(cg_of "$pp")
   log "proxy up (:$PROXY_PORT cgroup=$PROXY_CG)"
 }
@@ -929,6 +930,156 @@ stage_campaign(){ # $1 phase (only "swe" remains; OC stripped 2026-08-05)
 
 stage_validate(){ python3 "$KIT/../validate/validate_glm_agents.py" "$DATA" "$TIER_PREFIX"; }
 
+# ---------------- TYPEID light mode (ML_typeid classification sweep, 2026-08-10) -------------
+# First-live-run TYPE IDENTIFICATION on a non-P7 machine (branch multiling-type-id): the goal
+# is a realized ⟨behaviour, magnitude-bin, mechanism-witness⟩ label per task, not valid rates.
+# Therefore: NO isolation / ISO-PROOF / perf / TMA / records; user-scoped cgroups (no sudo);
+# instruments = 10 Hz cpu.stat pollers + 2 Hz argv cmdlog of the tool cgroup + per-request
+# token usage JSONL from the proxy (litellm_glm_typeid.yaml + usage_logger.py). Magnitudes
+# captured here are COARSE BINS on a different CPU — the P7 layer-3 stop gate re-judges any
+# picked task before real profiling. Protocol: local_agents/ML_typeid/README.md.
+
+typeid_env(){ # neutralize the P7 partition: taskset to the full online range = no-op pinning
+  CPUS_HOUSE="$(cat /sys/devices/system/cpu/online)"
+  CPUS_MEASURED="$CPUS_HOUSE"
+  export CPUS_HOUSE CPUS_MEASURED
+  PROXY_CFG="$KIT/litellm_glm_typeid.yaml"
+  export PROXY_CFG PYTHONPATH="$KIT${PYTHONPATH:+:$PYTHONPATH}"
+}
+
+typeid_preflight(){
+  log "TYPEID PREFLIGHT (no perf, no isolation, no partition assumptions)"
+  local fail=0
+  [ -s "$KEYFILE" ] || { log "FAIL: $KEYFILE missing"; fail=1; }
+  local K=$(tr -d '[:space:]' < "$KEYFILE")
+  local code=$(curl -s --max-time 20 -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $K" "$GLM_ENDPOINT/models")
+  [ "$code" = 200 ] || { log "FAIL: endpoint $GLM_ENDPOINT -> HTTP $code"; fail=1; }
+  curl -s --max-time 20 -H "Authorization: Bearer $K" "$GLM_ENDPOINT/models" | grep -q "\"$MODEL_ID\"" \
+    || { log "FAIL: $MODEL_ID not in model list"; fail=1; }
+  docker info >/dev/null 2>&1 || { log "FAIL: docker"; fail=1; }
+  [ -x "$KIT/.venv_litellm/bin/litellm" ] || { log "FAIL: litellm venv ($KIT/.venv_litellm)"; fail=1; }
+  [ -x "$REPO/agentic/swe_agent/.venv/bin/sweagent" ] || { log "FAIL: swe venv"; fail=1; }
+  [ -f "$KIT/usage_logger.py" ] && [ -f "$KIT/litellm_glm_typeid.yaml" ] || { log "FAIL: typeid proxy files"; fail=1; }
+  mkdir -p "$DATA" 2>/dev/null
+  local free=$(df --output=avail -m "$DATA" 2>/dev/null | tail -1)
+  [ "${free:-0}" -gt 20000 ] || { log "FAIL: <20G free at $DATA"; fail=1; }
+  [ $fail -eq 0 ] && log "TYPEID PREFLIGHT OK" || { log "TYPEID PREFLIGHT FAILED"; exit 1; }
+}
+
+start_cmdlog(){ # $1 out, $2 tool cgroup — 2 Hz argv witness (epoch \t pid \t argv), same
+  # format as the replay kit's cmdlog.tsv. A WITNESS of what ran, never a rate: poll counts
+  # are not instruction weights, and processes shorter than ~0.5 s can be missed.
+  local OUT="$1" CG="$2"
+  ( exec nice -n 19 bash -c '
+      while [ -f "'"$OUT"'/.polling" ]; do
+        t=$EPOCHREALTIME
+        for p in $(cat "/sys/fs/cgroup/'"$CG"'/cgroup.procs" 2>/dev/null); do
+          a=$(tr "\0" " " < "/proc/$p/cmdline" 2>/dev/null)
+          [ -n "$a" ] && printf "%s\t%s\t%s\n" "$t" "$p" "$a"
+        done
+        sleep 0.5
+      done >> "'"$OUT/cmdlog.tsv"'" ' ) &
+  POLL_PIDS+=($!)
+}
+
+typeid_loop_guard(){ # user-scope variant of loop_guard (same detection, systemctl --user)
+  local LOG="$1" UNIT="$2" N="${LOOP_GUARD_N:-0}" runlen
+  [ "$N" -gt 0 ] || return 0
+  while systemctl --user is-active --quiet "$UNIT.scope" 2>/dev/null; do
+    runlen=$(tail -c 300000 "$LOG" 2>/dev/null | \
+             awk '/ACTION/{blk=""; while ((getline ln) > 0) { gsub(/[ \t]+$/, "", ln); gsub(/^[ \t]+/, "", ln); if (ln == "") break; blk = blk ln }
+                  if (blk != "") { if (blk == prev) c++; else c = 1; prev = blk } } END{print c+0}')
+    if [ "${runlen:-0}" -ge "$N" ]; then
+      log "TYPEID LOOP-GUARD tripped: last $runlen actions identical — stopping $UNIT"
+      systemctl --user stop "$UNIT.scope" 2>/dev/null
+      return 0
+    fi
+    sleep 10
+  done
+}
+
+typeid_episode_ok(){ # classification needs traj + fences + witness; DONE only when all exist
+  local OUT="$1" NAME="$2" fail=""
+  find "$OUT/traj" -name '*.traj' ! -name '*.local.traj' 2>/dev/null | grep -q . || fail="$fail traj"
+  [ -s "$OUT/cpustat_scope2.tsv" ] || fail="$fail cpustat-tool"
+  [ -s "$OUT/cmdlog.tsv" ]         || fail="$fail cmdlog"
+  [ -s "$OUT/proxy_usage.jsonl" ]  || log "TYPEID WARN $NAME: proxy_usage.jsonl empty (no model calls?)"
+  if [ -z "$fail" ]; then log "TYPEID EPISODE-OK $NAME"; touch "$OUT/DONE"; return 0; fi
+  log "TYPEID EPISODE-FAIL $NAME (missing:$fail)"; return 1
+}
+
+typeid_episode(){ # $1 instance, $2 run n — mirror of swe_episode minus sudo/isolation/perf
+  local INST="$1" N="$2" SHORT="${1%%__*}${SWE_SHORT_SUFFIX:-}"
+  local UNIT="glm-tid-${SHORT}-r${N}"
+  local OUT="$DATA/${TIER_PREFIX}_swe_${SHORT}/run_${N}"
+  [ -f "$OUT/DONE" ] && { log "skip $SHORT run$N (DONE)"; return 0; }
+  mkdir -p "$OUT"; rm -rf "$OUT"/*
+  log "================ typeid $SHORT run$N ($MODEL_ID) ================"
+  local ODIR="runs/${TIER_PREFIX}_typeid/${INST}_r${N}"
+  rm -rf "$REPO/agentic/swe_agent/$ODIR"
+  systemctl --user stop "$UNIT.scope" 2>/dev/null
+  systemctl --user reset-failed "$UNIT.scope" 2>/dev/null
+  systemd-run --user --collect --scope --unit="$UNIT" -- bash -c \
+    "cd '$REPO/agentic/swe_agent' && source .venv/bin/activate && \
+      sweagent run-batch --config external/SWE-agent/config/default.yaml \
+        --instances.type swe_bench --instances.subset $SWE_SUBSET --instances.split test \
+        --instances.filter '$INST' \
+        --agent.model.name 'openai/$MODEL_ID' \
+        --agent.model.api_base 'http://localhost:$PROXY_PORT/v1' --agent.model.api_key dummy \
+        --agent.model.per_instance_cost_limit 0 --agent.model.total_cost_limit 0 \
+        --agent.model.temperature $SWE_TEMP \
+        --num_workers 1 --output_dir '$ODIR'" > "$OUT/agent.log" 2>&1 &
+  local ALIVE="systemctl --user is-active --quiet $UNIT.scope"
+  local HARNESS_CG="" i
+  for i in $(seq 1 30); do
+    HARNESS_CG=$(systemctl --user show "$UNIT.scope" -p ControlGroup --value 2>/dev/null | sed 's|^/||')
+    [ -n "$HARNESS_CG" ] && [ -d "/sys/fs/cgroup/$HARNESS_CG" ] && break; sleep 1
+  done
+  [ -n "$HARNESS_CG" ] && [ -d "/sys/fs/cgroup/$HARNESS_CG" ] \
+    || { log "ERROR: harness scope never appeared"; tail -5 "$OUT/agent.log"; return 1; }
+  local SB=""; for i in $(seq 1 240); do
+    SB=$(docker ps --format '{{.ID}} {{.Names}}' | grep -i sweb | awk '{print $1}' | head -1)
+    [ -n "$SB" ] && break; eval "$ALIVE" || break; sleep 1
+  done
+  [ -n "$SB" ] || { log "ERROR: no sandbox for $SHORT"; systemctl --user stop "$UNIT.scope" 2>/dev/null; swe_cleanup_sandbox; return 1; }
+  local TOOL_CG=$(cg_of_container "$SB")
+  for i in $(seq 1 180); do swe_past_first_step "$OUT/agent.log" && break; eval "$ALIVE" || break; sleep 2; done
+  swe_past_first_step "$OUT/agent.log" || { log "ERROR: $SHORT never got past STEP 1 (highest: $(swe_max_step "$OUT/agent.log"))"; systemctl --user stop "$UNIT.scope" 2>/dev/null; swe_cleanup_sandbox; return 1; }
+  log "TYPEID WORK VERIFIED $SHORT run$N (harness=$HARNESS_CG tool=$TOOL_CG)"
+  write_metadata "$OUT" swe_typeid "$SHORT" "$N" "{\"instance\":\"$INST\",\"subset\":\"$SWE_SUBSET\",\"temperature\":$SWE_TEMP,\"mode\":\"typeid\",\"harness_cg\":\"$HARNESS_CG\",\"tool_cg\":\"$TOOL_CG\",\"proxy_cg\":\"$PROXY_CG\"}"
+  local CGS="$HARNESS_CG,$TOOL_CG,$PROXY_CG"
+  ( typeid_loop_guard "$OUT/agent.log" "$UNIT" ) & LG_PID=$!
+  start_pollers "$OUT" "$CGS"
+  start_cmdlog "$OUT" "$TOOL_CG"
+  local t0=$SECONDS
+  while eval "$ALIVE" 2>/dev/null && [ $((SECONDS - t0)) -lt "$SWE_DRAIN_S" ]; do sleep 5; done
+  if eval "$ALIVE" 2>/dev/null; then
+    log "TYPEID DRAIN: $SHORT exceeded ${SWE_DRAIN_S}s — stopping"
+    systemctl --user stop "$UNIT.scope" 2>/dev/null
+  fi
+  kill "$LG_PID" 2>/dev/null; LG_PID=""
+  stop_pollers "$OUT"
+  systemctl --user stop "$UNIT.scope" 2>/dev/null
+  cp -r "$REPO/agentic/swe_agent/$ODIR" "$OUT/traj" 2>/dev/null
+  [ -d "$OUT/traj" ] && rm -rf "$REPO/agentic/swe_agent/$ODIR"
+  swe_cleanup_sandbox
+  typeid_episode_ok "$OUT" "$SHORT-run$N"
+}
+
+stage_typeid_one(){ # $1 instance — proxy per episode (usage JSONL rotates with the run dir)
+  local INST="${1:?instance id}"
+  RAN_WORK=1
+  typeid_env
+  local SHORT="${INST%%__*}${SWE_SHORT_SUFFIX:-}"
+  local OUT="$DATA/${TIER_PREFIX}_swe_${SHORT}/run_1"
+  [ -f "$OUT/DONE" ] && { log "skip $SHORT (DONE)"; return 0; }
+  export USAGE_LOG="$OUT/proxy_usage.jsonl"
+  start_proxy
+  typeid_episode "$INST" 1; local rc=$?
+  stop_proxy
+  return $rc
+}
+
 case "${1:-all}" in
   preflight)      stage_preflight ;;
   dryrun)         stage_preflight; stage_dryrun ;;
@@ -940,6 +1091,8 @@ case "${1:-all}" in
   replay-anchor)  stage_replay "${2:-}" ;;
   replay-one)     RAN_WORK=1; apply_isolation; replay_episode "${2:?short}" "${3:-1}" "${4:?dest run n}"; restore_isolation ;;
   restore-isolation) restore_isolation ;;   # manual cleanup after an interrupted campaign
+  typeid-preflight) typeid_env; typeid_preflight ;;
+  typeid-one)     stage_typeid_one "${2:?instance id}" ;;
   validate)       stage_validate ;;
   all)            stage_preflight; stage_dryrun; stage_smoke; stage_campaign swe ;;
   *) echo "usage: $0 {preflight|dryrun|isolation-test|smoke|smoke-swe|smoke-django|campaign swe|validate|all}"; exit 1 ;;

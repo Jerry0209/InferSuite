@@ -56,6 +56,21 @@ case "$CAMP" in
     [ "$STAGE" = campaign ] && set -- swe "$@"
     exec "$KIT/campaign/run_glm_campaign.sh" "$STAGE" "$@" ;;
 
+  typeid)
+    # ML_typeid: first-live-run TYPE IDENTIFICATION over SWE-bench Multilingual on a
+    # non-P7 machine — no isolation, no perf; classification instruments only.
+    # Stages: preflight | one <instance> | sweep | remaining | matrix
+    : "${SWE_TEMP:=0.6}" "${LOOP_GUARD_N:=12}" "${SWE_SUBSET:=multilingual}"
+    export SWE_TEMP LOOP_GUARD_N SWE_SUBSET SWE_INSTANCES SWE_DRAIN_S SWE_SHORT_SUFFIX
+    export DATA_ROOT="${DATA_ROOT:-$REPO/local_agents/ML_typeid/data}"
+    case "${STAGE:-}" in
+      preflight)        exec "$KIT/campaign/run_glm_campaign.sh" typeid-preflight ;;
+      one)              exec "$KIT/campaign/run_glm_campaign.sh" typeid-one "$@" ;;
+      sweep)            exec "$KIT/campaign/typeid_sweep.sh" "$@" ;;
+      remaining|matrix) exec python3 "$KIT/campaign/typeid_classify.py" "$STAGE" "$@" ;;
+      *) echo "typeid stages: preflight | one <instance> | sweep | remaining | matrix"; exit 1 ;;
+    esac ;;
+
   plots)
     which="${STAGE:-all}"
     case "$which" in agents-swe|all) ;; *) echo "unknown plot set: $which"; exit 1 ;; esac
