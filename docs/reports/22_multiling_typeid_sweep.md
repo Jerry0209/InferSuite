@@ -18,13 +18,13 @@ live episode per remaining task (285 of 300; 15 were consumed by earlier campaig
 non-P7 machine, under classification-only instruments — exact cgroup fences, a 2 Hz argv
 witness, per-call token logging; no isolation, no PMU — each episode reduced to
 **mechanism (static, argv-witnessed) × realized behaviour × magnitude bin × viability flags**
-in `typing_ledger.tsv`. Headline: **284/285 episodes classified with zero failures** in one
-resumable 85 h run (2026-08-10 17:11 → 08-14 06:35, ~1.57 B prompt tokens); the behavioural
-axis **collapses corpus-wide** (search-led in 265/284; edit- and build-led lead **zero**
-episodes), the only real behavioural structure is interpreted-suite search/test co-dominance
-(all 15 mixed episodes are PHP/Ruby, across 6 repos), and magnitude bins are nested by
-mechanism (Rust 36/42 `large` vs PHP 18/39 `below-floor`). The 285th instance was silently
-lost to a run-dir name collision and re-run after the fix (§2.2 H2).
+in `typing_ledger.tsv`. Headline: **all 285 episodes classified with zero failures** — 284 in
+one resumable 85 h run (2026-08-10 17:11 → 08-14 06:35, ~1.57 B prompt tokens), the 285th
+re-run 2026-08-17 after a name-collision skip (§2.2 H2); the behavioural axis **collapses
+corpus-wide** (search-led in 266/285; edit- and build-led lead **zero** episodes), the only
+real behavioural structure is interpreted-suite search/test co-dominance (all 15 mixed
+episodes are PHP/Ruby, across 6 repos), and magnitude bins are nested by mechanism
+(Rust 36/42 `large` vs PHP 18/39 `below-floor`).
 
 ## 2. Methodology
 
@@ -56,9 +56,9 @@ first paid episode, per-call accounting was exact: 132 JSONL rows = 132 `api_cal
 | # | hazard | resolution |
 |---|---|---|
 | H1 | dangling-image accumulation: 271 GB by episode 126 — `docker rmi` only *untags*; swe-rex builds a derived image per episode that keeps the base entry alive, and the tagged-only GC never frees it | `docker image prune -f` folded into the driver per episode — never between episodes (it can race swe-rex's next legacy build) |
-| H2 | run-dir name collision: `apache__druid-13704` and `apache__lucene-13704` both mapped to short `apache-t13704`; lucene silently skipped as "banked" | shorts now derive from the full `owner-repo-number`; lucene re-run 2026-08-17 |
+| H2 | run-dir name collision: `apache__druid-13704` and `apache__lucene-13704` both mapped to short `apache-t13704`; lucene silently skipped as "banked" | shorts now derive from the full `owner-repo-number`; lucene re-run 2026-08-17 (realized S, 10.2 core-s, flag-free) |
 | H3 | liveness probes: `pgrep -f` matches the probing shell's own command line — days of false "sweep running" | bracket-pattern probes (`pgrep -f '[t]ypeid_sweep'`) or `pgrep -x` |
-| H4 | degenerate episodes are common: 37/284 (13 %) E7 consecutive-loop (loop-guard interventions included), 2 cyclic-loop, 14 mechanism-not-witnessed; ~110 episodes carry minor call/step offsets (model retries) | all recorded as *flags*, not failures — episodes stay classified but flagged rows are ineligible as representatives |
+| H4 | degenerate episodes are common: 37/285 (13 %) E7 consecutive-loop (loop-guard interventions included), 2 cyclic-loop, 14 mechanism-not-witnessed; ~110 episodes carry minor call/step offsets (model retries) | all recorded as *flags*, not failures — episodes stay classified but flagged rows are ineligible as representatives |
 
 **Known limits:** one seed per task (temp 0.6) — a realized label is a *prior* the P7 episode
 must confirm; single-episode magnitude carries the 5.33× seed-noise floor (report 17), which
@@ -96,7 +96,7 @@ nesting — not per-task trajectories (stochastic agent).
 ## 3. Key insights (most → least important)
 
 1. **The behavioural axis collapses at corpus scale.** Edit- and build-dominated episodes do
-   not exist (0/284 each); search leads 265/284. The mentor's search/edit/test/build task
+   not exist (0/285 each); search leads 266/285. The mentor's search/edit/test/build task
    typology is a property of *this agent*, not of the tasks — report 17's 16-episode claim,
    now at 18× the sample.
 2. **The only real behavioural structure is interpreted-suite co-dominance.** All 15 mixed
@@ -107,7 +107,7 @@ nesting — not per-task trajectories (stochastic agent).
    `rubocop-13627` (T=79 %, flag-free, `large`), `phpspreadsheet-3463` (63 %), `tokio-4898`
    (53 %). The T column of the selection matrix rests on these three.
 4. **Magnitude is nested by mechanism, orthogonal to behaviour.** `large` fences: Rust 36/42,
-   Go 31/39, Java 29/41, C++ 11/11; `below-floor`: PHP 18/39, Ruby 8/43 (36 tasks total).
+   Go 31/39, Java 29/42, C++ 11/11; `below-floor`: PHP 18/39, Ruby 8/43 (36 tasks total).
    Compiled/AOT/JVM tasks are nearly all profitable to profile; 36 interpreted-side tasks
    would have parked on the P7 — the sweep's cheapest concrete saving.
 5. **Degeneracy gating is load-bearing, not paranoia.** 13 % of episodes tripped E7; without

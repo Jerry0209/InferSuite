@@ -1,6 +1,4 @@
-# SWE-Bench-Multi full stratification
-
-## The composition of a 'Task'
+# The composition of a 'Task'
 
 * SWE-bench multilingual mines a merged PR that closes and issue from different repos.
     * That PR contains two parts: the code fix (→ gold patch) and the tests the human contributor added (→ test patch). 
@@ -29,41 +27,27 @@
 * Polling only starts after the container is built
     * SWE-agent installing its own tooling — and that's exactly what the bootstrap correction removes (the apt/dpkg lineage interval in the first 300 s; 15% of gin's fence).
 
-## Definition of 'Type'
+# Definition of 'Type'
 
-### Axis 1
+## Axis 1
 
-Axis 1 is a lookup into a frozen 41-repo table returning a conditional proposition: once this repo's test entry point is invoked, what process tree unfolds inside the fence, and how is cost split between fixed and variable? It describes the repo's toolchain and has nothing to do with what the agent is trying to do.
+* Axis 1 is not about the agent at all. It asks: when some command in the trajectory runs the repo's tests, what process graph does the repo's own toolchain spawn inside the tool cgroup, and what burns the instructions there?
 
-The unit of Axis 1 is CPU inside the tool fence (instructions, core-seconds). 
+* Axis 1 is a lookup into a frozen 41-repo table returning a conditional proposition: once this repo's test entry point is invoked, what process tree unfolds inside the fence, and how is cost split between fixed and variable? It describes the repo's toolchain and has nothing to do with what the agent is trying to do.
 
-The measured mechanism composition is a function of toolchain × cache state, not of toolchain alone.
+* The unit of Axis 1 is CPU inside the tool fence (instructions, core-seconds). 
 
-Verify with sweep results.
+* The measured mechanism composition is a function of toolchain × cache state, not of toolchain alone.
 
-
-### Axis 2
-
-The unit of Axis 2 is counts of actions in the trajectory. 
+* At the end, they will be verified with sweep results.
 
 
----
+### Why it's a property of the repo, not the task
 
-# Axis 1
+* A SWE-bench instance doesn't get to choose how its repo builds. `jq` has an autotools test target; `tokio` has `cargo test`; `gson` has maven+surefire; `laravel` has phpunit. One `run_tests` command → a process tree fixed by the repo's build system. So the label is a lookup, not an inference: `taxonomy_spec.json` assigns each class by literal repo-set membership (repo ∈ {`jqlang/jq`, `redis/redis`, …}), deterministic and reapplicable without an LLM.
 
-## Axis 1 in one sentence
+* The "hence, of the language" is a corpus fact, not a law: in these 300 rows mechanism turned out to be a total function of language too (B = all C/C++, A = all Rust/Go, J = all Java, I = all PHP/Ruby, N = all JS/TS), zero exceptions. Nothing forbids a Python repo from driving tests through `make` — it just doesn't happen here. That collinearity is exactly why `plan.md:168` calls the repo confound the dominant limitation: the ⟨language × type⟩ grid is one cell wide per language by construction, so the mechanism axis buys stratification, not a second dimension.
 
-Axis 1 is not about the agent at all. It asks: when some command in the trajectory runs the repo's tests, what process graph does the repo's own toolchain spawn inside the tool cgroup, and what burns the instructions there?
-
-The unit of Axis 1 is **CPU inside the tool fence** (instructions, core-seconds). The unit of Axis 2 is **counts of actions in the trajectory**. They are different quantities measured by different instruments — that is the cleanest way to keep them apart.
-
-## Why it's a property of the repo, not the task
-
-A SWE-bench instance doesn't get to choose how its repo builds. `jq` has an autotools test target; `tokio` has `cargo test`; `gson` has maven+surefire; `laravel` has phpunit. One `run_tests` command → a process tree fixed by the repo's build system. So the label is a lookup, not an inference: `taxonomy_spec.json` assigns each class by literal repo-set membership (repo ∈ {`jqlang/jq`, `redis/redis`, …}), deterministic and reapplicable without an LLM.
-
-The "hence, of the language" is a corpus fact, not a law: in these 300 rows mechanism turned out to be a total function of language too (B = all C/C++, A = all Rust/Go, J = all Java, I = all PHP/Ruby, N = all JS/TS), zero exceptions. Nothing forbids a Python repo from driving tests through `make` — it just doesn't happen here. That collinearity is exactly why `plan.md:168` calls the repo confound the dominant limitation: the ⟨language × type⟩ grid is one cell wide per language by construction, so the mechanism axis buys stratification, not a second dimension.
-
-## How to read the five classes
 
 ### 9 languages → 5 classes
 
@@ -95,7 +79,7 @@ B C/C++	—	make 重新推导依赖图；改了源码就必须真编译
 N JS/TS	node_modules 安装	transpiler/bundler 子进程，然后 JS runner
 
 
-## Prior vs verdict
+### Prior vs verdict
 
 The static label is only a prior. It becomes a verdict via instruction-weighted command-tag composition of the fence, median over the dedicated-group replay passes, behind the **ownership** (≥50% of fence instructions in toolchain-observed windows) and **adequacy** (≥20 windows, ≥150 Ginstr) gates — `classification_protocol.md:44`.
 
@@ -109,12 +93,10 @@ That's where "mostly validated" earns its hedge: 5/9 clean on scoreable rows.
 Hence the wave-0a tagger repairs (basename matching, tag multiset) being prerequisites before A and N can be re-judged.
 
 
+## Axis 2
 
+The unit of Axis 2 is counts of actions in the trajectory. 
 
-
-# Axis 2
-
-## 1. Axis 2 classifies *actions*, not CPU
 
 Axis 1 looks at instructions burned inside the fence. Axis 2 looks at the count of commands in the trajectory.
 
@@ -124,6 +106,23 @@ The decisive difference is what each instrument can see:
 | --- | --- |
 | **Axis 1** (cgroup fence) | Every descendant process — you issue one command, and every child, grandchild, and great-grandchild it forks counts |
 | **Axis 2** (action classifier) | Only the top-level commands the agent issued — subprocesses are invisible |
+
+
+---
+
+
+
+
+
+
+
+
+
+# Axis 2
+
+## 1. Axis 2 classifies *actions*, not CPU
+
+
 
 ## 2. How actions are classified: four `act_class` values plus a catch-all
 
