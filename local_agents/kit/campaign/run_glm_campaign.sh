@@ -982,6 +982,26 @@ start_cmdlog(){ # $1 out, $2 tool cgroup — 2 Hz argv witness (epoch \t pid \t 
   POLL_PIDS+=($!)
 }
 
+start_pidcpu(){ # $1 out, $2 tool cgroup — 2 Hz PER-PROCESS utime/stime, the join cmdlog can't
+  # make on its own: presence-weighting the fence delta across alive PIDs keeps the leader on
+  # only 6 of the 9 ground-truth tasks and inflates `search` 1.5-66x. Consumption, not presence.
+  local OUT="$1" CG="$2"
+  ( exec python3 "$KIT/pidcpu_poll.py" "$CG" "$OUT/pidcpu.tsv" "$OUT/.polling" "${PIDCPU_IV:-0.5}" ) &
+  POLL_PIDS+=($!)
+}
+
+start_taskstats(){ # $1 out — exit-time accounting (netlink taskstats): every process leaves a
+  # receipt (precise lifetime utime/stime) when it dies, closing the short-lived-process gap
+  # the samplers structurally cannot (faster polling bought coverage, not accuracy). Machine-
+  # wide by design; fence attribution is an OFFLINE lineage filter over the banked ppid graph.
+  # Root-only on this kernel: started only when passwordless sudo + genl capability probe pass.
+  local OUT="$1"
+  sudo -n python3 "$KIT/taskstats_listen.py" --probe >/dev/null 2>&1 \
+    || { log "taskstats unavailable (probe failed) — continuing without receipts"; return 0; }
+  ( exec sudo -n python3 "$KIT/taskstats_listen.py" "$OUT/taskstats.tsv" "$OUT/.polling" ) &
+  POLL_PIDS+=($!)
+}
+
 typeid_loop_guard(){ # user-scope variant of loop_guard (same detection, systemctl --user)
   local LOG="$1" UNIT="$2" N="${LOOP_GUARD_N:-0}" runlen
   [ "$N" -gt 0 ] || return 0
@@ -1080,6 +1100,81 @@ stage_typeid_one(){ # $1 instance — proxy per episode (usage JSONL rotates wit
   return $rc
 }
 
+typeid_replay_episode(){ # $1 instance, $2 dest run n — replays the banked traj, NO MODEL CALL.
+  # Same instrument set as typeid_episode (pollers + cmdlog) plus the per-PID CPU sampler, and
+  # no proxy: `sweagent run-replay` re-issues the recorded actions itself. On the nine tasks
+  # with both live and replay banked, replay reproduced live tool-fence CPU to 0.98-1.04 and
+  # repeats held to 1.00-1.08x -- two orders tighter than the 5.33x live-seed spread, because
+  # the action sequence is fixed. That is what makes a token-free re-sweep meaningful.
+  local INST="$1" N="${2:-1}" SHORT="${1%%__*}${SWE_SHORT_SUFFIX:-}"
+  local UNIT="glm-tidrep-${SHORT}-r${N}"
+  local SRC="$DATA/${TIER_PREFIX}_swe_${SHORT}/run_1"
+  local TRAJ="${TRAJ_OVERRIDE:-$(find "$SRC/traj" -name "*.traj" ! -name "*.local.traj" 2>/dev/null | head -1)}"
+  [ -n "$TRAJ" ] || { log "SKIP typeid replay $SHORT (no banked traj in $SRC)"; return 1; }
+  local OUT="$DATA/${TIER_PREFIX}_replay_swe_${SHORT}/run_${N}"
+  [ -f "$OUT/DONE" ] && { log "skip typeid replay $SHORT r$N (DONE)"; return 0; }
+  mkdir -p "$OUT"; rm -rf "$OUT"/*
+  log "================ typeid REPLAY $SHORT run$N (no model) ================"
+
+  # image pull timed separately from execution: with model wait gone (86.9% of live wall),
+  # the pull is a candidate for the new bottleneck and has to be measured, not assumed.
+  local IMG="swebench/sweb.eval.x86_64.$(echo "$INST" | sed 's/__/_1776_/'):latest" pull_s=0
+  if ! docker image inspect "$IMG" >/dev/null 2>&1; then
+    local t_pull=$SECONDS
+    docker pull "$IMG" >/dev/null 2>&1 || { log "ERROR: pull failed $IMG"; return 1; }
+    pull_s=$((SECONDS - t_pull)); log "IMAGE PULL $SHORT ${pull_s}s"
+  else
+    log "IMAGE PULL $SHORT 0s (already local)"
+  fi
+
+  systemctl --user stop "$UNIT.scope" 2>/dev/null
+  systemctl --user reset-failed "$UNIT.scope" 2>/dev/null
+  docker ps -q --filter "name=sweb" | xargs -r docker rm -f >/dev/null 2>&1
+  local t_exec=$SECONDS
+  systemd-run --user --collect --scope --unit="$UNIT" -- bash -c \
+    "cd '$REPO/agentic/swe_agent' && source .venv/bin/activate && \
+      sweagent run-replay --traj_path '$TRAJ'" > "$OUT/agent.log" 2>&1 &
+  local ALIVE="systemctl --user is-active --quiet $UNIT.scope"
+  local HARNESS_CG="" i
+  for i in $(seq 1 30); do
+    HARNESS_CG=$(systemctl --user show "$UNIT.scope" -p ControlGroup --value 2>/dev/null | sed 's|^/||')
+    [ -n "$HARNESS_CG" ] && [ -d "/sys/fs/cgroup/$HARNESS_CG" ] && break; sleep 1
+  done
+  [ -n "$HARNESS_CG" ] && [ -d "/sys/fs/cgroup/$HARNESS_CG" ] \
+    || { log "ERROR: replay scope never appeared"; tail -5 "$OUT/agent.log"; return 1; }
+  local SB=""; for i in $(seq 1 240); do
+    SB=$(docker ps --format '{{.ID}} {{.Names}}' | grep -i sweb | awk '{print $1}' | head -1)
+    [ -n "$SB" ] && break; eval "$ALIVE" || break; sleep 1
+  done
+  [ -n "$SB" ] || { log "ERROR: no sandbox for replay $SHORT"; tail -5 "$OUT/agent.log"
+                    systemctl --user stop "$UNIT.scope" 2>/dev/null; swe_cleanup_sandbox; return 1; }
+  local TOOL_CG=$(cg_of_container "$SB")
+  log "TYPEID REPLAY RUNNING $SHORT r$N (harness=$HARNESS_CG tool=$TOOL_CG)"
+  write_metadata "$OUT" swe_typeid_replay "$SHORT" "$N" \
+    "{\"instance\":\"$INST\",\"mode\":\"typeid-replay\",\"traj\":\"$TRAJ\",\"pull_s\":$pull_s,\"harness_cg\":\"$HARNESS_CG\",\"tool_cg\":\"$TOOL_CG\"}"
+  local CGS="$HARNESS_CG,$TOOL_CG"          # no proxy: the model is never called
+  start_pollers "$OUT" "$CGS"
+  start_cmdlog "$OUT" "$TOOL_CG"
+  start_pidcpu "$OUT" "$TOOL_CG"
+  start_taskstats "$OUT"
+  local t0=$SECONDS
+  while eval "$ALIVE" 2>/dev/null && [ $((SECONDS - t0)) -lt "${REPLAY_DRAIN_S:-1800}" ]; do sleep 5; done
+  if eval "$ALIVE" 2>/dev/null; then
+    log "TYPEID REPLAY DRAIN: $SHORT exceeded ${REPLAY_DRAIN_S:-1800}s — stopping"
+    systemctl --user stop "$UNIT.scope" 2>/dev/null
+  fi
+  stop_pollers "$OUT"
+  systemctl --user stop "$UNIT.scope" 2>/dev/null
+  swe_cleanup_sandbox
+  local exec_s=$((SECONDS - t_exec))
+  log "TYPEID REPLAY DONE $SHORT r$N: pull ${pull_s}s exec ${exec_s}s"
+  [ -s "$OUT/cpustat_scope2.tsv" ] && [ -s "$OUT/cmdlog.tsv" ] && [ -s "$OUT/pidcpu.tsv" ] \
+    && { : > "$OUT/DONE"; log "REPLAY OK $SHORT r$N"; return 0; }
+  log "REPLAY INCOMPLETE $SHORT r$N"; return 1
+}
+
+stage_typeid_replay(){ RAN_WORK=1; typeid_env; typeid_replay_episode "${1:?instance id}" "${2:-1}"; }
+
 case "${1:-all}" in
   preflight)      stage_preflight ;;
   dryrun)         stage_preflight; stage_dryrun ;;
@@ -1093,6 +1188,7 @@ case "${1:-all}" in
   restore-isolation) restore_isolation ;;   # manual cleanup after an interrupted campaign
   typeid-preflight) typeid_env; typeid_preflight ;;
   typeid-one)     stage_typeid_one "${2:?instance id}" ;;
+  typeid-replay)  stage_typeid_replay "${2:?instance id}" "${3:-1}" ;;
   validate)       stage_validate ;;
   all)            stage_preflight; stage_dryrun; stage_smoke; stage_campaign swe ;;
   *) echo "usage: $0 {preflight|dryrun|isolation-test|smoke|smoke-swe|smoke-django|campaign swe|validate|all}"; exit 1 ;;

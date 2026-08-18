@@ -66,9 +66,11 @@ case "$CAMP" in
     case "${STAGE:-}" in
       preflight)        exec "$KIT/campaign/run_glm_campaign.sh" typeid-preflight ;;
       one)              exec "$KIT/campaign/run_glm_campaign.sh" typeid-one "$@" ;;
+      replay)           exec "$KIT/campaign/run_glm_campaign.sh" typeid-replay "$@" ;;
       sweep)            exec "$KIT/campaign/typeid_sweep.sh" "$@" ;;
+      replay-sweep)     exec "$KIT/campaign/typeid_replay_sweep.sh" "$@" ;;
       remaining|matrix) exec python3 "$KIT/campaign/typeid_classify.py" "$STAGE" "$@" ;;
-      *) echo "typeid stages: preflight | one <instance> | sweep | remaining | matrix"; exit 1 ;;
+      *) echo "typeid stages: preflight | one <instance> | replay <instance> | sweep | replay-sweep | remaining | matrix"; exit 1 ;;
     esac ;;
 
   plots)
