@@ -174,141 +174,91 @@ Reproduce: `./measure.sh typeid replay <instance>` (one), `./measure.sh typeid r
 
 ### Classification method
 
-* During run time, collect
-* Core-second of each process
-    * 容器里每个死掉的进程留一张收据,记着它一生精确的 CPU(utime + stime,微秒)。
+The method has two stages. **During the replay** we only record raw data; **after the replay** we read that data and classify. Nothing is judged at run time, so any rule can be changed later and the finished replays are simply re-analysed — no re-run needed.
 
-* Commands in 2 Hz window (Legacy, do not need any more)
+#### Stage 1 — what is recorded during the replay
 
-    * 收据监听器写下每个进程的 comm/pid/ppid/CPU;2 Hz 日志写下每个存活 pid 的 argv;cpu.stat 写下围栏总量
+| File | Written by | One row means | Fields |
+| --- | --- | --- | --- |
+| `taskstats.tsv` | kernel exit receipts | one process (or thread) has just **died** | `comm` = its program name (kernel-visible, max 15 chars); `pid` = its process id; `ppid` = its parent's id; `utime`/`stime` = the exact CPU it used in its whole life (user / kernel, microseconds); `etime` = how long it lived |
+| `cpustat_scope2.tsv` | 10 Hz poller | the container's total CPU so far | `usage_usec` from the container cgroup — the **fence total**, exact kernel accounting |
+| `cmdlog.tsv` | 2 Hz poller | one process was **alive** at this moment | `pid` + its full command line (`argv`, e.g. `cargo test --lib`) |
 
+Two things matter here. The receipt is the primary source: every process leaves exactly one, however short it lived, so nothing is missed. The 2 Hz log is now only a helper: it supplies the full command line for long-lived processes (the kernel `comm` is truncated, so `cargo` alone cannot say *test* or *build*). We tested 2 Hz against 10 Hz: faster polling doubled coverage but did not change a single label, so 2 Hz stays.
 
-* After runtime:
-读这三个文件 → 打细标签 → 折叠粗类 → 归属链 → 算份额 → 打 B/T/S/M
+#### Stage 2 — how the recorded data is classified (after the replay)
 
-* 1. 每个进程按名字/命令行打一个细标签
-按可执行文件名查表
+`read the three files → fine tag per process → collapse to coarse class → attribute → shares → label`
 
-细标签	例子
-compile	cc1, cc1plus, rustc, javac, ld, collect2, as, lto1, Go 的 compile/link
-build-drv	make, cmake, ninja, cargo build, go build, configure, m4, libtool
-pkg	apt, dpkg, pip, composer, npm install
-test-run	phpunit, jest, rspec, cargo test, go test, tclsh, surefire, *.test 二进制
-runtime	java, node, php, ruby, python —— 语言运行时,但没看出在跑测试框架
-lint	go vet
-search	grep, rg, find, cat, sed, awk, head, tail, sort
-vcs	git
-(脚手架)	sh, bash, sleep, timeout, swerex-remote —— 排除
-other	没匹配上的(比如仓库自己的 jq 二进制)—— 不参与份额,但会报出来
+**Step 1. Fine tag per process.** Each process is looked up by its program name (its `argv` if the 2 Hz log saw it, otherwise its `comm`). The lookup is a fixed table, matched top to bottom, first hit wins:
 
+| Fine tag | Programs | Why it is its own tag |
+| --- | --- | --- |
+| `compile` | cc1, cc1plus, gcc, clang, rustc, javac, tsc, as, ld, collect2, lto1; Go's `compile`/`link`/`asm` | The real build workload. A leaf: it never spawns others. |
+| `build-drv` | make, cmake, ninja, meson; configure, autoconf, m4, libtool; `cargo build`, `go build`; rake | A build **driver**: it burns almost nothing itself and orchestrates compilers. `configure` also spawns thousands of sed/grep to probe the compiler — these are build work, not agent searches, so a driver must exist to claim them. |
+| `pkg` | apt, dpkg, pip, gem, composer; npm/yarn/pnpm with `install`/`ci`/`add` | Dependency installation (also identifies the container bootstrap). |
+| `test-run` | phpunit, jest, vitest, mocha, rspec, pytest, ctest, tclsh, surefire; `cargo test`, `go test`; binaries named `*.test`, `*_test`, `-<16 hex>` (Go/Rust test binaries); the repo's own binary under test (see registry below) | The verification payload and its front-ends. |
+| `runtime` | java, node, php, ruby, python, perl — when no test framework is visible in the arguments | A language runtime running something (usually the program under test or the agent's repro script). Counted as TEST. |
+| `lint` | `go vet`, PMD | Verification work; kept separate so it stays visible. |
+| `search` | grep, rg, find, cat, ls, head, tail, sed, awk, sort, wc, diff | The agent's read/locate tools. |
+| `vcs` | git | Counted as SEARCH; listed separately because it is sometimes large. |
+| *(scaffold)* | sh, bash, sleep, timeout, env, mkdir, rm, cp; `swerex-remote`; SWE-agent's own tool plumbing | **Excluded, no vote.** These are transparent wrappers — bash spawns everything, so "bash owns it" says nothing. |
+| `other` | anything not matched | **No vote, but reported.** A large `other` bucket is the signal that the table is missing an entry. |
 
+Order matters: `python3 -m pytest` is caught by `test-run` before it can fall to `runtime`; `npm install` is caught by `pkg` before `test-run`.
 
-build-drv:什么进程,怎么判,为什么
-定义:自己几乎不烧 CPU、职责是编排别的程序去构建的命令。判定按可执行文件名 + 少量参数消歧:
+*Repo payload registry.* A repo's own binary — `jq`, `rg` in ripgrep, `hugo`, `caddy` — is the program under test, but no general rule can recognise it (`jq` looks like nothing; `rg` looks like a search tool). A small per-repo list marks these as `test-run`. Without it, 27% of jq's fence fell into `other`.
 
-进程	判定	为什么算 build-drv 而不是别的
-make / gmake / cmake / ninja / meson / scons	名字直接命中	构建系统的驱动器,自己只算依赖图,活都是 cc1/ld 干的
-configure / autoconf / automake / m4 / libtool	名字直接命中	autotools 的构建配置阶段;它 spawn 出的几千个 sed/grep 是探测编译器,不是 agent 在搜索——所以要有一个前端把它们兜住
-cargo(argv 里不是 cargo test)	名字 + 参数	cargo build / cargo check
-go(argv 里不是 go test)	名字 + 参数	go build / go install / go generate
-rake	名字命中	Ruby 的 make
-归属层的额外规则(修 bug 后加的):一个被判成 build-drv 的前端,如果它在收据里的孩子里有 vet 或 *.test,改判 test-run。因为"生了测试 runner 的 go"就是 go test,不管 argv 有没有被拍到。
+**Step 2. Collapse to three coarse classes.**
 
-其余细标签的判法(同一个函数,自上而下顺序匹配,先命中先算)
-细标签	判定规则	为什么单独一类
-compile	名字 ∈ {cc1, cc1plus, gcc, g++, clang, rustc, javac, tsc, as, ld, collect2, lto1, lto-wrapper, ar, ranlib…};Go 的 compile/link/asm/cgo(名字或路径含 pkg/tool)	真正烧指令的构建载荷,是叶子;它不拥有别人
-pkg	名字 ∈ {apt, apt-get, dpkg, pip, composer, gem, bundler} 或 npm/yarn/pnpm 带 install|ci|add|update	装依赖;bootstrap 修正也靠它识别
-test-run	名字 ∈ {phpunit, jest, vitest, mocha, rspec, pytest, ctest, tclsh, surefire, gotestsum…};cargo test / go test(参数);名字形如 *.test / *_test / -<16位hex>(Go/Rust 测试二进制)	前端 + 测试载荷都在这里;能拥有孩子
-runtime	名字 ∈ {java, node, php, ruby, python, perl, valkey-server, redis-server},且参数里看不到测试框架	语言运行时在跑东西但不确定是什么——多半是被测程序或 agent 的复现脚本;归 TEST 粗类
-lint	go vet / 名字 vet	归 TEST(是验证行为),但单独记以便看见
-search	名字 ∈ {grep, rg, find, cat, ls, head, tail, sed, awk, sort, wc, diff…}	agent 的读/找
-vcs	git	归 SEARCH 粗类;单列是因为它有时不小
-(脚手架)	名字 ∈ {sh, bash, sleep, timeout, env, tee, mkdir, rm, cp…}、swerex-remote、python3.11(sandbox server)	排除,不投票:它们透明,拥有一切等于拥有什么都没说
-other	以上都没命中	不投票但报出来——这一桶大就是打标表缺条目的信号(jq、shtest、dd)
-三个值得知道的设计点
-顺序有意义:python3 -m pytest 先被 test-run 抓住,不会落到 runtime;npm install 先被 pkg 抓住,不会落到 test-run。
-粗类折叠:compile + build-drv + pkg → BUILD;test-run + runtime + lint → TEST;search + vcs → SEARCH。细标签保留在 top_procs 列里,想细看随时能看。
-谁能当"前端":只有 test-run / build-drv / pkg——它们语义上是"替我把这事办了",所以孩子的 CPU 可以记给它们。compile/search/vcs 是叶子,runtime 是模糊的,脚手架是透明的,都不能拥有别人。
-打标表在 typeid_cpu_matrix.py 顶部,就是几个字面上的 Python 集合——审计"为什么 X 算 Y"就是读那几行。
+| Coarse class | Fine tags |
+| --- | --- |
+| **BUILD** | compile, build-drv, pkg |
+| **TEST** | test-run, runtime, lint |
+| **SEARCH** | search, vcs |
 
+`other` and scaffold sit outside the three: they lower the "classified %" column but never vote.
 
-2. 细标签折叠成三个粗类
-粗类	包含的细标签
-BUILD	compile, build-drv, pkg
-TEST	test-run, runtime, lint
-SEARCH	search, vcs
-other 和脚手架在三类之外:它们拉低 "classified %" 那一列,但不投票。
+**Step 3. Attribute CPU — two views, both computed.**
 
+* **Process view**: each process's CPU is credited to its **own** class. `rustc` is BUILD no matter who started it. This is the direct physical answer ("what did the CPU actually run") and depends on nothing but the receipts.
+* **Ownership view**: each process's CPU is credited to the class of its **nearest driver ancestor**. Walk up the `ppid` chain until you meet a driver front-end (`test-run`, `build-drv` or `pkg`); credit the CPU to that front-end's class. If no driver is found, use the process's own class. Only those three tags can be drivers, because only they mean "do this job for me"; leaves (compile, search) and transparent wrappers (bash) cannot own anything.
 
-3. Sum and classification
-* Process perspective
-    * rustc 记 BUILD,不管谁引发
-    * If not in any other category, then will be classified as others
+  A driver's own class is decided **by its children, not its name**: a `go` process that spawned `vet` or a `*.test` binary is a test invocation even if the 2 Hz log never saw its arguments. (This fix mattered: `go test ./...` spawns thousands of half-second `go` children that the log misses.)
 
-* Ownership perspective
-    * cargo test 拥有它的 rustc, then rustc is TEST
+Worked example, jq. The agent typed `make check`; the container grew this tree:
 
-    * 二、"归属":沿 ppid 往上找最近的驱动前端
-以 jq 为例。agent 打了一条 make check,容器里长出这棵树:
+```
+bash                      scaffold, skipped
+ └── make check           driver: build-drv
+      ├── cc1   2.1 s
+      ├── cc1   1.7 s
+      ├── ld    0.4 s
+      └── jq    7.6 s     the jq binary running test cases
+```
 
+| Process | Process view | Ownership view (walk up → meet `make` → BUILD) |
+| --- | --- | --- |
+| cc1, ld | BUILD | BUILD |
+| jq | TEST (payload registry) | BUILD |
 
-bash                          (脚手架,不算)
- └── make check               ← 驱动前端:build-drv
-      ├── cc1   (2.1 core-s)
-      ├── cc1   (1.7 core-s)
-      ├── ld    (0.4 core-s)
-      └── jq    (7.6 core-s)   ← 跑测试用例的 jq 二进制
-归属规则:每张收据往上走 ppid,碰到第一个"驱动前端"(test-run / build-drv / pkg 三类之一)就停,记到那个前端的类别上。
+Same `cc1`, different ancestor, different owner: under `cargo test`, a `rustc` child is TEST by ownership (cargo test owns it) and BUILD by process. A bare `grep -r foo` typed by the agent has no driver above it, so both views say SEARCH.
 
-收据	往上走	碰到	记到
-cc1 (2.1)	→ make	build-drv	BUILD
-ld (0.4)	→ make	build-drv	BUILD
-jq (7.6)	→ make	build-drv	BUILD
-全归 BUILD——因为是 make check 引发的。这和 P7 窗口打标一致:那 2 秒里 make 在跑,窗口就标 pkg/build。
+**Step 4. Shares and label.** Shares = each class's core-seconds ÷ total classified core-seconds. Label = the leading class if it leads the runner-up by **≥ 10 percentage points**, otherwise **M** (mixed). The 10-point margin exists because replay-to-replay noise is ≤ 3 points: a 45/44 split would flip between runs and is honestly a mixture anyway.
 
-同样的 cc1,换个祖先就换类别:
+#### Which view do we use, and why both are kept
 
+* **Ownership** is the view that can be validated: it uses the same ontology as the P7 2-second window tags, and matches the P7 instruction-weighted truth to ≤ 13 points (leaders all correct) on the three same-instance checks. It answers "which kind of agent command paid for this CPU".
+* **Process** is the view with no assumptions: no ancestor walk, no dependence on the 2 Hz log. It answers "what physics did the CPU run". It is the one that shows, for instance, that half of tokio's fence is really `rustc` even though `cargo test` owns it — and that jq's fence is a third compiling and half the jq test suite.
 
-cargo test                    ← 驱动前端:test-run
- └── rustc (2.8 core-s)      → 往上碰到 cargo test → 记 TEST
-"找不到这种祖先,就用进程自己的类别"——agent 直接打 grep -r foo,树是 bash → grep,往上只有脚手架、没有驱动前端 → grep 用自己的类别 search。
+Both are columns in `cpu_matrix.tsv`; the ≤ 30 selection can be driven by either (a `--view` switch). Because the selection's purpose is to stratify CPU physics for P7 profiling, the process view is a defensible primary; the ownership view is the P7-comparable projection reported alongside.
 
+#### Known limits
 
-4. Limitation
-* Decision
-    * 0.5 s window VS 100 ms window -> we don't need 2 Hz window anymore
-    * Which perspective we need to use: Count what kind of processes are really running (process perspective) or ownership perspective?
-        * 顺便提醒进程视角的一个已知短板,选它之前要心里有数:仓库自己的二进制(jq、valkey-server、rubocop 的 ruby 进程)在 comm 里没有通用规则可识别,会落到 other,不投票。jq 那 7.6 core-s 就是这么丢的。归属视角不受影响(它们的祖先是 make check → BUILD)。补法是加一张仓库→自身二进制名的小登记表(41 个仓库,一行一个),把它们标成 test-run(被测程序)。这个我可以在 sweep 跑完前补上——要不要现在做?
+* Coverage: receipts + last samples account for 96–99% of the fence total; the ~3% residual is tick-granularity rounding.
+* `other` is a maintenance signal, not a class: the payload registry has to be extended by hand when a new repo appears.
+* CPU time is not instruction count. On the four tasks where both weightings can be compared they agree within 2 points; busy-wait would fool any per-process counter and is left to the P7 TMA layer.
 
-        * jq 是那个刚好暴露短板的例子。两个视角给的答案不一样:
-
-进程视角:other,不投票
-jq 不在任何一张表里 → 落到 other。它自己的 7.6 core-s(占围栏 27%)排除在份额分母外——不算 BUILD、不算 TEST。所以 jq-2681 按进程视角是 43/16/41 的 M(mixed),而那 27% 根本没参与投票。这不是分类错,是信息丢失:一个明明是"被测程序在跑测试"的进程,被当成了不认识。
-
-归属视角:BUILD,因为它的祖先是 make check
-沿 ppid 往上:jq → sh(脚手架,跳过)→ make check(build-drv 前端,停)。所以 jq 的 7.6 core-s 记到 BUILD。这和 P7 的窗口打标一致(那 2 秒 make 在跑 → 标 build),所以归属视角的 jq-2681 是 90/9/1 的 B,和 P7 真值 92/0/8 吻合。
-
-但仔细想,两个都不完全对
-jq 在这里是被测程序——make check 在跑测试套件,每个用例调一次 jq。它的 CPU 语义上是 TEST(测试载荷),不是 build。归属视角把它记 BUILD 只是因为这个仓库的测试入口恰好是 make——这正是 B 类的定义("test entry point is a build target"),所以对 P7 可比性来说是"对"的,但对"CPU 上在跑什么"来说是模糊的。
-
-补法:每个仓库登记自己的二进制
-41 个仓库,一行一个,把仓库自己的可执行文件标成 test-run(被测程序):
-
-
-jqlang/jq          → jq
-redis / valkey     → redis-server, valkey-server, redis-cli   (已经在 runtime 里了)
-sharkdp/bat        → bat
-burntsushi/ripgrep → rg      ← 注意:rg 现在被当 search!ripgrep 仓库里的 rg 是被测程序
-gohugoio/hugo      → hugo
-caddyserver/caddy  → caddy
-nushell/nushell    → nu
-uutils/coreutils   → coreutils 的每个工具名……
-ripgrep 那条是个真陷阱:rg 在 search 表里,但在 ripgrep 自己的仓库里,跑 rg 就是跑测试。这条登记表只在进程视角起作用(归属视角本来就靠祖先);加上之后 jq 会从 other 变成 test-run → TEST。
-
-要不要我现在把这张表加进去?sweep 不用停——标签是事后算的,加完在已经跑完的集上重算就行。
-
-* My questions:
-    * What is comm/pid/ppid/CPU; pid's argv and cpu.stat 写下围栏总量
 
 
 
