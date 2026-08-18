@@ -246,6 +246,17 @@ Same `cc1`, different ancestor, different owner: under `cargo test`, a `rustc` c
 
 **Step 4. Shares and label.** Shares = each class's core-seconds ÷ total classified core-seconds. Label = the leading class if it leads the runner-up by **≥ 10 percentage points**, otherwise **M** (mixed). The 10-point margin exists because replay-to-replay noise is ≤ 3 points: a 45/44 split would flip between runs and is honestly a mixture anyway.
 
+
+**Step 5. Evidence flags.** A label says *what type* an episode is; a flag says *how solid the evidence behind that label is*. Flags never change the label and never remove the row — a flagged row is kept in the table and shown in its own "low-evidence" column, so nobody mistakes "measured, but weak" for "empty cell". Dropping rows silently would hide exactly the cases a reader most needs to see.
+
+| Flag | Condition | What it means |
+| --- | --- | --- |
+| `low-coverage` | CPU we could attach to a named process (receipts + last samples) is **< 80 %** of the container's total | A large part of the fence was burned by processes we never identified (normal is 96–99 %). The label rests on incomplete evidence. |
+| `low-classified` | CPU that actually voted (BUILD/TEST/SEARCH) is **< 50 %** of the fence | We saw the processes but could not name them: too much went to scaffold or `other`. Usually the tag table is missing an entry for this repo. |
+| `drain` | the replay hit the **2400 s** time cap and was stopped | The fence is a lower bound, not the whole episode. The type label is probably still right; the magnitude must not be compared. |
+| `below-floor` | corrected fence **< 10 core-s** (from the ledger's magnitude bin) | Too little CPU to profile on P7 (its stop gate is 20 core-s), whatever the label. Skip at selection time. |
+
+
 #### Which view do we use, and why both are kept
 
 * **Ownership** is the view that can be validated: it uses the same ontology as the P7 2-second window tags, and matches the P7 instruction-weighted truth to ≤ 13 points (leaders all correct) on the three same-instance checks. It answers "which kind of agent command paid for this CPU".
