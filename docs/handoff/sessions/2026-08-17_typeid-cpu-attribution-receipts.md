@@ -70,10 +70,38 @@ GLM sweep complete. No other captures running. Passwordless sudo available.
   invocation (resumable). First noticed at 18:59 (`FAIL episode axios-t5316`), 24 done at
   that point.
 
+## Sweep outcome (2026-08-19 05:48)
+- **296/296 replayed with receipts, 0 unrecoverable failures**, 38 h wall (15:14 Aug 17 →
+  05:48 Aug 19; part A 278 + 7 retried after the localizer fix + part B 11). Zero tokens.
+- Corpus-wide replay/live fence ratio (n=284): **median 0.995, IQR 0.93–1.09**; 163 within
+  ±10%, 231 within 0.8–1.25×.
+- **Matrix** (`ML_typeid/cpu_matrix.tsv`, ownership view, n=296): B 56 / T 160 / M 9 / ? 71.
+  S column empty after gating — every S candidate was an ~11 core-s all-scaffold fence
+  (agent never invoked the toolchain) or git-checkout CPU. C 12/6/1, Rust 17/20/5,
+  Go 14/17/3 populate two–three types each; Java/JS/TS/Ruby are T-only; C++ B-only.
+- **Selection** (`ML_typeid/selection_30.tsv`): 30 picks, 16 populated cells covered, 28
+  repos, 9 languages; runner-up per cell where one exists. All picks are priors.
+- Figures (scratchpad): fig7_matrix.png (matrix + picks).
+
+## Defects found (sweep phase)
+- **lucene is replay-invalid** (8/9 rows at 0.07–0.29× live): gradlew's `timeout 5 curl
+  services.gradle.org` network check fails in the replay container, so gradle never runs
+  the JVM tests — replay measured bootstrap, not tests (java cmdlog hits 3566 live vs 615
+  replay). Caught by the new `replay-invalid` gate (ratio outside [0.5, 2]) → labelled `?`.
+  Would otherwise have shipped 8 lucene rows as T on 16–49 core-s of gradle failure.
+- **Retried dirs double-counted receipts** (bat-1892 coverage 199%): the listener from the
+  3-second failed first attempt kept writing after the dir was recreated. Fixed by
+  deduping receipts on (pid, btime); only the 7 retries were exposed.
+- **5 caddy replays are drain-capped** (ratio 0.32–0.44): `go test ./...` on caddy exceeds
+  the 2400 s replay drain; caught by the same gate. Re-run at REPLAY_DRAIN_S=3600 if caddy
+  cells matter (caddy-4774 selected for Go×B is a clean 0.98 row).
+- Live-vs-replay ratio >2 on ~12 tiny PHP/Java fences (2–14 core-s): swe-rex bootstrap
+  dominates both numerators; not a physics disagreement, and all were already `?`.
+
 ## Open threads
-- **Sweep completion** (~15:14+10–15 h): then `typeid_cpu_matrix.py build && matrix`, then
-  select ≤30 (ownership cells; tie-breakers per `ML_typeid/README.md`: median corrected fence,
-  E7-clean, witness, second-repo-per-language, magnitude spread; record runner-ups).
+- **Present the 30 to the user; P7 layer-3 verdicts on the picks** (the whole point).
+- lucene: re-replay with network (or pre-warmed gradle) if Java×B/M cells are wanted — all
+  9 lucene rows currently carry no CPU-type evidence.
 - **Coverage/label gates for the matrix**: flag rows with coverage <80% or classified <50%
   as low-evidence rather than dropping.
 - **Gaps with no trajectory**: prometheus-9248 (lost in migration), terraform-35543,

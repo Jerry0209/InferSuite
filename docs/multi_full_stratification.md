@@ -295,18 +295,52 @@ Both are columns in `cpu_matrix.tsv`; the ≤ 30 selection can be driven by eith
 
 **Why there is no E column.** E (edit) is an *action* category, not a CPU category: modifying a file costs essentially no compute. Measured, editor CPU is 0% of fence instructions in all eight ground-truth episodes — including jq-2681, whose gold patch is the largest in the reference set (6 files / 71 hunks / 1561 added lines → editor CPU **0%**). A class whose share is always ~0 can never lead, so E is unreachable as a CPU label. The real cost of an edit appears *indirectly*, as the **B** work it triggers (recompiling whatever the edit dirtied). E stays a live category on Axis 2 (action counts), where edits are 1–10% of actions.
 
-Rows with coverage <80% or classified share <50% are flagged `low-evidence`, kept, and never silently dropped. Note the two views can legitimately disagree (tokio: T by ownership, half-compile mixture by process) — a cell's answer states both, never one forced word.
+A row carries **no evidence** ("?") when fewer than 10 classified core-seconds exist, when less than half of the fence was classified, or when the replay/live fence ratio falls outside [0.5, 2] (the replay did not reproduce the episode); it is kept and shown in its own column, never dropped. Note the two views can legitimately disagree (tokio: T by ownership, half-compile mixture by process) — a cell's answer states both, never one forced word.
 
-**The final deliverable** — ⟨language × measured CPU-type⟩, ownership view, one count per instance (counts below are *illustrative*; the sweep fills them):
+# Final matrix (sweep complete 2026-08-19)
 
-| language | B | T | S | M | low-evidence |
-| --- | --- | --- | --- | --- | --- |
-| C | 24 | 3 | 0 | 2 | 1 |
-| C++ | 10 | 1 | 0 | 0 | 0 |
-| Rust | 6 | 18 | 0 | 4 | 1 |
-| … | | | | | |
+**Population:** 296 replayed episodes = 285 typeid + 11 older consumed instances with banked trajectories. 4 instances have no trajectory anywhere (prometheus-9248, terraform-35543, carbon-2813, laravel-51890). Zero unresolved failures; 7 trajectories needed the harness-abort turn stripped before replay (axios-5316, fluentd-3640, lombok-3486/3571/3674/3697, bat-1892). Receipts: 17.45 M rows (deduplicated on pid+birth time); coverage median 99.4 %, 7 rows < 80 %; 38 replays hit the 2400 s drain cap (fence = lower bound). Corpus-wide replay/live fence ratio (n=284): median 0.995, IQR 0.93–1.09. A **replay-invalid gate** (ratio outside [0.5, 2]) marks a row "no evidence" when the replay clearly did not reproduce the live episode; it caught two systematic cases — **lucene** (8 of 9 rows at 0.07–0.29×: gradle's start-up network check fails inside the replay container, so the JVM tests never ran and the replay measured only bootstrap) and **5 caddy rows** (0.32–0.44×: `go test ./...` exceeds the drain cap). Without the gate those 13 rows would have shipped as T/B on failed or truncated replays. The 71 no-evidence rows (ownership view) split into 43 **thin fences** (under 10 classified core-seconds — the agent never invoked the toolchain), 26 **replay-invalid** rows (the gate above), and 2 rows where more than half the fence ran under unregistered process names. Files: `local_agents/ML_typeid/cpu_matrix.tsv` (per-episode rows, both views), `selection_30.tsv`. Figures: `docs/figures/typeid_cpu/08a_matrix_process_view.png`, `08b_matrix_ownership_view.png` (the 30 picks are marked ★), `08c_no_evidence_reasons.png`.
 
-Unlike the behavioural matrix (215/225 in a single column — no stratification power), this matrix has populated, distinguishable columns, because it classifies what the CPU actually ran instead of what the agent typed. Selection then takes one representative per populated ⟨language, type⟩ cell (tie-breakers: median corrected fence, E7-clean, toolchain witness present, second repo per language, magnitude spread; runner-up recorded per cell). Every pick remains a **prior** — the P7 live episode plus its layer-3 gate stays the verdict.
+**Ownership view** (which agent command paid; P7-comparable — drives the selection):
+
+| language | class | B | T | S | M | no evidence | n |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| C | B | 12 | 6 | 0 | 1 | 11 | 30 |
+| C++ | B | 12 | 0 | 0 | 0 | 0 | 12 |
+| Rust | A | 17 | 20 | 0 | 5 | 1 | 43 |
+| Go | A | 14 | 17 | 0 | 3 | 6 | 40 |
+| Java | J | 0 | 32 | 0 | 0 | 11 | 43 |
+| PHP | I | 1 | 18 | 0 | 0 | 22 | 41 |
+| Ruby | I | 0 | 31 | 0 | 0 | 13 | 44 |
+| JavaScript | N | 0 | 25 | 0 | 0 | 6 | 31 |
+| TypeScript | N | 0 | 11 | 0 | 0 | 1 | 12 |
+| **all** | | **56** | **160** | **0** | **9** | **71** | **296** |
+
+**Process view** (what the CPU physically ran):
+
+| language | class | B | T | S | M | no evidence | n |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| C | B | 5 | 8 | 0 | 0 | 17 | 30 |
+| C++ | B | 12 | 0 | 0 | 0 | 0 | 12 |
+| Rust | A | 38 | 1 | 0 | 2 | 2 | 43 |
+| Go | A | 32 | 1 | 0 | 1 | 6 | 40 |
+| Java | J | 0 | 32 | 0 | 0 | 11 | 43 |
+| PHP | I | 1 | 16 | 0 | 0 | 24 | 41 |
+| Ruby | I | 0 | 31 | 0 | 0 | 13 | 44 |
+| JavaScript | N | 0 | 25 | 0 | 0 | 6 | 31 |
+| TypeScript | N | 0 | 11 | 0 | 0 | 1 | 12 |
+| **all** | | **88** | **125** | **0** | **3** | **80** | **296** |
+
+**What the matrix says**
+
+1. **It stratifies.** 16 populated ⟨language, type⟩ cells by ownership (15 by process) versus one column for the behavioural matrix (215/225 search-led). B, T and M are all real, populated types.
+2. **The S column is empty in both views** (0/225 labelled rows). Search never dominates CPU — search actions are many but cheap. This is the measured version of "action mix ≠ CPU mix".
+3. **Class A (Rust, Go) splits within the language, and the two views disagree about it — both correctly.** By ownership Rust is 17 B / 20 T / 5 M and Go 14 / 17 / 3: whether an episode is build- or test-dominated depends on how much of the closure the agent's edits dirtied, not on the repo. By process both are ~90 % B: the compiler is what actually burns, whatever command owns it. So the earlier "class A refuted by tokio and gin" verdict was an ontology artifact — A's own definition ("a mixture; compile ≥ 20 % and runner ≥ 20 %; refuse to predict the winner") is exactly what the ownership row shows.
+4. **Class B is not uniformly build-dominated.** C splits 12 B / 6 T / 1 M by ownership and 5 B / 8 T by process: most jq/redis/valkey episodes spend the fence running the repo's own test binary, and only the large-patch episodes (jq-2681, the P7 reference with the corpus's largest gold patch; redis-11631) are heavily build. C++ is 12/12 B — but 11 of 12 are fmt, a header-only template library, so this is an fmt statement (W-CONFOUND), not a C++ one.
+5. **Classes J, I, N behave exactly as their prior predicts:** T-dominated with essentially no exception, identical in both views (no compilation to re-attribute). The prior is simply correct there, and stays boring — as a good prior should.
+6. **PHP has the largest no-evidence column (22 of 41)** and Java's 11 are mostly the lucene replay failure. These are small fences (median ~10 core-s) whose CPU is mostly the language runtime and git; the P7 stop gate (20 core-s) would reject them anyway. It is a magnitude finding about PHP tasks in this corpus, not a classification failure.
+
+**Selection (30 of 296)** — `selection_30.tsv`, produced by `local_agents/kit/campaign/typeid_select.py` (ownership view; one pick per populated cell, then a second repo per language, then magnitude spread; within a cell prefer E7-clean, coverage ≥ 80 %, closest to the cell median, unpicked repo, non-W-CONFOUND; runner-up recorded). 16 cells → 16 picks; +5 second-repo picks; +9 magnitude picks (largest fence per language, smallest measurable for C). 28 distinct repos, all 9 languages, only one already P7-profiled (gson-2061, kept deliberately as the calibration anchor). Caveats carried per row: three picks need a look before spending P7 minutes — hugo-12204 was drain-capped (its cell has a clean runner-up, hugo-12562), and axios-6539 (19.1 core-s) and micropython-13039 (16.9 core-s) sit below the 20 core-s P7 stop gate and were kept only as magnitude-spread anchors. Eight picks carry `call-step-mismatch` in the live ledger; that flag is bookkeeping (proxy calls vs logged steps), not a viability flag. Every pick is a **prior** — the P7 live episode plus its layer-3 gate stays the verdict.
 
 
 

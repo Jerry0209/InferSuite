@@ -100,7 +100,7 @@ PAYLOAD_BIN = {"jq", "shtest",                           # jqlang/jq — tests/s
                "lombok", "delombok"}                     # projectlombok
 COARSE = {"compile": "BUILD", "build-drv": "BUILD", "pkg": "BUILD",
           "test-run": "TEST", "runtime": "TEST", "lint": "TEST",
-          "search": "SEARCH", "vcs": "SEARCH"}
+          "search": "SEARCH"}          # vcs (git clone/checkout) is not "search": left unclassified
 OWNER_CLASSES = {"test-run", "build-drv", "pkg"}
 
 
@@ -184,11 +184,15 @@ def analyze_dir(rd):
             except ValueError:
                 pass
 
-    rec = []
+    rec, seen = [], set()
     for ln in open(f"{rd}/taskstats.tsv", errors="replace"):
         f = ln.rstrip("\n").split("\t")
         if len(f) >= 10 and f[1] == "P":
             try:
+                key = (f[2], f[9])                # (pid, btime): a task dies once
+                if key in seen:
+                    continue                      # duplicate row (dir replayed twice)
+                seen.add(key)
                 rec.append((int(f[2]), int(f[3]), f[5], (int(f[6]) + int(f[7])) / 1e6))
             except ValueError:
                 pass
@@ -290,10 +294,12 @@ def analyze_dir(rd):
         return ({k: 100 * v / s for k, v in cc.items()}, s) if s else ({}, 0.0)
 
     own_sh, own_cls = shares(own)
-    proc_sh, _ = shares(proc)
+    proc_sh, proc_cls = shares(proc)
 
-    def label(sh):
-        if not sh:
+    def label(sh, cls_cs):
+        # low-evidence gate: <50% of the fence classified, or <10 classified core-s
+        # (an 11 core-s fence that is all swerex bootstrap + bash never verified anything)
+        if not sh or cls_cs < 10.0 or (fence > 0 and cls_cs / fence < 0.5):
             return "?"
         o = sorted(sh, key=sh.get, reverse=True)
         if len(o) == 1 or sh[o[0]] - sh[o[1]] >= MARGIN:
@@ -305,13 +311,13 @@ def analyze_dir(rd):
                 coverage=round(100 * (receipts_in + alive) / max(fence, 1e-9), 1),
                 classified_pct=round(100 * own_cls / max(fence, 1e-9), 1),
                 own_B=round(own_sh.get("BUILD", 0)), own_T=round(own_sh.get("TEST", 0)),
-                own_S=round(own_sh.get("SEARCH", 0)), own_label=label(own_sh),
+                own_S=round(own_sh.get("SEARCH", 0)), own_label=label(own_sh, own_cls),
                 proc_B=round(proc_sh.get("BUILD", 0)), proc_T=round(proc_sh.get("TEST", 0)),
-                proc_S=round(proc_sh.get("SEARCH", 0)), proc_label=label(proc_sh),
+                proc_S=round(proc_sh.get("SEARCH", 0)), proc_label=label(proc_sh, proc_cls),
                 n_receipts=len(rec), top_procs=top)
 
 
-COLS = ["instance", "language", "mech", "short", "fence", "boot_s", "coverage",
+COLS = ["instance", "language", "mech", "short", "fence", "live_ratio", "boot_s", "coverage",
         "classified_pct", "own_B", "own_T", "own_S", "own_label",
         "proc_B", "proc_T", "proc_S", "proc_label", "flags", "n_receipts", "top_procs"]
 
@@ -353,8 +359,18 @@ def cmd_build(data):
         a = analyze_dir(rd)
         lang, mech = inv.get(inst, ("?", "?"))
         lrow = led.get(inst, {})
+        flags = lrow.get("flags", "")
+        try:
+            live = float(lrow.get("tool_cs_raw", "nan"))
+            ratio = a["fence"] / live if live > 1 else float("nan")
+        except (TypeError, ValueError):
+            ratio = float("nan")
+        a["live_ratio"] = round(ratio, 2) if ratio == ratio else ""
+        if ratio == ratio and not (0.5 <= ratio <= 2.0):
+            flags = (flags + "," if flags else "") + f"replay-invalid(ratio={ratio:.2f})"
+            a["own_label"] = a["proc_label"] = "?"
         rows.append({**a, "instance": inst, "language": lang, "mech": mech,
-                     "short": short, "flags": lrow.get("flags", "")})
+                     "short": short, "flags": flags})
     out = f"{ML}/cpu_matrix.tsv"
     with open(out, "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=COLS, delimiter="\t", extrasaction="ignore")
