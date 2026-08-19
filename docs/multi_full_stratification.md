@@ -343,6 +343,111 @@ A row carries **no evidence** ("?") when fewer than 10 classified core-seconds e
 **Selection (30 of 296)** — `selection_30.tsv`, produced by `local_agents/kit/campaign/typeid_select.py` (ownership view; one pick per populated cell, then a second repo per language, then magnitude spread; within a cell prefer E7-clean, coverage ≥ 80 %, closest to the cell median, unpicked repo, non-W-CONFOUND; runner-up recorded). 16 cells → 16 picks; +5 second-repo picks; +9 magnitude picks (largest fence per language, smallest measurable for C). 28 distinct repos, all 9 languages, only one already P7-profiled (gson-2061, kept deliberately as the calibration anchor). Caveats carried per row: three picks need a look before spending P7 minutes — hugo-12204 was drain-capped (its cell has a clean runner-up, hugo-12562), and axios-6539 (19.1 core-s) and micropython-13039 (16.9 core-s) sit below the 20 core-s P7 stop gate and were kept only as magnitude-spread anchors. Eight picks carry `call-step-mismatch` in the live ledger; that flag is bookkeeping (proxy calls vs logged steps), not a viability flag. Every pick is a **prior** — the P7 live episode plus its layer-3 gate stays the verdict.
 
 
+## Justification
+
+This section answers four questions a careful reader will ask about the final matrix:
+what a "mixed" episode really looks like, what the two "no-evidence" reasons mean in
+practice, why four tasks are missing, and why PHP has so many no-evidence rows. Every
+number below comes from `cpu_matrix.tsv`.
+
+### What a "mixed" episode looks like
+
+A "mixed" (M) label is not a failure. It means we measured the fence cleanly, but no
+single class (build, test, or search) leads the next one by 10 percentage points or more,
+so we refuse to name one winner.
+
+In practice, every mixed episode is close to a 50/50 split between build and test, with
+almost no search. All nine of them are Rust or Go:
+
+| instance | language | fence (core-s) | ownership B/T/S | process B/T/S |
+| --- | --- | --- | --- | --- |
+| tokio-rs__axum-1119 | Rust | 155 | 45/55/0 | 98/2/0 |
+| tokio-rs__axum-734 | Rust | 1108 | 49/51/0 | 99/1/0 |
+| burntsushi__ripgrep-2209 | Rust | 82 | 49/50/0 | 55/45/0 |
+| sharkdp__bat-3108 | Rust | 251 | 46/54/0 | 83/17/0 |
+| sharkdp__bat-562 | Rust | 130 | 55/45/0 | 56/44/0 |
+| redis__redis-10068 | C | 38 | 54/46/0 | 54/44/1 |
+| gin-gonic__gin-1957 | Go | 25 | 48/51/1 | 61/38/1 |
+| caddyserver__caddy-5626 | Go | 154 | 53/46/0 | 85/15/0 |
+| gin-gonic__gin-3741 | Go | 19 | 47/52/0 | 86/13/0 |
+
+So a typical mixed episode is about 48–52% build, 48–52% test, and 0% search. This is not
+an accident. These tasks belong to class A, where one command (`cargo test` or `go test`)
+both compiles the code and runs the tests. The ownership view credits the compile step to
+the test command that started it, so the split lands near 50/50. The process view on the
+right shows what really burned the CPU — often 85–99% compiler. This gap between the two
+views is the signature of class A, not a problem.
+
+### "Replay invalid" — the replay ran, but its CPU was very different from the live run
+
+Every episode is a saved recording of the agent's actions. We re-run that recording with no
+model calls, to measure CPU cheaply. We only trust the result if the replay's fence is
+close to the live episode's fence. The test is a ratio (replay CPU ÷ live CPU) that must
+fall between 0.5 and 2. If it falls outside that range, the replay did not reproduce the
+episode, so we give the row no type label. There are 26 such rows, in two groups:
+
+- **Ratio far below 1 (the replay did less than the live run).** lucene (8 rows,
+  0.07–0.29): gradle runs a network check at start-up that fails inside the offline replay
+  container, so the Java tests never start and the replay measured only the bootstrap. caddy
+  (5 rows, 0.32–0.44): `go test ./...` runs past the 2400 s time cap, so the replay fence is
+  cut short.
+- **Ratio far above 1 (the live baseline was tiny).** laravel-51195 (4.29),
+  php-cs-fixer-8367 (10.57): these fences are all under 15 core-s, so a few extra seconds of
+  git or runtime make the ratio jump. The live episode was so small that the ratio is
+  unstable. These rows would be rejected for size anyway.
+
+Without this gate, the 13 lucene and caddy rows would have shipped as confident test or
+build labels, based on failed or half-finished replays.
+
+### "Mostly unclassified" — we saw the CPU, but the program name is not in our table
+
+Each process is named by looking up its program in a fixed table. Anything not in the table
+goes to "other" and gets no vote. When the voting classes (build + test + search) cover
+less than half of the fence, we cannot honestly name the type. Only two rows hit this, and
+each for a different reason:
+
+- **rubocop-13396** (Ruby, fence 43 core-s, but only 24% classified): the top process is
+  git, which burned 29 of the 43 core-s. Git is counted as search but listed on its own,
+  and here one large git operation dominated the fence. We know exactly what ran; it is just
+  not a build/test/search signal.
+- **preact-3454** (JavaScript, fence 31 core-s, coverage 57%): here the problem is coverage
+  — about 43% of the fence CPU was never attached to any named process, because short-lived
+  node children died between samples. Of what we could name, test led, but on less than half
+  the fence we do not commit.
+
+So "cannot name" means either a real workload we do not score (git) or CPU that slipped
+through (very short processes) — not a mystery about what the program was.
+
+### Why four tasks have no trajectory — they did not fail
+
+Four tasks are missing: prometheus-9248, terraform-35543 (Go), carbon-2813, laravel-51890
+(PHP). They did not crash, and they did not fail any gate. They were already run in earlier
+campaigns, so the type-id sweep skipped them (their API budget was already spent). Of the 15
+tasks used by earlier campaigns, 11 had a saved trajectory that we could replay; these 4
+have no saved trajectory anywhere on disk. Without a recording there is nothing to replay,
+and re-running them would cost fresh tokens for cells that are already well covered (Go
+n=40, PHP n=41). So the matrix has 296 rows, not 300, and Go shows 40 and PHP shows 41.
+
+### Why PHP has the most no-evidence rows — it is about size, not classification
+
+PHP has 22 no-evidence rows out of 41, and 14 of them are thin fences: under 10 classified
+core-s, because the agent barely ran the toolchain. Real examples:
+
+| instance | fence (core-s) | classified (core-s) | top processes |
+| --- | --- | --- | --- |
+| laravel-48636 | 2.1 | 1.0 | runtime 0.8, git 0.3, search 0.2 |
+| laravel-53914 | 2.9 | 1.4 | runtime 1.2, git 0.5 |
+| phpspreadsheet-4114 | 4.0 | 2.7 | runtime 2.4, search 0.3, git 0.3 |
+| laravel-52684 | 4.7 | 3.4 | pkg 1.2, runtime 0.8, git 0.5 |
+
+The median PHP thin fence is about 5 core-s. PHP is interpreted (class I): there is no
+compilation, and the test suites here are small, so the whole episode is a few seconds of
+`php` runtime plus git. There is almost no CPU to classify. This matters because the P7
+profiling machine has a 20 core-s stop gate — it will not spend time on a fence this small.
+So these tasks would be rejected for profiling no matter what type they are. The classifier
+is correctly saying "there is not enough CPU here to type," which is the right answer and
+lines up exactly with the tasks P7 would skip. It is a fact about the size of PHP tasks in
+this corpus, not a failure of the method.
 
 May I understand: for a live campaign, 8 cgroups will be profiled during one 5-s window or only one cgroup is profiled during one 5-s window?
 
