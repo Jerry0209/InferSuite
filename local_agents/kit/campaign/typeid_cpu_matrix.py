@@ -39,27 +39,45 @@ CLK = os.sysconf("SC_CLK_TCK")
 MARGIN = 10.0
 BOOT_RX = re.compile(r"apt-get |/usr/lib/apt/|\bdpkg\b|pip3? install|python3? -m pip install")
 BOOT_CAP_S = 300.0
+# LEAFCOUNT — the count-weighted alternative to time weighting (piloted 2026-08-19 on 151
+# PHP/Ruby/JS/TS/C episodes): label the episode by the class with the most *leaf commands*
+# instead of the most CPU. Banked as columns for comparison; labels/matrix/selection stay
+# time-weighted. 21 of 151 labels flip (13 T->S), because a counted `search` costs 1.1 ms
+# against 22 ms for a test command and 50 ms for a build one — the flips are the toolchain's
+# own shell plumbing (configure's sed probes; a `sort|uniq|wc` pipeline run 4500x by vue's
+# build), not agent searches, which live on Axis 2. A leaf command = an in-fence receipt with
+# a voting tag that spawned nothing; thread receipts are excluded by name shape.
+THREADISH = re.compile(
+    r"[ :/]"                                                   # spaces, '::', paths
+    r"|^(tokio-runtime|runtime-worker|blocking|rayon)"         # rust runtime threads
+    r"|^(GC|G1|C1|C2|VM|Finalizer|Reference|CompilerThr|PmdThread|Common-Cleaner|Thread-\d)"  # JVM
+    r"|^(ThreadPool|Chrome_|Compositor|VizCompositor|ServiceWorker|chrome_crashpad)"          # chromium
+    r"|^(coordinator|event_loop|flush_thread|socket_manager|enqueue_thread)$")
 
 # ---- process tagger (same vocabulary as the pilot; comm- and argv-tolerant) -----------
 COMPILER = {"cc1", "cc1plus", "cc", "c++", "gcc", "g++", "clang", "clang++", "rustc",
             "javac", "as", "ld", "ld.lld", "collect2", "lto1", "lto-wrapper", "lto2",
-            "tsc", "cpp", "ar", "ranlib", "objcopy", "strip", "nasm"}
+            "tsc", "cpp", "ar", "ranlib", "objcopy", "strip", "nasm",
+            "esbuild", "swc"}          # JS/TS transpilers: class N's transpile term (136 core-s)
 GO_TOOL = {"compile", "link", "asm", "cgo", "buildid", "pack", "vet"}
 DRIVER = {"make", "gmake", "cmake", "ninja", "cargo", "mvn", "gradle", "gradlew",
           "meson", "scons", "libtool", "autoconf", "automake", "configure", "rake", "m4"}
-PKG = {"apt", "apt-get", "dpkg", "pip", "pip3", "composer", "bundler", "gem"}
+PKG = {"apt", "apt-get", "dpkg", "pip", "pip3", "composer", "bundler", "gem",
+       "py3compile", "localedef"}      # dpkg post-install work (bytecode, locales)
 TESTRUN = {"pytest", "jest", "vitest", "mocha", "rspec", "phpunit", "gotestsum", "ctest",
            "karma", "ava", "tap", "tclsh", "tclsh8.6", "surefire", "minitest", "cucumber",
            "playwright", "puppeteer", "chrome", "chromium", "headless_shell"}
 RUNTIME = {"java", "node", "php", "ruby", "python3", "python", "perl", "deno", "bun",
            "valkey-server", "redis-server"}
 SEARCH = {"grep", "rg", "egrep", "fgrep", "find", "cat", "ls", "head", "tail", "tree",
-          "wc", "sed", "awk", "sort", "uniq", "cut", "diff", "less", "file", "stat", "du"}
-SCAFFOLD = {"sh", "bash", "dash", "sleep", "timeout", "env", "which", "tee", "xargs",
+          "wc", "sed", "awk", "tr", "sort", "uniq", "cut", "diff", "less", "file", "stat", "du",
+          "javap", "nm", "strings", "objdump", "readelf"}   # artifact inspection = reading
+SCAFFOLD = {"dd", "cmp", "uname",                           # shell helpers inside jq's shtest
+            "sh", "bash", "dash", "sleep", "timeout", "env", "which", "tee", "xargs",
             "dirname", "basename", "true", "false", "echo", "printf", "date", "id",
             "mkdir", "rm", "cp", "mv", "touch", "chmod", "ln", "readlink", "pwd", "kill",
             "ps", "sudo", "su", "tar", "gzip", "unzip", "curl", "wget", "nproc", "stty"}
-TEST_BIN = re.compile(r"\.test$|^test[_-]|[_-]test$|-[0-9a-f]{16}$|_test$")
+TEST_BIN = re.compile(r"\.test$|\.tes$|^test[_-]|[_-]test$|-[0-9a-f]{16}$|_test$")  # .tes = comm cut at 15
 NPM_BUILD = re.compile(r"\b(install|ci|add|update|download|fetch)\b")
 THREAD_FIX = [
     (re.compile(r"^(tokio-runtime|runtime-worker|blocking|rayon)"), "test-run"),
@@ -75,6 +93,18 @@ THREAD_FIX = [
     (re.compile(r"^(git-remote-http|git-upload-pack)"), "vcs"),
     (re.compile(r"^(apt-cache|apt-config)$"), "pkg"),
     (re.compile(r"^(_state_anthropi|submit|store|str_replace_edi|http)$"), None),  # SWE-agent tool plumbing = scaffold
+    # census of `other` comms over 297 receipt episodes (2026-08-19). `comm` is 15 chars, so
+    # the long names below are truncations the exact-match sets above can never see:
+    (re.compile(r"^lto1?[ -]"), "compile"),           # GCC/rustc LTO workers: lto1-ltrans, lto1-wpa,
+                                                      # `lto <hash>` (482 core-s, redis/valkey LTO builds)
+    (re.compile(r"^(cargo-clippy|clippy-driver|rustfmt|cargo-fmt)"), "lint"),
+    (re.compile(r"^(ThreadPool|Chrome_|Compositor|VizCompositor|ServiceWorker|chrome_crashpad)"),
+     "test-run"),                                     # headless chromium driven by playwright/puppeteer
+    # Rust names its test threads after the test path (`runtime::tests:`, `axum/src/routin`).
+    # The pattern MUST be anchored and space-free: matched against a full argv it would tag
+    # every compile whose command line mentions a /src/ path as test-run (caught 2026-08-19:
+    # `ld -o redis-server …/src/…` and `c++ -I /testbed/src/…` both flipped BUILD to TEST).
+    (re.compile(r"^(?!/)[^ ]*(::|/src/)|^rust_out$"), "test-run"),
 ]
 # REPO PAYLOAD REGISTRY — the repo's own binary, run as the program under test. No generic
 # rule can recognise these (`jq` looks like nothing; `rg` looks like SEARCH), yet in their own
@@ -257,6 +287,7 @@ def analyze_dir(rd):
         return owner(parent[p], d + 1) if p in parent else None
 
     proc, own, receipts_in = collections.Counter(), collections.Counter(), 0.0
+    leaf_cnt = collections.Counter()            # COUNT weighting, see LEAFCOUNT note above
     for p, pp, comm, cpu in rec:
         if not infence(p):
             continue
@@ -264,6 +295,9 @@ def analyze_dir(rd):
         tg = tag_of(comm)
         proc[tg or "(scaffold)"] += cpu
         own[owner(p) or tg or "(scaffold)"] += cpu
+        cls = COARSE.get(tg or "")
+        if cls and p not in kids and not THREADISH.search(comm.strip()):
+            leaf_cnt[cls] += 1                  # a leaf command: executed, spawned nothing
 
     dead = set(parent)
     alive = 0.0
@@ -306,6 +340,22 @@ def analyze_dir(rd):
             return o[0][0]          # B / T / S
         return "M"
 
+    n_leaf = sum(leaf_cnt.values())
+    leaf_sh = {k: 100 * v / n_leaf for k, v in leaf_cnt.items()} if n_leaf else {}
+
+    def label_counts(sh, n):
+        # Counting is far more fragile than summing: one lost receipt does not just subtract
+        # its CPU, it can turn a driver into a "leaf" (its children's receipts are gone) and
+        # so mis-file every command under it. A 95% coverage floor — much stricter than the
+        # 50% the CPU views use — keeps the count column off any episode with receipt loss.
+        cov = 100 * (receipts_in + alive) / max(fence, 1e-9)
+        if not sh or n < 20 or cov < 95.0:      # too few commands, or incomplete receipts
+            return "?"
+        o = sorted(sh, key=sh.get, reverse=True)
+        if len(o) == 1 or sh[o[0]] - sh[o[1]] >= MARGIN:
+            return o[0][0]
+        return "M"
+
     top = "  ".join(f"{k}={v:.1f}" for k, v in proc.most_common(6) if k != "(scaffold)")
     return dict(fence=round(fence, 1), wall=round(wall, 1), boot_s=round(boot_s, 1),
                 coverage=round(100 * (receipts_in + alive) / max(fence, 1e-9), 1),
@@ -314,12 +364,17 @@ def analyze_dir(rd):
                 own_S=round(own_sh.get("SEARCH", 0)), own_label=label(own_sh, own_cls),
                 proc_B=round(proc_sh.get("BUILD", 0)), proc_T=round(proc_sh.get("TEST", 0)),
                 proc_S=round(proc_sh.get("SEARCH", 0)), proc_label=label(proc_sh, proc_cls),
+                n_leaf=n_leaf, leaf_B=round(leaf_sh.get("BUILD", 0)),
+                leaf_T=round(leaf_sh.get("TEST", 0)), leaf_S=round(leaf_sh.get("SEARCH", 0)),
+                leaf_label=label_counts(leaf_sh, n_leaf),
                 n_receipts=len(rec), top_procs=top)
 
 
 COLS = ["instance", "language", "mech", "short", "fence", "live_ratio", "boot_s", "coverage",
         "classified_pct", "own_B", "own_T", "own_S", "own_label",
-        "proc_B", "proc_T", "proc_S", "proc_label", "flags", "n_receipts", "top_procs"]
+        "proc_B", "proc_T", "proc_S", "proc_label",
+        "n_leaf", "leaf_B", "leaf_T", "leaf_S", "leaf_label",
+        "flags", "n_receipts", "top_procs"]
 
 
 def ledger_info():
@@ -368,7 +423,7 @@ def cmd_build(data):
         a["live_ratio"] = round(ratio, 2) if ratio == ratio else ""
         if ratio == ratio and not (0.5 <= ratio <= 2.0):
             flags = (flags + "," if flags else "") + f"replay-invalid(ratio={ratio:.2f})"
-            a["own_label"] = a["proc_label"] = "?"
+            a["own_label"] = a["proc_label"] = a["leaf_label"] = "?"
         rows.append({**a, "instance": inst, "language": lang, "mech": mech,
                      "short": short, "flags": flags})
     out = f"{ML}/cpu_matrix.tsv"

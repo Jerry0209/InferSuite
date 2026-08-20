@@ -1002,6 +1002,20 @@ start_taskstats(){ # $1 out — exit-time accounting (netlink taskstats): every 
   POLL_PIDS+=($!)
 }
 
+start_procconn(){ # $1 out — kernel proc connector (fork/exec/exit events). OFF by default:
+  # this is the cross-check instrument for the COUNT-weighted column, not part of the standard
+  # stack. FORK carries child_pid AND child_tgid, so `pid != tgid` identifies a thread from the
+  # kernel rather than from the name-shape heuristic in typeid_cpu_matrix.py, and EXEC counts
+  # commands literally. Enable with TYPEID_PROCCONN=1; volume is one row per fork/exec/exit
+  # machine-wide, so keep it to the episodes being cross-checked.
+  local OUT="$1"
+  [ "${TYPEID_PROCCONN:-0}" = "1" ] || return 0
+  sudo -n python3 "$KIT/procconn_listen.py" --probe >/dev/null 2>&1 \
+    || { log "procconn unavailable (probe failed) — continuing without kernel lineage"; return 0; }
+  ( exec sudo -n python3 "$KIT/procconn_listen.py" "$OUT/procconn.tsv" "$OUT/.polling" ) &
+  POLL_PIDS+=($!)
+}
+
 typeid_loop_guard(){ # user-scope variant of loop_guard (same detection, systemctl --user)
   local LOG="$1" UNIT="$2" N="${LOOP_GUARD_N:-0}" runlen
   [ "$N" -gt 0 ] || return 0
@@ -1157,6 +1171,7 @@ typeid_replay_episode(){ # $1 instance, $2 dest run n — replays the banked tra
   start_cmdlog "$OUT" "$TOOL_CG"
   start_pidcpu "$OUT" "$TOOL_CG"
   start_taskstats "$OUT"
+  start_procconn "$OUT"
   local t0=$SECONDS
   while eval "$ALIVE" 2>/dev/null && [ $((SECONDS - t0)) -lt "${REPLAY_DRAIN_S:-1800}" ]; do sleep 5; done
   if eval "$ALIVE" 2>/dev/null; then

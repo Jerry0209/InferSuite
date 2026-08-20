@@ -105,7 +105,7 @@ def matrix_fig(view, title, sub, fname, accent, show_picks=False):
 
 
 N = len(rows)
-STAMP = "sweep complete 2026-08-19 · 296 token-free replays (285 typeid + 11 older)"
+STAMP = "sweep complete 2026-08-19 · 300 token-free replays (289 typeid + 11 older)"
 NOEV = ("no evidence = fewer than 10 classified core-s, or under 50% of the fence classified,\n"
         "or replay/live fence ratio outside [0.5, 2] — kept and shown, never voting")
 

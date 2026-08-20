@@ -20,13 +20,34 @@ Needs CAP_NET_ADMIN on this kernel — run under sudo. `--probe` tests capabilit
 Output TSV, one row per receipt:
   epoch \t kind \t pid \t ppid \t uid \t comm \t utime_us \t stime_us \t etime_us \t btime
 kind G = whole-process aggregate (AGGR_TGID; kernel sums all threads; USE THESE),
-kind P = single task exit (AGGR_PID; per-thread, double-counts with G; kept for debugging).
+kind P = single task exit (AGGR_PID; per-thread, double-counts with G; kept for debugging),
+kind LOST = the kernel dropped receipts because our socket buffer was full (see below); the
+  4th column carries the running count of drop events. A run whose file contains LOST rows is
+  INCOMPLETE by exactly an unknown amount — treat its receipt-derived numbers as lower bounds.
+
+RECEIPT LOSS (defect found 2026-08-20, 23 of 300 replays affected). netlink delivers into a
+fixed-size kernel-side socket buffer. A `go build ./...` forks thousands of short-lived
+children per second, and if we do not drain fast enough the kernel DROPS receipts (they are
+never resent) and reports ENOBUFS on the next read. The original loop caught only
+socket.timeout, so ENOBUFS escaped and killed the listener mid-episode — prometheus-9248 banked
+11,279 receipts and then recorded nothing for the rest of the run (coverage 52%). Three
+mitigations, in order of importance: (1) a 64 MB receive buffer via SO_RCVBUFFORCE (root
+bypasses net.core.rmem_max); (2) ENOBUFS is caught, counted and written as a LOST row — loss
+becomes data instead of silence; (3) the receive loop only appends raw buffers to a queue, a
+second thread decodes them, so the socket is drained as fast as the kernel can fill it.
 """
+import collections
+import errno
 import os
 import socket
 import struct
 import sys
+import threading
 import time
+
+RCVBUF_BYTES = int(os.environ.get("TASKSTATS_RCVBUF", 64 << 20))  # shrink it to test the loss path
+SO_RCVBUFFORCE = 33      # linux/socket.h; python's socket module does not export it
+LOST = object()          # queue sentinel: the kernel dropped receipts (ENOBUFS)
 
 NETLINK_GENERIC = 16
 GENL_ID_CTRL = 0x10
@@ -100,6 +121,14 @@ def main():
                open("/sys/devices/system/cpu/online").read().strip())
 
     sk = socket.socket(socket.AF_NETLINK, socket.SOCK_RAW, NETLINK_GENERIC)
+    # (1) big receive buffer BEFORE binding/registering, so no burst is lost during startup.
+    # SO_RCVBUFFORCE needs CAP_NET_ADMIN (we run under sudo) and ignores net.core.rmem_max.
+    try:
+        sk.setsockopt(socket.SOL_SOCKET, SO_RCVBUFFORCE, RCVBUF_BYTES)
+    except OSError:                      # no CAP_NET_ADMIN: fall back, capped by rmem_max
+        sk.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, RCVBUF_BYTES)
+    got = sk.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF)  # kernel reports 2x the request
+    print(f"taskstats: rcvbuf {got // (1 << 20)} MB", file=sys.stderr)
     sk.bind((0, 0))
     fam = resolve_family(sk)
     sk.send(genlmsg(fam, TASKSTATS_CMD_GET,
@@ -131,14 +160,21 @@ def main():
     # the file must belong to the invoking user, not root, or the kits can't manage it
     if "SUDO_UID" in os.environ:
         os.chown(out, int(os.environ["SUDO_UID"]), int(os.environ.get("SUDO_GID", -1)))
-    n = 0
-    try:
-        while os.path.exists(stopfile):
+    # (3) receive and decode are separate: the receiving thread does nothing but move bytes out
+    # of the kernel buffer, so a fork storm cannot outrun us while we are parsing structs.
+    q = collections.deque()                 # (epoch, raw buffer) — deque ops are atomic
+    st = {"n": 0, "lost": 0, "run": True}
+
+    def decode():
+        while st["run"] or q:
             try:
-                buf = sk.recv(1 << 20)
-            except socket.timeout:
+                now, buf = q.popleft()
+            except IndexError:
+                time.sleep(0.002)
                 continue
-            now = time.time()
+            if buf is LOST:                 # (2) drop event, written in stream order
+                fh.write(f"{now:.6f}\tLOST\t{st['lost']}\t0\t0\t-\t0\t0\t0\t0\n")
+                continue
             off = 0
             while off + 16 <= len(buf):
                 ln, t = struct.unpack_from("=IH", buf, off)
@@ -153,16 +189,36 @@ def main():
                                     row = stats_row(kind, iv, now)
                                     if row:
                                         fh.write(row)
-                                        n += 1
+                                        st["n"] += 1
                 off += (ln + 3) & ~3
+
+    th = threading.Thread(target=decode, daemon=True)
+    th.start()
+    try:
+        while os.path.exists(stopfile):
+            try:
+                buf = sk.recv(1 << 20)
+            except socket.timeout:
+                continue
+            except OSError as e:
+                if e.errno != errno.ENOBUFS:
+                    raise
+                # the kernel dropped an unknown number of receipts; the socket stays usable.
+                # Record it and KEEP GOING — dying here is what cost us 23 episodes.
+                st["lost"] += 1
+                q.append((time.time(), LOST))
+                continue
+            q.append((time.time(), buf))
     finally:
+        st["run"] = False
+        th.join(timeout=15)
         try:
             sk.send(genlmsg(fam, TASKSTATS_CMD_GET,
                             nlattr(ATTR_DEREGISTER_CPUMASK, cpulist.encode() + b"\0"), 3))
         except OSError:
             pass
         fh.close()
-        print(f"taskstats: {n} receipts banked", file=sys.stderr)
+        print(f"taskstats: {st['n']} receipts banked, {st['lost']} drop events", file=sys.stderr)
 
 
 if __name__ == "__main__":

@@ -1,297 +1,301 @@
-instance	language	mech	short	fence	live_ratio	boot_s	coverage	classified_pct	own_B	own_T	own_S	own_label	proc_B	proc_T	proc_S	proc_label	flags	n_receipts	top_procs
-apache__lucene-13704	Java	J	apache-lucene-13704	16.9	1.66	0.0	97.8	32.1	4	85	12	?	4	85	12	?		309499	test-run=3.3  runtime=1.3  search=0.6  vcs=0.4  compile=0.2
-apache__lucene-11760	Java	J	apache-t11760	17.9	0.08	0.0	100.3	83.4	0	96	4	?	0	96	4	?	call-step-mismatch(104v100),replay-invalid(ratio=0.08)	43482	test-run=10.2  runtime=4.1  vcs=1.6  search=0.6  other=0.0
-apache__lucene-12022	Java	J	apache-t12022	18.1	0.07	0.0	100.3	83.0	0	93	7	?	0	93	7	?	call-step-mismatch(131v128),replay-invalid(ratio=0.07)	42833	test-run=10.0  runtime=4.0  vcs=1.3  search=1.0  other=0.0
-apache__lucene-12196	Java	J	apache-t12196	19.3	0.13	0.0	98.4	86.6	6	92	2	?	6	92	2	?	call-step-mismatch(89v85),replay-invalid(ratio=0.13)	18967	test-run=11.7  runtime=3.6  compile=1.0  vcs=1.0  search=0.4
-apache__lucene-12212	Java	J	apache-t12212	49.4	0.29	0.0	98.9	76.7	0	99	1	?	0	99	1	?	replay-invalid(ratio=0.29)	312795	test-run=27.2  runtime=10.3  vcs=0.5  search=0.4  other=0.1
-apache__lucene-12626	Java	J	apache-t12626	35.9	0.07	0.0	100.1	90.9	0	97	3	?	0	97	3	?	replay-invalid(ratio=0.07)	106715	test-run=21.6  runtime=10.0  vcs=1.0  search=1.0  other=0.1
-apache__lucene-13170	Java	J	apache-t13170	16.4	0.18	0.0	99.1	88.3	6	89	6	?	6	89	6	?	replay-invalid(ratio=0.18)	12311	test-run=9.9  runtime=2.9  search=0.9  compile=0.8  vcs=0.7
-apache__lucene-13301	Java	J	apache-t13301	12.6	2.01	0.0	97.4	3.4	0	0	100	?	0	0	100	?	call-step-mismatch(75v71),replay-invalid(ratio=2.01)	309173	vcs=1.1  search=0.4  other=0.0
-apache__lucene-13494	Java	J	apache-t13494	37.2	0.22	0.0	99.3	90.9	10	89	2	?	5	94	2	?	call-step-mismatch(145v141),replay-invalid(ratio=0.22)	78836	test-run=22.5  runtime=7.5  pkg=1.5  vcs=1.1  search=0.6
-apache__druid-13704	Java	J	apache-t13704	27.0	1.03	0.0	100.0	90.3	9	85	6	T	9	85	6	T	call-step-mismatch(108v104)	7244	test-run=17.9  runtime=2.8  compile=2.2  search=1.5  vcs=1.1
-apache__druid-14092	Java	J	apache-t14092	539.2	1.17	0.0	111.0	110.3	0	100	0	T	0	100	0	T		14070	test-run=441.2  lint=105.4  runtime=47.9  vcs=1.6  other=1.3
-apache__druid-14136	Java	J	apache-t14136	950.0	1.24	0.0	99.5	99.1	0	99	0	T	0	99	0	T		27073	test-run=649.5  lint=196.5  runtime=88.7  compile=4.5  vcs=1.7
-apache__druid-15402	Java	J	apache-t15402	3999.1	1.18	0.0	99.4	99.3	0	100	0	T	0	100	0	T	call-step-mismatch(175v168)	84662	test-run=2622.8  lint=990.4  runtime=353.6  vcs=4.8  other=2.7
-apache__druid-16875	Java	J	apache-t16875	359.7	1.2	0.0	99.6	98.6	1	99	0	T	1	99	0	T	call-step-mismatch(118v111)	15531	test-run=250.1  lint=55.0  runtime=44.4  compile=3.7  vcs=1.8
-astral-sh__ruff-15309	Rust	A	astral-sh-t15309	688.5	1.16	0.0	99.5	98.9	78	21	1	B	98	1	1	B		69392	compile=649.0  other=13.3  build-drv=6.9  search=5.6  runtime=4.2
-astral-sh__ruff-15330	Rust	A	astral-sh-t15330	700.7	1.21	0.0	99.5	99.2	79	21	0	B	99	0	0	B	call-step-mismatch(100v97)	54506	compile=675.9  other=9.2  build-drv=4.8  runtime=2.2  search=0.9
-astral-sh__ruff-15356	Rust	A	astral-sh-t15356	707.0	1.18	0.0	99.4	99.0	70	29	0	B	99	0	0	B		57086	compile=668.4  other=21.6  build-drv=5.1  runtime=1.9  search=0.9
-astral-sh__ruff-15394	Rust	A	astral-sh-t15394	619.0	1.21	0.0	99.4	98.9	80	20	0	B	99	0	0	B		43226	compile=593.9  other=9.5  build-drv=4.5  runtime=2.4  search=1.1
-astral-sh__ruff-15443	Rust	A	astral-sh-t15443	528.5	1.24	0.0	99.4	99.1	75	25	0	B	100	0	0	B	call-step-mismatch(66v63)	32669	compile=504.0  other=12.4  build-drv=3.8  runtime=1.1  search=0.9
-astral-sh__ruff-15543	Rust	A	astral-sh-t15543	387.1	1.2	0.0	99.4	99.0	100	0	0	B	99	0	0	B	E7-consecutive-loop	22705	compile=373.4  other=4.5  build-drv=2.1  search=1.1  runtime=1.0
-astral-sh__ruff-15626	Rust	A	astral-sh-t15626	505.0	1.14	0.0	99.4	98.9	74	26	0	B	99	0	0	B		35513	compile=481.7  other=9.4  build-drv=3.2  runtime=2.2  search=1.5
-axios__axios-4731	JavaScript	N	axios-t4731	12.5	0.93	0.0	100.9	90.5	0	100	0	T	0	100	0	T		15142	runtime=8.4  test-run=2.8  search=0.1  vcs=0.0
-axios__axios-4738	JavaScript	N	axios-t4738	5.9	0.95	0.0	102.6	82.7	0	99	1	?	0	99	1	?		14919	runtime=4.8  vcs=0.1  search=0.1
-axios__axios-5085	JavaScript	N	axios-t5085	7.6	0.95	0.0	101.1	84.0	0	99	1	?	0	99	1	?		33190	runtime=6.3  search=0.1  vcs=0.1
-axios__axios-5316	JavaScript	N	axios-t5316	13.9	0.82	0.0	100.0	74.0	0	97	3	T	0	97	3	T	call-step-mismatch(312v309)	80666	runtime=8.7  test-run=1.3  search=0.3  vcs=0.3
-axios__axios-5892	JavaScript	N	axios-t5892	16.0	0.96	0.0	100.5	91.8	0	99	0	T	1	98	0	T		33820	runtime=13.0  test-run=1.4  build-drv=0.2  vcs=0.1  search=0.1
-axios__axios-6539	JavaScript	N	axios-t6539	19.1	0.9	0.0	99.5	89.1	2	97	1	T	0	99	1	T		42222	runtime=13.4  test-run=3.4  search=0.2  vcs=0.1
-babel__babel-15445	JavaScript	N	babel-X15445	28.7		0.0	100.4	85.1	0	98	2	T	0	98	2	T		6511	runtime=24.0  vcs=3.2  search=0.4
-babel__babel-13928	JavaScript	N	babel-t13928	402.5	1.14	0.0	99.8	98.3	1	99	0	T	1	97	2	T		32167	runtime=384.9  search=6.9  build-drv=4.0  vcs=3.7  other=0.0
-babel__babel-14532	JavaScript	N	babel-t14532	10.6	0.95	0.0	99.4	23.2	0	68	32	?	0	68	32	?	E7-consecutive-loop,mechanism-not-witnessed	7068	vcs=6.5  runtime=1.7  search=0.8
-babel__babel-15649	JavaScript	N	babel-t15649	41.9	1.04	0.0	100.3	92.5	0	99	1	T	0	99	1	T	call-step-mismatch(73v70)	5303	runtime=37.8  vcs=2.2  test-run=0.7  search=0.3  other=0.0
-babel__babel-16130	JavaScript	N	babel-t16130	164.0	1.1	0.0	100.0	97.2	0	99	1	T	0	99	1	T		14675	runtime=157.6  vcs=2.7  search=1.8
-briannesbitt__carbon-2665	PHP	I	briannesbitt-t2665	13.4	1.88	0.0	98.3	13.5	0	94	6	?	0	94	6	?	E7-consecutive-loop,call-step-mismatch(164v147)	308891	runtime=1.7  vcs=0.4  search=0.1
-briannesbitt__carbon-2752	PHP	I	briannesbitt-t2752	10.1	0.92	0.0	101.1	84.3	0	98	2	?	0	98	2	?	call-step-mismatch(104v101)	9547	runtime=8.3  vcs=0.3  search=0.2
-briannesbitt__carbon-2762	PHP	I	briannesbitt-t2762	11.6	5.98	0.0	98.0	3.5	0	31	69	?	0	31	69	?	E7-consecutive-loop,mechanism-not-witnessed,replay-invalid(ratio=5.98)	308788	search=0.3  runtime=0.1  vcs=0.1
-briannesbitt__carbon-2981	PHP	I	briannesbitt-t2981	159.2	0.99	227.2	100.0	98.4	2	98	0	T	1	99	0	T	call-step-mismatch(162v158)	33589	runtime=153.7  pkg=1.2  vcs=0.5  search=0.3  other=0.1
-briannesbitt__carbon-3005	PHP	I	briannesbitt-t3005	91.9	0.98	225.9	99.9	96.2	3	97	0	T	1	98	0	T	call-step-mismatch(257v252)	33843	runtime=85.6  pkg=1.2  vcs=0.5  search=0.4  other=0.1
-briannesbitt__carbon-3041	PHP	I	briannesbitt-t3041	12.5	0.88	31.3	98.7	74.8	27	71	2	?	15	82	3	?		15670	runtime=6.7  pkg=1.2  vcs=0.6  search=0.2  other=0.1
-briannesbitt__carbon-3073	PHP	I	briannesbitt-t3073	5.9	0.87	0.0	98.9	66.4	0	93	7	?	0	93	7	?	call-step-mismatch(133v125)	7522	runtime=3.6  search=0.3  vcs=0.3
-briannesbitt__carbon-3098	PHP	I	briannesbitt-t3098	14.4	1.41	0.0	97.8	21.2	0	70	30	?	0	70	30	?		308906	runtime=2.1  search=0.9  vcs=0.3
-briannesbitt__carbon-3103	PHP	I	briannesbitt-t3103	169.3	0.99	0.0	99.9	98.2	0	100	0	T	0	100	0	T	call-step-mismatch(200v193)	37110	runtime=165.6  search=0.5  vcs=0.5
-burntsushi__ripgrep-2209	Rust	A	burntsushi-t2209	82.3	0.97	0.0	98.7	96.6	49	50	0	M	55	45	0	M		41127	compile=41.3  test-run=32.3  runtime=2.6  other=2.2  build-drv=1.0
-burntsushi__ripgrep-2576	Rust	A	burntsushi-t2576	173.4	1.03	0.0	98.9	97.0	39	60	0	T	69	31	0	B		68650	compile=107.7  test-run=45.4  other=6.4  runtime=4.7  build-drv=3.4
-caddyserver__caddy-4774	Go	A	caddyserver-t4774	191.6	0.86	0.0	98.3	96.9	72	28	0	B	88	11	1	B	call-step-mismatch(202v194)	61360	build-drv=90.9  compile=70.3  lint=20.0  other=2.4  search=1.2
-caddyserver__caddy-4943	Go	A	caddyserver-t4943	177.6	0.99	74.5	99.1	97.9	61	39	0	B	87	12	1	B	call-step-mismatch(153v145)	42647	compile=85.1  build-drv=35.4  pkg=28.2  lint=20.8  search=1.5
-caddyserver__caddy-5404	Go	A	caddyserver-t5404	74.2	0.69	0.0	97.4	95.4	28	71	0	T	78	22	0	B	call-step-mismatch(96v91)	22361	compile=42.5  lint=15.0  build-drv=12.7  search=0.2  test-run=0.2
-caddyserver__caddy-5626	Go	A	caddyserver-t5626	153.7	0.97	0.0	98.2	91.2	53	46	0	M	85	15	0	B	E7-consecutive-loop,call-step-mismatch(180v170)	331336	compile=91.0  build-drv=27.5  lint=19.9  test-run=1.1  other=0.5
-caddyserver__caddy-5761	Go	A	caddyserver-t5761	120.1	1.07	0.0	97.8	88.8	36	64	0	T	83	17	0	B	E7-consecutive-loop,call-step-mismatch(167v155)	329667	compile=70.4  build-drv=18.1  lint=17.8  vcs=0.2  test-run=0.1
-caddyserver__caddy-5870	Go	A	caddyserver-t5870	210.4	1.08	121.8	97.9	96.7	65	35	0	B	75	25	0	B	call-step-mismatch(201v191)	54038	compile=122.7  lint=49.3  build-drv=26.4  pkg=1.7  search=0.5
-caddyserver__caddy-5995	Go	A	caddyserver-t5995	50.9	0.32	59.6	98.4	94.5	39	61	0	?	89	11	0	?	call-step-mismatch(141v138),replay-invalid(ratio=0.32)	18715	compile=29.4  build-drv=9.9  lint=4.5  pkg=1.7  other=0.2
-caddyserver__caddy-6051	Go	A	caddyserver-t6051	165.0	0.86	0.0	68.6	64.8	25	75	0	T	83	17	0	B	call-step-mismatch(123v116)	16699	compile=79.7  lint=11.7  build-drv=9.1  test-run=6.3  search=0.1
-caddyserver__caddy-6115	Go	A	caddyserver-t6115	64.8	0.43	47.1	98.4	96.0	74	26	0	?	72	28	0	?	call-step-mismatch(107v101),replay-invalid(ratio=0.43)	21993	compile=28.7  lint=16.5  build-drv=13.0  pkg=1.8  other=0.2
-caddyserver__caddy-6288	Go	A	caddyserver-t6288	59.1	0.44	0.0	97.8	93.6	59	40	1	?	65	33	1	?	call-step-mismatch(185v176),replay-invalid(ratio=0.44)	25809	compile=25.3  lint=17.0  build-drv=10.3  test-run=1.1  search=0.7
-caddyserver__caddy-6345	Go	A	caddyserver-t6345	54.7	0.32	56.2	98.0	94.8	85	14	0	?	68	32	0	?	replay-invalid(ratio=0.32)	23486	build-drv=19.2  lint=15.5  compile=12.7  pkg=1.7  other=0.5
-caddyserver__caddy-6350	Go	A	caddyserver-t6350	83.4	0.44	0.0	98.0	95.6	52	48	0	?	73	26	1	?	call-step-mismatch(137v133),replay-invalid(ratio=0.44)	31642	compile=38.3  lint=19.8  build-drv=19.3  other=1.2  test-run=0.5
-caddyserver__caddy-6370	Go	A	caddyserver-t6370	75.7	0.62	0.0	98.1	96.5	95	5	1	B	89	10	1	B		15261	compile=58.0  build-drv=7.3  lint=7.1  search=0.4  runtime=0.1
-caddyserver__caddy-6411	Go	A	caddyserver-t6411	266.7	1.29	0.0	81.7	78.7	18	82	0	T	85	15	0	B	E7-consecutive-loop,call-step-mismatch(98v86)	20252	compile=170.4  lint=27.4  build-drv=7.1  test-run=4.9  vcs=0.1
-facebook__docusaurus-10130	TypeScript	N	facebook-t10130	22.6	1.02	0.0	100.2	92.7	0	100	0	T	0	100	0	T		7486	runtime=20.5  vcs=0.5  test-run=0.3  search=0.1
-facebook__docusaurus-10309	TypeScript	N	facebook-t10309	13.1	0.89	0.0	99.2	63.0	0	91	9	?	0	91	9	?		40509	runtime=7.5  vcs=0.8  search=0.7
-facebook__docusaurus-8927	TypeScript	N	facebook-t8927	28.5	0.96	0.0	76.0	70.6	0	99	1	T	0	99	1	T		2772	test-run=15.1  runtime=5.0  vcs=0.5  search=0.1  other=0.0
-facebook__docusaurus-9183	TypeScript	N	facebook-t9183	34.0	1.04	0.0	70.1	62.7	0	96	4	T	0	96	4	T		4055	runtime=11.4  test-run=9.0  search=0.9  vcs=0.3
-facebook__docusaurus-9897	TypeScript	N	facebook-t9897	33.1	1.04	0.0	84.0	79.0	0	99	1	T	0	99	1	T		5595	test-run=14.0  runtime=11.8  vcs=0.4  search=0.3  other=0.0
-faker-ruby__faker-2705	Ruby	I	faker-ruby-t2705	29.7	1.04	0.0	100.7	96.6	0	100	0	T	0	100	0	T		7655	runtime=27.0  test-run=1.6  vcs=0.1  search=0.1  other=0.0
-faker-ruby__faker-2970	Ruby	I	faker-ruby-t2970	121.2	0.98	0.0	99.9	98.3	0	100	0	T	0	100	0	T		25511	runtime=112.6  test-run=6.3  search=0.3  vcs=0.1  other=0.1
-fastlane__fastlane-19207	Ruby	I	fastlane-t19207	21.0	0.96	61.6	100.2	84.3	8	89	2	T	5	93	3	T	E7-consecutive-loop	15267	runtime=15.8  vcs=0.9  pkg=0.8  search=0.4  other=0.1
-fastlane__fastlane-19304	Ruby	I	fastlane-t19304	12.6	1.09	0.0	101.7	93.5	0	100	0	T	0	100	0	T		3723	runtime=11.7  vcs=0.3  search=0.0  other=0.0
-fastlane__fastlane-19765	Ruby	I	fastlane-t19765	8.6	0.76	0.0	102.6	83.0	0	97	3	?	0	97	3	?		4616	runtime=6.9  vcs=0.6  search=0.2  other=0.0
-fastlane__fastlane-20642	Ruby	I	fastlane-t20642	28.1	1.02	0.0	100.5	94.3	0	100	0	T	0	99	1	T		7644	runtime=26.2  vcs=0.6  search=0.2  other=0.0
-fastlane__fastlane-20958	Ruby	I	fastlane-t20958	22.3	0.84	0.0	100.3	92.1	0	100	0	T	0	100	0	T		8565	runtime=18.4  vcs=2.0  search=0.1  other=0.0
-fastlane__fastlane-20975	Ruby	I	fastlane-t20975	21.2	0.95	0.0	99.2	78.5	0	98	2	T	0	98	2	T		17700	runtime=16.0  vcs=1.8  search=0.3  other=0.3
-fastlane__fastlane-21857	Ruby	I	fastlane-t21857	18.0	1.02	0.0	100.4	90.2	0	98	2	T	0	98	2	T		7668	runtime=15.7  vcs=0.6  search=0.4  other=0.0
-fluent__fluentd-3328	Ruby	I	fluent-t3328	20.5	0.94	0.0	99.8	88.6	0	97	3	T	0	97	3	T		61231	runtime=17.3  search=0.6  vcs=0.3  test-run=0.2  pkg=0.0
-fluent__fluentd-3466	Ruby	I	fluent-t3466	25.6	0.93	0.0	100.2	87.9	0	99	1	T	0	99	1	T		34858	runtime=21.2  vcs=1.2  test-run=1.1  search=0.1  other=0.0
-fluent__fluentd-3608	Ruby	I	fluent-t3608	302.5	1.0	0.0	100.0	99.5	0	100	0	T	0	100	0	T		56846	runtime=300.6  vcs=0.1  test-run=0.1  search=0.1  other=0.0
-fluent__fluentd-3616	Ruby	I	fluent-t3616	8.1	0.91	0.0	101.8	87.7	0	99	1	?	0	99	1	?		20812	runtime=6.8  test-run=0.3  vcs=0.1  search=0.0  other=0.0
-fluent__fluentd-3631	Ruby	I	fluent-t3631	13.4	0.95	0.0	100.8	90.4	0	99	1	T	0	99	1	T		14390	runtime=11.9  vcs=0.2  search=0.1  test-run=0.0  other=0.0
-fluent__fluentd-3640	Ruby	I	fluent-t3640	64.6	0.68	0.0	100.3	98.2	0	100	0	T	0	100	0	T		26338	runtime=63.3  vcs=0.2  search=0.1  test-run=0.0  other=0.0
-fluent__fluentd-3641	Ruby	I	fluent-t3641	7.1	0.88	0.0	102.7	84.3	0	99	1	?	0	99	1	?		6063	runtime=5.9  vcs=0.1  search=0.1  other=0.0  test-run=0.0
-fluent__fluentd-3917	Ruby	I	fluent-t3917	9.7	0.9	0.0	101.8	87.9	0	99	1	?	0	99	1	?		8665	runtime=8.4  vcs=0.1  search=0.1  test-run=0.1  other=0.0
-fluent__fluentd-4030	Ruby	I	fluent-t4030	5.3	0.73	0.0	101.8	39.2	0	73	27	?	0	73	27	?	E7-consecutive-loop,call-step-mismatch(102v98),mechanism-not-witnessed	5365	vcs=2.0  runtime=1.5  search=0.6
-fluent__fluentd-4311	Ruby	I	fluent-t4311	4.9	0.96	0.0	104.1	80.3	0	92	8	?	0	92	8	?	E7-consecutive-loop,call-step-mismatch(83v80)	4569	runtime=3.6  search=0.3  vcs=0.0  test-run=0.0
-fluent__fluentd-4598	Ruby	I	fluent-t4598	4.3	1.03	0.0	105.2	89.0	0	100	0	?	0	100	0	?		5122	runtime=3.8  vcs=0.0  other=0.0  search=0.0  test-run=0.0
-fluent__fluentd-4655	Ruby	I	fluent-t4655	7.5	0.96	0.0	102.1	87.1	0	99	1	?	0	99	1	?		24153	runtime=6.1  test-run=0.4  vcs=0.2  search=0.0  other=0.0
-fmtlib__fmt-3248	C++	B	fmtlib-X3248	201.1		2.0	99.8	99.0	98	1	0	B	98	1	0	B		16097	compile=193.8  runtime=2.6  build-drv=1.2  pkg=1.1  search=0.3
-fmtlib__fmt-1683	C++	B	fmtlib-t1683	103.1	0.94	2.5	99.8	98.4	98	2	0	B	98	2	0	B		13794	compile=97.4  runtime=2.0  build-drv=1.1  pkg=0.7  vcs=0.1
-fmtlib__fmt-2310	C++	B	fmtlib-t2310	83.7	0.86	2.0	99.7	98.0	97	3	0	B	97	3	0	B		18560	compile=77.5  runtime=2.2  build-drv=1.3  pkg=0.7  test-run=0.1
-fmtlib__fmt-2317	C++	B	fmtlib-t2317	291.2	1.08	2.0	99.7	99.2	99	1	0	B	99	1	0	B		23368	compile=282.9  build-drv=2.5  runtime=2.3  pkg=0.7  test-run=0.2
-fmtlib__fmt-2457	C++	B	fmtlib-t2457	112.0	0.93	2.5	99.4	96.8	95	4	0	B	95	4	0	B		33870	compile=100.3  runtime=4.6  build-drv=2.3  pkg=0.7  vcs=0.2
-fmtlib__fmt-3158	C++	B	fmtlib-t3158	224.3	0.96	2.5	99.5	98.5	98	2	0	B	98	2	0	B		22555	compile=213.1  build-drv=3.2  runtime=2.9  pkg=0.7  test-run=0.5
-fmtlib__fmt-3272	C++	B	fmtlib-t3272	60.0	0.83	2.5	99.7	96.6	96	4	0	B	96	4	0	B		15312	compile=53.9  runtime=2.3  build-drv=0.8  pkg=0.7  vcs=0.3
-fmtlib__fmt-3729	C++	B	fmtlib-t3729	219.6	0.96	2.5	99.6	98.7	98	2	0	B	98	2	0	B		23244	compile=209.0  runtime=3.3  build-drv=2.4  pkg=1.2  search=0.5
-fmtlib__fmt-3750	C++	B	fmtlib-t3750	173.7	0.95	2.5	99.5	98.6	98	2	0	B	98	2	0	B		17445	compile=166.7  runtime=2.5  build-drv=1.1  pkg=0.7  vcs=0.1
-fmtlib__fmt-3863	C++	B	fmtlib-t3863	193.2	0.95	2.5	99.5	97.9	98	2	0	B	98	2	0	B		26545	compile=181.8  runtime=3.3  build-drv=2.2  pkg=1.0  vcs=1.0
-fmtlib__fmt-3901	C++	B	fmtlib-t3901	187.5	0.97	2.0	99.9	99.5	99	1	0	B	99	1	0	B		9799	compile=183.8  build-drv=1.0  runtime=0.9  pkg=0.7  test-run=0.1
-gin-gonic__gin-3741	Go	A	gin-gonic-X3741	19.3		22.8	98.9	94.0	47	52	0	M	86	13	0	B		8980	compile=8.3  build-drv=3.7  lint=1.8  pkg=1.8  test-run=0.2
-gin-gonic__gin-1805	Go	A	gin-gonic-t1805	74.5	0.98	0.0	97.3	95.2	20	80	0	T	75	25	0	B	call-step-mismatch(99v96)	25630	compile=44.9  lint=14.7  build-drv=8.5  test-run=2.6  search=0.2
-gin-gonic__gin-1957	Go	A	gin-gonic-t1957	25.3	0.89	0.0	98.1	92.3	48	51	1	M	61	38	1	B	call-step-mismatch(113v107)	15836	compile=8.9  lint=8.4  build-drv=5.3  test-run=0.5  search=0.2
-gin-gonic__gin-2121	Go	A	gin-gonic-t2121	18.5	0.98	0.0	98.6	94.4	42	57	1	T	63	36	1	B	call-step-mismatch(43v39)	9269	compile=7.6  lint=5.9  build-drv=3.4  search=0.2  test-run=0.2
-gin-gonic__gin-2755	Go	A	gin-gonic-t2755	69.0	0.93	0.0	98.4	95.9	19	80	0	T	76	23	0	B	call-step-mismatch(131v120)	25141	compile=43.1  lint=14.1  build-drv=7.2  test-run=1.2  search=0.3
-gin-gonic__gin-3227	Go	A	gin-gonic-t3227	62.2	1.11	0.0	97.9	79.5	36	63	1	T	71	28	1	B	E7-consecutive-loop,call-step-mismatch(140v132)	325344	compile=23.7  lint=12.6  build-drv=11.3  test-run=1.1  search=0.7
-gin-gonic__gin-3820	Go	A	gin-gonic-t3820	27.3	0.97	0.0	84.4	77.7	44	55	1	T	64	35	1	B	call-step-mismatch(98v90)	11541	compile=9.1  lint=6.9  build-drv=4.5  test-run=0.5  search=0.2
-gin-gonic__gin-4003	Go	A	gin-gonic-t4003	18.5	0.62	0.0	97.3	92.8	68	32	1	B	50	49	1	M	call-step-mismatch(48v44)	9357	lint=8.0  compile=5.5  build-drv=3.1  test-run=0.3  search=0.2
-gohugoio__hugo-12171	Go	A	gohugoio-t12171	735.8	1.06	270.5	93.0	91.9	9	91	0	T	78	22	0	B	call-step-mismatch(173v169)	81604	compile=498.0  lint=74.2  test-run=71.0  build-drv=26.6  vcs=4.3
-gohugoio__hugo-12204	Go	A	gohugoio-t12204	115.5	1.05	0.0	98.2	83.5	15	83	1	T	89	10	1	B		322280	compile=71.1  build-drv=14.5  lint=9.0  vcs=6.7  search=1.4
-gohugoio__hugo-12343	Go	A	gohugoio-t12343	321.2	0.77	137.7	98.4	97.7	36	64	0	T	83	17	0	B	call-step-mismatch(138v131)	50385	compile=230.2  lint=38.4  build-drv=25.4  test-run=14.6  pkg=2.0
-gohugoio__hugo-12448	Go	A	gohugoio-t12448	421.9	0.95	0.0	65.3	62.2	78	22	0	B	78	22	0	B		44924	compile=184.9  test-run=36.7  lint=19.8  build-drv=19.8  search=1.2
-gohugoio__hugo-12562	Go	A	gohugoio-t12562	271.1	0.96	0.0	98.9	98.1	33	67	0	T	83	16	0	B	call-step-mismatch(124v114)	34072	compile=199.5  test-run=27.2  build-drv=21.7  lint=16.1  other=1.1
-gohugoio__hugo-12579	Go	A	gohugoio-t12579	288.4	0.91	55.4	98.6	97.4	68	32	0	B	87	13	0	B		33413	compile=220.5  lint=35.8  build-drv=19.7  vcs=2.5  pkg=1.8
-gohugoio__hugo-12768	Go	A	gohugoio-t12768	98.8	1.33	0.0	98.4	87.2	9	91	0	T	91	9	0	B	E7-consecutive-loop,call-step-mismatch(45v35)	315389	compile=70.4  build-drv=7.5  lint=7.4  test-run=0.6  vcs=0.2
-google__gson-2061	Java	J	google-X2061	201.6		0.0	99.9	98.9	1	99	0	T	1	99	0	T		12000	test-run=170.2  runtime=26.6  compile=2.0  search=0.5  other=0.3
-google__gson-1014	Java	J	google-t1014	185.0	1.16	0.0	99.8	99.0	0	100	0	T	0	100	0	T	call-step-mismatch(77v72)	8589	test-run=157.7  runtime=24.6  compile=0.6  other=0.3  search=0.2
-google__gson-1093	Java	J	google-t1093	39.7	1.03	24.7	99.6	96.8	21	79	1	T	17	82	1	T		5460	test-run=29.5  compile=4.8  pkg=1.4  runtime=0.8  search=0.3
-google__gson-1100	Java	J	google-t1100	28.8	1.06	0.0	100.2	96.4	7	92	1	T	7	92	1	T		5083	test-run=21.9  runtime=3.5  compile=2.0  search=0.3  vcs=0.1
-google__gson-2024	Java	J	google-t2024	154.8	1.17	0.0	99.5	92.4	2	98	0	T	2	98	0	T	E7-consecutive-loop,call-step-mismatch(99v85)	310375	test-run=122.4  runtime=18.2  compile=2.1  other=0.3  search=0.1
-google__gson-2134	Java	J	google-t2134	64.2	1.06	0.0	99.6	98.0	1	98	0	T	1	98	0	T		5691	test-run=50.5  runtime=11.3  compile=0.8  other=0.3  search=0.1
-google__gson-2158	Java	J	google-t2158	226.5	1.17	0.0	99.4	94.3	2	98	0	T	2	98	0	T	E7-consecutive-loop,call-step-mismatch(167v154)	312697	test-run=176.0  runtime=33.4  compile=3.5  other=1.3  search=0.2
-google__gson-2311	Java	J	google-t2311	50.4	1.05	0.0	99.1	77.1	10	89	1	T	10	89	1	T	call-step-mismatch(106v103)	309792	test-run=31.5  compile=3.8  runtime=3.2  search=0.4  vcs=0.1
-google__gson-2479	Java	J	google-t2479	152.4	0.78	0.0	99.9	98.3	1	99	0	T	1	99	0	T		13087	test-run=122.5  runtime=25.9  compile=0.9  other=0.8  search=0.3
-hashicorp__terraform-34580	Go	A	hashicorp-t34580	135.9	0.9	0.0	95.0	88.5	84	15	0	B	62	37	0	B	E7-consecutive-loop,call-step-mismatch(139v119)	25393	compile=58.9  lint=44.5  build-drv=16.1  vcs=0.8  search=0.4
-hashicorp__terraform-34814	Go	A	hashicorp-t34814	22.5	0.92	50.6	97.2	87.1	71	27	2	B	57	40	2	B	call-step-mismatch(115v105)	15353	lint=6.7  compile=4.6  build-drv=3.8  pkg=1.8  vcs=0.8
-hashicorp__terraform-34900	Go	A	hashicorp-t34900	331.4	1.16	0.0	96.3	93.2	76	23	1	B	84	16	1	B	E7-consecutive-loop,call-step-mismatch(168v155)	37562	compile=228.6  build-drv=29.6  lint=26.2  test-run=22.4  vcs=2.3
-hashicorp__terraform-35611	Go	A	hashicorp-t35611	369.3	1.23	0.0	98.7	95.8	24	76	0	T	78	21	0	B	call-step-mismatch(191v167)	338160	compile=244.8  lint=58.5  build-drv=32.6  test-run=17.4  search=0.4
-immutable-js__immutable-js-2005	TypeScript	N	immutable-js-t2005	717.5	1.42	0.0	90.6	90.3	0	100	0	T	0	100	0	T		10479	runtime=410.1  test-run=237.7  search=0.0  vcs=0.0  other=0.0
-immutable-js__immutable-js-2006	TypeScript	N	immutable-js-t2006	654.7	1.34	0.0	91.6	91.1	0	100	0	T	0	100	0	T		14418	runtime=420.7  test-run=174.9  search=1.0  vcs=0.1  other=0.0
-javaparser__javaparser-4538	Java	J	javaparser-t4538	192.9	1.15	0.0	99.9	98.8	1	99	0	T	1	99	0	T	call-step-mismatch(74v70)	8473	test-run=164.7  runtime=24.1  compile=1.3  other=0.7  search=0.4
-javaparser__javaparser-4561	Java	J	javaparser-t4561	278.5	1.12	0.0	99.6	98.7	2	97	0	T	2	97	0	T	call-step-mismatch(151v146)	17369	test-run=230.0  runtime=37.5  compile=6.8  search=0.6  vcs=0.3
-jekyll__jekyll-8047	Ruby	I	jekyll-t8047	11.0	1.01	0.0	101.4	90.1	0	96	4	?	0	96	4	?		5451	runtime=9.5  search=0.4  vcs=0.1  other=0.0  test-run=0.0
-jekyll__jekyll-8167	Ruby	I	jekyll-t8167	17.6	0.98	0.0	100.9	93.5	7	93	0	T	7	93	0	T		6575	runtime=11.1  test-run=4.2  pkg=1.1  vcs=0.2  search=0.1
-jekyll__jekyll-8761	Ruby	I	jekyll-t8761	340.4	0.85	0.0	99.7	98.6	1	99	0	T	1	99	0	T		93031	runtime=319.2  test-run=10.8  pkg=4.2  vcs=1.9  search=0.5
-jekyll__jekyll-8771	Ruby	I	jekyll-t8771	249.1	0.87	0.0	99.8	98.7	2	98	0	T	0	100	0	T		75999	runtime=223.1  test-run=21.7  vcs=1.1  other=0.4  search=0.2
-jekyll__jekyll-9141	Ruby	I	jekyll-t9141	82.5	1.03	0.0	99.9	95.4	0	100	0	T	0	100	0	T		41261	runtime=78.1  vcs=1.3  search=0.3  test-run=0.2  other=0.2
-jordansissel__fpm-1829	Ruby	I	jordansissel-t1829	5.3	0.78	0.0	102.6	81.0	2	97	1	?	8	91	1	?		5583	runtime=2.0  test-run=1.3  compile=0.3  vcs=0.1  pkg=0.1
-jordansissel__fpm-1850	Ruby	I	jordansissel-t1850	3.9	0.97	0.0	100.3	76.1	0	99	1	?	0	99	1	?		3124	runtime=2.9  vcs=0.1  search=0.0  pkg=0.0
-jqlang__jq-2681	C	B	jqlang-X2681	29.0		3.0	96.8	91.4	87	13	0	B	29	47	24	T		28320	test-run=8.2  search=5.3  compile=4.5  runtime=2.0  other=1.9
-jqlang__jq-2235	C	B	jqlang-t2235	13.2	0.61	2.5	98.1	64.6	38	49	14	?	31	52	17	?		17437	vcs=2.4  runtime=2.3  test-run=1.9  compile=1.7  search=1.4
-jqlang__jq-2598	C	B	jqlang-t2598	54.3	0.74	2.0	97.9	93.8	88	10	2	B	80	11	9	B		31566	compile=33.2  search=3.9  test-run=3.0  runtime=2.0  build-drv=1.0
-jqlang__jq-2650	C	B	jqlang-t2650	17.9	0.91	2.5	98.6	69.4	6	92	2	T	6	92	2	T	E7-cyclic-loop,mechanism-not-witnessed	71893	runtime=10.7  test-run=0.7  pkg=0.7  search=0.3  vcs=0.1
-jqlang__jq-2658	C	B	jqlang-t2658	10.8	0.56	3.0	97.6	80.8	37	48	14	?	31	51	18	?		9359	test-run=2.8  compile=1.7  search=1.5  runtime=1.4  pkg=0.7
-jqlang__jq-2728	C	B	jqlang-t2728	17.5	0.51	2.0	97.5	87.7	76	20	5	B	31	46	23	T		28791	test-run=3.8  compile=3.1  search=3.0  runtime=2.2  other=1.0
-jqlang__jq-2750	C	B	jqlang-t2750	5.4	1.0	2.0	102.9	65.4	21	77	2	?	21	77	2	?	E7-consecutive-loop,mechanism-not-witnessed	9650	runtime=2.5  pkg=0.7  test-run=0.2  vcs=0.1  search=0.1
-jqlang__jq-2839	C	B	jqlang-t2839	10.3	0.81	2.0	100.2	56.3	13	82	6	?	13	82	6	?	call-step-mismatch(262v259),mechanism-not-witnessed	23525	runtime=4.6  vcs=1.5  pkg=0.7  search=0.3  test-run=0.1
-jqlang__jq-2919	C	B	jqlang-t2919	14.7	0.41	2.0	96.9	75.6	14	59	27	?	12	60	28	?	replay-invalid(ratio=0.41)	15222	test-run=4.7  search=3.0  runtime=1.9  other=1.1  pkg=0.8
-laravel__framework-46234	PHP	I	laravel-t46234	3.6	0.81	0.0	104.9	45.5	0	82	18	?	0	82	18	?	call-step-mismatch(114v108)	6324	runtime=1.4  vcs=0.7  search=0.3
-laravel__framework-48573	PHP	I	laravel-t48573	5.1	0.8	27.3	103.6	67.9	74	24	2	?	57	39	4	?	call-step-mismatch(85v82)	5013	pkg=1.2  runtime=0.8  vcs=0.6  other=0.1  search=0.1
-laravel__framework-48636	PHP	I	laravel-t48636	2.1	0.87	0.0	110.1	47.8	1	81	18	?	1	81	18	?	call-step-mismatch(68v65)	3298	runtime=0.8  vcs=0.3  search=0.2  pkg=0.0
-laravel__framework-51195	PHP	I	laravel-t51195	12.6	4.29	0.0	98.7	8.5	0	93	7	?	0	93	7	?	E7-consecutive-loop,call-step-mismatch(69v59),mechanism-not-witnessed,replay-invalid(ratio=4.29)	311275	runtime=1.0  vcs=0.6  search=0.1
-laravel__framework-52451	PHP	I	laravel-t52451	10.5	0.96	58.0	101.8	78.6	31	66	3	?	17	79	4	?	call-step-mismatch(144v135)	10079	runtime=5.5  pkg=1.2  vcs=0.6  search=0.3  other=0.1
-laravel__framework-52680	PHP	I	laravel-t52680	11.9	4.34	0.0	98.5	4.4	0	76	24	?	0	76	24	?	E7-consecutive-loop,call-step-mismatch(94v85),mechanism-not-witnessed,replay-invalid(ratio=4.34)	312209	vcs=0.4  runtime=0.4  search=0.1
-laravel__framework-52684	PHP	I	laravel-t52684	4.7	0.79	20.7	104.4	72.3	73	25	2	?	56	40	4	?	call-step-mismatch(81v66)	4451	pkg=1.2  runtime=0.8  vcs=0.5  search=0.1  other=0.1
-laravel__framework-52866	PHP	I	laravel-t52866	13.5	4.21	0.0	97.7	15.5	0	98	2	?	0	98	2	?	E7-consecutive-loop,call-step-mismatch(72v63),replay-invalid(ratio=4.21)	309475	runtime=2.0  vcs=0.3  search=0.0
-laravel__framework-53206	PHP	I	laravel-t53206	14.6	2.37	0.0	98.2	20.4	0	94	6	?	0	94	6	?	E7-consecutive-loop,call-step-mismatch(130v111),replay-invalid(ratio=2.37)	309104	runtime=2.8  vcs=0.6  search=0.2
-laravel__framework-53696	PHP	I	laravel-t53696	3.8	1.3	0.0	105.2	64.5	0	90	9	?	0	90	9	?	call-step-mismatch(94v86),mechanism-not-witnessed	4725	runtime=2.2  vcs=0.4  search=0.2  pkg=0.0
-laravel__framework-53914	PHP	I	laravel-t53914	2.9	0.89	0.0	107.2	48.9	0	83	17	?	0	83	17	?	call-step-mismatch(79v75)	4086	runtime=1.2  vcs=0.5  search=0.2
-laravel__framework-53949	PHP	I	laravel-t53949	4.1	0.98	14.6	105.4	77.6	81	17	2	?	66	30	4	?	mechanism-not-witnessed	3487	pkg=1.2  runtime=0.5  vcs=0.3  other=0.1  search=0.1
-micropython__micropython-10095	C	B	micropython-t10095	11.1	0.6	3.0	97.8	55.6	12	77	12	?	12	77	12	?	E7-consecutive-loop,mechanism-not-witnessed	23828	runtime=4.7  vcs=1.5  pkg=0.7  search=0.7  test-run=0.1
-micropython__micropython-12158	C	B	micropython-t12158	43.6	0.88	2.5	65.5	60.2	39	61	1	T	36	63	1	T		13022	test-run=8.9  compile=8.2  runtime=7.3  pkg=0.7  vcs=0.6
-micropython__micropython-13039	C	B	micropython-t13039	16.9	0.8	3.0	99.3	90.7	71	29	0	B	67	32	1	B		8520	compile=8.9  runtime=4.2  pkg=0.7  vcs=0.7  test-run=0.4
-micropython__micropython-13569	C	B	micropython-t13569	30.5	0.47	3.0	97.3	88.9	17	82	1	?	13	86	1	?	replay-invalid(ratio=0.47)	16644	runtime=20.3  test-run=2.8  compile=2.4  vcs=1.0  pkg=0.7
-micropython__micropython-15898	C	B	micropython-t15898	12.3	0.32	3.0	98.5	86.3	24	75	1	?	18	81	1	?	call-step-mismatch(54v51),replay-invalid(ratio=0.32)	6666	runtime=7.6  test-run=0.9  vcs=0.8  pkg=0.7  compile=0.7
-mrdoob__three.js-25687	JavaScript	N	mrdoob-t25687	7.4	1.21	0.0	102.9	63.1	0	99	1	?	0	99	1	?	call-step-mismatch(51v48)	3379	runtime=4.2  vcs=2.1  test-run=0.4  search=0.0  other=0.0
-mrdoob__three.js-26589	JavaScript	N	mrdoob-t26589	17.5	0.99	0.0	100.5	77.6	0	97	3	T	0	97	3	T		9411	runtime=12.2  vcs=2.3  test-run=0.9  search=0.5  other=0.0
-mrdoob__three.js-27395	JavaScript	N	mrdoob-t27395	12.0	1.12	0.0	101.3	61.1	0	97	3	?	0	97	3	?		6111	runtime=6.6  vcs=2.3  test-run=0.5  search=0.2
-nlohmann__json-4237	C++	B	nlohmann-t4237	624.4	1.17	2.5	99.7	99.5	60	40	0	B	60	40	0	B		29293	compile=365.5  test-run=244.0  build-drv=5.0  vcs=2.8  runtime=2.6
-nushell__nushell-12901	Rust	A	nushell-t12901	1045.4	1.07	0.0	99.2	98.3	37	54	9	T	79	12	9	B		160639	compile=790.2  test-run=121.0  search=89.4  other=17.2  build-drv=9.3  runtime=5.0
-nushell__nushell-12950	Rust	A	nushell-t12950	531.5	1.12	0.0	99.6	99.2	63	37	0	B	96	4	0	B		39672	compile=502.2  test-run=19.4  build-drv=3.6  runtime=1.5  other=0.7
-nushell__nushell-13246	Rust	A	nushell-t13246	39.3	0.97	0.0	99.9	97.5	32	68	0	T	94	6	0	B		8290	compile=35.1  test-run=1.2  runtime=0.9  build-drv=0.8  other=0.2
-nushell__nushell-13605	Rust	A	nushell-t13605	11.2	0.83	0.0	99.1	56.7	0	94	6	?	0	94	6	?	E7-consecutive-loop,E7-cyclic-loop,mechanism-not-witnessed	64976	runtime=6.0  search=0.4  vcs=0.1
-nushell__nushell-13831	Rust	A	nushell-t13831	341.3	1.18	0.0	99.7	99.0	34	66	0	T	97	3	0	B		28507	compile=325.3  test-run=7.7  build-drv=2.9  other=1.6  runtime=1.3
-php-cs-fixer__php-cs-fixer-7523	PHP	I	php-cs-fixer-X7523	81.0		0.0	96.7	93.4	0	100	0	T	0	100	0	T		29438	runtime=75.4  vcs=0.6  search=0.3
-php-cs-fixer__php-cs-fixer-7635	PHP	I	php-cs-fixer-t7635	17.8	0.97	0.0	97.9	88.9	0	99	1	T	0	99	1	T	call-step-mismatch(98v88)	9107	runtime=15.6  vcs=0.4  search=0.2
-php-cs-fixer__php-cs-fixer-7663	PHP	I	php-cs-fixer-t7663	11.4	4.65	0.0	96.6	1.8	0	30	70	?	0	30	70	?	E7-consecutive-loop,replay-invalid(ratio=4.65)	308948	search=0.1  vcs=0.1  runtime=0.1
-php-cs-fixer__php-cs-fixer-7875	PHP	I	php-cs-fixer-t7875	44.9	1.0	12.1	98.0	94.4	6	94	0	T	3	97	0	T		14481	runtime=39.7  pkg=1.2  vcs=0.3  search=0.1  other=0.1
-php-cs-fixer__php-cs-fixer-7998	PHP	I	php-cs-fixer-t7998	29.5	1.38	0.0	96.5	59.4	0	99	1	T	0	99	1	T	E7-consecutive-loop,call-step-mismatch(140v127)	310793	runtime=17.4  vcs=0.3  search=0.1
-php-cs-fixer__php-cs-fixer-8064	PHP	I	php-cs-fixer-t8064	42.4	0.98	0.0	96.9	91.8	0	99	1	T	0	99	1	T	call-step-mismatch(149v142)	18938	runtime=38.6  search=0.3  vcs=0.2
-php-cs-fixer__php-cs-fixer-8075	PHP	I	php-cs-fixer-t8075	21.9	0.96	0.0	98.2	91.7	0	99	1	T	0	99	1	T	call-step-mismatch(76v73)	8738	runtime=19.9  vcs=0.3  search=0.2  pkg=0.0
-php-cs-fixer__php-cs-fixer-8256	PHP	I	php-cs-fixer-t8256	54.8	1.01	84.9	98.1	95.4	5	95	0	T	2	97	0	T	call-step-mismatch(92v88)	16885	runtime=49.7  pkg=1.2  vcs=0.2  search=0.1  other=0.1
-php-cs-fixer__php-cs-fixer-8331	PHP	I	php-cs-fixer-t8331	47.8	0.97	0.0	96.5	91.9	0	99	1	T	0	99	1	T	call-step-mismatch(127v123)	19212	runtime=43.7  vcs=0.5  search=0.2  pkg=0.0
-php-cs-fixer__php-cs-fixer-8367	PHP	I	php-cs-fixer-t8367	11.2	10.57	0.0	97.7	1.6	0	0	100	?	0	0	100	?	E7-consecutive-loop,replay-invalid(ratio=10.57)	308794	search=0.2  vcs=0.1
-phpoffice__phpspreadsheet-3940	PHP	I	phpoffice-X3940	137.2		0.0	99.3	91.3	0	100	0	T	0	100	0	T		312521	runtime=124.3  vcs=0.8  search=0.4  other=0.0
-phpoffice__phpspreadsheet-3463	PHP	I	phpoffice-t3463	11.6	0.92	37.4	101.3	86.5	25	73	1	T	14	85	2	?	call-step-mismatch(93v87)	7266	runtime=7.4  pkg=1.2  vcs=0.4  search=0.1  other=0.1
-phpoffice__phpspreadsheet-3469	PHP	I	phpoffice-t3469	104.6	1.08	0.0	99.2	88.8	0	100	0	T	0	100	0	T	E7-consecutive-loop,call-step-mismatch(199v185)	312348	runtime=92.1  vcs=0.6  search=0.3
-phpoffice__phpspreadsheet-3570	PHP	I	phpoffice-t3570	15.7	2.47	0.0	98.3	27.8	0	97	3	?	0	97	3	?	E7-consecutive-loop,call-step-mismatch(96v85),replay-invalid(ratio=2.47)	309124	runtime=4.3  vcs=0.4  search=0.1
-phpoffice__phpspreadsheet-3659	PHP	I	phpoffice-t3659	12.6	0.96	45.9	101.0	86.8	22	76	2	T	12	86	2	?	call-step-mismatch(124v117)	7793	runtime=8.3  pkg=1.1  vcs=0.3  search=0.2  other=0.1
-phpoffice__phpspreadsheet-3903	PHP	I	phpoffice-t3903	59.9	0.99	87.0	99.7	93.7	6	93	0	T	3	96	1	T	call-step-mismatch(100v96)	15007	runtime=52.2  pkg=1.9  other=1.9  vcs=0.5  search=0.4
-phpoffice__phpspreadsheet-4114	PHP	I	phpoffice-t4114	4.0	0.83	0.0	104.8	67.5	0	89	11	?	0	89	11	?	call-step-mismatch(94v83)	4659	runtime=2.4  search=0.3  vcs=0.3
-phpoffice__phpspreadsheet-4186	PHP	I	phpoffice-t4186	41.1	1.01	66.6	100.4	96.2	78	21	1	B	78	22	1	B	call-step-mismatch(106v98)	10393	pkg=29.7  runtime=8.2  vcs=0.4  search=0.4  other=0.1
-phpoffice__phpspreadsheet-4214	PHP	I	phpoffice-t4214	39.8	0.95	0.0	100.0	95.0	0	99	1	T	0	99	1	T	call-step-mismatch(114v109)	11317	runtime=37.5  vcs=0.5  search=0.3
-phpoffice__phpspreadsheet-4313	PHP	I	phpoffice-t4313	34.5	1.12	0.0	99.0	67.6	0	99	1	T	0	99	1	T	E7-consecutive-loop,call-step-mismatch(166v153)	309254	runtime=23.0  vcs=0.4  search=0.3
-preactjs__preact-4152	JavaScript	N	preactjs-X4152	194.0		0.0	98.6	86.4	0	100	0	T	0	100	0	T		31491	runtime=145.5  other=29.9  test-run=13.3  search=0.4  vcs=0.1
-preactjs__preact-2757	JavaScript	N	preactjs-t2757	71.5	1.07	0.0	89.3	82.7	0	100	0	T	0	100	0	T		7896	runtime=42.3  test-run=13.7  other=5.1  search=0.1  vcs=0.1
-preactjs__preact-2896	JavaScript	N	preactjs-t2896	64.9	1.06	0.0	98.9	94.7	0	100	0	T	0	100	0	T		13049	runtime=48.9  test-run=7.1  other=6.8  vcs=0.1  search=0.1
-preactjs__preact-2927	JavaScript	N	preactjs-t2927	42.2	1.06	0.0	87.5	73.3	0	99	1	T	0	99	1	T		6448	runtime=19.1  test-run=9.0  other=6.9  search=0.2  vcs=0.1
-preactjs__preact-3010	JavaScript	N	preactjs-t3010	63.6	1.03	0.0	91.3	82.8	0	100	0	T	0	100	0	T		12953	runtime=38.9  test-run=11.1  other=6.1  search=0.1  vcs=0.1
-preactjs__preact-3062	JavaScript	N	preactjs-t3062	25.0	1.05	0.0	99.2	81.9	0	98	2	T	0	98	2	T		6934	runtime=13.9  other=5.4  test-run=4.0  search=0.4  vcs=0.1
-preactjs__preact-3345	JavaScript	N	preactjs-t3345	85.8	1.11	0.0	98.4	86.7	0	100	0	T	0	100	0	T		21128	runtime=46.7  test-run=17.8  other=17.7  vcs=0.2  search=0.2
-preactjs__preact-3454	JavaScript	N	preactjs-t3454	30.6	1.03	0.0	56.7	45.6	0	100	0	?	0	100	0	?		2170	test-run=9.0  runtime=4.9  other=0.9  vcs=0.1  search=0.0
-preactjs__preact-3562	JavaScript	N	preactjs-t3562	64.8	1.09	0.0	82.0	69.1	0	100	0	T	0	100	0	T		8651	runtime=20.9  test-run=20.3  other=8.9  search=0.1  vcs=0.1
-preactjs__preact-3567	JavaScript	N	preactjs-t3567	135.1	1.07	0.0	86.1	72.2	0	100	0	T	0	100	0	T		18077	runtime=60.2  test-run=29.7  other=22.9  vcs=0.2  search=0.2
-preactjs__preact-3689	JavaScript	N	preactjs-t3689	25.1	1.05	0.0	98.9	86.0	0	98	2	T	0	98	2	T		8363	runtime=16.2  other=3.9  test-run=2.9  search=0.3  vcs=0.1
-preactjs__preact-3739	JavaScript	N	preactjs-t3739	86.0	1.08	0.0	98.7	85.6	0	100	0	T	0	100	0	T		20069	runtime=50.5  other=17.8  test-run=14.4  search=0.2  vcs=0.2
-preactjs__preact-3763	JavaScript	N	preactjs-t3763	49.7	1.14	0.0	98.5	86.8	0	100	0	T	0	100	0	T		9762	runtime=28.6  other=10.0  test-run=9.2  search=0.1  vcs=0.1
-preactjs__preact-4182	JavaScript	N	preactjs-t4182	71.1	1.09	0.0	98.6	81.9	0	100	0	T	0	100	0	T		16023	runtime=42.6  other=16.4  test-run=9.0  vcs=0.2  search=0.2
-preactjs__preact-4245	JavaScript	N	preactjs-t4245	133.3	1.12	0.0	98.4	88.6	0	99	1	T	0	99	1	T	call-step-mismatch(177v174)	29111	runtime=85.6  other=22.1  test-run=20.4  search=0.8  vcs=0.1
-preactjs__preact-4316	JavaScript	N	preactjs-t4316	27.1	1.0	0.0	99.7	81.9	0	99	1	T	0	99	1	T		7224	runtime=17.2  other=5.1  test-run=3.1  search=0.3  vcs=0.1
-preactjs__preact-4436	JavaScript	N	preactjs-t4436	147.1	1.06	0.0	98.7	82.0	0	100	0	T	0	100	0	T		26924	runtime=98.2  other=30.2  test-run=14.1  vcs=0.5  search=0.2
-projectlombok__lombok-2792	Java	J	projectlombok-t2792	376.3	1.06	0.0	99.8	99.1	0	100	0	T	0	100	0	T		26368	test-run=286.4  runtime=85.3  compile=0.8  search=0.5  other=0.3
-projectlombok__lombok-3009	Java	J	projectlombok-t3009	538.4	1.08	281.8	99.6	99.0	1	99	0	T	1	99	0	T	call-step-mismatch(203v192)	43867	test-run=338.1  runtime=188.9  compile=2.2  pkg=1.4  search=0.7
-projectlombok__lombok-3042	Java	J	projectlombok-t3042	321.1	1.13	0.0	99.7	96.2	1	98	0	T	1	98	0	T	E7-consecutive-loop,call-step-mismatch(196v180)	312244	test-run=250.9  runtime=52.9  compile=4.4  search=0.7  vcs=0.2
-projectlombok__lombok-3052	Java	J	projectlombok-t3052	354.8	1.11	0.0	99.8	99.1	2	97	0	T	2	97	0	T	call-step-mismatch(173v169)	22356	test-run=282.8  runtime=59.5  compile=8.6  search=0.6  vcs=0.3
-projectlombok__lombok-3215	Java	J	projectlombok-t3215	485.1	1.1	0.0	99.7	99.1	1	99	0	T	1	99	0	T	call-step-mismatch(160v156)	33764	test-run=381.1  runtime=93.6  compile=5.6  search=0.6  other=0.4
-projectlombok__lombok-3312	Java	J	projectlombok-t3312	626.7	1.13	0.0	99.7	99.0	1	99	0	T	1	99	0	T	call-step-mismatch(214v211)	38772	test-run=493.7  runtime=120.6  compile=4.9  search=1.2  vcs=0.3
-projectlombok__lombok-3326	Java	J	projectlombok-t3326	196.4	1.06	0.0	98.9	77.4	0	98	1	T	0	98	1	T		317760	test-run=146.7  other=31.2  runtime=2.8  search=2.3  compile=0.3
-projectlombok__lombok-3350	Java	J	projectlombok-t3350	11.5		0.0	97.8	3.8	0	0	100	?	0	0	100	?	E7-consecutive-loop	308678	search=0.4  vcs=0.1
-projectlombok__lombok-3371	Java	J	projectlombok-t3371	974.4	1.16	0.0	99.6	99.0	1	99	0	T	1	99	0	T		63243	test-run=776.7  runtime=179.2  compile=7.3  search=1.3  other=1.0
-projectlombok__lombok-3422	Java	J	projectlombok-t3422	502.5	1.13	0.0	99.7	99.2	1	99	0	T	1	99	0	T	call-step-mismatch(169v163)	26985	test-run=403.5  runtime=91.0  compile=3.1  search=0.8  other=0.5
-projectlombok__lombok-3479	Java	J	projectlombok-t3479	210.4	1.05	0.0	99.7	98.1	2	98	0	T	2	98	0	T	call-step-mismatch(185v180)	20971	test-run=158.7  runtime=43.6  compile=3.5  search=0.7  other=0.7
-projectlombok__lombok-3486	Java	J	projectlombok-t3486	26.6	1.15	0.0	100.1	95.0	0	99	1	T	0	99	1	T		16250	test-run=21.2  runtime=3.8  search=0.2  vcs=0.1  other=0.0
-projectlombok__lombok-3571	Java	J	projectlombok-t3571	16.2	1.05	0.0	101.1	95.4	6	93	1	T	6	93	1	T		12291	test-run=12.3  runtime=2.1  compile=1.0  search=0.1  vcs=0.1
-projectlombok__lombok-3594	Java	J	projectlombok-t3594	1491.6	1.08	0.0	99.8	99.5	1	99	0	T	1	99	0	T	call-step-mismatch(247v244)	72602	test-run=1182.4  runtime=291.8  compile=9.1  search=1.1  other=0.9
-projectlombok__lombok-3602	Java	J	projectlombok-t3602	44.9	0.94	0.0	99.4	91.8	13	85	2	T	13	85	2	T	call-step-mismatch(136v133)	10930	test-run=31.3  compile=5.5  runtime=3.6  other=1.3  search=0.9
-projectlombok__lombok-3674	Java	J	projectlombok-t3674	16.2	1.04	0.0	101.5	93.7	2	95	3	T	2	95	3	T		17073	test-run=12.5  runtime=1.9  search=0.4  compile=0.3  vcs=0.1
-projectlombok__lombok-3697	Java	J	projectlombok-t3697	64.1	1.1	0.0	99.6	97.2	3	97	1	T	3	97	1	T		13370	test-run=49.3  runtime=10.9  compile=1.6  search=0.5  vcs=0.1
-prometheus__prometheus-10633	Go	A	prometheus-t10633	19.4	1.0	20.7	95.7	90.3	81	19	0	B	62	38	0	B	call-step-mismatch(51v47)	11180	lint=5.8  build-drv=5.2  compile=2.7  pkg=1.7  other=0.1
-prometheus__prometheus-10720	Go	A	prometheus-t10720	207.2	1.06	0.0	98.5	97.4	85	15	0	B	85	15	0	B	call-step-mismatch(195v189)	35310	compile=149.7  build-drv=21.8  lint=18.6  test-run=10.9  search=0.5
-prometheus__prometheus-11859	Go	A	prometheus-t11859	12.9	3.09	0.0	97.5	2.5	1	0	99	?	1	0	99	?	E7-consecutive-loop,mechanism-not-witnessed,replay-invalid(ratio=3.09)	308705	vcs=1.6  search=0.3  build-drv=0.0  other=0.0
-prometheus__prometheus-12874	Go	A	prometheus-t12874	100.3	1.11	0.0	98.6	88.0	19	81	0	T	38	62	0	T	E7-consecutive-loop,call-step-mismatch(114v101)	318592	test-run=41.3  compile=25.8  lint=13.7  build-drv=7.4  vcs=0.2
-prometheus__prometheus-13845	Go	A	prometheus-t13845	416.5	1.2	0.0	61.9	58.0	69	31	0	B	72	27	0	B	call-step-mismatch(154v147)	7786	compile=159.1  test-run=64.7  build-drv=16.1  lint=1.7  vcs=0.3
-prometheus__prometheus-14861	Go	A	prometheus-t14861	338.2	1.15	0.0	98.6	95.4	86	14	0	B	76	24	0	B	E7-consecutive-loop,call-step-mismatch(106v90)	341345	compile=225.1  lint=77.3  build-drv=19.5  test-run=0.6  vcs=0.2
-prometheus__prometheus-15142	Go	A	prometheus-t15142	352.5	1.42	0.0	98.4	95.4	31	69	0	T	58	42	0	B	E7-consecutive-loop,call-step-mismatch(169v159)	348179	compile=176.0  test-run=90.8  lint=51.6  build-drv=17.7  vcs=0.4
-reactivex__rxjava-7597	Java	J	reactivex-t7597	12.8	3.18	0.0	97.6	1.6	0	0	100	?	0	0	100	?	E7-consecutive-loop,replay-invalid(ratio=3.18)	309088	vcs=1.7  search=0.2  other=0.0
-redis__redis-10068	C	B	redis-t10068	37.9	1.01	2.0	99.5	96.7	54	46	0	M	54	44	1	B		15493	compile=18.5  test-run=14.6  runtime=1.3  pkg=0.7  search=0.5
-redis__redis-10095	C	B	redis-t10095	5.9	1.08	2.5	101.7	82.3	47	52	1	?	48	49	3	?		13291	compile=1.4  runtime=1.3  test-run=1.0  pkg=0.7  vcs=0.2
-redis__redis-10764	C	B	redis-t10764	15.6	0.98	2.5	99.4	91.4	20	79	1	T	20	77	2	T		23206	test-run=9.2  compile=1.9  runtime=1.5  pkg=0.7  search=0.3
-redis__redis-11279	C	B	redis-t11279	14.6	0.95	2.0	98.3	84.0	29	70	2	T	33	55	12	T	call-step-mismatch(143v140)	24364	test-run=2.9  runtime=2.8  compile=2.5  search=1.3  pkg=0.7
-redis__redis-11510	C	B	redis-t11510	75.4	1.01	2.0	99.6	97.4	94	5	0	B	70	24	6	?		28531	other=61.9  compile=6.4  runtime=1.5  test-run=1.1  pkg=0.7
-redis__redis-11631	C	B	redis-t11631	421.8	0.9	2.0	99.1	98.7	85	15	0	B	77	22	1	B		73554	compile=216.7  other=129.3  test-run=61.0  runtime=2.1  search=1.9
-redis__redis-11734	C	B	redis-t11734	54.1	0.97	2.0	99.7	96.5	86	13	0	B	44	54	2	?		18571	other=39.5  test-run=4.8  compile=4.6  runtime=2.0  pkg=0.7
-redis__redis-12272	C	B	redis-t12272	50.3	0.99	2.5	100.0	97.8	93	7	0	B	62	37	1	?		11475	other=40.3  compile=4.6  test-run=2.4  runtime=0.9  pkg=0.7
-redis__redis-12472	C	B	redis-t12472	7.9	0.72	2.5	100.9	53.5	44	46	11	?	43	46	11	?	E7-consecutive-loop,call-step-mismatch(108v105)	6524	vcs=2.3  runtime=1.8  compile=1.0  pkg=0.7  search=0.5
-redis__redis-13115	C	B	redis-t13115	33.7	1.02	2.5	100.1	97.2	81	18	0	B	42	56	2	?	call-step-mismatch(46v43)	10884	other=22.6  test-run=4.7  compile=3.2  pkg=0.7  runtime=0.7
-redis__redis-13338	C	B	redis-t13338	91.2	1.02	2.0	99.8	98.5	84	16	0	B	35	62	3	?	call-step-mismatch(62v59)	15975	other=68.1  test-run=11.6  compile=6.2  runtime=1.2  pkg=0.7
-redis__redis-9733	C	B	redis-t9733	37.6	0.96	2.0	99.4	93.5	74	25	0	B	75	24	1	B		22234	compile=25.2  test-run=4.7  runtime=3.5  pkg=0.7  vcs=0.4
-rubocop__rubocop-13668	Ruby	I	rubocop-X13668	35.1		0.0	100.2	96.4	0	99	1	T	0	99	1	T		8736	test-run=30.7  runtime=2.9  search=0.3  vcs=0.2  other=0.0
-rubocop__rubocop-13362	Ruby	I	rubocop-t13362	48.0	0.98	0.0	100.0	96.3	0	100	0	T	0	100	0	T		12333	test-run=31.6  runtime=14.5  vcs=0.2  search=0.2  other=0.0
-rubocop__rubocop-13375	Ruby	I	rubocop-t13375	83.8	0.93	0.0	99.8	98.2	0	100	0	T	0	100	0	T		16273	runtime=46.5  test-run=35.4  vcs=0.1  search=0.1  other=0.0
-rubocop__rubocop-13393	Ruby	I	rubocop-t13393	16.5	0.99	0.0	100.9	89.5	0	99	1	T	0	99	1	T		6118	test-run=12.8  runtime=1.8  vcs=0.7  search=0.1
-rubocop__rubocop-13396	Ruby	I	rubocop-t13396	43.1	0.91	0.0	98.5	24.1	0	70	30	?	0	70	30	?		18152	vcs=29.5  runtime=6.7  search=3.1  test-run=0.6
-rubocop__rubocop-13424	Ruby	I	rubocop-t13424	115.7	0.93	0.0	99.8	97.1	0	100	0	T	0	100	0	T		30963	test-run=93.1  runtime=18.8  search=0.4  vcs=0.4  other=0.0
-rubocop__rubocop-13431	Ruby	I	rubocop-t13431	24.9	0.97	0.0	100.4	95.7	0	99	1	T	0	99	1	T		6702	test-run=17.2  runtime=6.4  search=0.2  vcs=0.1
-rubocop__rubocop-13479	Ruby	I	rubocop-t13479	53.3	0.98	0.0	100.2	97.0	39	61	0	T	38	62	0	T	call-step-mismatch(112v109)	12986	test-run=27.3  pkg=19.7  runtime=4.6  vcs=0.2  search=0.1
-rubocop__rubocop-13503	Ruby	I	rubocop-t13503	23.7	1.0	0.0	100.7	97.0	0	100	0	T	0	100	0	T		5766	test-run=20.7  runtime=2.2  vcs=0.1  search=0.1  other=0.0
-rubocop__rubocop-13560	Ruby	I	rubocop-t13560	37.4	0.95	0.0	99.8	74.6	0	98	2	T	0	98	2	T	call-step-mismatch(195v192)	17301	test-run=22.0  vcs=6.6  runtime=5.4  search=0.5
-rubocop__rubocop-13579	Ruby	I	rubocop-t13579	10.6	1.0	0.0	101.7	93.1	0	100	0	?	0	100	0	?		3719	test-run=7.2  runtime=2.7  vcs=0.2  search=0.0
-rubocop__rubocop-13627	Ruby	I	rubocop-t13627	102.8	0.93	0.0	99.7	96.0	0	100	0	T	0	100	0	T		36133	runtime=93.0  test-run=5.4  search=0.3  vcs=0.1
-rubocop__rubocop-13653	Ruby	I	rubocop-t13653	50.8	0.95	0.0	100.1	96.8	17	82	0	T	0	100	0	T		12166	test-run=41.6  runtime=7.4  vcs=0.3  search=0.2  other=0.0
-rubocop__rubocop-13680	Ruby	I	rubocop-t13680	23.9	0.99	0.0	100.1	94.7	0	100	0	T	0	100	0	T		7240	test-run=15.3  runtime=7.3  vcs=0.1  search=0.1
-rubocop__rubocop-13687	Ruby	I	rubocop-t13687	71.9	0.95	0.0	99.8	95.1	1	98	1	T	0	99	1	T		26544	test-run=36.6  runtime=31.0  search=0.7  vcs=0.5  pkg=0.1
-rubocop__rubocop-13705	Ruby	I	rubocop-t13705	20.9	0.99	0.0	100.0	94.5	0	99	1	T	0	99	1	T		6028	test-run=14.3  runtime=5.3  search=0.2  vcs=0.1
-sharkdp__bat-1892	Rust	A	sharkdp-t1892	120.6	1.24	0.0	99.3	98.1	66	32	1	B	76	23	1	B		28562	compile=88.6  test-run=24.9  runtime=2.0  search=1.4  build-drv=0.9
-sharkdp__bat-2201	Rust	A	sharkdp-t2201	115.2	1.0	0.0	99.0	96.8	69	30	0	B	85	15	0	B		59228	compile=91.5  test-run=13.8  runtime=2.6  build-drv=1.9  other=1.4
-sharkdp__bat-2260	Rust	A	sharkdp-t2260	102.4	0.98	0.0	99.0	97.3	75	24	0	B	88	12	0	B		27136	compile=84.8  test-run=9.6  build-drv=2.0  runtime=2.0  other=0.9
-sharkdp__bat-2393	Rust	A	sharkdp-t2393	103.1	0.99	0.0	99.3	97.9	71	28	0	B	86	13	0	B		21431	compile=85.3  test-run=11.8  runtime=1.7  build-drv=1.4  other=0.6
-sharkdp__bat-2650	Rust	A	sharkdp-t2650	113.8	1.01	0.0	99.3	98.0	1	98	0	T	91	8	0	B		20192	compile=99.1  test-run=7.4  build-drv=2.0  runtime=1.9  other=1.1
-sharkdp__bat-2835	Rust	A	sharkdp-t2835	250.8	1.01	0.0	99.1	98.1	36	64	0	T	73	27	0	B		44545	compile=174.0  test-run=61.0  runtime=3.5  build-drv=3.2  other=3.0
-sharkdp__bat-3108	Rust	A	sharkdp-t3108	251.0	1.04	0.0	99.0	97.9	46	54	0	M	83	17	0	B		39421	compile=197.4  test-run=38.1  other=3.6  runtime=3.2  build-drv=3.0
-sharkdp__bat-562	Rust	A	sharkdp-t562	129.6	1.01	0.0	99.4	97.4	55	45	0	M	56	44	0	B		30417	compile=66.0  test-run=51.7  build-drv=4.1  runtime=2.8  other=1.4
-tokio-rs__tokio-6551	Rust	A	tokio-rs-X6551	116.0		0.0	97.0	95.5	10	90	0	T	50	50	0	M		76695	compile=51.9  test-run=48.9  other=6.0  runtime=3.1  build-drv=1.0
-tokio-rs__axum-1119	Rust	A	tokio-rs-t1119	154.9	0.93	0.0	99.5	98.1	45	55	0	M	98	2	0	B		21973	compile=146.5  runtime=2.6  build-drv=2.2  other=1.0  search=0.1
-tokio-rs__axum-1730	Rust	A	tokio-rs-t1730	457.0	1.06	0.0	99.0	98.7	15	85	0	T	99	1	0	B		31477	compile=443.3  other=3.0  build-drv=2.2  runtime=2.1  test-run=0.4
-tokio-rs__axum-1934	Rust	A	tokio-rs-t1934	685.9	1.09	0.0	99.0	98.4	18	82	0	T	99	1	0	B		52881	compile=663.7  other=5.3  runtime=3.6  build-drv=2.8  vcs=0.3
-tokio-rs__axum-2096	Rust	A	tokio-rs-t2096	460.8	1.03	0.0	99.1	98.7	8	92	0	T	99	1	0	B		37953	compile=443.6  other=4.8  build-drv=3.6  runtime=2.8  vcs=0.1
-tokio-rs__tokio-4384	Rust	A	tokio-rs-t4384	962.5	1.02	0.0	93.2	91.7	15	85	0	T	61	39	0	?		32182	other=412.0  compile=284.8  test-run=179.3  runtime=3.1  build-drv=3.1
-tokio-rs__tokio-4867	Rust	A	tokio-rs-t4867	302.9	0.94	0.0	99.0	98.4	4	96	0	T	99	1	0	B		37280	compile=289.4  build-drv=3.0  runtime=2.4  other=2.4  test-run=0.6
-tokio-rs__tokio-4898	Rust	A	tokio-rs-t4898	120.8	1.23	0.0	99.0	98.6	4	96	0	T	100	0	0	B	call-step-mismatch(22v19)	12170	compile=117.0  build-drv=1.5  runtime=0.4  search=0.1  other=0.1
-tokio-rs__tokio-6603	Rust	A	tokio-rs-t6603	856.2	0.71	0.0	99.9	99.7	0	100	0	T	21	79	0	T		86470	test-run=670.0  compile=177.9  build-drv=2.5  runtime=2.0  other=1.1
-tokio-rs__tokio-6724	Rust	A	tokio-rs-t6724	25.2	0.99	0.0	100.5	95.9	30	69	2	T	95	3	2	B	call-step-mismatch(33v30)	6288	compile=22.3  build-drv=0.7  runtime=0.7  other=0.5  search=0.4
-tokio-rs__tokio-6752	Rust	A	tokio-rs-t6752	125.0	1.01	0.0	98.8	97.6	5	95	0	T	98	2	0	B	call-step-mismatch(74v71)	17098	compile=118.4  runtime=1.6  other=1.2  build-drv=0.8  test-run=0.2
-tokio-rs__axum-682	Rust	A	tokio-rs-t682	134.3	0.9	0.0	99.5	98.1	69	31	0	B	98	2	0	B		19679	compile=126.4  runtime=2.6  build-drv=2.0  other=1.0  vcs=0.1
-tokio-rs__tokio-6838	Rust	A	tokio-rs-t6838	24.1	0.99	0.0	100.2	96.7	12	88	0	T	96	4	0	B		6801	compile=21.6  runtime=0.8  build-drv=0.7  other=0.2  vcs=0.1
-tokio-rs__axum-691	Rust	A	tokio-rs-t691	633.6	1.04	0.0	99.1	98.7	6	94	0	T	99	1	0	B		53601	compile=610.7  other=5.5  build-drv=4.9  runtime=3.9  search=0.5
-tokio-rs__tokio-7139	Rust	A	tokio-rs-t7139	47.3	0.98	0.0	99.9	98.2	16	84	0	T	98	2	0	B		7873	compile=44.7  runtime=0.9  build-drv=0.6  other=0.2  vcs=0.1
-tokio-rs__axum-734	Rust	A	tokio-rs-t734	1107.9	0.97	0.0	99.2	99.0	49	51	0	M	99	1	0	B		81748	compile=1078.7  build-drv=7.1  runtime=5.4  other=4.6  search=0.5
-uutils__coreutils-6377	Rust	A	uutils-t6377	101.1	0.97	0.0	98.8	83.6	55	45	1	B	93	6	1	B		59547	compile=76.5  vcs=11.9  runtime=4.4  build-drv=1.8  test-run=0.8
-uutils__coreutils-6575	Rust	A	uutils-t6575	195.5	1.08	0.0	98.3	96.4	43	57	0	T	67	33	0	B		62713	compile=120.3  test-run=59.4  other=5.5  build-drv=3.3  runtime=2.0
-uutils__coreutils-6682	Rust	A	uutils-t6682	84.7	1.03	0.0	99.3	97.6	59	41	0	B	97	3	0	B		17811	compile=78.2  build-drv=1.9  runtime=1.5  test-run=0.6  other=0.4
-uutils__coreutils-6690	Rust	A	uutils-t6690	77.9	1.01	0.0	98.9	97.3	68	32	0	B	93	6	0	B		22344	compile=68.2  test-run=3.5  build-drv=1.8  runtime=1.3  other=0.7
-uutils__coreutils-6731	Rust	A	uutils-t6731	56.7	1.02	0.0	99.1	97.1	82	18	0	B	91	9	0	B		13872	compile=49.1  test-run=4.0  build-drv=0.9  runtime=0.7  other=0.5
-valkey-io__valkey-1499	C	B	valkey-io-t1499	5.2	1.01	3.0	98.3	52.4	26	56	17	?	26	56	17	?	mechanism-not-witnessed	6007	runtime=1.6  vcs=1.1  pkg=0.7  search=0.5  other=0.0
-valkey-io__valkey-1842	C	B	valkey-io-t1842	309.0	0.98	2.0	99.3	98.7	15	85	0	T	2	97	1	T		64530	test-run=252.9  other=40.6  compile=4.9  runtime=2.1  search=1.5
-valkey-io__valkey-790	C	B	valkey-io-t790	149.1	0.99	2.0	99.5	98.5	30	70	0	T	5	94	1	T		74739	test-run=98.6  other=38.7  compile=4.5  runtime=1.9  search=0.8
-valkey-io__valkey-928	C	B	valkey-io-t928	75.3	0.94	2.0	98.3	93.0	72	27	1	B	27	67	6	?		76070	other=43.8  test-run=12.6  compile=5.7  runtime=3.9  vcs=1.6
-vuejs__core-11915	TypeScript	N	vuejs-X11915	193.4		0.0	99.0	98.5	0	100	0	T	0	98	2	T		13075	test-run=148.2  runtime=29.8  search=4.0  other=3.9  vcs=0.1
-vuejs__core-11589	TypeScript	N	vuejs-t11589	213.0	1.09	0.0	98.8	97.9	0	100	0	T	0	97	3	T		22508	test-run=157.0  runtime=33.0  other=8.3  search=6.2  vcs=0.2
-vuejs__core-11739	TypeScript	N	vuejs-t11739	559.1	1.14	0.0	98.5	97.9	0	100	0	T	0	96	4	T		71556	test-run=384.5  runtime=108.6  other=23.5  search=18.5  vcs=0.1
-vuejs__core-11870	TypeScript	N	vuejs-t11870	137.6	1.11	0.0	99.2	98.4	0	100	0	T	0	97	3	T		15456	test-run=90.2  runtime=33.3  other=5.4  search=3.8  vcs=0.1
-vuejs__core-11899	TypeScript	N	vuejs-t11899	93.1	1.04	0.0	98.7	97.1	0	100	0	T	0	97	3	T		13764	test-run=52.5  runtime=31.5  search=2.8  other=2.1  vcs=0.1
+instance	language	mech	short	fence	live_ratio	boot_s	coverage	classified_pct	own_B	own_T	own_S	own_label	proc_B	proc_T	proc_S	proc_label	n_leaf	leaf_B	leaf_T	leaf_S	leaf_label	flags	n_receipts	top_procs
+apache__lucene-13704	Java	J	apache-lucene-13704	16.9	1.66	0.0	97.8	32.1	4	85	12	?	4	85	12	?	93	2	10	88	S		309499	test-run=3.3  runtime=1.3  search=0.6  vcs=0.4  compile=0.2
+apache__lucene-11760	Java	J	apache-t11760	17.9	0.08	0.0	100.3	83.4	0	96	4	?	0	96	4	?	122	0	29	71	?	call-step-mismatch(104v100),replay-invalid(ratio=0.08)	43482	test-run=10.2  runtime=4.1  vcs=1.6  search=0.6  other=0.0
+apache__lucene-12022	Java	J	apache-t12022	18.1	0.07	0.0	100.3	83.0	0	93	7	?	0	93	7	?	184	0	23	77	?	call-step-mismatch(131v128),replay-invalid(ratio=0.07)	42833	test-run=10.0  runtime=4.0  vcs=1.3  search=1.0  other=0.0
+apache__lucene-12196	Java	J	apache-t12196	19.3	0.13	0.0	98.4	86.6	6	92	2	?	6	92	2	?	139	9	32	59	?	call-step-mismatch(89v85),replay-invalid(ratio=0.13)	18967	test-run=11.7  runtime=3.6  compile=1.0  vcs=1.0  search=0.4
+apache__lucene-12212	Java	J	apache-t12212	49.4	0.29	0.0	98.9	76.7	0	99	1	?	0	99	1	?	266	0	32	68	?	replay-invalid(ratio=0.29)	312795	test-run=27.2  runtime=10.3  vcs=0.5  search=0.4  other=0.0
+apache__lucene-12626	Java	J	apache-t12626	35.9	0.07	0.0	100.1	90.9	0	97	3	?	0	97	3	?	347	1	55	44	?	replay-invalid(ratio=0.07)	106715	test-run=21.6  runtime=10.0  vcs=1.0  search=1.0  other=0.1
+apache__lucene-13170	Java	J	apache-t13170	16.4	0.18	0.0	99.1	88.3	6	89	6	?	6	89	6	?	159	5	20	75	?	replay-invalid(ratio=0.18)	12311	test-run=9.9  runtime=2.9  search=0.9  compile=0.8  vcs=0.7
+apache__lucene-13301	Java	J	apache-t13301	12.6	2.01	0.0	97.4	3.4	0	0	100	?	0	0	100	?	85	0	0	100	?	call-step-mismatch(75v71),replay-invalid(ratio=2.01)	309173	vcs=1.1  search=0.4  other=0.0
+apache__lucene-13494	Java	J	apache-t13494	37.2	0.22	0.0	99.3	90.9	10	89	2	?	5	93	2	?	336	24	18	57	?	call-step-mismatch(145v141),replay-invalid(ratio=0.22)	78836	test-run=22.5  runtime=7.5  pkg=1.5  vcs=1.1  search=0.6
+apache__druid-13704	Java	J	apache-t13704	27.0	1.03	0.0	100.0	90.3	9	85	6	T	9	85	6	T	327	7	10	82	S	call-step-mismatch(108v104)	7244	test-run=17.9  runtime=2.8  compile=2.2  search=1.5  vcs=1.1
+apache__druid-14092	Java	J	apache-t14092	539.2	1.17	0.0	111.0	110.3	0	100	0	T	0	100	0	T	97	31	23	46	S		14070	test-run=441.2  lint=105.4  runtime=47.9  vcs=1.6  other=1.3
+apache__druid-14136	Java	J	apache-t14136	950.0	1.24	0.0	99.5	99.1	0	99	0	T	0	99	0	T	327	20	18	61	S		27073	test-run=649.5  lint=196.5  runtime=88.7  compile=4.5  vcs=1.7
+apache__druid-15402	Java	J	apache-t15402	3999.1	1.18	0.0	99.4	99.3	0	100	0	T	0	100	0	T	741	33	34	33	M	call-step-mismatch(175v168)	84662	test-run=2622.8  lint=990.4  runtime=353.6  vcs=4.8  other=2.6
+apache__druid-16875	Java	J	apache-t16875	359.7	1.2	0.0	99.6	98.6	1	99	0	T	1	99	0	T	299	21	22	57	S	call-step-mismatch(118v111)	15531	test-run=250.1  lint=55.0  runtime=44.4  compile=3.7  vcs=1.8
+astral-sh__ruff-15309	Rust	A	astral-sh-t15309	688.5	1.16	0.0	99.5	98.9	78	22	1	B	98	1	1	B	6786	61	20	19	B		69392	compile=656.1  build-drv=6.9  search=6.0  test-run=5.0  runtime=4.2
+astral-sh__ruff-15330	Rust	A	astral-sh-t15330	700.7	1.21	0.0	99.5	99.2	79	21	0	B	99	0	0	B	6042	65	16	19	B	call-step-mismatch(100v97)	54506	compile=683.0  build-drv=4.8  runtime=2.2  search=1.3  other=1.1
+astral-sh__ruff-15356	Rust	A	astral-sh-t15356	707.0	1.18	0.0	99.4	99.0	70	30	0	B	98	2	0	B	6190	59	21	19	B		57086	compile=675.6  test-run=13.2  build-drv=5.1  runtime=1.9  other=1.3
+astral-sh__ruff-15394	Rust	A	astral-sh-t15394	619.0	1.21	0.0	99.4	99.1	79	21	0	B	99	1	0	B	5799	66	14	20	B		43226	compile=600.9  build-drv=4.5  runtime=2.4  search=1.4  lint=1.3
+astral-sh__ruff-15443	Rust	A	astral-sh-t15443	528.5	1.24	0.0	99.4	99.1	75	25	0	B	99	1	0	B	4514	66	9	25	B	call-step-mismatch(66v63)	32669	compile=511.0  test-run=4.9  build-drv=3.8  search=1.2  runtime=1.1
+astral-sh__ruff-15543	Rust	A	astral-sh-t15543	387.1	1.2	0.0	99.4	99.0	100	0	0	B	99	0	0	B	3784	66	3	31	B	E7-consecutive-loop	22705	compile=377.2  build-drv=2.1  search=1.4  runtime=1.0  vcs=0.4
+astral-sh__ruff-15626	Rust	A	astral-sh-t15626	505.0	1.14	0.0	99.4	98.9	74	26	0	B	99	1	0	B	4743	63	11	26	B		35513	compile=489.4  build-drv=3.2  runtime=2.2  search=1.9  test-run=1.1
+axios__axios-4731	JavaScript	N	axios-t4731	12.5	0.93	0.0	100.9	90.5	0	100	0	T	0	100	0	T	619	0	91	9	T		15142	runtime=8.4  test-run=2.8  search=0.1  vcs=0.0
+axios__axios-4738	JavaScript	N	axios-t4738	5.9	0.95	0.0	102.6	82.7	0	99	1	?	0	99	1	?	323	0	84	16	T		14919	runtime=4.8  vcs=0.1  search=0.1
+axios__axios-5085	JavaScript	N	axios-t5085	7.6	0.95	0.0	101.1	84.0	0	99	1	?	0	99	1	?	435	0	86	14	T		33190	runtime=6.3  search=0.1  vcs=0.1
+axios__axios-5316	JavaScript	N	axios-t5316	13.9	0.82	0.0	100.0	74.0	0	97	3	T	0	97	3	T	1020	0	71	29	T	call-step-mismatch(312v309)	80666	runtime=8.7  test-run=1.3  search=0.3  vcs=0.3
+axios__axios-5892	JavaScript	N	axios-t5892	16.0	0.96	0.0	100.5	91.8	0	99	0	T	1	98	0	T	906	0	93	7	T		33820	runtime=13.0  test-run=1.4  build-drv=0.2  vcs=0.1  search=0.1
+axios__axios-6539	JavaScript	N	axios-t6539	19.1	0.9	0.0	99.5	89.1	2	97	1	T	0	99	1	T	1001	0	86	14	T		42222	runtime=13.4  test-run=3.4  search=0.2  vcs=0.1
+babel__babel-15445	JavaScript	N	babel-X15445	28.7		0.0	100.4	85.1	0	98	2	T	0	98	2	T	946	0	67	33	T		6511	runtime=24.0  vcs=3.2  search=0.4
+babel__babel-13928	JavaScript	N	babel-t13928	402.5	1.14	0.0	99.8	98.3	1	99	0	T	1	97	2	T	5064	0	95	5	T		32167	runtime=384.9  search=6.9  build-drv=4.0  vcs=3.7  other=0.0
+babel__babel-14532	JavaScript	N	babel-t14532	10.6	0.95	0.0	99.4	23.2	0	68	32	?	0	68	32	?	365	0	32	68	S	E7-consecutive-loop,mechanism-not-witnessed	7068	vcs=6.5  runtime=1.7  search=0.8
+babel__babel-15649	JavaScript	N	babel-t15649	41.9	1.04	0.0	100.3	92.5	0	99	1	T	0	99	1	T	617	0	83	17	T	call-step-mismatch(73v70)	5303	runtime=37.8  vcs=2.2  test-run=0.7  search=0.3  other=0.0
+babel__babel-16130	JavaScript	N	babel-t16130	164.0	1.1	0.0	100.0	97.2	0	99	1	T	0	99	1	T	1830	0	88	12	T		14675	runtime=157.6  vcs=2.7  search=1.8
+briannesbitt__carbon-2813	PHP	I	briannesbitt-carbon-2813	14.5	2.99	0.0	98.4	23.8	0	1	99	?	0	1	99	?	173	0	2	98	?	E7-consecutive-loop,mechanism-not-witnessed,replay-invalid(ratio=2.99)	309308	search=3.4  vcs=0.2  runtime=0.0
+briannesbitt__carbon-2665	PHP	I	briannesbitt-t2665	13.4	1.88	0.0	98.3	13.5	0	94	6	?	0	94	6	?	124	0	18	82	S	E7-consecutive-loop,call-step-mismatch(164v147)	308891	runtime=1.7  vcs=0.4  search=0.1
+briannesbitt__carbon-2752	PHP	I	briannesbitt-t2752	10.1	0.92	0.0	101.1	84.3	0	98	2	?	0	98	2	?	139	0	28	72	S	call-step-mismatch(104v101)	9547	runtime=8.3  vcs=0.3  search=0.2
+briannesbitt__carbon-2762	PHP	I	briannesbitt-t2762	11.6	5.98	0.0	98.0	3.5	0	31	69	?	0	31	69	?	144	0	5	95	?	E7-consecutive-loop,mechanism-not-witnessed,replay-invalid(ratio=5.98)	308788	search=0.3  runtime=0.1  vcs=0.1
+briannesbitt__carbon-2981	PHP	I	briannesbitt-t2981	159.2	0.99	227.2	100.0	98.4	2	98	0	T	1	99	0	T	403	25	21	54	S	call-step-mismatch(162v158)	33589	runtime=153.7  pkg=1.3  vcs=0.5  search=0.3  other=0.0
+briannesbitt__carbon-3005	PHP	I	briannesbitt-t3005	91.9	0.98	225.9	99.9	96.2	3	97	0	T	1	98	0	T	442	23	19	58	S	call-step-mismatch(257v252)	33843	runtime=85.6  pkg=1.2  vcs=0.5  search=0.4  other=0.0
+briannesbitt__carbon-3041	PHP	I	briannesbitt-t3041	12.5	0.88	31.3	98.7	74.8	27	71	2	?	15	82	3	?	471	22	35	42	M		15670	runtime=6.7  pkg=1.2  vcs=0.6  search=0.2  other=0.0
+briannesbitt__carbon-3073	PHP	I	briannesbitt-t3073	5.9	0.87	0.0	98.9	66.4	0	93	7	?	0	93	7	?	180	0	24	76	S	call-step-mismatch(133v125)	7522	runtime=3.6  search=0.3  vcs=0.3
+briannesbitt__carbon-3098	PHP	I	briannesbitt-t3098	14.4	1.41	0.0	97.8	21.2	0	70	30	?	0	70	30	?	620	0	2	98	S		308906	runtime=2.1  search=0.9  vcs=0.3
+briannesbitt__carbon-3103	PHP	I	briannesbitt-t3103	169.3	0.99	0.0	99.9	98.2	0	100	0	T	0	100	0	T	324	0	24	76	S	call-step-mismatch(200v193)	37110	runtime=165.6  search=0.5  vcs=0.5
+burntsushi__ripgrep-2209	Rust	A	burntsushi-t2209	82.3	0.97	0.0	98.7	96.6	31	69	0	T	53	46	0	M	25785	2	98	0	T		41127	compile=41.3  test-run=34.3  runtime=2.6  build-drv=1.0  other=0.3
+burntsushi__ripgrep-2576	Rust	A	burntsushi-t2576	173.4	1.03	0.0	98.9	97.0	39	61	0	T	67	33	0	B	16235	6	92	2	T		68650	compile=107.7  test-run=49.7  runtime=4.7  build-drv=3.4  other=2.1
+caddyserver__caddy-4774	Go	A	caddyserver-t4774	191.6	0.86	0.0	98.3	96.9	72	28	0	B	87	12	1	B	35127	60	35	4	B	call-step-mismatch(202v194)	61360	build-drv=90.9  compile=70.3  lint=20.0  test-run=1.8  search=1.2
+caddyserver__caddy-4943	Go	A	caddyserver-t4943	177.6	0.99	74.5	99.1	97.9	61	39	0	B	87	13	1	B	23314	50	43	6	M	call-step-mismatch(153v145)	42647	compile=85.1  build-drv=35.4  pkg=28.2  lint=20.8  search=1.5
+caddyserver__caddy-5404	Go	A	caddyserver-t5404	74.2	0.69	0.0	97.4	95.4	28	71	0	T	78	22	0	B	15611	57	42	1	B	call-step-mismatch(96v91)	22361	compile=42.5  lint=15.0  build-drv=12.7  search=0.2  test-run=0.2
+caddyserver__caddy-5626	Go	A	caddyserver-t5626	153.7	0.97	0.0	98.2	91.2	53	46	0	M	85	15	0	B	22489	54	45	1	M	E7-consecutive-loop,call-step-mismatch(180v170)	331336	compile=91.0  build-drv=27.5  lint=19.9  test-run=1.5  search=0.2
+caddyserver__caddy-5761	Go	A	caddyserver-t5761	120.1	1.07	0.0	97.8	88.8	36	64	0	T	83	17	0	B	20929	57	42	1	B	E7-consecutive-loop,call-step-mismatch(167v155)	329667	compile=70.4  build-drv=18.1  lint=17.8  vcs=0.2  test-run=0.1
+caddyserver__caddy-5870	Go	A	caddyserver-t5870	210.4	1.08	121.8	97.9	96.7	65	35	0	B	75	25	0	B	34270	49	50	1	M	call-step-mismatch(201v191)	54038	compile=122.7  lint=49.3  build-drv=26.4  pkg=1.8  test-run=0.6
+caddyserver__caddy-5995	Go	A	caddyserver-t5995	50.9	0.32	59.6	98.4	94.5	39	61	0	?	89	11	0	?	8248	67	30	2	?	call-step-mismatch(141v138),replay-invalid(ratio=0.32)	18715	compile=29.4  build-drv=9.9  lint=4.5  pkg=1.8  test-run=0.2
+caddyserver__caddy-6051	Go	A	caddyserver-t6051	165.0	0.86	0.0	68.6	64.8	25	75	0	T	83	17	0	B	11352	60	39	1	B	call-step-mismatch(123v116)	16699	compile=79.7  lint=11.7  build-drv=9.1  test-run=6.3  search=0.1
+caddyserver__caddy-6115	Go	A	caddyserver-t6115	64.8	0.43	47.1	98.4	96.0	74	26	0	?	72	28	0	?	13580	44	55	1	?	call-step-mismatch(107v101),replay-invalid(ratio=0.43)	21993	compile=28.7  lint=16.5  build-drv=13.0  pkg=1.8  other=0.2
+caddyserver__caddy-6288	Go	A	caddyserver-t6288	59.1	0.44	0.0	97.8	93.6	59	40	1	?	65	34	1	?	12254	32	64	4	?	call-step-mismatch(185v176),replay-invalid(ratio=0.44)	25809	compile=25.3  lint=17.0  build-drv=10.3  test-run=1.4  search=0.7
+caddyserver__caddy-6345	Go	A	caddyserver-t6345	54.7	0.32	56.2	98.0	94.8	85	14	0	?	67	32	0	?	13103	43	56	1	?	replay-invalid(ratio=0.32)	23486	build-drv=19.2  lint=15.5  compile=12.7  pkg=1.8  test-run=0.4
+caddyserver__caddy-6350	Go	A	caddyserver-t6350	83.4	0.44	0.0	98.0	95.6	52	48	0	?	73	27	1	?	17194	44	54	2	?	call-step-mismatch(137v133),replay-invalid(ratio=0.44)	31642	compile=38.3  lint=19.8  build-drv=19.3  test-run=1.4  search=0.5
+caddyserver__caddy-6370	Go	A	caddyserver-t6370	75.7	0.62	0.0	98.1	96.5	95	5	1	B	89	10	1	B	9963	59	40	1	B		15261	compile=58.0  build-drv=7.3  lint=7.1  search=0.4  runtime=0.1
+caddyserver__caddy-6411	Go	A	caddyserver-t6411	266.7	1.29	0.0	81.7	78.7	18	82	0	T	85	15	0	B	15729	58	41	0	B	E7-consecutive-loop,call-step-mismatch(98v86)	20252	compile=170.4  lint=27.4  build-drv=7.1  test-run=5.0  vcs=0.1
+facebook__docusaurus-10130	TypeScript	N	facebook-t10130	22.6	1.02	0.0	100.2	92.7	0	100	0	T	0	100	0	T	2156	0	97	3	T		7486	runtime=20.5  vcs=0.5  test-run=0.3  search=0.1
+facebook__docusaurus-10309	TypeScript	N	facebook-t10309	13.1	0.89	0.0	99.2	63.0	0	91	9	?	0	91	9	?	1253	0	59	41	T		40509	runtime=7.5  vcs=0.8  search=0.7
+facebook__docusaurus-8927	TypeScript	N	facebook-t8927	28.5	0.96	0.0	76.0	70.6	0	99	1	T	0	99	1	T	205	0	69	31	T		2772	test-run=15.1  runtime=5.0  vcs=0.5  search=0.1  other=0.0
+facebook__docusaurus-9183	TypeScript	N	facebook-t9183	34.0	1.04	0.0	70.1	62.7	0	96	4	T	0	96	4	T	263	0	65	35	T		4055	runtime=11.4  test-run=9.0  search=0.9  vcs=0.3
+facebook__docusaurus-9897	TypeScript	N	facebook-t9897	33.1	1.04	0.0	84.0	79.0	0	99	1	T	0	99	1	T	1055	0	90	10	T		5595	test-run=14.0  runtime=11.8  vcs=0.4  search=0.3  other=0.0
+faker-ruby__faker-2705	Ruby	I	faker-ruby-t2705	29.7	1.04	0.0	100.7	96.6	0	100	0	T	0	100	0	T	179	0	69	31	T		7655	runtime=27.0  test-run=1.6  vcs=0.1  search=0.1  other=0.0
+faker-ruby__faker-2970	Ruby	I	faker-ruby-t2970	121.2	0.98	0.0	99.9	98.3	0	100	0	T	0	100	0	T	719	0	60	40	T		25511	runtime=112.6  test-run=6.3  search=0.3  vcs=0.1  other=0.1
+fastlane__fastlane-19207	Ruby	I	fastlane-t19207	21.0	0.96	61.6	100.2	84.3	8	89	2	T	5	93	3	T	460	8	56	36	T	E7-consecutive-loop	15267	runtime=15.8  vcs=0.9  pkg=0.8  search=0.4  other=0.1
+fastlane__fastlane-19304	Ruby	I	fastlane-t19304	12.6	1.09	0.0	101.7	93.5	0	100	0	T	0	100	0	T	85	0	79	21	T		3723	runtime=11.7  vcs=0.3  search=0.0  other=0.0
+fastlane__fastlane-19765	Ruby	I	fastlane-t19765	8.6	0.76	0.0	102.6	83.0	0	97	3	?	0	97	3	?	139	0	65	35	T		4616	runtime=6.9  vcs=0.6  search=0.2  other=0.0
+fastlane__fastlane-20642	Ruby	I	fastlane-t20642	28.1	1.02	0.0	100.5	94.3	0	100	0	T	0	99	1	T	215	0	64	36	T		7644	runtime=26.2  vcs=0.6  search=0.2  other=0.0
+fastlane__fastlane-20958	Ruby	I	fastlane-t20958	22.3	0.84	0.0	100.3	92.1	0	100	0	T	0	100	0	T	441	0	92	8	T		8565	runtime=18.4  vcs=2.0  search=0.1  other=0.0
+fastlane__fastlane-20975	Ruby	I	fastlane-t20975	21.2	0.95	0.0	99.2	78.5	0	98	2	T	0	98	2	T	449	0	55	45	T		17700	runtime=16.0  vcs=1.8  search=0.3  other=0.2
+fastlane__fastlane-21857	Ruby	I	fastlane-t21857	18.0	1.02	0.0	100.4	90.2	0	98	2	T	0	98	2	T	260	0	67	33	T		7668	runtime=15.7  vcs=0.6  search=0.4  other=0.0
+fluent__fluentd-3328	Ruby	I	fluent-t3328	20.5	0.94	0.0	99.8	88.6	0	97	3	T	0	97	3	T	431	0	66	33	T		61231	runtime=17.3  search=0.6  vcs=0.3  test-run=0.2  pkg=0.0
+fluent__fluentd-3466	Ruby	I	fluent-t3466	25.6	0.93	0.0	100.2	87.9	0	99	1	T	0	99	1	T	383	0	68	32	T		34858	runtime=21.2  vcs=1.2  test-run=1.1  search=0.1  other=0.0
+fluent__fluentd-3608	Ruby	I	fluent-t3608	302.5	1.0	0.0	100.0	99.5	0	100	0	T	0	100	0	T	336	0	80	20	T		56846	runtime=300.6  vcs=0.1  test-run=0.1  search=0.1  other=0.0
+fluent__fluentd-3616	Ruby	I	fluent-t3616	8.1	0.91	0.0	101.8	87.7	0	99	1	?	0	99	1	?	1122	0	96	4	T		20812	runtime=6.8  test-run=0.3  vcs=0.1  search=0.0  other=0.0
+fluent__fluentd-3631	Ruby	I	fluent-t3631	13.4	0.95	0.0	100.8	90.4	0	99	1	T	0	99	1	T	268	0	81	19	T		14390	runtime=11.9  vcs=0.2  search=0.1  test-run=0.0  other=0.0
+fluent__fluentd-3640	Ruby	I	fluent-t3640	64.6	0.68	0.0	100.3	98.2	0	100	0	T	0	100	0	T	194	0	63	37	T		26338	runtime=63.3  vcs=0.2  search=0.1  test-run=0.0  other=0.0
+fluent__fluentd-3641	Ruby	I	fluent-t3641	7.1	0.88	0.0	102.7	84.3	0	99	1	?	0	99	1	?	253	0	82	18	T		6063	runtime=5.9  vcs=0.1  search=0.1  other=0.0  test-run=0.0
+fluent__fluentd-3917	Ruby	I	fluent-t3917	9.7	0.9	0.0	101.8	87.9	0	99	1	?	0	99	1	?	254	0	68	32	T		8665	runtime=8.4  vcs=0.1  search=0.1  test-run=0.1  other=0.0
+fluent__fluentd-4030	Ruby	I	fluent-t4030	5.3	0.73	0.0	101.8	39.2	0	73	27	?	0	73	27	?	237	0	45	55	S	E7-consecutive-loop,call-step-mismatch(102v98),mechanism-not-witnessed	5365	vcs=2.0  runtime=1.5  search=0.6
+fluent__fluentd-4311	Ruby	I	fluent-t4311	4.9	0.96	0.0	104.1	80.3	0	92	8	?	0	92	8	?	203	0	52	48	M	E7-consecutive-loop,call-step-mismatch(83v80)	4569	runtime=3.6  search=0.3  vcs=0.0  test-run=0.0
+fluent__fluentd-4598	Ruby	I	fluent-t4598	4.3	1.03	0.0	105.2	89.0	0	100	0	?	0	100	0	?	166	0	93	7	T		5122	runtime=3.8  vcs=0.0  other=0.0  search=0.0  test-run=0.0
+fluent__fluentd-4655	Ruby	I	fluent-t4655	7.5	0.96	0.0	102.1	87.1	0	99	1	?	0	99	1	?	1747	0	98	2	T		24153	runtime=6.1  test-run=0.4  vcs=0.2  search=0.0  other=0.0
+fmtlib__fmt-3248	C++	B	fmtlib-X3248	201.1		2.0	99.8	99.0	98	1	0	B	98	1	0	B	639	51	29	20	B		16097	compile=193.8  runtime=2.6  build-drv=1.2  pkg=1.1  search=0.3
+fmtlib__fmt-1683	C++	B	fmtlib-t1683	103.1	0.94	2.5	99.8	98.4	98	2	0	B	98	2	0	B	528	61	26	13	B		13794	compile=97.4  runtime=2.0  build-drv=1.1  pkg=0.7  vcs=0.1
+fmtlib__fmt-2310	C++	B	fmtlib-t2310	83.7	0.86	2.0	99.7	98.0	97	3	0	B	97	3	0	B	644	60	27	14	B		18560	compile=77.5  runtime=2.2  build-drv=1.3  pkg=0.7  test-run=0.1
+fmtlib__fmt-2317	C++	B	fmtlib-t2317	291.2	1.08	2.0	99.7	99.2	99	1	0	B	99	1	0	B	946	70	21	9	B		23368	compile=282.9  build-drv=2.5  runtime=2.3  pkg=0.7  test-run=0.2
+fmtlib__fmt-2457	C++	B	fmtlib-t2457	112.0	0.93	2.5	99.4	96.8	95	4	0	B	95	4	0	B	1284	58	25	17	B		33870	compile=100.3  runtime=4.6  build-drv=2.3  pkg=0.7  vcs=0.2
+fmtlib__fmt-3158	C++	B	fmtlib-t3158	224.3	0.96	2.5	99.5	98.5	98	2	0	B	98	2	0	B	1365	65	24	11	B		22555	compile=213.1  build-drv=3.2  runtime=2.9  pkg=0.7  test-run=0.5
+fmtlib__fmt-3272	C++	B	fmtlib-t3272	60.0	0.83	2.5	99.7	96.6	96	4	0	B	96	4	0	B	531	51	28	21	B		15312	compile=53.9  runtime=2.3  build-drv=0.8  pkg=0.7  vcs=0.3
+fmtlib__fmt-3729	C++	B	fmtlib-t3729	219.6	0.96	2.5	99.6	98.7	98	2	0	B	98	2	0	B	1112	61	23	16	B		23244	compile=209.0  runtime=3.3  build-drv=2.4  pkg=1.2  search=0.5
+fmtlib__fmt-3750	C++	B	fmtlib-t3750	173.7	0.95	2.5	99.5	98.6	98	2	0	B	98	2	0	B	585	57	29	14	B		17445	compile=166.7  runtime=2.5  build-drv=1.1  pkg=0.7  vcs=0.1
+fmtlib__fmt-3863	C++	B	fmtlib-t3863	193.2	0.95	2.5	99.5	97.9	98	2	0	B	98	2	0	B	1071	56	28	16	B		26545	compile=181.8  runtime=3.3  build-drv=2.2  pkg=1.0  vcs=1.0
+fmtlib__fmt-3901	C++	B	fmtlib-t3901	187.5	0.97	2.0	99.9	99.5	99	1	0	B	99	1	0	B	383	72	21	7	B		9799	compile=183.8  build-drv=1.0  runtime=0.9  pkg=0.7  test-run=0.1
+gin-gonic__gin-3741	Go	A	gin-gonic-X3741	19.3		22.8	98.9	94.0	47	52	0	M	86	13	0	B	4236	75	23	2	B		8980	compile=8.3  build-drv=3.7  pkg=1.9  lint=1.8  test-run=0.2
+gin-gonic__gin-1805	Go	A	gin-gonic-t1805	74.5	0.98	0.0	97.3	95.2	20	80	0	T	75	25	0	B	17557	54	46	1	M	call-step-mismatch(99v96)	25630	compile=44.9  lint=14.7  build-drv=8.5  test-run=2.6  search=0.2
+gin-gonic__gin-1957	Go	A	gin-gonic-t1957	25.3	0.89	0.0	98.1	92.3	48	51	1	M	61	38	1	B	9269	47	51	1	M	call-step-mismatch(113v107)	15836	compile=8.9  lint=8.4  build-drv=5.3  test-run=0.5  search=0.2
+gin-gonic__gin-2121	Go	A	gin-gonic-t2121	18.5	0.98	0.0	98.6	94.4	42	57	1	T	63	36	1	B	6263	44	55	1	T	call-step-mismatch(43v39)	9269	compile=7.6  lint=5.9  build-drv=3.4  search=0.2  test-run=0.2
+gin-gonic__gin-2755	Go	A	gin-gonic-t2755	69.0	0.93	0.0	98.4	95.9	19	80	0	T	76	23	0	B	15741	51	49	1	M	call-step-mismatch(131v120)	25141	compile=43.1  lint=14.1  build-drv=7.2  test-run=1.2  search=0.3
+gin-gonic__gin-3227	Go	A	gin-gonic-t3227	62.2	1.11	0.0	97.9	79.5	36	63	1	T	71	28	1	B	15687	50	44	6	M	E7-consecutive-loop,call-step-mismatch(140v132)	325344	compile=23.7  lint=12.6  build-drv=11.3  test-run=1.1  search=0.7
+gin-gonic__gin-3820	Go	A	gin-gonic-t3820	27.3	0.97	0.0	84.4	77.7	44	55	1	T	64	35	1	B	7746	45	54	1	M	call-step-mismatch(98v90)	11541	compile=9.1  lint=6.9  build-drv=4.5  test-run=0.5  search=0.2
+gin-gonic__gin-4003	Go	A	gin-gonic-t4003	18.5	0.62	0.0	97.3	92.8	68	32	1	B	50	49	1	M	6271	37	62	1	T	call-step-mismatch(48v44)	9357	lint=8.0  compile=5.5  build-drv=3.1  test-run=0.3  search=0.2
+gohugoio__hugo-12171	Go	A	gohugoio-t12171	735.8	1.06	270.5	93.0	91.9	9	91	0	T	78	22	0	B	52941	49	51	0	M	call-step-mismatch(173v169)	81604	compile=498.0  lint=74.2  test-run=71.2  build-drv=26.6  vcs=4.3
+gohugoio__hugo-12204	Go	A	gohugoio-t12204	115.5	1.05	0.0	98.2	83.5	15	83	1	T	89	10	1	B	9411	65	31	4	B		322280	compile=71.1  build-drv=14.5  lint=9.0  vcs=6.7  search=1.4
+gohugoio__hugo-12343	Go	A	gohugoio-t12343	321.2	0.77	137.7	98.4	97.7	36	64	0	T	83	17	0	B	29175	52	48	1	M	call-step-mismatch(138v131)	50385	compile=230.2  lint=38.4  build-drv=25.4  test-run=14.8  pkg=2.0
+gohugoio__hugo-12448	Go	A	gohugoio-t12448	421.9	0.95	0.0	65.3	62.2	78	22	1	B	78	22	1	B	13686	48	49	3	M		44924	compile=184.9  test-run=36.7  lint=19.8  build-drv=19.8  search=1.4
+gohugoio__hugo-12562	Go	A	gohugoio-t12562	271.1	0.96	0.0	98.9	98.1	33	67	0	T	83	16	0	B	15197	71	28	1	B	call-step-mismatch(124v114)	34072	compile=199.5  test-run=27.4  build-drv=21.7  lint=16.1  other=0.9
+gohugoio__hugo-12579	Go	A	gohugoio-t12579	288.4	0.91	55.4	98.6	97.4	68	32	0	B	87	13	0	B	23335	50	50	0	M		33413	compile=220.5  lint=35.8  build-drv=19.7  vcs=2.5  pkg=1.9
+gohugoio__hugo-12768	Go	A	gohugoio-t12768	98.8	1.33	0.0	98.4	87.2	9	91	0	T	90	10	0	B	6460	57	43	0	B	E7-consecutive-loop,call-step-mismatch(45v35)	315389	compile=70.4  build-drv=7.5  lint=7.4  test-run=0.8  vcs=0.2
+google__gson-2061	Java	J	google-X2061	201.6		0.0	99.9	98.9	1	99	0	T	1	99	0	T	343	27	28	45	S		12000	test-run=170.2  runtime=26.6  compile=2.0  search=0.5  other=0.3
+google__gson-1014	Java	J	google-t1014	185.0	1.16	0.0	99.8	99.0	0	100	0	T	0	100	0	T	261	30	34	36	M	call-step-mismatch(77v72)	8589	test-run=157.7  runtime=24.6  compile=0.6  other=0.3  search=0.2
+google__gson-1093	Java	J	google-t1093	39.7	1.03	24.7	99.6	96.8	21	79	1	T	17	82	1	T	209	48	16	36	B		5460	test-run=29.5  compile=4.8  pkg=1.4  runtime=0.8  search=0.3
+google__gson-1100	Java	J	google-t1100	28.8	1.06	0.0	100.2	96.4	7	92	1	T	7	92	1	T	178	18	38	44	M		5083	test-run=21.9  runtime=3.5  compile=2.0  search=0.3  vcs=0.1
+google__gson-2024	Java	J	google-t2024	154.8	1.17	0.0	99.5	92.4	2	98	0	T	2	98	0	T	185	25	36	38	M	E7-consecutive-loop,call-step-mismatch(99v85)	310375	test-run=122.4  runtime=18.2  compile=2.1  other=0.3  search=0.1
+google__gson-2134	Java	J	google-t2134	64.2	1.06	0.0	99.6	98.0	1	98	0	T	1	98	0	T	157	31	42	27	T		5691	test-run=50.5  runtime=11.3  compile=0.8  other=0.3  search=0.1
+google__gson-2158	Java	J	google-t2158	226.5	1.17	0.0	99.4	94.4	2	98	0	T	2	98	0	T	510	27	31	41	M	E7-consecutive-loop,call-step-mismatch(167v154)	312697	test-run=176.0  runtime=33.4  compile=3.5  other=0.9  search=0.6
+google__gson-2311	Java	J	google-t2311	50.4	1.05	0.0	99.1	77.1	10	89	1	T	10	89	1	T	222	14	16	70	S	call-step-mismatch(106v103)	309792	test-run=31.5  compile=3.8  runtime=3.2  search=0.4  vcs=0.1
+google__gson-2479	Java	J	google-t2479	152.4	0.78	0.0	99.9	98.3	1	99	0	T	1	99	0	T	326	18	26	56	S		13087	test-run=122.5  runtime=25.9  compile=0.9  other=0.8  search=0.3
+hashicorp__terraform-34580	Go	A	hashicorp-t34580	135.9	0.9	0.0	95.0	88.5	84	15	0	B	62	37	0	B	16624	25	74	1	T	E7-consecutive-loop,call-step-mismatch(139v119)	25393	compile=58.9  lint=44.5  build-drv=16.1  vcs=0.8  search=0.4
+hashicorp__terraform-34814	Go	A	hashicorp-t34814	22.5	0.92	50.6	97.2	87.1	69	29	2	B	57	40	2	B	6843	40	57	2	T	call-step-mismatch(115v105)	15353	lint=6.7  compile=4.6  build-drv=3.8  pkg=1.8  vcs=0.8
+hashicorp__terraform-34900	Go	A	hashicorp-t34900	331.4	1.16	0.0	96.3	93.2	76	23	1	B	84	16	1	B	21877	59	40	1	B	E7-consecutive-loop,call-step-mismatch(168v155)	37562	compile=228.6  build-drv=29.6  lint=26.2  test-run=22.4  vcs=2.3
+hashicorp__terraform-35611	Go	A	hashicorp-t35611	369.3	1.23	0.0	98.7	95.8	24	76	0	T	78	21	0	B	28698	49	51	1	M	call-step-mismatch(191v167)	338160	compile=244.8  lint=58.5  build-drv=32.6  test-run=17.4  search=0.4
+hashicorp__terraform-35543	Go	A	hashicorp-terraform-35543	11.9	4.98	0.0	98.4	4.7	0	0	100	?	0	0	100	?	198	0	0	100	?	E7-consecutive-loop,call-step-mismatch(110v107),mechanism-not-witnessed,replay-invalid(ratio=4.98)	310189	search=0.6  vcs=0.4  other=0.0
+immutable-js__immutable-js-2005	TypeScript	N	immutable-js-t2005	717.5	1.42	0.0	90.6	90.3	0	100	0	T	0	100	0	T	3264	0	99	1	T		10479	runtime=410.1  test-run=237.7  search=0.0  vcs=0.0  other=0.0
+immutable-js__immutable-js-2006	TypeScript	N	immutable-js-t2006	654.7	1.34	0.0	91.6	91.1	0	100	0	T	0	100	0	T	3782	0	97	3	T		14418	runtime=420.7  test-run=174.9  search=1.0  vcs=0.1  other=0.0
+javaparser__javaparser-4538	Java	J	javaparser-t4538	192.9	1.15	0.0	99.9	98.8	1	99	0	T	1	99	0	T	164	20	36	45	M	call-step-mismatch(74v70)	8473	test-run=164.7  runtime=24.1  compile=1.3  other=0.7  search=0.4
+javaparser__javaparser-4561	Java	J	javaparser-t4561	278.5	1.12	0.0	99.6	98.7	2	97	0	T	2	97	0	T	352	15	23	62	S	call-step-mismatch(151v146)	17369	test-run=230.0  runtime=37.5  compile=6.8  search=0.6  vcs=0.3
+jekyll__jekyll-8047	Ruby	I	jekyll-t8047	11.0	1.01	0.0	101.4	90.1	0	96	4	?	0	96	4	?	198	0	79	21	T		5451	runtime=9.5  search=0.4  vcs=0.1  other=0.0  test-run=0.0
+jekyll__jekyll-8167	Ruby	I	jekyll-t8167	17.6	0.98	0.0	100.9	93.5	7	93	0	T	7	93	0	T	274	1	74	24	T		6575	runtime=11.1  test-run=4.2  pkg=1.1  vcs=0.2  search=0.1
+jekyll__jekyll-8761	Ruby	I	jekyll-t8761	340.4	0.85	0.0	99.7	98.6	1	99	0	T	1	99	0	T	2103	0	88	12	T		93031	runtime=319.2  test-run=10.8  pkg=4.2  vcs=1.9  search=0.5
+jekyll__jekyll-8771	Ruby	I	jekyll-t8771	249.1	0.87	0.0	99.8	98.7	2	98	0	T	0	100	0	T	1640	0	89	11	T		75999	runtime=223.1  test-run=21.7  vcs=1.1  other=0.4  search=0.2
+jekyll__jekyll-9141	Ruby	I	jekyll-t9141	82.5	1.03	0.0	99.9	95.4	0	100	0	T	0	100	0	T	702	0	62	38	T		41261	runtime=78.1  vcs=1.3  search=0.3  test-run=0.2  other=0.2
+jordansissel__fpm-1829	Ruby	I	jordansissel-t1829	5.3	0.78	0.0	102.6	81.0	2	97	1	?	8	91	1	?	441	68	22	10	B		5583	runtime=2.0  test-run=1.3  compile=0.3  vcs=0.1  pkg=0.1
+jordansissel__fpm-1850	Ruby	I	jordansissel-t1850	3.9	0.97	0.0	100.3	76.1	0	99	1	?	0	99	1	?	133	2	68	30	T		3124	runtime=2.9  vcs=0.1  search=0.0  pkg=0.0
+jqlang__jq-2681	C	B	jqlang-X2681	29.0		3.0	96.8	91.4	87	13	0	B	29	47	24	T	10980	1	29	69	S		28320	test-run=8.2  search=5.3  compile=4.5  runtime=2.0  build-drv=1.1
+jqlang__jq-2235	C	B	jqlang-t2235	13.2	0.61	2.5	98.1	64.6	38	49	14	?	31	52	17	?	2994	1	32	67	S		17437	vcs=2.4  runtime=2.3  test-run=1.9  compile=1.7  search=1.4
+jqlang__jq-2598	C	B	jqlang-t2598	54.3	0.74	2.0	97.9	93.8	88	10	2	B	80	11	9	B	7233	9	13	77	S		31566	compile=33.2  search=4.0  test-run=3.0  runtime=2.0  build-drv=1.0
+jqlang__jq-2650	C	B	jqlang-t2650	17.9	0.91	2.5	98.6	69.4	6	92	2	T	6	92	2	T	1733	0	78	22	T	E7-cyclic-loop,mechanism-not-witnessed	71893	runtime=10.7  test-run=0.7  pkg=0.7  search=0.3  vcs=0.1
+jqlang__jq-2658	C	B	jqlang-t2658	10.8	0.56	3.0	97.6	80.8	37	48	14	?	31	51	18	?	2764	1	31	68	S		9359	test-run=2.8  compile=1.7  search=1.5  runtime=1.4  pkg=0.7
+jqlang__jq-2728	C	B	jqlang-t2728	17.5	0.51	2.0	97.5	87.7	76	20	5	B	31	46	23	T	6099	2	30	69	S		28791	test-run=3.8  compile=3.1  search=3.0  runtime=2.2  pkg=0.7
+jqlang__jq-2750	C	B	jqlang-t2750	5.4	1.0	2.0	102.9	65.4	21	77	2	?	21	77	2	?	358	1	82	18	T	E7-consecutive-loop,mechanism-not-witnessed	9650	runtime=2.5  pkg=0.7  test-run=0.2  vcs=0.1  search=0.1
+jqlang__jq-2839	C	B	jqlang-t2839	10.3	0.81	2.0	100.2	56.3	13	82	6	?	13	82	6	?	601	0	69	30	T	call-step-mismatch(262v259),mechanism-not-witnessed	23525	runtime=4.6  vcs=1.5  pkg=0.7  search=0.3  test-run=0.1
+jqlang__jq-2919	C	B	jqlang-t2919	14.7	0.41	2.0	96.9	75.6	14	59	27	?	12	60	28	?	6259	0	34	65	?	replay-invalid(ratio=0.41)	15222	test-run=4.7  search=3.0  runtime=1.9  pkg=0.8  compile=0.5
+laravel__framework-51890	PHP	I	laravel-framework-51890	7.4	0.94	35.8	101.7	76.7	44	54	2	?	28	69	3	?	305	33	35	32	M	call-step-mismatch(106v96)	6587	runtime=3.0  pkg=1.2  vcs=0.5  search=0.1  other=0.0
+laravel__framework-46234	PHP	I	laravel-t46234	3.6	0.81	0.0	104.9	45.5	0	82	18	?	0	82	18	?	132	0	35	65	S	call-step-mismatch(114v108)	6324	runtime=1.4  vcs=0.7  search=0.3
+laravel__framework-48573	PHP	I	laravel-t48573	5.1	0.8	27.3	103.6	67.9	74	24	2	?	58	38	4	?	205	49	11	40	M	call-step-mismatch(85v82)	5013	pkg=1.2  runtime=0.8  vcs=0.6  search=0.1  other=0.1
+laravel__framework-48636	PHP	I	laravel-t48636	2.1	0.87	0.0	110.1	47.8	1	81	18	?	1	81	18	?	79	4	23	73	S	call-step-mismatch(68v65)	3298	runtime=0.8  vcs=0.3  search=0.2  pkg=0.0
+laravel__framework-51195	PHP	I	laravel-t51195	12.6	4.29	0.0	98.7	8.5	0	93	7	?	0	93	7	?	59	0	25	75	?	E7-consecutive-loop,call-step-mismatch(69v59),mechanism-not-witnessed,replay-invalid(ratio=4.29)	311275	runtime=1.0  vcs=0.6  search=0.1
+laravel__framework-52451	PHP	I	laravel-t52451	10.5	0.96	58.0	101.8	78.6	31	66	3	?	18	78	4	?	400	25	40	34	M	call-step-mismatch(144v135)	10079	runtime=5.5  pkg=1.3  vcs=0.6  search=0.3  other=0.0
+laravel__framework-52680	PHP	I	laravel-t52680	11.9	4.34	0.0	98.5	4.4	0	76	24	?	0	76	24	?	81	0	10	90	?	E7-consecutive-loop,call-step-mismatch(94v85),mechanism-not-witnessed,replay-invalid(ratio=4.34)	312209	vcs=0.4  runtime=0.4  search=0.1
+laravel__framework-52684	PHP	I	laravel-t52684	4.7	0.79	20.7	104.4	72.3	73	25	2	?	57	39	4	?	171	50	13	36	B	call-step-mismatch(81v66)	4451	pkg=1.2  runtime=0.8  vcs=0.5  search=0.1  other=0.0
+laravel__framework-52866	PHP	I	laravel-t52866	13.5	4.21	0.0	97.7	15.5	0	98	2	?	0	98	2	?	57	0	32	68	?	E7-consecutive-loop,call-step-mismatch(72v63),replay-invalid(ratio=4.21)	309475	runtime=2.0  vcs=0.3  search=0.0
+laravel__framework-53206	PHP	I	laravel-t53206	14.6	2.37	0.0	98.2	20.4	0	94	6	?	0	94	6	?	129	0	22	78	?	E7-consecutive-loop,call-step-mismatch(130v111),replay-invalid(ratio=2.37)	309104	runtime=2.8  vcs=0.6  search=0.2
+laravel__framework-53696	PHP	I	laravel-t53696	3.8	1.3	0.0	105.2	64.5	0	90	9	?	0	90	9	?	96	3	21	76	S	call-step-mismatch(94v86),mechanism-not-witnessed	4725	runtime=2.2  vcs=0.4  search=0.2  pkg=0.0
+laravel__framework-53914	PHP	I	laravel-t53914	2.9	0.89	0.0	107.2	48.9	0	83	17	?	0	83	17	?	90	0	23	77	S	call-step-mismatch(79v75)	4086	runtime=1.2  vcs=0.5  search=0.2
+laravel__framework-53949	PHP	I	laravel-t53949	4.1	0.98	14.6	105.4	77.6	81	17	2	?	67	29	4	?	175	58	12	30	B	mechanism-not-witnessed	3487	pkg=1.3  runtime=0.5  vcs=0.3  search=0.1  other=0.0
+micropython__micropython-10095	C	B	micropython-t10095	11.1	0.6	3.0	97.8	55.6	12	77	12	?	12	77	12	?	1347	0	43	57	S	E7-consecutive-loop,mechanism-not-witnessed	23828	runtime=4.7  vcs=1.5  pkg=0.7  search=0.7  test-run=0.1
+micropython__micropython-12158	C	B	micropython-t12158	43.6	0.88	2.5	65.5	60.2	39	61	1	T	36	63	1	T	3459	9	84	7	T		13022	test-run=8.9  compile=8.2  runtime=7.3  pkg=0.7  vcs=0.6
+micropython__micropython-13039	C	B	micropython-t13039	16.9	0.8	3.0	99.3	90.7	71	29	0	B	67	32	1	B	1961	19	69	12	T		8520	compile=8.9  runtime=4.2  pkg=0.7  vcs=0.7  test-run=0.4
+micropython__micropython-13569	C	B	micropython-t13569	30.5	0.47	3.0	97.3	88.9	17	82	1	?	13	86	1	?	7107	1	96	3	?	replay-invalid(ratio=0.47)	16644	runtime=20.3  test-run=2.8  compile=2.4  vcs=1.0  pkg=0.7
+micropython__micropython-15898	C	B	micropython-t15898	12.3	0.32	3.0	98.5	86.3	24	75	1	?	18	81	1	?	2512	1	97	2	?	call-step-mismatch(54v51),replay-invalid(ratio=0.32)	6666	runtime=7.6  test-run=0.9  vcs=0.8  pkg=0.7  compile=0.7
+mrdoob__three.js-25687	JavaScript	N	mrdoob-t25687	7.4	1.21	0.0	102.9	63.1	0	99	1	?	0	99	1	?	225	0	76	24	T	call-step-mismatch(51v48)	3379	runtime=4.2  vcs=2.1  test-run=0.4  search=0.0  other=0.0
+mrdoob__three.js-26589	JavaScript	N	mrdoob-t26589	17.5	0.99	0.0	100.5	77.6	0	97	3	T	0	97	3	T	575	0	85	15	T		9411	runtime=12.2  vcs=2.3  test-run=0.9  search=0.5  other=0.0
+mrdoob__three.js-27395	JavaScript	N	mrdoob-t27395	12.0	1.12	0.0	101.3	61.1	0	97	3	?	0	97	3	?	352	0	83	17	T		6111	runtime=6.6  vcs=2.3  test-run=0.5  search=0.2
+nlohmann__json-4237	C++	B	nlohmann-t4237	624.4	1.17	2.5	99.7	99.5	60	40	0	B	60	40	0	B	1366	70	20	10	B		29293	compile=365.5  test-run=244.0  build-drv=5.0  vcs=2.8  runtime=2.6
+nushell__nushell-12901	Rust	A	nushell-t12901	1045.4	1.07	0.0	99.2	98.7	37	54	9	T	78	12	9	B	6517	47	45	8	M		160639	compile=790.2  test-run=122.3  search=93.5  other=11.8  build-drv=9.3  runtime=5.0
+nushell__nushell-12950	Rust	A	nushell-t12950	531.5	1.12	0.0	99.6	99.2	63	37	0	B	96	4	0	B	2267	83	14	3	B		39672	compile=502.2  test-run=19.5  build-drv=3.6  runtime=1.5  other=0.6
+nushell__nushell-13246	Rust	A	nushell-t13246	39.3	0.97	0.0	99.9	97.5	32	68	0	T	94	6	0	B	164	20	62	18	T		8290	compile=35.1  test-run=1.3  runtime=0.9  build-drv=0.8  other=0.2
+nushell__nushell-13605	Rust	A	nushell-t13605	11.2	0.83	0.0	99.1	56.7	0	94	6	?	0	94	6	?	888	0	51	49	M	E7-consecutive-loop,E7-cyclic-loop,mechanism-not-witnessed	64976	runtime=6.0  search=0.4  vcs=0.1
+nushell__nushell-13831	Rust	A	nushell-t13831	341.3	1.18	0.0	99.7	99.3	33	67	0	T	97	3	0	B	1328	62	34	4	B		28507	compile=325.3  test-run=7.8  build-drv=2.9  runtime=1.3  lint=1.0
+php-cs-fixer__php-cs-fixer-7523	PHP	I	php-cs-fixer-X7523	81.0		0.0	96.7	93.4	0	100	0	T	0	100	0	T	8531	0	98	2	T		29438	runtime=75.4  vcs=0.6  search=0.3
+php-cs-fixer__php-cs-fixer-7635	PHP	I	php-cs-fixer-t7635	17.8	0.97	0.0	97.9	88.9	0	99	1	T	0	99	1	T	1797	0	96	4	T	call-step-mismatch(98v88)	9107	runtime=15.6  vcs=0.4  search=0.2
+php-cs-fixer__php-cs-fixer-7663	PHP	I	php-cs-fixer-t7663	11.4	4.65	0.0	96.6	1.8	0	30	70	?	0	30	70	?	134	0	4	96	?	E7-consecutive-loop,replay-invalid(ratio=4.65)	308948	search=0.1  vcs=0.1  runtime=0.1
+php-cs-fixer__php-cs-fixer-7875	PHP	I	php-cs-fixer-t7875	44.9	1.0	12.1	98.0	94.4	6	94	0	T	3	97	0	T	3509	3	95	2	T		14481	runtime=39.7  pkg=1.2  vcs=0.3  search=0.1  other=0.0
+php-cs-fixer__php-cs-fixer-7998	PHP	I	php-cs-fixer-t7998	29.5	1.38	0.0	96.5	59.4	0	99	1	T	0	99	1	T	1763	0	94	6	T	E7-consecutive-loop,call-step-mismatch(140v127)	310793	runtime=17.4  vcs=0.3  search=0.1
+php-cs-fixer__php-cs-fixer-8064	PHP	I	php-cs-fixer-t8064	42.4	0.98	0.0	96.9	91.8	0	99	1	T	0	99	1	T	4292	0	97	3	T	call-step-mismatch(149v142)	18938	runtime=38.6  search=0.3  vcs=0.2
+php-cs-fixer__php-cs-fixer-8075	PHP	I	php-cs-fixer-t8075	21.9	0.96	0.0	98.2	91.7	0	99	1	T	0	99	1	T	1815	0	96	4	T	call-step-mismatch(76v73)	8738	runtime=19.9  vcs=0.3  search=0.2  pkg=0.0
+php-cs-fixer__php-cs-fixer-8256	PHP	I	php-cs-fixer-t8256	54.8	1.01	84.9	98.1	95.4	5	95	0	T	2	97	0	T	3646	2	95	3	T	call-step-mismatch(92v88)	16885	runtime=49.7  pkg=1.2  vcs=0.2  search=0.1  other=0.0
+php-cs-fixer__php-cs-fixer-8331	PHP	I	php-cs-fixer-t8331	47.8	0.97	0.0	96.5	91.9	0	99	1	T	0	99	1	T	5022	0	98	2	T	call-step-mismatch(127v123)	19212	runtime=43.7  vcs=0.5  search=0.2  pkg=0.0
+php-cs-fixer__php-cs-fixer-8367	PHP	I	php-cs-fixer-t8367	11.2	10.57	0.0	97.7	1.6	0	0	100	?	0	0	100	?	102	0	0	100	?	E7-consecutive-loop,replay-invalid(ratio=10.57)	308794	search=0.2  vcs=0.1
+phpoffice__phpspreadsheet-3940	PHP	I	phpoffice-X3940	137.2		0.0	99.3	91.3	0	100	0	T	0	100	0	T	1192	0	82	18	T		312521	runtime=124.3  vcs=0.8  search=0.4  other=0.0
+phpoffice__phpspreadsheet-3463	PHP	I	phpoffice-t3463	11.6	0.92	37.4	101.3	86.5	25	73	1	T	14	84	2	?	230	45	17	38	M	call-step-mismatch(93v87)	7266	runtime=7.4  pkg=1.2  vcs=0.4  search=0.1  other=0.1
+phpoffice__phpspreadsheet-3469	PHP	I	phpoffice-t3469	104.6	1.08	0.0	99.2	88.8	0	100	0	T	0	100	0	T	1027	0	85	15	T	E7-consecutive-loop,call-step-mismatch(199v185)	312348	runtime=92.1  vcs=0.6  search=0.3
+phpoffice__phpspreadsheet-3570	PHP	I	phpoffice-t3570	15.7	2.47	0.0	98.3	27.8	0	97	3	?	0	97	3	?	78	0	27	73	?	E7-consecutive-loop,call-step-mismatch(96v85),replay-invalid(ratio=2.47)	309124	runtime=4.3  vcs=0.4  search=0.1
+phpoffice__phpspreadsheet-3659	PHP	I	phpoffice-t3659	12.6	0.96	45.9	101.0	86.8	22	76	2	T	12	86	2	?	239	36	17	47	S	call-step-mismatch(124v117)	7793	runtime=8.3  pkg=1.2  vcs=0.3  search=0.2  other=0.0
+phpoffice__phpspreadsheet-3903	PHP	I	phpoffice-t3903	59.9	0.99	87.0	99.7	96.6	9	91	0	T	7	93	1	T	1148	11	34	55	S	call-step-mismatch(100v96)	15007	runtime=52.2  pkg=3.7  vcs=0.5  search=0.4  other=0.1
+phpoffice__phpspreadsheet-4114	PHP	I	phpoffice-t4114	4.0	0.83	0.0	104.8	67.5	0	89	11	?	0	89	11	?	98	0	36	64	S	call-step-mismatch(94v83)	4659	runtime=2.4  search=0.3  vcs=0.3
+phpoffice__phpspreadsheet-4186	PHP	I	phpoffice-t4186	41.1	1.01	66.6	100.4	96.2	78	21	1	B	78	22	1	B	229	39	14	47	M	call-step-mismatch(106v98)	10393	pkg=29.7  runtime=8.2  vcs=0.4  search=0.4  other=0.0
+phpoffice__phpspreadsheet-4214	PHP	I	phpoffice-t4214	39.8	0.95	0.0	100.0	95.0	0	99	1	T	0	99	1	T	429	0	77	23	T	call-step-mismatch(114v109)	11317	runtime=37.5  vcs=0.5  search=0.3
+phpoffice__phpspreadsheet-4313	PHP	I	phpoffice-t4313	34.5	1.12	0.0	99.0	67.6	0	99	1	T	0	99	1	T	271	0	34	66	S	E7-consecutive-loop,call-step-mismatch(166v153)	309254	runtime=23.0  vcs=0.4  search=0.3
+preactjs__preact-4152	JavaScript	N	preactjs-X4152	194.0		0.0	98.6	97.4	10	90	0	T	10	90	0	T	7351	10	86	4	T		31491	runtime=145.5  test-run=24.6  compile=18.4  search=0.4  other=0.2
+preactjs__preact-2757	JavaScript	N	preactjs-t2757	71.5	1.07	0.0	89.3	84.2	0	100	0	T	0	100	0	T	435	0	77	23	T		7896	runtime=42.3  test-run=17.8  other=1.1  search=0.1  vcs=0.1
+preactjs__preact-2896	JavaScript	N	preactjs-t2896	64.9	1.06	0.0	98.9	96.7	0	100	0	T	0	100	0	T	540	0	80	20	T		13049	runtime=48.9  test-run=13.8  vcs=0.1  other=0.1  search=0.1
+preactjs__preact-2927	JavaScript	N	preactjs-t2927	42.2	1.06	0.0	87.5	82.3	9	91	1	T	10	90	1	T	527	30	53	17	T		6448	runtime=19.1  test-run=12.0  compile=3.4  other=0.5  search=0.2
+preactjs__preact-3010	JavaScript	N	preactjs-t3010	63.6	1.03	0.0	91.3	88.4	5	94	0	T	5	94	0	T	1098	17	72	11	T		12953	runtime=38.9  test-run=14.1  compile=3.0  search=0.1  vcs=0.1
+preactjs__preact-3062	JavaScript	N	preactjs-t3062	25.0	1.05	0.0	99.2	94.6	11	87	2	T	11	87	2	T	602	29	58	13	T		6934	runtime=13.9  test-run=6.6  compile=2.7  search=0.4  vcs=0.1
+preactjs__preact-3345	JavaScript	N	preactjs-t3345	85.8	1.11	0.0	98.4	96.1	8	92	0	T	8	92	0	T	2272	36	55	9	T		21128	runtime=46.7  test-run=29.0  compile=6.3  vcs=0.2  other=0.2
+preactjs__preact-3454	JavaScript	N	preactjs-t3454	30.6	1.03	0.0	56.7	47.4	4	96	0	?	4	96	0	?	156	0	77	23	T		2170	test-run=9.0  runtime=4.9  compile=0.5  other=0.4  vcs=0.1
+preactjs__preact-3562	JavaScript	N	preactjs-t3562	64.8	1.09	0.0	82.0	76.5	8	91	0	T	8	91	0	T	934	35	55	10	T		8651	test-run=24.4  runtime=20.9  compile=4.1  other=0.7  search=0.1
+preactjs__preact-3567	JavaScript	N	preactjs-t3567	135.1	1.07	0.0	86.1	83.1	12	88	0	T	12	88	0	T	1884	35	56	9	T		18077	runtime=60.2  test-run=38.3  compile=13.4  other=0.9  vcs=0.2
+preactjs__preact-3689	JavaScript	N	preactjs-t3689	25.1	1.05	0.0	98.9	93.2	6	93	1	T	6	93	1	T	665	31	47	23	T		8363	runtime=16.2  test-run=5.4  compile=1.4  search=0.3  vcs=0.1
+preactjs__preact-3739	JavaScript	N	preactjs-t3739	86.0	1.08	0.0	98.7	96.4	9	90	0	T	9	90	0	T	2567	28	64	8	T		20069	runtime=50.5  test-run=24.3  compile=7.8  search=0.2  vcs=0.2
+preactjs__preact-3763	JavaScript	N	preactjs-t3763	49.7	1.14	0.0	98.5	96.5	8	92	0	T	8	92	0	T	1115	40	50	10	M		9762	runtime=28.6  test-run=15.3  compile=3.9  other=0.1  search=0.1
+preactjs__preact-4182	JavaScript	N	preactjs-t4182	71.1	1.09	0.0	98.6	95.9	12	88	0	T	12	88	0	T	1337	45	43	12	M		16023	runtime=42.6  test-run=17.0  compile=8.3  vcs=0.2  search=0.2
+preactjs__preact-4245	JavaScript	N	preactjs-t4245	133.3	1.12	0.0	98.4	96.7	7	93	1	T	7	93	1	T	4002	24	68	7	T	call-step-mismatch(177v174)	29111	runtime=85.6  test-run=33.4  compile=8.8  search=0.8  other=0.3
+preactjs__preact-4316	JavaScript	N	preactjs-t4316	27.1	1.0	0.0	99.7	94.8	13	86	1	T	13	86	1	T	565	21	64	15	T		7224	runtime=17.2  test-run=4.9  compile=3.2  search=0.3  vcs=0.1
+preactjs__preact-4436	JavaScript	N	preactjs-t4436	147.1	1.06	0.0	98.7	97.0	14	86	0	T	14	86	0	T	4391	12	84	4	T		26924	runtime=98.2  test-run=23.6  compile=20.4  vcs=0.5  other=0.3
+projectlombok__lombok-2792	Java	J	projectlombok-t2792	376.3	1.06	0.0	99.8	99.1	0	100	0	T	0	100	0	T	346	2	24	74	S		26368	test-run=286.4  runtime=85.3  compile=0.8  search=0.5  other=0.3
+projectlombok__lombok-3009	Java	J	projectlombok-t3009	538.4	1.08	281.8	99.6	99.0	1	99	0	T	1	99	0	T	654	14	10	76	S	call-step-mismatch(203v192)	43867	test-run=338.1  runtime=188.9  compile=2.2  pkg=1.4  search=0.7
+projectlombok__lombok-3042	Java	J	projectlombok-t3042	321.1	1.13	0.0	99.7	96.2	1	98	0	T	1	98	0	T	400	7	13	80	S	E7-consecutive-loop,call-step-mismatch(196v180)	312244	test-run=250.9  runtime=52.9  compile=4.4  search=0.7  vcs=0.2
+projectlombok__lombok-3052	Java	J	projectlombok-t3052	354.8	1.11	0.0	99.8	99.1	2	97	0	T	2	97	0	T	435	13	20	67	S	call-step-mismatch(173v169)	22356	test-run=282.8  runtime=59.5  compile=8.6  search=0.6  vcs=0.3
+projectlombok__lombok-3215	Java	J	projectlombok-t3215	485.1	1.1	0.0	99.7	99.1	1	99	0	T	1	99	0	T	408	8	22	70	S	call-step-mismatch(160v156)	33764	test-run=381.1  runtime=93.6  compile=5.6  search=0.6  other=0.4
+projectlombok__lombok-3312	Java	J	projectlombok-t3312	626.7	1.13	0.0	99.7	99.0	1	99	0	T	1	99	0	T	898	4	16	80	S	call-step-mismatch(214v211)	38772	test-run=493.7  runtime=120.6  compile=4.9  search=1.3  vcs=0.3
+projectlombok__lombok-3326	Java	J	projectlombok-t3326	196.4	1.06	0.0	98.9	93.2	0	82	18	T	0	82	18	T	1259	0	0	99	S		317760	test-run=146.7  search=33.3  runtime=2.8  compile=0.3  other=0.2
+projectlombok__lombok-3350	Java	J	projectlombok-t3350	11.5		0.0	97.8	3.8	0	0	100	?	0	0	100	?	46	0	0	100	S	E7-consecutive-loop	308678	search=0.4  vcs=0.1
+projectlombok__lombok-3371	Java	J	projectlombok-t3371	974.4	1.16	0.0	99.6	99.0	1	99	0	T	1	99	0	T	1185	6	30	64	S		63243	test-run=776.7  runtime=179.2  compile=7.3  search=1.5  other=0.7
+projectlombok__lombok-3422	Java	J	projectlombok-t3422	502.5	1.13	0.0	99.7	99.2	1	99	0	T	1	99	0	T	420	5	25	70	S	call-step-mismatch(169v163)	26985	test-run=403.5  runtime=91.0  compile=3.1  search=1.0  vcs=0.3
+projectlombok__lombok-3479	Java	J	projectlombok-t3479	210.4	1.05	0.0	99.7	98.4	2	98	1	T	2	98	1	T	437	6	13	81	S	call-step-mismatch(185v180)	20971	test-run=158.7  runtime=43.6  compile=3.5  search=1.2  vcs=0.2
+projectlombok__lombok-3486	Java	J	projectlombok-t3486	26.6	1.15	0.0	100.1	95.0	0	99	1	T	0	99	1	T	143	0	5	95	S		16250	test-run=21.2  runtime=3.8  search=0.2  vcs=0.1  other=0.0
+projectlombok__lombok-3571	Java	J	projectlombok-t3571	16.2	1.05	0.0	101.1	95.4	6	93	1	T	6	93	1	T	88	9	10	81	S		12291	test-run=12.3  runtime=2.1  compile=1.0  search=0.1  vcs=0.1
+projectlombok__lombok-3594	Java	J	projectlombok-t3594	1491.6	1.08	0.0	99.8	99.5	1	99	0	T	1	99	0	T	1077	5	45	50	M	call-step-mismatch(247v244)	72602	test-run=1182.4  runtime=291.8  compile=9.1  search=1.1  other=0.8
+projectlombok__lombok-3602	Java	J	projectlombok-t3602	44.9	0.94	0.0	99.4	94.7	13	82	5	T	13	82	5	T	421	12	14	74	S	call-step-mismatch(136v133)	10930	test-run=31.3  compile=5.5  runtime=3.6  search=2.2  vcs=0.2
+projectlombok__lombok-3674	Java	J	projectlombok-t3674	16.2	1.04	0.0	101.5	93.7	2	95	3	T	2	95	3	T	75	3	4	93	S		17073	test-run=12.5  runtime=1.9  search=0.4  compile=0.3  vcs=0.1
+projectlombok__lombok-3697	Java	J	projectlombok-t3697	64.1	1.1	0.0	99.6	97.2	3	97	1	T	3	97	1	T	314	3	45	52	M		13370	test-run=49.3  runtime=10.9  compile=1.6  search=0.5  vcs=0.1
+prometheus__prometheus-9248	Go	A	prometheus-prometheus-9248	211.5	0.97	208.5	52.4	45.4	88	11	1	?	89	10	1	?	2121	83	4	13	B	call-step-mismatch(246v237)	11013	compile=66.0  build-drv=17.7  test-run=9.4  pkg=2.0  search=0.9
+prometheus__prometheus-10633	Go	A	prometheus-t10633	19.4	1.0	20.7	95.7	90.3	81	19	0	B	62	38	0	B	7131	44	55	1	T	call-step-mismatch(51v47)	11180	lint=5.8  build-drv=5.2  compile=2.7  pkg=1.8  runtime=0.1
+prometheus__prometheus-10720	Go	A	prometheus-t10720	207.2	1.06	0.0	98.5	97.4	85	15	0	B	85	15	0	B	19959	50	49	1	M	call-step-mismatch(195v189)	35310	compile=149.7  build-drv=21.8  lint=18.6  test-run=10.9  search=0.5
+prometheus__prometheus-11859	Go	A	prometheus-t11859	12.9	3.09	0.0	97.5	2.5	1	0	99	?	1	0	99	?	218	5	0	95	?	E7-consecutive-loop,mechanism-not-witnessed,replay-invalid(ratio=3.09)	308705	vcs=1.6  search=0.3  build-drv=0.0  other=0.0
+prometheus__prometheus-12874	Go	A	prometheus-t12874	100.3	1.11	0.0	98.6	88.0	19	81	0	T	38	62	0	T	9450	37	62	1	T	E7-consecutive-loop,call-step-mismatch(114v101)	318592	test-run=41.3  compile=25.8  lint=13.7  build-drv=7.4  vcs=0.2
+prometheus__prometheus-13845	Go	A	prometheus-t13845	416.5	1.2	0.0	61.9	58.0	69	31	0	B	72	27	0	B	3587	66	32	2	B	call-step-mismatch(154v147)	7786	compile=159.1  test-run=64.7  build-drv=16.1  lint=1.7  vcs=0.3
+prometheus__prometheus-14861	Go	A	prometheus-t14861	338.2	1.15	0.0	98.6	95.4	86	14	0	B	76	24	0	B	30290	27	72	0	T	E7-consecutive-loop,call-step-mismatch(106v90)	341345	compile=225.1  lint=77.3  build-drv=19.5  test-run=0.6  vcs=0.2
+prometheus__prometheus-15142	Go	A	prometheus-t15142	352.5	1.42	0.0	98.4	95.4	31	69	0	T	58	42	0	B	38314	45	55	0	M	E7-consecutive-loop,call-step-mismatch(169v159)	348179	compile=176.0  test-run=90.8  lint=51.6  build-drv=17.7  vcs=0.4
+reactivex__rxjava-7597	Java	J	reactivex-t7597	12.8	3.18	0.0	97.6	1.6	0	0	100	?	0	0	100	?	145	0	0	100	?	E7-consecutive-loop,replay-invalid(ratio=3.18)	309088	vcs=1.7  search=0.2  other=0.0
+redis__redis-10068	C	B	redis-t10068	37.9	1.01	2.0	99.5	96.7	54	46	0	M	54	44	1	B	1123	36	21	43	M		15493	compile=18.5  test-run=14.6  runtime=1.3  pkg=0.7  search=0.5
+redis__redis-10095	C	B	redis-t10095	5.9	1.08	2.5	101.7	82.3	47	52	1	?	48	49	3	?	433	25	39	36	M		13291	compile=1.4  runtime=1.3  test-run=1.0  pkg=0.7  vcs=0.2
+redis__redis-10764	C	B	redis-t10764	15.6	0.98	2.5	99.4	91.5	20	79	1	T	20	77	3	T	872	12	40	47	M		23206	test-run=9.2  compile=1.9  runtime=1.5  pkg=0.7  search=0.4
+redis__redis-11279	C	B	redis-t11279	14.6	0.95	2.0	98.3	84.0	29	70	2	T	33	55	12	T	2438	5	25	70	S	call-step-mismatch(143v140)	24364	test-run=2.9  runtime=2.8  compile=2.5  search=1.3  pkg=0.7
+redis__redis-11510	C	B	redis-t11510	75.4	1.01	2.0	99.6	97.4	94	5	0	B	96	4	1	B	1517	22	19	58	S		28531	compile=68.1  runtime=1.5  test-run=1.1  pkg=0.7  search=0.7
+redis__redis-11631	C	B	redis-t11631	421.8	0.9	2.0	99.1	98.7	85	15	0	B	84	15	1	B	8917	50	4	47	M		73554	compile=344.6  test-run=61.0  search=2.5  runtime=2.1  build-drv=1.0
+redis__redis-11734	C	B	redis-t11734	54.1	0.97	2.0	99.7	96.5	86	13	0	B	86	13	1	B	969	27	45	28	T		18571	compile=43.9  test-run=4.8  runtime=2.0  pkg=0.7  search=0.3
+redis__redis-12272	C	B	redis-t12272	50.3	0.99	2.5	100.0	97.8	93	7	0	B	93	7	0	B	514	47	36	17	B		11475	compile=44.8  test-run=2.4  runtime=0.9  pkg=0.7  vcs=0.2
+redis__redis-12472	C	B	redis-t12472	7.9	0.72	2.5	100.9	53.5	44	46	11	?	43	46	11	?	498	21	45	33	T	E7-consecutive-loop,call-step-mismatch(108v105)	6524	vcs=2.3  runtime=1.8  compile=1.0  pkg=0.7  search=0.5
+redis__redis-13115	C	B	redis-t13115	33.7	1.02	2.5	100.1	97.2	81	18	0	B	82	17	1	B	628	32	21	47	S	call-step-mismatch(46v43)	10884	compile=25.7  test-run=4.7  pkg=0.7  runtime=0.7  search=0.2
+redis__redis-13338	C	B	redis-t13338	91.2	1.02	2.0	99.8	98.5	84	16	0	B	85	14	1	B	1513	21	28	51	S	call-step-mismatch(62v59)	15975	compile=74.2  test-run=11.6  runtime=1.2  pkg=0.7  search=0.6
+redis__redis-9733	C	B	redis-t9733	37.6	0.96	2.0	99.4	93.5	74	25	0	B	75	24	1	B	1207	26	42	32	T		22234	compile=25.2  test-run=4.7  runtime=3.5  pkg=0.7  vcs=0.4
+rubocop__rubocop-13668	Ruby	I	rubocop-X13668	35.1		0.0	100.2	96.4	0	99	1	T	0	99	1	T	290	0	57	43	T		8736	test-run=30.7  runtime=2.9  search=0.3  vcs=0.2  other=0.0
+rubocop__rubocop-13362	Ruby	I	rubocop-t13362	48.0	0.98	0.0	100.0	96.3	0	100	0	T	0	100	0	T	405	0	74	26	T		12333	test-run=31.6  runtime=14.5  vcs=0.2  search=0.2  other=0.0
+rubocop__rubocop-13375	Ruby	I	rubocop-t13375	83.8	0.93	0.0	99.8	98.2	0	100	0	T	0	100	0	T	686	0	93	7	T		16273	runtime=46.5  test-run=35.4  vcs=0.1  search=0.1  other=0.0
+rubocop__rubocop-13393	Ruby	I	rubocop-t13393	16.5	0.99	0.0	100.9	89.5	0	99	1	T	0	99	1	T	224	0	66	34	T		6118	test-run=12.8  runtime=1.8  vcs=0.7  search=0.1
+rubocop__rubocop-13396	Ruby	I	rubocop-t13396	43.1	0.91	0.0	98.5	24.1	0	70	30	?	0	70	30	?	1023	0	22	78	S		18152	vcs=29.5  runtime=6.7  search=3.1  test-run=0.6
+rubocop__rubocop-13424	Ruby	I	rubocop-t13424	115.7	0.93	0.0	99.8	97.1	0	100	0	T	0	100	0	T	761	0	64	36	T		30963	test-run=93.1  runtime=18.8  search=0.4  vcs=0.4  other=0.0
+rubocop__rubocop-13431	Ruby	I	rubocop-t13431	24.9	0.97	0.0	100.4	95.7	0	99	1	T	0	99	1	T	240	0	64	36	T		6702	test-run=17.2  runtime=6.4  search=0.2  vcs=0.1
+rubocop__rubocop-13479	Ruby	I	rubocop-t13479	53.3	0.98	0.0	100.2	97.0	39	61	0	T	38	62	0	T	366	6	57	37	T	call-step-mismatch(112v109)	12986	test-run=27.3  pkg=19.7  runtime=4.6  vcs=0.2  search=0.1
+rubocop__rubocop-13503	Ruby	I	rubocop-t13503	23.7	1.0	0.0	100.7	97.0	0	100	0	T	0	100	0	T	148	0	61	39	T		5766	test-run=20.7  runtime=2.2  vcs=0.1  search=0.1  other=0.0
+rubocop__rubocop-13560	Ruby	I	rubocop-t13560	37.4	0.95	0.0	99.8	74.6	0	98	2	T	0	98	2	T	540	0	53	47	M	call-step-mismatch(195v192)	17301	test-run=22.0  vcs=6.6  runtime=5.4  search=0.5
+rubocop__rubocop-13579	Ruby	I	rubocop-t13579	10.6	1.0	0.0	101.7	93.1	0	100	0	?	0	100	0	?	109	0	73	27	T		3719	test-run=7.2  runtime=2.7  vcs=0.2  search=0.0
+rubocop__rubocop-13627	Ruby	I	rubocop-t13627	102.8	0.93	0.0	99.7	96.0	0	100	0	T	0	100	0	T	1112	0	74	26	T		36133	runtime=93.0  test-run=5.4  search=0.3  vcs=0.1
+rubocop__rubocop-13653	Ruby	I	rubocop-t13653	50.8	0.95	0.0	100.1	96.8	17	82	0	T	0	100	0	T	339	0	64	36	T		12166	test-run=41.6  runtime=7.4  vcs=0.3  search=0.2  other=0.0
+rubocop__rubocop-13680	Ruby	I	rubocop-t13680	23.9	0.99	0.0	100.1	94.7	0	100	0	T	0	100	0	T	234	0	75	25	T		7240	test-run=15.3  runtime=7.3  vcs=0.1  search=0.1
+rubocop__rubocop-13687	Ruby	I	rubocop-t13687	71.9	0.95	0.0	99.8	95.1	1	98	1	T	0	99	1	T	1050	0	83	17	T		26544	test-run=36.6  runtime=31.0  search=0.7  vcs=0.5  pkg=0.1
+rubocop__rubocop-13705	Ruby	I	rubocop-t13705	20.9	0.99	0.0	100.0	94.5	0	99	1	T	0	99	1	T	235	0	63	37	T		6028	test-run=14.3  runtime=5.3  search=0.2  vcs=0.1
+sharkdp__bat-1892	Rust	A	sharkdp-t1892	120.6	1.24	0.0	99.3	98.1	66	32	1	B	76	23	1	B	1998	86	10	4	B		28562	compile=88.6  test-run=24.9  runtime=2.0  search=1.4  build-drv=0.9
+sharkdp__bat-2201	Rust	A	sharkdp-t2201	115.2	1.0	0.0	99.0	97.2	69	31	0	B	84	15	0	B	2870	69	24	7	B		59228	compile=91.5  test-run=13.9  runtime=2.6  build-drv=1.9  other=1.0
+sharkdp__bat-2260	Rust	A	sharkdp-t2260	102.4	0.98	0.0	99.0	97.4	75	24	0	B	88	12	0	B	2281	79	16	5	B		27136	compile=84.8  test-run=9.7  build-drv=2.0  runtime=2.0  other=0.8
+sharkdp__bat-2393	Rust	A	sharkdp-t2393	103.1	0.99	0.0	99.3	97.9	71	29	0	B	86	14	0	B	2310	88	10	3	B		21431	compile=85.3  test-run=11.8  runtime=1.7  build-drv=1.4  other=0.6
+sharkdp__bat-2650	Rust	A	sharkdp-t2650	113.8	1.01	0.0	99.3	98.1	1	98	0	T	91	8	0	B	2144	87	10	3	B		20192	compile=99.1  test-run=7.5  build-drv=2.0  runtime=1.9  other=0.9
+sharkdp__bat-2835	Rust	A	sharkdp-t2835	250.8	1.01	0.0	99.1	98.1	36	64	0	T	73	27	0	B	4252	52	44	4	M		44545	compile=174.0  test-run=61.1  runtime=3.5  build-drv=3.2  other=2.6
+sharkdp__bat-3108	Rust	A	sharkdp-t3108	251.0	1.04	0.0	99.0	98.0	46	54	0	M	83	17	0	B	6241	38	60	2	T		39421	compile=197.4  test-run=38.4  runtime=3.2  other=3.0  build-drv=3.0
+sharkdp__bat-562	Rust	A	sharkdp-t562	129.6	1.01	0.0	99.4	97.4	54	45	0	M	56	44	0	B	2283	64	28	8	B		30417	compile=66.0  test-run=51.8  build-drv=4.1  runtime=2.8  other=1.4
+tokio-rs__tokio-6551	Rust	A	tokio-rs-X6551	116.0		0.0	97.0	95.5	10	90	0	T	50	50	0	M	592	56	31	13	B		76695	compile=51.9  test-run=48.9  other=6.0  runtime=3.1  build-drv=1.0
+tokio-rs__axum-1119	Rust	A	tokio-rs-t1119	154.9	0.93	0.0	99.5	98.4	45	55	0	T	98	2	0	B	1477	81	13	7	B		21973	compile=146.5  runtime=2.6  build-drv=2.2  test-run=0.5  lint=0.4
+tokio-rs__axum-1730	Rust	A	tokio-rs-t1730	457.0	1.06	0.0	99.0	98.7	15	85	0	T	99	1	0	B	2987	86	11	2	B		31477	compile=443.3  test-run=3.0  build-drv=2.2  runtime=2.1  other=0.4
+tokio-rs__axum-1934	Rust	A	tokio-rs-t1934	685.9	1.09	0.0	99.0	98.6	18	82	0	T	99	1	0	B	3837	74	18	7	B		52881	compile=663.7  test-run=4.2  runtime=3.6  build-drv=2.8  lint=0.9
+tokio-rs__axum-2096	Rust	A	tokio-rs-t2096	460.8	1.03	0.0	99.1	98.7	7	92	0	T	98	2	0	B	2365	82	14	4	B		37953	compile=443.6  test-run=4.4  build-drv=3.6  runtime=2.8  other=0.5
+tokio-rs__tokio-4384	Rust	A	tokio-rs-t4384	962.5	1.02	0.0	93.2	91.7	15	85	0	T	33	67	0	T	1879	80	10	10	B		32182	test-run=589.9  compile=284.8  runtime=3.1  build-drv=3.1  other=1.3
+tokio-rs__tokio-4867	Rust	A	tokio-rs-t4867	302.9	0.94	0.0	99.0	98.4	4	96	0	T	99	1	0	B	2977	84	13	3	B		37280	compile=289.4  build-drv=3.0  runtime=2.4  other=1.8  test-run=1.2
+tokio-rs__tokio-4898	Rust	A	tokio-rs-t4898	120.8	1.23	0.0	99.0	98.6	4	96	0	T	100	0	0	B	1448	97	2	2	B	call-step-mismatch(22v19)	12170	compile=117.0  build-drv=1.5  runtime=0.4  search=0.1  other=0.1
+tokio-rs__tokio-6603	Rust	A	tokio-rs-t6603	856.2	0.71	0.0	99.9	99.7	0	100	0	T	21	79	0	T	1760	78	17	5	B		86470	test-run=670.0  compile=177.9  build-drv=2.5  runtime=2.0  other=0.7
+tokio-rs__tokio-6724	Rust	A	tokio-rs-t6724	25.2	0.99	0.0	100.5	97.7	29	69	2	T	93	5	2	B	283	73	14	13	B	call-step-mismatch(33v30)	6288	compile=22.3  build-drv=0.7  runtime=0.7  lint=0.5  search=0.4
+tokio-rs__tokio-6752	Rust	A	tokio-rs-t6752	125.0	1.01	0.0	98.8	97.9	5	95	0	T	98	2	0	B	1102	70	25	4	B	call-step-mismatch(74v71)	17098	compile=118.4  runtime=1.6  build-drv=0.8  test-run=0.7  lint=0.4
+tokio-rs__axum-682	Rust	A	tokio-rs-t682	134.3	0.9	0.0	99.5	98.4	69	31	0	B	97	3	0	B	1415	84	11	5	B		19679	compile=126.4  runtime=2.6  build-drv=2.0  lint=0.4  test-run=0.3
+tokio-rs__tokio-6838	Rust	A	tokio-rs-t6838	24.1	0.99	0.0	100.2	96.7	12	88	0	T	96	4	0	B	328	71	16	14	B		6801	compile=21.6  runtime=0.8  build-drv=0.7  other=0.2  vcs=0.1
+tokio-rs__axum-691	Rust	A	tokio-rs-t691	633.6	1.04	0.0	99.1	98.7	6	94	0	T	99	1	0	B	3179	79	18	3	B		53601	compile=610.7  build-drv=4.9  test-run=4.1  runtime=3.9  other=1.5
+tokio-rs__tokio-7139	Rust	A	tokio-rs-t7139	47.3	0.98	0.0	99.9	98.2	16	84	0	T	98	2	0	B	607	85	9	6	B		7873	compile=44.7  runtime=0.9  build-drv=0.6  other=0.2  vcs=0.1
+tokio-rs__axum-734	Rust	A	tokio-rs-t734	1107.9	0.97	0.0	99.2	99.0	49	51	0	M	99	1	0	B	5089	83	13	3	B		81748	compile=1078.7  build-drv=7.1  runtime=5.4  test-run=3.9  other=0.8
+uutils__coreutils-6377	Rust	A	uutils-t6377	101.1	0.97	0.0	98.8	83.9	55	45	1	M	93	7	1	B	1314	37	49	15	T		59547	compile=76.5  vcs=11.9  runtime=4.4  build-drv=1.8  test-run=0.9
+uutils__coreutils-6575	Rust	A	uutils-t6575	195.5	1.08	0.0	98.3	97.5	43	57	0	T	66	34	0	B	9790	18	81	1	T		62713	compile=120.3  test-run=59.7  build-drv=3.3  other=3.2  lint=2.1  runtime=2.0
+uutils__coreutils-6682	Rust	A	uutils-t6682	84.7	1.03	0.0	99.3	97.6	59	41	0	B	97	3	0	B	945	49	44	7	M		17811	compile=78.2  build-drv=1.9  runtime=1.5  test-run=0.6  other=0.4
+uutils__coreutils-6690	Rust	A	uutils-t6690	77.9	1.01	0.0	98.9	97.3	68	32	0	B	93	6	0	B	1796	24	69	7	T		22344	compile=68.2  test-run=3.5  build-drv=1.8  runtime=1.3  other=0.7
+uutils__coreutils-6731	Rust	A	uutils-t6731	56.7	1.02	0.0	99.1	97.7	81	19	0	B	91	9	0	B	1415	28	70	2	T		13872	compile=49.1  test-run=4.0  build-drv=0.9  runtime=0.7  lint=0.3
+valkey-io__valkey-1499	C	B	valkey-io-t1499	5.2	1.01	3.0	98.3	52.4	26	56	17	?	26	56	17	?	229	1	47	52	M	mechanism-not-witnessed	6007	runtime=1.6  vcs=1.1  pkg=0.7  search=0.5  other=0.0
+valkey-io__valkey-1842	C	B	valkey-io-t1842	309.0	0.98	2.0	99.3	98.7	15	85	0	T	15	84	0	T	2972	8	18	74	S		64530	test-run=252.9  compile=45.2  runtime=2.1  search=1.5  pkg=0.7
+valkey-io__valkey-790	C	B	valkey-io-t790	149.1	0.99	2.0	99.5	98.5	30	70	0	T	30	69	1	T	1782	13	23	64	S		74739	test-run=98.6  compile=43.0  runtime=1.9  search=0.8  pkg=0.7
+valkey-io__valkey-928	C	B	valkey-io-t928	75.3	0.94	2.0	98.3	93.0	72	27	1	B	74	24	2	B	2681	10	22	67	S		76070	compile=49.4  test-run=12.6  runtime=3.9  vcs=1.6  search=1.5
+vuejs__core-11915	TypeScript	N	vuejs-X11915	193.4		0.0	99.0	98.5	0	100	0	T	2	96	2	T	5607	4	5	92	S		13075	test-run=148.2  runtime=29.8  search=4.0  compile=3.9  vcs=0.1
+vuejs__core-11589	TypeScript	N	vuejs-t11589	213.0	1.09	0.0	98.8	98.0	0	100	0	T	4	93	3	T	9680	5	6	88	S		22508	test-run=157.0  runtime=33.0  compile=8.2  search=6.2  vcs=0.2
+vuejs__core-11739	TypeScript	N	vuejs-t11739	559.1	1.14	0.0	98.5	98.0	0	100	0	T	4	92	3	T	26487	6	7	87	S		71556	test-run=384.5  runtime=108.6  compile=23.5  search=18.5  vcs=0.1
+vuejs__core-11870	TypeScript	N	vuejs-t11870	137.6	1.11	0.0	99.2	98.4	0	100	0	T	4	93	3	T	5887	5	7	88	S		15456	test-run=90.2  runtime=33.3  compile=5.4  search=3.8  vcs=0.1
+vuejs__core-11899	TypeScript	N	vuejs-t11899	93.1	1.04	0.0	98.7	97.3	0	100	0	T	2	95	3	T	4597	6	12	83	S		13764	test-run=52.5  runtime=31.5  search=2.8  compile=2.1  vcs=0.1

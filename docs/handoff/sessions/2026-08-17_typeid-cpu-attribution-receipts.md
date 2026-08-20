@@ -98,6 +98,36 @@ GLM sweep complete. No other captures running. Passwordless sudo available.
 - Live-vs-replay ratio >2 on ~12 tiny PHP/Java fences (2–14 core-s): swe-rex bootstrap
   dominates both numerators; not a physics disagreement, and all were already `?`.
 
+## Corpus completed + tagger census (2026-08-19 evening)
+- **The 4 gaps were re-run live** by the user (14:44–15:58, fresh tokens, `gaps_run.log`):
+  prometheus-9248 (217 core-s, classified), terraform-35543 (2.4, classified),
+  carbon-2813 (4.9, **starved**), laravel-51890 (7.9, classified). Replayed 17:11–18:44.
+  **Corpus is now 300/300**; all four land in no-evidence (prometheus coverage 52%,
+  terraform ratio 4.98, carbon 2.99, laravel thin fence).
+- **`other` census over 300 replays**: 1,374 core-s unnamed (3.1% of 44.3k core-s of
+  in-fence receipts), 43,922 distinct comms but only 58 with >=1 core-s. Six families fixed
+  in `typeid_cpu_matrix.py`; **`other` now 80 core-s (0.2%)**, nothing above 3.8 core-s.
+  Two were the SAME bug: `comm` is truncated to 15 chars, so `lto1-ltrans` (482 core-s,
+  redis/valkey LTO) and `integration.tes` never matched existing entries. Others: esbuild/swc
+  -> compile (136 core-s — the class-N transpile term the window analysis measured as 0%),
+  Rust test-thread names -> test-run, chromium threads -> test-run, clippy/rustfmt -> lint,
+  javap/nm/strings -> search, dd/cmp/uname -> scaffold, py3compile/localedef -> pkg.
+- **Defect introduced and caught in the same session**: the Rust thread-name rule
+  (`::`, `/src/`) was unanchored and matched full argv, tagging every compile whose command
+  line mentions a `/src/` path as test-run (`ld -o redis-server …/src/…`). It flipped redis
+  and nlohmann BUILD->TEST in the ownership view. Now anchored (`^(?!/)[^ ]*(::|/src/)`),
+  with a fixed regression list of known commands checked after every tagger edit.
+- **Matrix n=300** (ownership) B 55 / T 162 / M 8 / ? 75; process B 94 / T 126 / M 3 / ? 77.
+  The lto1 fix recovered 6 process-view rows (5 redis + valkey) from ? to B: C goes 5/8 ->
+  11/8. Selection re-run: **identical 30 picks**.
+- **Count-weighted classification piloted and rejected as the label** (supervisor's ask):
+  leaf-command counts give B 61 / T 109 / S 60 / M 42 / ? 28 and agree with ownership on
+  112/225 rows — but a counted search costs 2.2 ms vs 13.4 (test) and 35.7 (build), and the
+  flips are toolchain plumbing (vue: `sort|uniq|wc` x4500; jq: 3,680 configure seds).
+  Banked as columns `n_leaf, leaf_B, leaf_T, leaf_S, leaf_label` instead. The episodes where
+  search leads BY CPU are all thin fences already gated `?` — the empty S column is a
+  magnitude fact, not a weighting artifact.
+
 ## Open threads
 - **Present the 30 to the user; P7 layer-3 verdicts on the picks** (the whole point).
 - lucene: re-replay with network (or pre-warmed gradle) if Java×B/M cells are wanted — all
