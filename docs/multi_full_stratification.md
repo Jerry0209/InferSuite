@@ -662,6 +662,113 @@ run. The 23 are being re-replayed (no tokens) with the fixed listener; their dam
 are kept alongside as `*.enobufs_bak` for comparison. Until that finishes, their rows in the
 matrix are the truncated ones, and the four affected picks should not be sent to P7.
 
+# Selection (36 of 300) on the count view — the ML_iso36 profiling set (2026-08-21)
+
+The count-weighted matrix above was built as a tested-not-adopted reference; this section
+records the selection that was subsequently built **on** it, by PI directive: pick 36 tasks
+for full P7 profiling (TMA + the complete metric card) using the **count view** (`leaf_label`),
+**4 per language × 9 languages**, one per populated ⟨language, B/T/S/M⟩ cell, and when a row
+has empty cells, take the extra picks from that language's **majority count category**. Files:
+`local_agents/ML_typeid/selection_36_count.tsv` (the picks, with per-row reasons and
+runner-ups), `local_agents/kit/campaign/typeid_select36.py` (the deterministic rule),
+`local_agents/ML_iso36/plots/iso36_selection_matrix.png` (the picks drawn on the count
+matrix), `local_agents/ML_iso36/README.md` (the campaign this feeds).
+
+## Method
+
+The rule mirrors `typeid_select.py` (the 30-of-300 ownership-view selection) with two changes:
+the cell axis is the count label instead of the ownership label, and the quota is exactly 4
+per language with majority top-ups instead of the three-step 30-slot budget.
+
+*Profilability (hard excludes).* A cell only counts as populated if it holds a candidate that
+can actually be replay-profiled on the P7: excluded are `replay-invalid` rows (28), E7
+loop-degenerate episodes (41), and rows with no banked trajectory (11). This distinction
+matters once: the JavaScript×S cell has n=1, but that one member is hard-flagged, so the cell
+is *unprofilable* — its slot went to JavaScript's majority category, and the matrix figure
+says "no profilable candidate" rather than "empty".
+
+*One per profilable cell*, singleton cells filled first (their repo is forced, so the ranking
+in bigger cells can account for it).
+
+*Within a cell*, candidates are ranked by, in order: coverage ≥ 80 % → classified ≥ 50 % → a
+repo not already picked → not a W-CONFOUND repo (fmt, preact) when an alternative exists →
+**closest to the cell's median fence** (a representative should be typical of its cell, not
+its outlier) → instance id as the deterministic tie-break. The next candidate in the same
+order is recorded as the runner-up.
+
+*Top-ups* walk down the majority cell's same ranking, preferring fresh repos.
+
+## The realized matrix (picks per cell)
+
+| language | B | T | S | M | top-ups |
+| --- | --- | --- | --- | --- | --- |
+| C | redis-12272 | micropython-13039 | jq-2598 | valkey-1499 | — |
+| C++ | nlohmann-4237 | *empty* | *empty* | *empty* | + fmt-3750, fmt-3901, fmt-2457 (B) |
+| Rust | nushell-13831 | ripgrep-2209 | *empty* | bat-2835 | + axum-1730 (B) |
+| Go | caddy-4774 | gin-2121 | *empty* | prometheus-10720 | + hugo-12579 (M) |
+| Java | gson-1093 | gson-2134 | lombok-3479 | javaparser-4538 | — |
+| PHP | laravel-52684 | php-cs-fixer-8064 | carbon-2752 | phpspreadsheet-3463 | — |
+| Ruby | fpm-1829 | fastlane-20958 | rubocop-13396 | rubocop-13560 | — |
+| JavaScript | *empty* | babel-15649 | *(n=1, unprofilable)* | preact-3763 | + axios-6539, three.js-26589 (T) |
+| TypeScript | *empty* | docusaurus-9897 | vuejs-core-11589 | *empty* | + immutable-js-2006, docusaurus-10130 (T) |
+
+Column sums: **B 11 / T 12 / S 5 / M 8** = 36 picks; 27 distinct cells covered, 31 repos,
+Σ tool-fence 4,797 core-s (17 → 655 per task).
+
+## Honest limitations (all recorded per-row in the TSV `why` column)
+
+- **C++ is 3× fmtlib** — the cell is 11/12 fmt, so with nlohmann taken first the top-ups have
+  nowhere else to go. Any C++-level claim from this set is still largely an fmt claim
+  (W-CONFOUND), exactly as in the 30-selection.
+- **Java×B and Java×T are forced gson singletons** (n=1 cells), so those two cells share one
+  repo.
+- **Ruby×S and Ruby×M are forced single-profilable picks**; rubocop-13396 additionally carries
+  a low classified % (24 % — one large git operation dominates its fence).
+- **The search column is small (5 picks) and its members are small** (5–213 core-s): a fact
+  about the population — count-search-led tasks are rare and mostly tiny — not about the
+  sampler. Several PHP/Ruby picks sit under the historical 20 core-s magnitude gate; they are
+  kept deliberately, because under this directive the cell exists and must be represented,
+  and the dedicated-group replays make even small fences measurable (every window carries the
+  pass's group at 100 % duty).
+- Every pick is a **prior**: the P7 replay and its gates are the verdict on each row.
+
+The profiling campaign itself (9 dedicated-group passes per task — the shared 8 plus
+`fe_miss`, which turns the previous 13-of-16 metric card into 16-of-16 — plus DRAM read
+bandwidth and context-switch rate, at 100 ms windows on cores 4–11 SMT-off) is documented in
+`local_agents/ML_iso36/README.md`.
+
+
+## Slides
+Update and append Agent Deck: https://claude.ai/code/artifact/e93ebcb7-015d-4f40-8f83-62fe21777e62
+
+For 36 tasks, make:
+
+
+TMA Level 1 of 36 tasks (tool and harness fence)
+Per window distributions across tasks and languages -- tool fence (The one with 16 metrics)
+Per window distributions across tasks and languages -- harness fence (The one with 16 metrics)
+
+Since we have 36 tasks, plz think a better way to compare metrics within languages and between tasks of different languages? Probably better to group the tasks in the same languages?
+
+
+For each task, make the per window gallery like below:
+https://claude.ai/code/artifact/38a39910-5629-4073-b02d-7dda179c1bee?via=auto_preview
+
+### C
+
+redis-12272: link to per window gallery
+micropython-13039: link to per window gallery
+jq-2598: link to per window gallery
+valkey-1499: link to per window gallery
+
+### C++
+
+### Rust
+
+.... etc
+
+After you create figures, update or make those slides, plz update this section in .md, Thank you!
+
 # Discord
 
 *(draft message for the team — paste as is, with 08b + 08d attached)*
