@@ -198,7 +198,7 @@ row's "Covers" column; new artifacts add a row).
 
 | Artifact | Link | Covers |
 |---|---|---|
-| Agent CPU profiling — GLM-5.2 SWE-agent (the deck, **28 slides**) | https://claude.ai/code/artifact/e93ebcb7-015d-4f40-8f83-62fe21777e62 | slides 1–28 (26–28 added 2026-07-30: nine-language axis, composition-vs-magnitude, sampling frame — reports 16/17; since 2026-07-31 the five per-window grid slides show the 4×4 `grid16` layout with cache miss rates, per-slide populations frozen via `_py3`/`_5t`/`_12t`) |
+| Agent CPU profiling — GLM-5.2 SWE-agent (the deck, **41 slides**) | https://claude.ai/code/artifact/e93ebcb7-015d-4f40-8f83-62fe21777e62 | slides 1–41 (26–28 added 2026-07-30: nine-language axis, composition-vs-magnitude, sampling frame — reports 16/17; since 2026-07-31 the five per-window grid slides show the 4×4 `grid16` layout with cache miss rates, per-slide populations frozen via `_py3`/`_5t`/`_12t`; 29–36 added 2026-08-10: matched configuration + SPEC baseline comparison; **37–41 added 2026-08-24**: the ML_iso36 count-view campaign — selection matrix, TMA L1 of 36 tasks per fence, the 18-metric per-window grids for both fences, and the per-task gallery index. Since 2026-08-24 the builder embeds display-resolution palette-quantized figure copies to stay under the 16 MB artifact cap; source PNGs unchanged) |
 | Per-window gallery — scikit-learn | https://claude.ai/code/artifact/c12b01c1-7ac7-4f2e-8729-b1c90f5ef63b | slides 19–23 backing detail |
 | Per-window gallery — astropy | https://claude.ai/code/artifact/3b68efd2-f9f0-49ad-b047-20ac27bb3c68 | slides 19–23 backing detail |
 | Per-window gallery — sympy | https://claude.ai/code/artifact/704ab3b2-3b63-4c57-b087-88dcdcf968ff | slides 19–23 backing detail |
@@ -218,6 +218,42 @@ row's "Covers" column; new artifacts add a row).
 | Per-window gallery — 782.lbm_r (SPEC) | https://claude.ai/code/artifact/91f043be-d23f-45cc-911c-9284c77941ba | report 18 backing detail — streaming; the LLC demand-miss caveat |
 | Per-window gallery — 723.llvm_r (SPEC) | https://claude.ai/code/artifact/3f7a6f76-cb54-45dd-bd34-85b5b4eb2a4c | report 18 backing detail — most frontend-bound |
 | Per-window gallery — 714.cpython_r (SPEC) | https://claude.ai/code/artifact/616a5aec-782e-4fee-a1e7-55c547e35432 | report 18 backing detail — interpreter dispatch, closest to an agent harness |
+| Per-window gallery — redis-t12272 (C, B) | https://claude.ai/code/artifact/db4944b6-6736-40f3-b65f-d99570ce7101 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — micropython-t13039 (C, T) | https://claude.ai/code/artifact/0785f8ba-0c4a-4846-bde9-d778a3ce2623 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — jqlang-t2598 (C, S) | https://claude.ai/code/artifact/a2b4d318-9892-4a46-a596-098d33bad391 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — valkey-io-t1499 (C, M) | https://claude.ai/code/artifact/3ddb6092-f834-4853-99a4-61acc6766295 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — nlohmann-t4237 (C++, B) | https://claude.ai/code/artifact/77d5e44e-8b02-411f-8f8c-18838dd5890e | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — fmtlib-t3750 (C++, B) | https://claude.ai/code/artifact/ca7a60a6-be95-47a7-bb9e-cd3d8f386758 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — fmtlib-t3901 (C++, B) | https://claude.ai/code/artifact/d424b721-5eac-4618-9152-161a2cf5870e | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — fmtlib-t2457 (C++, B) | https://claude.ai/code/artifact/d82b1902-6c94-4c2c-bf7f-e643c23625c9 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — nushell-t13831 (Rust, B) | https://claude.ai/code/artifact/bbef37a9-2c28-4013-ad1b-30c22376c20f | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — burntsushi-t2209 (Rust, T) | https://claude.ai/code/artifact/14150b17-215e-4b2f-bd32-638ae487aaf5 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — sharkdp-t2835 (Rust, M) | https://claude.ai/code/artifact/333bacd3-14dd-42bb-967c-d578932d9d2c | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — tokio-rs-t1730 (Rust, B) | https://claude.ai/code/artifact/5089bf45-95ff-4b7c-b624-467eece4d97c | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — caddyserver-t4774 (Go, B) | https://claude.ai/code/artifact/086aee95-ab65-4eb2-9994-026277d3e90d | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — gin-gonic-t2121 (Go, T) | https://claude.ai/code/artifact/23701afc-0932-4050-82f5-7777b058133a | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — prometheus-t10720 (Go, M) | https://claude.ai/code/artifact/b9c14865-6d94-469f-b439-39009a1c39ff | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — gohugoio-t12579 (Go, M) | https://claude.ai/code/artifact/c23b8032-c73e-4fd3-b706-775d386fa4b0 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — google-t1093 (Java, B) | https://claude.ai/code/artifact/88938855-14de-443d-b406-f056de789de9 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — google-t2134 (Java, T) | https://claude.ai/code/artifact/53e7dcf5-fd55-495d-836f-55c4cfac0efb | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — projectlombok-t3479 (Java, S) | https://claude.ai/code/artifact/cdb06472-d9e0-4ba1-af5d-c2633789cd5a | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — javaparser-t4538 (Java, M) | https://claude.ai/code/artifact/96cfcacc-cd85-446f-9db8-de4b9f04aab3 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — laravel-t52684 (PHP, B) | https://claude.ai/code/artifact/35b1b0ea-52b2-4a4a-86c2-5ec3b852b94f | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — php-cs-fixer-t8064 (PHP, T) | https://claude.ai/code/artifact/bab2ae4d-8b58-4cee-a288-4f8db2b20ad4 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — briannesbitt-t2752 (PHP, S) | https://claude.ai/code/artifact/ea6532f8-2d1e-4e74-bb4b-cce0d0d52f02 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — phpoffice-t3463 (PHP, M) | https://claude.ai/code/artifact/44f71782-00e9-4d2e-bacf-1e70294ac706 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — jordansissel-t1829 (Ruby, B) | https://claude.ai/code/artifact/9474fff4-d93a-48d9-8f55-0b53d9e3ea08 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — fastlane-t20958 (Ruby, T) | https://claude.ai/code/artifact/993654c3-4a04-4273-9ec8-34a87b286a1f | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — rubocop-t13396 (Ruby, S) | https://claude.ai/code/artifact/87929382-ac2c-4481-a2a4-70e208182063 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — rubocop-t13560 (Ruby, M) | https://claude.ai/code/artifact/db093563-614e-4d78-8046-468821c7364b | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — babel-t15649 (JS, T) | https://claude.ai/code/artifact/0e09624e-ec68-4c98-9e6e-ee32ebd42f6e | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — axios-t6539 (JS, T) | https://claude.ai/code/artifact/266cc08f-ce5e-4193-a769-bc3a261caf19 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — mrdoob-t26589 (JS, T) | https://claude.ai/code/artifact/69f2da96-9860-4830-8dc1-de596cd20607 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — preactjs-t3763 (JS, M) | https://claude.ai/code/artifact/ed0e5ddd-1fdf-4d43-abb0-6db46c73c134 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — facebook-t9897 (TS, T) | https://claude.ai/code/artifact/c2f41a8e-650c-4832-8d9f-d5c03e1ac882 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — immutable-js-t2006 (TS, T) | https://claude.ai/code/artifact/790f90fb-97ed-400c-9000-33e74035ccf4 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — facebook-t10130 (TS, T) | https://claude.ai/code/artifact/3c47000c-3b79-4886-bf94-9f2a81186aa9 | slide 41 backing detail (ML_iso36) |
+| Per-window gallery — vuejs-t11589 (TS, S) | https://claude.ai/code/artifact/5e19e4bb-b819-4c9c-a837-d5daeb10b181 | slide 41 backing detail (ML_iso36) |
 | Per-window gallery — 709.cactus_r (SPEC) | https://claude.ai/code/artifact/0a46c434-84f0-4c20-83f0-bd5c391dff98 | report 18 backing detail — extreme instruction footprint |
 | Per-window gallery — 750.sealcrypto_r (SPEC) | https://claude.ai/code/artifact/10499fe5-fd0b-41f1-bed7-58ddb8550f16 | report 18 backing detail — compute-dense, IPC 4.15 |
 | Per-window gallery — 729.abc_r (SPEC) | https://claude.ai/code/artifact/d0a0ff27-e08a-42e1-9b80-7fd786925197 | report 18 backing detail — 49 % bad speculation |

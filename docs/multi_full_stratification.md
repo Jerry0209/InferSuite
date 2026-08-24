@@ -738,36 +738,88 @@ bandwidth and context-switch rate, at 100 ms windows on cores 4–11 SMT-off) is
 `local_agents/ML_iso36/README.md`.
 
 
-## Slides
-Update and append Agent Deck: https://claude.ai/code/artifact/e93ebcb7-015d-4f40-8f83-62fe21777e62
+## Slides and per-task galleries (published 2026-08-24)
 
-For 36 tasks, make:
+**Agent deck** (updated in place, now **41 slides**):
+<https://claude.ai/code/artifact/e93ebcb7-015d-4f40-8f83-62fe21777e62>
 
+Slides 37–41 carry this campaign: the selection matrix; TMA Level 1 of the 36 tasks (tool and
+harness fences, SPEC CPU 2026 INT/FP closing panel); the per-window distribution grids for both
+fences — the mentor's 16 metrics **including the three fe_miss metrics** plus DRAM read
+bandwidth and context switches (18 panels); and the gallery index. To compare within and across
+languages at 36 tasks, each grid panel clusters the **4 tasks of a language side by side**
+(boxes colored by the task's count-cell type B/T/S/M, so type-vs-signature is readable
+directly), languages in a fixed order, and a grey SPEC-26 box closing every panel. Note: the
+deck's share link is version-pinned — viewers of an existing share see the new slides only
+after the share pin is moved to the new version.
 
-TMA Level 1 of 36 tasks (tool and harness fence)
-Per window distributions across tasks and languages -- tool fence (The one with 16 metrics)
-Per window distributions across tasks and languages -- harness fence (The one with 16 metrics)
-
-Since we have 36 tasks, plz think a better way to compare metrics within languages and between tasks of different languages? Probably better to group the tasks in the same languages?
-
-
-For each task, make the per window gallery like below:
-https://claude.ai/code/artifact/38a39910-5629-4073-b02d-7dda179c1bee?via=auto_preview
+**Per-task per-window galleries** (one artifact per task, modeled on the SPEC gallery: every
+metric with the tag-split tool-fence distribution, the harness-fence distribution, and both
+episode timelines at 100 ms; links also on deck slide 41 and banked in
+`local_agents/ML_iso36/gallery_links.json`):
 
 ### C
 
-redis-12272: link to per window gallery
-micropython-13039: link to per window gallery
-jq-2598: link to per window gallery
-valkey-1499: link to per window gallery
+- redis-12272 (B): <https://claude.ai/code/artifact/db4944b6-6736-40f3-b65f-d99570ce7101>
+- micropython-13039 (T): <https://claude.ai/code/artifact/0785f8ba-0c4a-4846-bde9-d778a3ce2623>
+- jq-2598 (S): <https://claude.ai/code/artifact/a2b4d318-9892-4a46-a596-098d33bad391>
+- valkey-1499 (M): <https://claude.ai/code/artifact/3ddb6092-f834-4853-99a4-61acc6766295>
 
 ### C++
 
+- nlohmann-4237 (B): <https://claude.ai/code/artifact/77d5e44e-8b02-411f-8f8c-18838dd5890e>
+- fmt-3750 (B, top-up): <https://claude.ai/code/artifact/ca7a60a6-be95-47a7-bb9e-cd3d8f386758>
+- fmt-3901 (B, top-up): <https://claude.ai/code/artifact/d424b721-5eac-4618-9152-161a2cf5870e>
+- fmt-2457 (B, top-up): <https://claude.ai/code/artifact/d82b1902-6c94-4c2c-bf7f-e643c23625c9>
+
 ### Rust
 
-.... etc
+- nushell-13831 (B): <https://claude.ai/code/artifact/bbef37a9-2c28-4013-ad1b-30c22376c20f>
+- ripgrep-2209 (T): <https://claude.ai/code/artifact/14150b17-215e-4b2f-bd32-638ae487aaf5>
+- bat-2835 (M): <https://claude.ai/code/artifact/333bacd3-14dd-42bb-967c-d578932d9d2c>
+- axum-1730 (B, top-up): <https://claude.ai/code/artifact/5089bf45-95ff-4b7c-b624-467eece4d97c>
 
-After you create figures, update or make those slides, plz update this section in .md, Thank you!
+### Go
+
+- caddy-4774 (B): <https://claude.ai/code/artifact/086aee95-ab65-4eb2-9994-026277d3e90d>
+- gin-2121 (T): <https://claude.ai/code/artifact/23701afc-0932-4050-82f5-7777b058133a>
+- prometheus-10720 (M): <https://claude.ai/code/artifact/b9c14865-6d94-469f-b439-39009a1c39ff>
+- hugo-12579 (M, top-up): <https://claude.ai/code/artifact/c23b8032-c73e-4fd3-b706-775d386fa4b0>
+
+### Java
+
+- gson-1093 (B): <https://claude.ai/code/artifact/88938855-14de-443d-b406-f056de789de9>
+- gson-2134 (T): <https://claude.ai/code/artifact/53e7dcf5-fd55-495d-836f-55c4cfac0efb>
+- lombok-3479 (S): <https://claude.ai/code/artifact/cdb06472-d9e0-4ba1-af5d-c2633789cd5a>
+- javaparser-4538 (M): <https://claude.ai/code/artifact/96cfcacc-cd85-446f-9db8-de4b9f04aab3>
+
+### PHP
+
+- laravel-52684 (B): <https://claude.ai/code/artifact/35b1b0ea-52b2-4a4a-86c2-5ec3b852b94f>
+- php-cs-fixer-8064 (T): <https://claude.ai/code/artifact/bab2ae4d-8b58-4cee-a288-4f8db2b20ad4>
+- carbon-2752 (S): <https://claude.ai/code/artifact/ea6532f8-2d1e-4e74-bb4b-cce0d0d52f02>
+- phpspreadsheet-3463 (M): <https://claude.ai/code/artifact/44f71782-00e9-4d2e-bacf-1e70294ac706>
+
+### Ruby
+
+- fpm-1829 (B): <https://claude.ai/code/artifact/9474fff4-d93a-48d9-8f55-0b53d9e3ea08>
+- fastlane-20958 (T): <https://claude.ai/code/artifact/993654c3-4a04-4273-9ec8-34a87b286a1f>
+- rubocop-13396 (S): <https://claude.ai/code/artifact/87929382-ac2c-4481-a2a4-70e208182063>
+- rubocop-13560 (M): <https://claude.ai/code/artifact/db093563-614e-4d78-8046-468821c7364b>
+
+### JavaScript
+
+- babel-15649 (T): <https://claude.ai/code/artifact/0e09624e-ec68-4c98-9e6e-ee32ebd42f6e>
+- axios-6539 (T, top-up): <https://claude.ai/code/artifact/266cc08f-ce5e-4193-a769-bc3a261caf19>
+- three.js-26589 (T, top-up): <https://claude.ai/code/artifact/69f2da96-9860-4830-8dc1-de596cd20607>
+- preact-3763 (M): <https://claude.ai/code/artifact/ed0e5ddd-1fdf-4d43-abb0-6db46c73c134>
+
+### TypeScript
+
+- docusaurus-9897 (T): <https://claude.ai/code/artifact/c2f41a8e-650c-4832-8d9f-d5c03e1ac882>
+- immutable-js-2006 (T, top-up): <https://claude.ai/code/artifact/790f90fb-97ed-400c-9000-33e74035ccf4>
+- docusaurus-10130 (T, top-up): <https://claude.ai/code/artifact/3c47000c-3b79-4886-bf94-9f2a81186aa9>
+- vuejs-core-11589 (S): <https://claude.ai/code/artifact/5e19e4bb-b819-4c9c-a837-d5daeb10b181>
 
 # Discord
 
