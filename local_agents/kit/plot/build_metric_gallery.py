@@ -23,11 +23,13 @@ ORDER = ["IPC", "branch_MPKI", "branchDir_MPKI", "branchInd_MPKI", "BTB_MPKI",
          "uopCache_MPKI", "DSB_pct", "MITE_pct", "MS_pct", "codeRead_MPKI_L1I",
          "icache_data_stall_pct", "itlb_tag_stall_pct", "itlb_walk_pct",
          "branch_resteer_pct", "tma_dsb_switches_pct", "ms_switches_PKI",
-         "L1D_MPKI", "L2_MPKI", "LLC_MPKI", "AMAT_cyc", "MLP",
+         "L1D_MPKI", "L2_MPKI", "LLC_MPKI",
+         "L1D_missrate_pct", "L2_missrate_pct", "LLC_missrate_pct",
+         "AMAT_cyc", "MLP",
          "tma_l1_bound_pct", "tma_l2_bound_pct", "tma_l3_bound_pct",
          "tma_dram_bound_pct", "tma_store_bound_pct", "dram_bw_bound_pct",
-         "dram_read_occ_pct", "divider_pct", "ports0_pct", "ports1_pct",
-         "ports2_pct", "vecFP_pct", "kernel_pct"]
+         "dram_read_occ_pct", "dram_rd_GBs", "divider_pct", "ports0_pct", "ports1_pct",
+         "ports2_pct", "vecFP_pct", "kernel_pct", "ctx_per_cpu_s"]
 
 CSS = """body{margin:0;font-family:system-ui,Segoe UI,Roboto,sans-serif;background:#f5f8f6;color:#12201b}
 @media(prefers-color-scheme:dark){body{background:#0e1512;color:#e8efeb}.card{background:#16201c!important;border-color:#26332d!important}.nav a{color:#2fc294!important}}
@@ -48,7 +50,8 @@ def uri(p):
 for t in TASKS:
     parts = [f"<title>Per-window gallery — {t}</title><style>{CSS}</style><div class='wrap'>"]
     parts.append(f"<h1>Per-window gallery — {t} (tool + harness fences)</h1>")
-    parts.append("<p class='note'>Every metric, per 2-s window, from dedicated-group deterministic "
+    WINLAB = os.environ.get("GAL_WINLAB", "2-s")
+    parts.append(f"<p class='note'>Every metric, per {WINLAB} window, from dedicated-group deterministic "
                  "replays. <b>Four views per metric:</b> distribution for the <b>tool</b> fence "
                  "(split by command tag) and for the <b>harness</b> fence, then the two "
                  "over-the-episode timelines. Box = IQR, orange = median, ▲ = mean, "

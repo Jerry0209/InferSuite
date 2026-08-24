@@ -1,0 +1,62 @@
+# ML_iso36 figure manifest
+
+Data: `local_agents/ML_iso36/data` — **36 tasks × 9 dedicated-group replay passes = 324
+episodes**, 273,005 windows of 100 ms, captured 2026-08-21→22 on measured cores 4–11 (SMT
+off), ISO-PROOF-gated, model never called. Sweep: 14.5 h wall, zero failed passes, zero
+multiplexed and zero not-supported windows (audited over every window file), 324/324
+episodes carry the continuous TMA census. Selection: `../../ML_typeid/selection_36_count.tsv`
+(count-view, 4 per language; see `docs/multi_full_stratification.md` "Selection (36 of 300)").
+Regenerate everything with `../derive_and_plot.sh`; the SPEC comparison with
+`SPEC_COMPARISON_OUT=~/spec26-infra/infra/comparison_iso36.json python3
+~/spec26-infra/infra/scripts/compare_spec_agentic.py data local_agents/ML_iso36/data/*/run_*/`.
+
+Every number a figure displays is banked beside it (`iso36_tma_values.json`,
+`iso36_grid_values.json`), so a reader can check a bar without reading pixels.
+
+| Figure | What it shows | Population |
+|---|---|---|
+| `iso36_selection_matrix.png` | the 36 picks placed on the count-view type matrix; shade = cell population, '+' = majority top-up | selection metadata (no measurement) |
+| `iso36_tma_l1_{tool,harness}.png` | TMA Level 1 per fence, one panel per language (4 tasks each), SPEC CPU 2026 medians (INT / FP) as the closing panel | census counts pooled over each task's 9 episodes; per-episode spread banked |
+| `iso36_grid_{tool,harness}.png` | 18-metric per-window distribution grid: mentor's 16 + DRAM read GB/s + context switches per CPU-s; 9 language clusters of 4 boxes, colored by count-cell type (B/T/S/M); grey SPEC box closes every panel | agent boxes = per-window values (whis 5–95); SPEC box = 26 per-benchmark **episode** values (labelled; deliberately not per-window) |
+
+## Metric definitions
+
+The 16 = `cross_task_grid.py` `PANELS16` (the mentor's 4×4). Three of them — branch-direction
+MPKI (`br_misp_retired.cond`), BTB MPKI (`baclears.any`), µop-cache MPKI
+(`frontend_retired.any_dsb_miss`) — come from the **fe_miss** group, first captured on the
+agent side by this campaign (pass 9). The two additions: **DRAM read bandwidth** = 64 B ×
+`offcore_requests.data_rd` / window wall seconds (dram_bw group, same model as SPEC's
+`DRAM_read_GBs`); **context switches per CPU-second** = `context-switches` / task-clock
+(priv group, co-counted per window; task-clock-normalized so fence concurrency does not
+distort the rate — on SPEC's single pinned process it equals per-wall-second).
+Per-window derivations: `kit/replay/analyze_l3_windows.py`. Episode cards and the
+SPEC-vs-agent table: the one shared implementation `~/spec26-infra/infra/scripts/
+extract_metrics.py` → `comparison_iso36.json` (24 rows; each metric rests on the 36 replays
+that ran its group, IPC on all 288 shared-group episodes).
+
+## Headline numbers (comparison_iso36.json, medians, agent/SPEC)
+
+Separating: context switches **223×** (1,012 vs 4.5 /CPU-s) · BTB MPKI **44×** · kernel
+**29×** · L1I MPKI **12.7×** · microcode **10.8×** · L1I stalls **8.8×** · MITE **3.7×** ·
+µop-cache miss **3.5×** · branch MPKI **3.3×** · branch-direction **3.2×**.
+Not separating: AMAT **1.0×** · MLP **1.0×** · L2 miss rate **1.3×** — and SPEC-heavier:
+L1D MPKI **0.6×** · DRAM read **0.6×** · L2 MPKI **0.7×** · IPC 1.88 vs 2.41.
+The 12-task report-19 asymmetry (instruction supply + system time separate the workloads,
+the memory ladder does not) holds at 36 tasks / 9 languages, and the three newly-captured
+frontend counters land on the separating side.
+
+## Standing caveats
+
+- **Configuration is matched** (both sides cores 4–11 SMT off, 100 ms windows), so no SMT or
+  window-length caveat is carried. **Contention is not retired**: SPEC runs one copy per
+  core; the agent runs a harness process plus a container full of concurrent processes.
+- The grid's SPEC box is a suite spread of episode values, not per-window distributions —
+  stated in the figure title; the asymmetry is deliberate (26 benchmarks × episode value is
+  the honest suite reference; pooling windows across benchmarks would not be).
+- `vecFP_pct` ratio in the comparison JSON is an artifact (agent median 0.00); read the
+  medians, not the ratio.
+- TMA panels pool census counts across a task's 9 episodes (group-independent instrument,
+  duration-weighted); the per-episode min–max is banked in `iso36_tma_values.json`.
+- Small-fence picks (several PHP/Ruby/search cells, 5–54 core-s) are represented by design —
+  the count-view cell exists, so it is profiled; their per-window boxes rest on fewer busy
+  windows (n is banked per box).

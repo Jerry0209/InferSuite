@@ -13,14 +13,32 @@ babel figures reached the published deck.
 Plotting/render deps (matplotlib is NOT needed here, only base64+pathlib) — but the figures it
 inlines must already exist; regenerate them first with the plotters in this directory.
 """
-import base64, os, pathlib
+import base64, io, os, pathlib
 
 PLOTS = pathlib.Path("/home/thu/InferSuite/local_agents/superseded_40min/plots")
 OUT = pathlib.Path(os.environ.get("DECK_OUT", "/tmp/deck.html"))
 
+# Embedded-figure optimization (2026-08-24). The artifact platform caps a page at 16 MB and
+# the 41-slide deck's raw PNGs exceed it. Every embedded copy is downscaled to the deck's
+# display resolution (wrap is 1120 px; 2x for hidpi) and palette-quantized — visually
+# lossless for matplotlib charts, and the AUDITED source PNGs on disk are never touched.
+# DECK_OPT=0 restores raw embedding (for byte-comparing against pre-optimization decks).
+OPT = os.environ.get("DECK_OPT", "1") == "1"
+MAXW = int(os.environ.get("DECK_MAXW", "2200"))
+
 def uri(name):
     pth = pathlib.Path(name) if str(name).startswith("/") else (PLOTS / name)
-    b = pth.read_bytes()
+    if OPT:
+        from PIL import Image
+        im = Image.open(pth).convert("RGB")
+        if im.width > MAXW:
+            im = im.resize((MAXW, round(im.height * MAXW / im.width)), Image.LANCZOS)
+        im = im.quantize(colors=256, method=Image.MEDIANCUT)
+        buf = io.BytesIO()
+        im.save(buf, format="PNG", optimize=True)
+        b = buf.getvalue()
+    else:
+        b = pth.read_bytes()
     return "data:image/png;base64," + base64.b64encode(b).decode()
 
 IMG = {k: uri(v) for k, v in {
@@ -55,9 +73,24 @@ IMG = {k: uri(v) for k, v in {
     # _12t = the slide's frozen 12-workload population; an unsuffixed grid16 run would now
     # absorb the 13th task (phpoffice-bT) under a caption that says "twelve".
     "ml_grid12": "/home/thu/InferSuite/local_agents/superseded_40min/data/l3_study/plots/cross_task_grid16_tool_12t.png",
+    # 2026-08-10: the matched-configuration re-capture and the SPEC baseline comparison.
+    "wall12": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/agentic_wall_split_12t.png",
+    "cpu12": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/agentic_cpu_work_12t.png",
+    "grid_iso8_h": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/plots/cross_task_grid16_harness_iso8.png",
+    "grid_iso8": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/plots/cross_task_grid16_tool_iso8.png",
+    "tma_fences": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/agentic_tma_l1_fences.png",
+    "cfg_effect": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/agentic_config_effect.png",
+    "spec_cmp": "/home/thu/InferSuite/spec26/plots/spec_vs_agentic_metrics.png",
+    "spec_tma": "/home/thu/InferSuite/spec26/plots/spec_vs_agentic_tma.png",
     "go_uop_tl": "/home/thu/InferSuite/local_agents/ML_multiling/data/l3_study/plots/timeline_prometheus_uopCache_MPKI.png",
     "ml_tl_babel": "/home/thu/InferSuite/local_agents/SWE_clean/data/l3_study/plots/timeline_babel_codeRead_MPKI_L1I.png",
     "ml_tl_fmt": "/home/thu/InferSuite/local_agents/SWE_clean/data/l3_study/plots/timeline_fmtlib_codeRead_MPKI_L1I.png",
+    # 2026-08-24: the ML_iso36 count-view campaign (36 tasks x 9 languages, 9 groups incl fe_miss).
+    "iso36_sel": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_selection_matrix.png",
+    "iso36_tma_t": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_tma_l1_tool.png",
+    "iso36_tma_h": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_tma_l1_harness.png",
+    "iso36_grid_t": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_grid_tool.png",
+    "iso36_grid_h": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_grid_harness.png",
 }.items()}
 
 CSS = """
@@ -175,7 +208,7 @@ update();
 
 BODY = """
 <div class="progress"></div>
-<div class="counter">01 / 28</div>
+<div class="counter">01 / 41</div>
 <div class="hint">↓ / space · arrow keys to navigate</div>
 <div class="deck">
 
@@ -792,9 +825,357 @@ BODY = """
     </div>
   </section>
 
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Matched configuration · what the caveat was worth</p>
+      <h2>The SMT caveat is now a measurement, not a footnote</h2>
+      <p class="lead">Every cross-workload figure used to carry the same disclaimer: this campaign
+      ran <b>SMT-ON on 20 logical CPUs at 2 s windows</b>, so cycle-normalised metrics could not be
+      compared cleanly against anything captured differently. On 2026-08-07/08 the replays were
+      re-captured on the reference configuration — <b>measured cores 4–11 with SMT off, 100 ms
+      windows</b>, same partition, same fence, same trajectories, model never called. The disclaimer
+      became a number.</p>
+      <div class="figcard"><img alt="Configuration effect: same tasks, SMT-ON 2 s vs SMT-off 100 ms" src="__CFGEFFECT__"></div>
+      <div class="take">
+        <div class="chip tool">IPC <b>1.591 → 1.890</b> (+18.8 %) — the sibling thread was taking about a fifth of the issue slots</div>
+        <div class="chip harness">every shared resource improves: L1I MPKI <b>-11.6 %</b>, L1D <b>-14.2 %</b>, LLC <b>-12.3 %</b>, DRAM <b>-13.7 %</b></div>
+        <div class="chip wait">TMA shape holds: frontend-bound <b>-1.4 pp</b>, bad speculation <b>-0.4 pp</b>, backend-bound <b>+3.7 pp</b></div>
+      </div>
+      <p class="note"><b>Confound control.</b> The matched capture covers 12 tasks and the retired
+      one covers 2, so comparing the populations wholesale would mix a configuration change with a
+      task-set change. This figure uses only the two tasks present in <i>both</i> — babel and fmtlib
+      — replayed from the same trajectories through the same kit, so the configuration is the only
+      thing that differs.
+      <br><br><b>What it means for everything before this slide.</b> The TMA conclusions never
+      depended on the caveat: removing the sibling moves the shape by at most
+      3.7 pp. The <i>throughput</i> ones did —
+      any absolute IPC quoted from the SMT-ON capture is ~19 % low. Contention within the agent
+      (harness + container on the same partition) is unchanged and remains real.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Matched configuration · the traditional-workload baseline</p>
+      <h2>Against SPEC CPU 2026, on one configuration</h2>
+      <p class="lead">With the agent and the baseline now captured identically, the comparison needs
+      no asterisk. SPEC CPU 2026: 26 benchmarks, ref inputs, 1 copy on 1 isolated SMT-free core,
+      the same eight certified counter groups and the same code computing every ratio. Agent:
+      <b>96 dedicated-group replays over 12 tasks in 10 languages</b>, each giving one counter
+      group 100 % duty.</p>
+      <div class="figcard"><img alt="SPEC vs agentic paired medians, matched configuration" src="__SPECCMP__"></div>
+      <div class="take">
+        <div class="chip tool">instruction supply: L1I MPKI <b>11.7×</b>, microcode <b>13.7×</b>, MITE <b>3.2×</b></div>
+        <div class="chip harness">system time: kernel <b>31.7×</b> — the largest gap of all</div>
+        <div class="chip wait">the data side does not separate: AMAT <b>0.99×</b>, MLP <b>1.02×</b>, DRAM <b>0.84×</b></div>
+      </div>
+      <p class="note">The metrics everyone reaches for first — cache misses, memory bandwidth,
+      access latency — are exactly the ones that do <i>not</i> tell the two workloads apart. What
+      separates agentic work from a compute benchmark is how hard it is to <b>feed instructions to
+      the core</b> and how much time it spends in the <b>kernel</b>. Each row rests on the 12
+      episodes that ran its counter group, one per task; the count is printed per row, and the
+      individual episode markers show the spread across languages.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Matched configuration · where the slots go</p>
+      <h2>Frontend-bound — and mis-speculating</h2>
+      <p class="lead">All four Level-1 buckets on one radar, so the profile is read as a shape
+      rather than a stack. TMA is the safest cross-workload view available: separate continuous
+      census, zero general-purpose counters, and — as the previous slide showed — almost
+      insensitive to the configuration change.</p>
+      <div class="figcard"><img alt="TMA radar including bad speculation, plus per-episode scatter" src="__SPECTMA__"></div>
+      <div class="take">
+        <div class="chip tool">frontend-bound <b>29.2 %</b> vs SPEC <b>18.3 %</b></div>
+        <div class="chip proxy">bad speculation <b>14.1 %</b> vs SPEC <b>10.0 %</b> — a second, independent front-end cost</div>
+        <div class="chip harness">backend-bound <b>24.2 %</b> vs SPEC <b>26.7 %</b>; retiring <b>30.9 %</b> vs <b>36.0 %</b></div>
+      </div>
+      <p class="note">The right panel is the honest version of the bad-speculation claim: the
+      agent's 14.1 % is high but not extreme for the suite —
+      729.abc_r loses 49 % of its slots to mis-speculation and six more SPEC benchmarks exceed
+      20 %. What isolates agentic work is the <b>combination</b>: high frontend-bound <i>and</i>
+      high bad speculation at once, a corner it shares with only two of the 26 benchmarks.
+      The four axes are per-episode medians and do not sum to 100 % — read each on its own.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Matched configuration · TMA Level 1 per fence</p>
+      <h2>The front-end problem belongs to the tools, not the harness</h2>
+      <p class="lead">The same TMA Level 1 view as earlier in the deck, rebuilt on the matched
+      capture — <b>12 tasks in 10 languages</b>, cores 4–11 with SMT off, 100 ms windows — and with
+      the two fences kept apart. They are different programs doing different work, and pooling them
+      hides the result.</p>
+      <div class="figcard"><img alt="TMA Level 1 per fence across 12 tasks and 10 languages" src="__TMAFENCES__"></div>
+      <div class="take">
+        <div class="chip tool">tool fence: frontend-bound <b>32.5 %</b>, bad speculation <b>15.9 %</b>, retiring <b>29.0 %</b></div>
+        <div class="chip harness">harness fence: frontend-bound <b>18.7 %</b>, bad speculation <b>11.7 %</b>, retiring <b>38.4 %</b></div>
+        <div class="chip wait">the gap is <b>13.8 pp</b> of frontend-bound and <b>4.2 pp</b> of bad speculation — same machine, same episode, different fence</div>
+      </div>
+      <p class="note"><b>This qualifies the headline.</b> "Agentic work is frontend-bound" is really
+      a statement about the <b>tool</b> fence — the commands the agent spawns. The harness (the
+      SWE-agent Python process) looks much more like a conventional program: it retires more, stalls
+      on the back end, and mis-speculates less. The whole-episode number is a blend of the two, so a
+      figure that pools them understates how frontend-starved the tool side actually is.
+      <br><br><b>The consistency across languages is the striking part.</b> Every tool fence except
+      one sits at 29–37 % frontend-bound and 13–19 % bad speculation, across Python, JavaScript,
+      TypeScript, C++, C, Go, Java, Rust, Ruby and PHP. The exception is <b>scikit-learn</b> at
+      64 % backend-bound — its test suite is numeric (BLAS), so it behaves like SPEC's FP
+      benchmarks rather than like a tool workload. That row is the control: when an agent happens
+      to run genuinely numeric code, the instrument says so.
+      <br><br>Source: the continuous PERF_METRICS census, read <code>--for-each-cgroup</code> and
+      therefore already attributed per fence, consuming no general-purpose counter. Each task pools
+      its 8 replay episodes; the per-episode spread is banked in
+      <code>tma_l1_fences_values.json</code>.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Matched configuration · per-window distributions</p>
+      <h2>Every metric, per 100 ms window, across ten languages</h2>
+      <p class="lead">The cross-task distribution grid rebuilt on the matched capture. The earlier
+      version of this figure used <b>2-second</b> windows; at <b>100 ms</b> the same episodes yield
+      roughly <b>ten times</b> as many windows — <b>307–1,359</b>
+      per task, <b>10,014</b> in total for the tool fence — so the tails and the outliers are
+      resolved rather than averaged away.</p>
+      <div class="figcard"><img alt="Per-window distribution grid, tool fence, 100 ms windows, 12 tasks" src="__GRIDISO8__"></div>
+      <div class="take">
+        <div class="chip tool">one campaign, one configuration: cores 4–11 SMT off, 100 ms windows, 12 tasks in 10 languages</div>
+        <div class="chip harness">the harness-fence grid is the companion figure — same axes, same populations</div>
+        <div class="chip wait">13 of 16 panels: BTB MPKI, µop-cache MPKI and branch-direction MPKI need the <code>fe_miss</code> counter group, which this capture does not include</div>
+      </div>
+      <p class="note"><b>What changed besides the window length.</b> The earlier grids drew their
+      twelve tasks from <i>three different campaigns</i> — the reproduced superseded_40min run for
+      Python, the certified SWE_clean run for babel and fmt, and the multilingual pilots for the
+      rest — and every figure had to state that provenance in its caption. Here all twelve come
+      from one tree captured under one configuration, so the caption is a statement about the
+      machine rather than an apology for the data.
+      <br><br><b>The three missing panels are missing on purpose, not silently.</b> This capture
+      ran the eight counter groups shared with the SPEC baseline, which is what the cross-workload
+      comparison needs; the three frontend-miss metrics live in a ninth group. Adding them is
+      twelve more replay passes and no API spend — the earlier frozen grids
+      (<code>_py3</code>, <code>_5t</code>, <code>_12t</code>) keep all sixteen and are untouched,
+      so nothing that a previous slide references has moved.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Rebuilt · wall-clock, all twelve tasks</p>
+      <h2>Model wait dominates in every language, not just Python</h2>
+      <p class="lead">Slide 1 rebuilt across the full task set: <b>12 tasks in 10 languages</b>
+      instead of five. The pattern is not a Python artefact — inference is
+      <b>74–86%</b> of wall clock everywhere, median
+      <b>81%</b>, from a 4-minute TypeScript episode to an 81-minute
+      Python one.</p>
+      <div class="figcard"><img alt="Wall-clock split donuts across 12 tasks and 10 languages" src="__WALL12__"></div>
+      <div class="take">
+        <div class="chip wait">inference 74–86% of wall · median 81% · 12/12 tasks above 74%</div>
+        <div class="chip tool">tool execution never exceeds <b>23%</b> of wall</div>
+        <div class="chip harness">harness <b>3–15%</b></div>
+      </div>
+      <p class="note"><b>Why this figure is NOT from the matched re-capture, and does not need to
+      be.</b> The re-capture is made of deterministic replays, and a replay never calls the model —
+      its inference share is zero <i>by construction</i>, so the grey segment that dominates this
+      slide cannot exist there. It also does not need to: this split is wall time plus cgroup
+      <code>cpu.stat</code> accounting, with <b>no PMU counter anywhere in it</b>. SMT and window
+      length change what the counters see, not how long the agent waited. So what is new here is
+      the <b>population</b> — ten languages instead of two — and the earlier five-task figure
+      remains valid rather than superseded.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Rebuilt · CPU work, all twelve tasks</p>
+      <h2>Flip to CPU work and the model vanishes</h2>
+      <p class="lead">Slide 2 rebuilt on the same twelve tasks, with the matched-configuration
+      replays beside it. Model wait costs essentially <b>zero core-seconds</b> — it is pure
+      waiting — so the CPU-work view tells the opposite story to the wall-clock one, and the
+      split between tool and harness is where the variation lives.</p>
+      <div class="figcard"><img alt="CPU work by fence, live and matched-config replay, 12 tasks" src="__CPU12__"></div>
+      <div class="take">
+        <div class="chip tool">tool share spans <b>19%</b> (sympy) to <b>100%</b> (scikit-learn) — the widest spread of any measure in this deck</div>
+        <div class="chip harness">two tasks are harness-dominated: <b>sympy</b> at 81% and <b>astropy</b> at 33% non-tool</div>
+        <div class="chip wait">the litellm proxy is negligible everywhere — at most <b>5.3%</b> of core-seconds</div>
+      </div>
+      <p class="note"><b>The right panel is the honest cross-check.</b> Removing the model drops
+      total CPU work by roughly 2–3× (scikit 1,449 → 507 core-seconds), because the harness stops
+      doing the work of issuing and parsing model turns. But the <b>tool share is preserved</b>
+      almost exactly — sympy 19 % → 18 %, astropy 67 % → 62 %, fmt 91 % → 96 % — which is what
+      licenses using the replays for every microarchitecture slide in this deck: they execute the
+      same commands in the same proportion, just without the waiting.
+      <br><br>Absolute core-seconds are episode draws and will not reproduce; the shares are the
+      reproducible layer.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Matched configuration · per-window distributions, harness fence</p>
+      <h2>The same grid for the harness — and why its boxes are wider</h2>
+      <p class="lead">The companion to the previous slide: identical axes, identical populations,
+      the other fence. Read the <b>medians</b> against the tool grid — they are what the per-fence
+      TMA slide rests on. Do not read the box widths the same way, for a reason that is
+      measurable rather than aesthetic.</p>
+      <div class="figcard"><img alt="Per-window distribution grid, harness fence, 100 ms windows, 12 tasks" src="__GRIDISO8H__"></div>
+      <div class="take">
+        <div class="chip harness">harness: <b>15–54%</b> of windows carry under 10 M instructions</div>
+        <div class="chip tool">tool: only <b>0–12%</b> do — median window 95–2198 M instructions against 5–492 M</div>
+        <div class="chip wait">so a wide harness box is often <b>too little work to measure</b>, not erratic behaviour</div>
+      </div>
+      <p class="note"><b>What the wide boxes actually are.</b> The harness issues a command and then
+      waits, so on the short tasks — babel, fmt, gson, jq — roughly <b>54%</b> of its
+      100 ms windows contain fewer than 10 M instructions. An MPKI or a DSB share computed over
+      that few instructions is dominated by sampling noise. That is what produces the extreme
+      spreads in the harness Branch-MPKI panel (IQR running from ~0 to 20) and in L1I MPKI: those
+      panels are not saying the harness behaves erratically, they are saying many windows had
+      almost nothing in them.
+      <br><br><b>The medians survive it</b> — they are robust to that low-activity tail, which is
+      why the per-fence TMA result (harness 18.7 % frontend-bound against the tool fence's 32.5 %)
+      is unaffected. It is the whiskers and box widths on this figure that overstate variability.
+      <br><br><b>Not filtered, deliberately.</b> Applying an activity floor — dropping windows
+      below, say, 10 M instructions — would tighten these boxes considerably, but it is a
+      methodology choice that has to be declared on the figure rather than applied quietly, and it
+      would remove ~54% of harness windows on the short tasks while removing almost
+      nothing from the tool grid. Both fences are shown unfiltered so the two grids remain
+      comparable.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Count-view campaign · the 36-task selection</p>
+      <h2>36 tasks, four per language, picked on the count matrix</h2>
+      <p class="lead">The 300-task census was classified two ways: by CPU time and by command
+      count. This campaign profiles the <b>count view</b>: for each of nine languages, one task
+      per populated build/test/search/mixed cell, and a row's empty cells donate their slots to
+      that language's majority category. A cell only counts as populated if it holds a task that
+      can actually be replay-profiled — replay-invalid episodes, loop-degenerate episodes and
+      tasks without a banked trajectory are excluded first, then the pick is the profilable task
+      closest to its cell's median fence, preferring fresh repos.</p>
+      <div class="figcard"><img alt="Selection matrix: the 36 picks on the count-view type matrix" src="__ISO36SEL__"></div>
+      <div class="take">
+        <div class="chip tool">27 of 36 cells populated · <b>31 repos</b> · Σ fence <b>4,797 core-s</b> (17–655 per task)</div>
+        <div class="chip harness">9 majority top-ups (marked +): C++ and TypeScript have one populated cell each</div>
+        <div class="chip wait">forced picks stated on the matrix: C++ is 3× fmt (cell is 11/12 fmt), Java B/T are gson singletons</div>
+      </div>
+      <p class="note">Every pick is a prior — the replay and its gates are the verdict. Selection
+      rule, per-row reasons and runner-ups: selection_36_count.tsv + typeid_select36.py;
+      methodology section in docs/multi_full_stratification.md.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Count-view campaign · TMA Level 1, 36 tasks</p>
+      <h2>One TMA shape across nine languages</h2>
+      <p class="lead">Nine dedicated-group replay passes per task (the shared eight plus fe_miss),
+      100 ms windows, cores 4–11 with SMT off — 324 episodes, zero failed passes, zero multiplexed
+      windows. The headline is the <b>uniformity</b>: every language and every count-type lands in
+      the same tool-fence shape, while SPEC INT retires more and SPEC FP is a different machine
+      entirely.</p>
+      <div class="figcard"><img alt="TMA Level 1, tool fence, 36 tasks grouped by language, SPEC closing panel" src="__ISO36TMAT__"></div>
+      <div class="figcard"><img alt="TMA Level 1, harness fence, 36 tasks grouped by language, SPEC closing panel" src="__ISO36TMAH__"></div>
+      <div class="take">
+        <div class="chip tool">tool fence: frontend-bound <b>26–39%</b> · bad speculation <b>13–20%</b> · retiring <b>25–36%</b>, everywhere</div>
+        <div class="chip wait">SPEC INT median: retiring <b>34%</b>, frontend <b>26%</b> · SPEC FP: retiring <b>42%</b>, frontend ≈ <b>1%</b></div>
+        <div class="chip harness">the shape is a property of agentic tool work, not of the language</div>
+      </div>
+      <p class="note">Census counts pooled over each task's 9 episodes (the continuous PERF_METRICS
+      census is group-independent); per-episode spread banked in iso36_tma_values.json.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Count-view campaign · per-window distributions, tool fence</p>
+      <h2>18 metrics, 36 tasks, SPEC closing every panel</h2>
+      <p class="lead">The full metric card at last: the 16-panel grid <b>including the three the
+      old capture could not profile</b> — branch-direction MPKI, BTB MPKI and µop-cache MPKI, from
+      the fe_miss group that SPEC always rotated and the agent side now does too — plus DRAM read
+      bandwidth and context switches. Four thin boxes per language, colored by the task's
+      count-cell type; the grey box closing every panel is the SPEC 26 suite.</p>
+      <div class="figcard"><img alt="18-metric per-window grid, tool fence, 36 tasks by language plus SPEC" src="__ISO36GRIDT__"></div>
+      <div class="take">
+        <div class="chip tool">the three new counters all land on the separating side: BTB MPKI <b>44×</b> SPEC, µop-cache miss <b>3.5×</b>, branch-direction <b>3.2×</b></div>
+        <div class="chip harness">context switches <b>1,012 vs 4.5</b> per CPU-second (<b>223×</b>) · kernel <b>29×</b> · L1I MPKI <b>12.7×</b></div>
+        <div class="chip wait">the memory ladder still refuses to separate: AMAT <b>1.0×</b> · MLP <b>1.0×</b> · DRAM read <b>0.6×</b></div>
+      </div>
+      <p class="note">Medians quoted from comparison_iso36.json — one implementation computes both
+      sides over the nine shared groups; each metric rests on the 36 replays that ran its group.
+      Count-type coloring answers a design question directly: build/test/search/mixed tasks do
+      not separate microarchitecturally — the workload signature is agentic tool execution itself.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Count-view campaign · per-window distributions, harness fence</p>
+      <h2>The harness fence, same 18 metrics</h2>
+      <p class="lead">The harness (SWE-agent's own Python process) shows the same uniformity story
+      with its own signature: modest DRAM traffic, near-zero vector FP, and context-switch rates
+      that dwarf SPEC's. As on the 12-task capture, many harness windows carry few instructions —
+      wide boxes here are often too little work to measure, not erratic behaviour; medians are the
+      robust layer.</p>
+      <div class="figcard"><img alt="18-metric per-window grid, harness fence, 36 tasks by language plus SPEC" src="__ISO36GRIDH__"></div>
+      <div class="take">
+        <div class="chip harness">harness windows are sparse on small tasks — the low-activity caveat of the 12-task grid applies unchanged</div>
+        <div class="chip tool">both fences unfiltered, deliberately, so the two grids stay comparable</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Count-view campaign · per-task galleries</p>
+      <h2>Every task, every metric, every window</h2>
+      <p class="lead">One gallery per task: every per-window metric with the tool-fence
+      distribution split by command tag, the harness-fence distribution, and both over-the-episode
+      timelines. The links open the published gallery pages.</p>
+      __GALLERYLINKS__
+      <p class="note">Galleries are built from all_windows CSVs (analyze_l3_windows.py --plot →
+      build_metric_gallery.py); (B/T/S/M) after each task is its count-view cell.</p>
+    </div>
+  </section>
+
 </div>
 <div class="progress-spacer"></div>
 """
+
+# ---- ML_iso36 per-task gallery links (last slide) ----
+import csv as _csv, json as _json
+_GL = "/home/thu/InferSuite/local_agents/ML_iso36/gallery_links.json"
+_SEL36 = "/home/thu/InferSuite/local_agents/ML_typeid/selection_36_count.tsv"
+_links = _json.load(open(_GL)) if os.path.exists(_GL) else {}
+_groups, _order = {}, []
+for _r in _csv.DictReader(open(_SEL36), delimiter="\t"):
+    if "__" not in _r.get("instance", ""):
+        continue
+    _groups.setdefault(_r["lang"], []).append(_r)
+    if _r["lang"] not in _order:
+        _order.append(_r["lang"])
+_cells = []
+for _lang in _order:
+    _items = []
+    for _r in _groups[_lang]:
+        _s, _u = _r["short"], _links.get(_r["short"])
+        _lab = f"{_s} ({_r['label']})"
+        _items.append(f"<a href='{_u}' target='_blank' rel='noopener' "
+                      f"style='color:var(--accent);text-decoration:none'>{_lab} ↗</a>"
+                      if _u else f"<span style='color:var(--muted)'>{_lab} (pending)</span>")
+    _cells.append("<div style='background:var(--panel);border:1px solid var(--line);"
+                  "border-radius:10px;padding:12px 14px;box-shadow:var(--shadow)'>"
+                  f"<b style='display:block;margin-bottom:8px'>{_lang}</b>"
+                  "<div style='display:flex;flex-direction:column;gap:5px;font-size:13.5px'>"
+                  + "".join(_items) + "</div></div>")
+BODY = BODY.replace("__GALLERYLINKS__",
+                    "<div style='display:grid;grid-template-columns:repeat(auto-fill,"
+                    "minmax(230px,1fr));gap:12px;margin-top:22px'>" + "".join(_cells) + "</div>")
 
 BODY = (BODY.replace("__SPLIT__", IMG["split"]).replace("__CPU__", IMG["cpu"])
             .replace("__TIMELINE__", IMG["timeline"]).replace("__CALLS__", IMG["calls"])
@@ -810,7 +1191,18 @@ BODY = (BODY.replace("__SPLIT__", IMG["split"]).replace("__CPU__", IMG["cpu"])
             .replace("__WX__", IMG["w_x"]).replace("__WXH__", IMG["w_xh"]).replace("__WDUR__", IMG["w_dur"])
             .replace("__MLGRID__", IMG["ml_grid"]).replace("__MLGRIDH__", IMG["ml_gridh"])
             .replace("__MLTLB__", IMG["ml_tl_babel"]).replace("__MLTLF__", IMG["ml_tl_fmt"])
-            .replace("__MLGRID12__", IMG["ml_grid12"]).replace("__GOUOPTL__", IMG["go_uop_tl"]))
+            .replace("__MLGRID12__", IMG["ml_grid12"]).replace("__GOUOPTL__", IMG["go_uop_tl"])
+            .replace("__CFGEFFECT__", IMG["cfg_effect"])
+            .replace("__SPECCMP__", IMG["spec_cmp"])
+            .replace("__SPECTMA__", IMG["spec_tma"])
+            .replace("__TMAFENCES__", IMG["tma_fences"])
+            .replace("__GRIDISO8__", IMG["grid_iso8"])
+            .replace("__WALL12__", IMG["wall12"])
+            .replace("__CPU12__", IMG["cpu12"])
+            .replace("__GRIDISO8H__", IMG["grid_iso8_h"])
+            .replace("__ISO36SEL__", IMG["iso36_sel"])
+            .replace("__ISO36TMAT__", IMG["iso36_tma_t"]).replace("__ISO36TMAH__", IMG["iso36_tma_h"])
+            .replace("__ISO36GRIDT__", IMG["iso36_grid_t"]).replace("__ISO36GRIDH__", IMG["iso36_grid_h"]))
 
 HTML = ('<title>Agent CPU profiling — GLM-5.2 SWE-agent</title>\n'
         '<style>' + CSS + '</style>\n' + BODY + '\n<script>' + JS + '</script>\n')

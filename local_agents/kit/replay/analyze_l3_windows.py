@@ -157,6 +157,16 @@ def counts(path):
     per = {f: {} for f in FENCES}
     if not os.path.exists(path): return per
     for ln in open(path):
+        # task-clock is the one decimal-valued, unit-carrying counter we consume (priv group;
+        # "102.27 msec task-clock <cgroup> ..."), and EVRE's integer value class drops it.
+        if " msec " in ln and "task-clock" in ln and "<not" not in ln:
+            p = ln.split()
+            try: v = float(p[0].replace(",", ""))
+            except ValueError: continue
+            cg = p[3] if len(p) > 3 else ""
+            for f, tagstr in FENCES.items():
+                if tagstr in cg: per[f]["task-clock"] = per[f].get("task-clock", 0.0) + v
+            continue
         m = EVRE.match(ln)
         if not m or m.group(1).startswith("<"): continue
         v, ev, cg = float(m.group(1).replace(",", "")), m.group(2), m.group(3)
@@ -165,8 +175,14 @@ def counts(path):
     return per
 
 # ---- metric derivations per group (value dict per fence-window) ----
-def derive(group, d):
+def derive(group, d, dur=None):
     I = d.get("instructions", 0); C = d.get("cycles", 0)
+    if group == "priv":
+        # priv counts only the :u/:k splits — there is no plain cycles/instructions event in
+        # the group, so the activity guard must use the split sums or every priv window is
+        # discarded and the group contributes nothing per-window.
+        I = d.get("instructions:u", 0) + d.get("instructions:k", 0)
+        C = d.get("cycles:u", 0) + d.get("cycles:k", 0)
     g = lambda e: d.get(e, 0.0)
     out = {}
     if I < 5e5 or C <= 0: return out          # too little activity for a stable ratio
@@ -216,6 +232,10 @@ def derive(group, d):
         cm4 = g("cpu/offcore_requests_outstanding.data_rd,cmask=4/")
         out["dram_bw_bound_pct"] = 100 * cm4 / C
         out["dram_read_occ_pct"] = 100 * g("offcore_requests_outstanding.cycles_with_data_rd") / C
+        # DRAM read bandwidth over the window's wall time: 64 B per offcore data read.
+        # Same 64B-per-request model as SPEC's extract_metrics.py DRAM_read_GBs.
+        if dur:
+            out["dram_rd_GBs"] = g("offcore_requests.data_rd") * 64 / dur / 1e9
     elif group == "mem_bound":     # exact SPR TMA-L3 memory ladder (perf's own formulas)
         bol = g("exe_activity.bound_on_loads")
         s1, s2, s3 = (g("memory_activity.stalls_l1d_miss"),
@@ -237,6 +257,12 @@ def derive(group, d):
     elif group == "priv":
         ck, cu = g("cycles:k"), g("cycles:u")
         if ck + cu > 1e5: out["kernel_pct"] = 100 * ck / (ck + cu)
+        # Context switches per CPU-second (task-clock-normalized, so the rate is per busy
+        # core-second and does not depend on how many processes the fence runs in parallel;
+        # on SPEC's single pinned process this equals switches per wall second).
+        tk = g("task-clock")            # msec, co-counted in this window
+        if tk > 10:
+            out["ctx_per_cpu_s"] = g("context-switches") / (tk / 1e3)
     return out
 
 # ================= pass 1: window rows =================
@@ -256,7 +282,7 @@ for rd in sorted(glob.glob(f"{BASE}/run_*")):
         per = counts(f"{rd}/group_{group}_w{w}.txt")
         tg = tag_for(a, b, samples)
         for fence in FENCES:
-            mets = derive(group, per[fence])
+            mets = derive(group, per[fence], b - a)
             for k, v in mets.items():
                 rows.append(dict(task=SHORT, group=group, run=os.path.basename(rd),
                                  win=w, t0=round(a, 3), dur=round(b - a, 3), fence=fence,

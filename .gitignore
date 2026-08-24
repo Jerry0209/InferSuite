@@ -98,5 +98,15 @@ local_agents/ML_typeid/logs/
 local_agents/ML_typeid/sweep.log
 local_agents/ML_typeid/STOP
 
+# ML_iso36 36-task count-view profiling campaign (2026-08-21): raw replay data + staged
+# ws02 trajectories stay local; kit, selection TSV and README are tracked.
+local_agents/ML_iso36/data/
+local_agents/ML_iso36/sweep.log
+local_agents/ML_iso36/STOP
+
+# derived per-window study over the tracked SWE_iso8 raw windows (regenerable byproduct
+# of analyze_l3_windows.py sanity checks; the deck's l3_study convention is untracked)
+local_agents/SWE_iso8/data/l3_study/
+
 # localized replay copies of banked trajectories (derived by kit/replay/localize_traj.py; regenerable, 20-40 MB each)
 *.local.traj

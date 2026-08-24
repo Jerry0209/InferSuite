@@ -1,0 +1,38 @@
+#	instance	short	lang	mech	leaf B/T/S	label	n_leaf	fence	cov%	cls%	why	runner-up
+1	redis__redis-12272	redis-t12272	C	B	47/36/17	B	514	50	100	98	cell C×B (n=1, median fence 50)	-
+2	micropython__micropython-13039	micropython-t13039	C	B	19/69/12	T	1961	17	99	91	cell C×T (n=8, 3 excl, median fence 38)	jqlang-t2839
+3	valkey-io__valkey-1499	valkey-io-t1499	C	B	1/47/52	M	229	5	98	52	cell C×M (n=5, median fence 16)	redis-t10764
+4	jqlang__jq-2598	jqlang-t2598	C	B	9/13/77	S	7233	54	98	94	cell C×S (n=13, 2 excl, median fence 54)	jqlang-t2728
+5	nlohmann__json-4237	nlohmann-t4237	C++	B	70/20/10	B	1366	624	100	100	cell C++×B (n=12, 1 excl, median fence 188)	fmtlib-t3901
+6	fmtlib__fmt-3750	fmtlib-t3750	C++	B	57/29/14	B	585	174	100	99	top-up C++×B (majority; empty: T(n=0),S(n=0),M(n=0))	fmtlib-t3901
+7	fmtlib__fmt-3901	fmtlib-t3901	C++	B	72/21/7	B	383	188	100	100	top-up C++×B (majority; empty: T(n=0),S(n=0),M(n=0))	fmtlib-t3863
+8	fmtlib__fmt-2457	fmtlib-t2457	C++	B	58/25/17	B	1284	112	99	97	top-up C++×B (majority; empty: T(n=0),S(n=0),M(n=0))	fmtlib-t3863
+9	sharkdp__bat-2835	sharkdp-t2835	Rust	A	52/44/4	M	4252	251	99	98	cell Rust×M (n=4, 1 excl, median fence 251)	uutils-t6682
+10	burntsushi__ripgrep-2209	burntsushi-t2209	Rust	A	2/98/0	T	25785	82	99	97	cell Rust×T (n=8, median fence 92)	uutils-t6377
+11	nushell__nushell-13831	nushell-t13831	Rust	A	62/34/4	B	1328	341	100	99	cell Rust×B (n=31, 2 excl, median fence 341)	tokio-rs-t4867
+12	tokio-rs__axum-1730	tokio-rs-t1730	Rust	A	86/11/2	B	2987	457	99	99	top-up Rust×B (majority; empty: S(n=0))	tokio-rs-t4867
+13	gin-gonic__gin-2121	gin-gonic-t2121	Go	A	44/55/1	T	6263	18	99	94	cell Go×T (n=7, 3 excl, median fence 19)	gin-gonic-t4003
+14	caddyserver__caddy-4774	caddyserver-t4774	Go	A	60/35/4	B	35127	192	98	97	cell Go×B (n=13, 5 excl, median fence 178)	gohugoio-t12204
+15	prometheus__prometheus-10720	prometheus-t10720	Go	A	50/49/1	M	19959	207	98	97	cell Go×M (n=15, 3 excl, median fence 209)	gohugoio-t12579
+16	gohugoio__hugo-12579	gohugoio-t12579	Go	A	50/50/0	M	23335	288	99	97	top-up Go×M (majority; empty: S(n=0))	gohugoio-t12343
+17	google__gson-1093	google-t1093	Java	J	48/16/36	B	209	40	100	97	cell Java×B (n=1, median fence 40)	-
+18	google__gson-2134	google-t2134	Java	J	31/42/27	T	157	64	100	98	cell Java×T (n=1, median fence 64)	-
+19	javaparser__javaparser-4538	javaparser-t4538	Java	J	20/36/45	M	164	193	100	99	cell Java×M (n=8, 2 excl, median fence 189)	projectlombok-t3697
+20	projectlombok__lombok-3479	projectlombok-t3479	Java	J	6/13/81	S	437	210	100	98	cell Java×S (n=24, 3 excl, median fence 278)	projectlombok-t3052
+21	laravel__framework-52684	laravel-t52684	PHP	I	50/13/36	B	171	5	104	72	cell PHP×B (n=2, median fence 4)	laravel-t53949
+22	phpoffice__phpspreadsheet-3463	phpoffice-t3463	PHP	I	45/17/38	M	230	12	101	86	cell PHP×M (n=6, median fence 11)	briannesbitt-t3041
+23	php-cs-fixer__php-cs-fixer-8064	php-cs-fixer-t8064	PHP	I	0/97/3	T	4292	42	97	92	cell PHP×T (n=11, 4 excl, median fence 42)	php-cs-fixer-t7875
+24	briannesbitt__carbon-2752	briannesbitt-t2752	PHP	I	0/28/72	S	139	10	101	84	cell PHP×S (n=15, 2 excl, median fence 10)	briannesbitt-t3073
+25	jordansissel__fpm-1829	jordansissel-t1829	Ruby	I	68/22/10	B	441	5	103	81	cell Ruby×B (n=1, median fence 5)	-
+26	rubocop__rubocop-13396	rubocop-t13396	Ruby	I	0/22/78	S	1023	43	98	24	cell Ruby×S (n=2, 1 excl, median fence 43)	-
+27	rubocop__rubocop-13560	rubocop-t13560	Ruby	I	0/53/47	M	540	37	100	75	cell Ruby×M (n=2, 1 excl, median fence 37)	-
+28	fastlane__fastlane-20958	fastlane-t20958	Ruby	I	0/92/8	T	441	22	100	92	cell Ruby×T (n=39, 2 excl, median fence 24)	fluent-t3466
+29	preactjs__preact-3763	preactjs-t3763	JavaScript	N	40/50/10	M	1115	50	98	96	cell JavaScript×M (n=2, median fence 60)	preactjs-t4182
+30	babel__babel-15649	babel-t15649	JavaScript	N	0/83/17	T	617	42	100	92	cell JavaScript×T (n=28, 2 excl, median fence 36)	axios-t6539
+31	axios__axios-6539	axios-t6539	JavaScript	N	0/86/14	T	1001	19	100	89	top-up JavaScript×T (majority; empty: B(n=0),S(n=1))	mrdoob-t26589
+32	mrdoob__three.js-26589	mrdoob-t26589	JavaScript	N	0/85/15	T	575	18	100	78	top-up JavaScript×T (majority; empty: B(n=0),S(n=1))	mrdoob-t27395
+33	vuejs__core-11589	vuejs-t11589	TypeScript	N	5/6/88	S	9680	213	99	98	cell TypeScript×S (n=5, 1 excl, median fence 175)	vuejs-t11870
+34	facebook__docusaurus-9897	facebook-t9897	TypeScript	N	0/90/10	T	1055	33	84	79	cell TypeScript×T (n=7, median fence 33)	facebook-t10130
+35	immutable-js__immutable-js-2006	immutable-js-t2006	TypeScript	N	0/97/3	T	3782	655	92	91	top-up TypeScript×T (majority; empty: B(n=0),M(n=0))	immutable-js-t2005
+36	facebook__docusaurus-10130	facebook-t10130	TypeScript	N	0/97/3	T	2156	23	100	93	top-up TypeScript×T (majority; empty: B(n=0),M(n=0))	facebook-t10309
+	36 picks; cells covered: 27; repos: 31; languages: 9; total fence 4797 core-s
