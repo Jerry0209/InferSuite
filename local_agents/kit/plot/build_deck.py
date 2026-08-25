@@ -88,6 +88,7 @@ IMG = {k: uri(v) for k, v in {
     # 2026-08-24: the ML_iso36 count-view campaign (36 tasks x 9 languages, 9 groups incl fe_miss).
     "iso36_sel": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_selection_matrix.png",
     "iso36_repinv": "/home/thu/InferSuite/docs/figures/typeid_cpu/09_replay_invalid_causes.png",
+    "iso36_cpuwork": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_cpu_work.png",
     "iso36_tma_t": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_tma_l1_tool.png",
     "iso36_tma_h": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_tma_l1_harness.png",
     # 2026-08-25 final chart format (mentor spec): one metric per full-width row,
@@ -214,7 +215,7 @@ update();
 
 BODY = """
 <div class="progress"></div>
-<div class="counter">01 / 43</div>
+<div class="counter">01 / 44</div>
 <div class="hint">↓ / space · arrow keys to navigate</div>
 <div class="deck">
 
@@ -1102,6 +1103,26 @@ BODY = """
 
   <section class="slide">
     <div class="wrap">
+      <p class="eyebrow">Count-view campaign · CPU work</p>
+      <h2>CPU work is tool-heavy — but not always (36 tasks)</h2>
+      <p class="lead">Slide 2's question re-asked over the whole selection: where do the
+      core-seconds go? In a deterministic replay the model is never called, so there is no
+      inference wedge and no litellm wedge — tool execution against agent harness is the whole
+      split, from exact cgroup accounting, the median over each task's nine replay episodes.</p>
+      <div class="figcard"><img alt="CPU work in core-seconds by fence, 36 tasks grouped by language, tool vs harness stacked" src="__ISO36CPUWORK__"></div>
+      <div class="take">
+        <div class="chip tool">median <b>89% tools</b> — and the heavyweights are compilers and test suites: json-4237 <b>534</b> core-s, immutable-js <b>483</b>, axum <b>422</b>, nushell <b>384</b></div>
+        <div class="chip harness">but not always: valkey <b>53%</b>, axios <b>60%</b>, three.js <b>62%</b>, the rubocops <b>63–66%</b> — small fences where the harness's own Python work competes</div>
+        <div class="chip wait">PHP stays tiny end to end (10–65 core-s), the same magnitude story the census told</div>
+      </div>
+      <p class="note">Fence colors are the deck-wide convention (green = tool, purple = harness).
+      Per-episode min–max spread is banked in iso36_cpu_work_values.json; fence usage is summed
+      over positive cpu.stat increments, robust to the container cgroup turning over.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
       <p class="eyebrow">Count-view campaign · TMA Level 1, 36 tasks</p>
       <h2>One TMA shape across nine languages</h2>
       <p class="lead">Nine dedicated-group replay passes per task (the shared eight plus fe_miss),
@@ -1255,6 +1276,7 @@ BODY = (BODY.replace("__SPLIT__", IMG["split"]).replace("__CPU__", IMG["cpu"])
             .replace("__GRIDISO8H__", IMG["grid_iso8_h"])
             .replace("__ISO36SEL__", IMG["iso36_sel"])
             .replace("__ISO36REPINV__", IMG["iso36_repinv"])
+            .replace("__ISO36CPUWORK__", IMG["iso36_cpuwork"])
             .replace("__ISO36TMAT__", IMG["iso36_tma_t"]).replace("__ISO36TMAH__", IMG["iso36_tma_h"])
             .replace("__ISO36GRIDT__", IMG["iso36_grid_t"]).replace("__ISO36GRIDH__", IMG["iso36_grid_h"])
             .replace("__ISO36AGGT__", IMG["iso36_agg_t"]).replace("__ISO36AGGH__", IMG["iso36_agg_h"]))
