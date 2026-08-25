@@ -768,22 +768,22 @@ bandwidth and context-switch rate, at 100 ms windows on cores 4–11 SMT-off) is
 **Agent deck** (updated in place, now **41 slides**):
 <https://claude.ai/code/artifact/e93ebcb7-015d-4f40-8f83-62fe21777e62>
 
-Slides 37–44 carry this campaign: the selection matrix (37); **the replay-invalid gate with
+Slides 37–45 carry this campaign: the selection matrix (37); **the replay-invalid gate with
 per-row causes** (38, added 2026-08-25 — the fig. 9 scatter of replay vs live fence with the
 three diagnosed cause families); **CPU work by fence over the 36 tasks** (39, added
 2026-08-25 — slide 2's core-seconds split rebuilt on the replays: median 89% tools, but
-53–66% on the small-fence tasks); TMA Level 1 of the 36 tasks (40: tool and harness fences,
+53–66% on the small-fence tasks); **fence busy time in seconds** (40, added 2026-08-25 — the core-seconds companion in wall units, grouped never stacked, each tool bar annotated with its implied parallelism core-s ÷ busy-s: median ×1.2, up to ×3.6 on parallel builds); TMA Level 1 of the 36 tasks (41: tool and harness fences,
 SPEC CPU 2026 INT/FP closing panel); the per-window distribution charts for both fences in
 the **final format (2026-08-25, mentor spec)** — one metric per full-width row, workload
 groups ordered **SPEC-int (14 benchmarks) → SPEC-fp (12) → one group per language**, each
 language's 4 tasks as per-window boxes in the language's color — covering the mentor's 16
 metrics **including the three fe_miss metrics** plus DRAM read bandwidth and context switches
-(18 rows; slides 41–42); the **aggregated comparison view** (43, added 2026-08-25) — SPEC
+(18 rows; slides 42–43); the **aggregated comparison view** (44, added 2026-08-25) — SPEC
 collapsed to two suite boxes (SPEC-int / SPEC-fp, each a box over per-benchmark
 window-medians so every benchmark votes once) plus a **Python group** (scikit-learn, astropy,
 sympy from the matched-configuration replays; the three fe_miss metrics carry a "to be
 measured" mark there and a fourth Python slot is reserved — no new profiling was run); and
-the gallery index (44). The SPEC side's per-window derivations were extended so all 18
+the gallery index (45). The SPEC side's per-window derivations were extended so all 18
 metrics exist there too; the earlier compact 18-panel grids (count-cell-type coloring) remain
 banked beside the new figures. Note: the deck's share link
 is version-pinned — viewers of an existing share see the new slides only after the share pin
@@ -791,7 +791,7 @@ is moved to the new version.
 
 **Per-task per-window galleries** (one artifact per task, modeled on the SPEC gallery: every
 metric with the tag-split tool-fence distribution, the harness-fence distribution, and both
-episode timelines at 100 ms; links also on deck slide 44 and banked in
+episode timelines at 100 ms; links also on deck slide 45 and banked in
 `local_agents/ML_iso36/gallery_links.json`):
 
 ### C

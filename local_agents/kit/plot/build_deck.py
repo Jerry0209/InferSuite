@@ -89,6 +89,7 @@ IMG = {k: uri(v) for k, v in {
     "iso36_sel": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_selection_matrix.png",
     "iso36_repinv": "/home/thu/InferSuite/docs/figures/typeid_cpu/09_replay_invalid_causes.png",
     "iso36_cpuwork": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_cpu_work.png",
+    "iso36_wall": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_active_wall.png",
     "iso36_tma_t": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_tma_l1_tool.png",
     "iso36_tma_h": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_tma_l1_harness.png",
     # 2026-08-25 final chart format (mentor spec): one metric per full-width row,
@@ -215,7 +216,7 @@ update();
 
 BODY = """
 <div class="progress"></div>
-<div class="counter">01 / 44</div>
+<div class="counter">01 / 45</div>
 <div class="hint">↓ / space · arrow keys to navigate</div>
 <div class="deck">
 
@@ -1123,6 +1124,24 @@ BODY = """
 
   <section class="slide">
     <div class="wrap">
+      <p class="eyebrow">Count-view campaign · busy seconds</p>
+      <h2>The same work in seconds — because core-seconds hide parallelism</h2>
+      <p class="lead">The previous slide in wall units: how many <b>seconds</b> each fence was
+      actually busy (10 Hz intervals above the burst floors), with the episode wall as the grey
+      tick. Bars are grouped, never stacked — the two fences overlap in time, and stacking
+      seconds would double-count. Each tool bar carries its <b>implied parallelism</b>:
+      core-seconds divided by busy seconds — exactly the number a core-seconds bar hides.</p>
+      <div class="figcard"><img alt="Fence busy time in seconds with tool parallelism annotations, 36 tasks grouped by language" src="__ISO36WALL__"></div>
+      <div class="take">
+        <div class="chip tool">tool parallelism median <b>×1.2</b>, but the spread is the story: hugo packs 334 core-s into <b>92 s at ×3.6</b>, json-4237 runs <b>×2.8</b>, immutable-js <b>×3.1</b></div>
+        <div class="chip harness">interpreters sit below one core busy: PHP and Ruby tools run at <b>×0.3–0.7</b> — their core-seconds and their seconds nearly coincide</div>
+        <div class="chip wait">so the two views disagree exactly where builds parallelize — read core-seconds as work, busy seconds as time</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
       <p class="eyebrow">Count-view campaign · TMA Level 1, 36 tasks</p>
       <h2>One TMA shape across nine languages</h2>
       <p class="lead">Nine dedicated-group replay passes per task (the shared eight plus fe_miss),
@@ -1277,6 +1296,7 @@ BODY = (BODY.replace("__SPLIT__", IMG["split"]).replace("__CPU__", IMG["cpu"])
             .replace("__ISO36SEL__", IMG["iso36_sel"])
             .replace("__ISO36REPINV__", IMG["iso36_repinv"])
             .replace("__ISO36CPUWORK__", IMG["iso36_cpuwork"])
+            .replace("__ISO36WALL__", IMG["iso36_wall"])
             .replace("__ISO36TMAT__", IMG["iso36_tma_t"]).replace("__ISO36TMAH__", IMG["iso36_tma_h"])
             .replace("__ISO36GRIDT__", IMG["iso36_grid_t"]).replace("__ISO36GRIDH__", IMG["iso36_grid_h"])
             .replace("__ISO36AGGT__", IMG["iso36_agg_t"]).replace("__ISO36AGGH__", IMG["iso36_agg_h"]))
