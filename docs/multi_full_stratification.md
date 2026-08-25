@@ -301,7 +301,7 @@ A row carries **no evidence** ("?") when fewer than 10 classified core-seconds e
 
 # Final matrix (complete corpus, 2026-08-19)
 
-**Population:** **300 replayed episodes** = 289 typeid + 11 older consumed instances. The four instances that had no banked trajectory (prometheus-9248, terraform-35543, carbon-2813, laravel-51890) were re-run live on 2026-08-19 and then replayed, so the corpus is now complete. Zero unresolved failures; 7 trajectories needed the harness-abort turn stripped before replay (axios-5316, fluentd-3640, lombok-3486/3571/3674/3697, bat-1892). Receipts: 17.90 M rows (deduplicated on pid+birth time); coverage median 99.4 %, 8 rows < 80 %; 40 replays hit the 2400 s drain cap (fence = lower bound). Corpus-wide replay/live fence ratio (n=288): median 0.995, IQR 0.93–1.09. A **replay-invalid gate** (ratio outside [0.5, 2]) marks a row "no evidence" when the replay clearly did not reproduce the live episode; it caught two systematic cases — **lucene** (7 rows at 0.07–0.29×: gradle's start-up network check fails inside the replay container, so the JVM tests never ran and the replay measured only bootstrap) and **5 caddy rows** (0.32–0.44×: `go test ./...` exceeds the drain cap). Without the gate those 12 rows would have shipped as T/B on failed or truncated replays. The 75 no-evidence rows (ownership view) split into 44 **thin fences** (under 10 classified core-seconds — the agent never invoked the toolchain), 28 **replay-invalid** rows (the gate above), and 3 rows where the classified share of the fence stayed under half. Files: `local_agents/ML_typeid/cpu_matrix.tsv` (per-episode rows, both views plus the count-weighted columns), `selection_30.tsv`. Figures: `docs/figures/typeid_cpu/08a_matrix_process_view.png`, `08b_matrix_ownership_view.png` (the 30 picks are marked ★), `08c_no_evidence_reasons.png`, `08d_matrix_count_view.png`.
+**Population:** **300 replayed episodes** = 289 typeid + 11 older consumed instances. The four instances that had no banked trajectory (prometheus-9248, terraform-35543, carbon-2813, laravel-51890) were re-run live on 2026-08-19 and then replayed, so the corpus is now complete. Zero unresolved failures; 7 trajectories needed the harness-abort turn stripped before replay (axios-5316, fluentd-3640, lombok-3486/3571/3674/3697, bat-1892). Receipts: 17.90 M rows (deduplicated on pid+birth time); coverage median 99.4 %, 8 rows < 80 %; 40 replays hit the 2400 s drain cap (fence = lower bound). Corpus-wide replay/live fence ratio (n=288): median 0.995, IQR 0.93–1.09. A **replay-invalid gate** (ratio outside [0.5, 2]) marks a row "no evidence" when the replay clearly did not reproduce the live episode; the per-row diagnosis (see "Replay invalid" below, revised 2026-08-25) attributes all 28 to three measured causes — **lucene's gradle wrapper-jar download failing offline** (7 rows: JVM tests never ran), **wall-proportional background burn from leaked test servers** (8 rows: the live fence was mostly idle-time background at 0.03–0.16 cores, which the compressed replay wall removes), and **replays pinned at the 2400 s drain cap** accruing slow background onto tiny live fences (13 rows, the E7-loop episodes). Without the gate those rows would have shipped as labels measuring a broken toolchain or a leaked server rather than the agent's work. The 75 no-evidence rows (ownership view) split into 44 **thin fences** (under 10 classified core-seconds — the agent never invoked the toolchain), 28 **replay-invalid** rows (the gate above), and 3 rows where the classified share of the fence stayed under half. Files: `local_agents/ML_typeid/cpu_matrix.tsv` (per-episode rows, both views plus the count-weighted columns), `selection_30.tsv`. Figures: `docs/figures/typeid_cpu/08a_matrix_process_view.png`, `08b_matrix_ownership_view.png` (the 30 picks are marked ★), `08c_no_evidence_reasons.png`, `08d_matrix_count_view.png`.
 
 **Ownership view** (which agent command paid; P7-comparable — drives the selection):
 
@@ -393,22 +393,60 @@ Every episode is a saved recording of the agent's actions. We re-run that record
 model calls, to measure CPU cheaply. We only trust the result if the replay's fence is
 close to the live episode's fence. The test is a ratio (replay CPU ÷ live CPU) that must
 fall between 0.5 and 2. If it falls outside that range, the replay did not reproduce the
-episode, so we give the row no type label. There are 28 such rows, in two groups:
+episode, so we give the row no type label.
 
-- **Ratio far below 1 (the replay did less than the live run), 15 rows.** lucene (7 rows,
-  0.07–0.29): gradle runs a network check at start-up that fails inside the offline replay
-  container, so the Java tests never start and the replay measured only the bootstrap. caddy
-  (5 rows, 0.32–0.44): `go test ./...` runs past the 2400 s time cap, so the replay fence is
-  cut short. The remaining three (jq-2919, micropython-13569, micropython-15898, 0.32–0.47)
-  are the same time-cap effect on long C test suites.
-- **Ratio far above 1 (the live baseline was tiny), 13 rows.** laravel-51195 (4.29),
-  php-cs-fixer-8367 (10.57), and the two 2026-08-19 re-runs terraform-35543 (4.98) and
-  carbon-2813 (2.99): these fences are all under 15 core-s, so a few extra seconds of
-  git or runtime make the ratio jump. The live episode was so small that the ratio is
-  unstable. These rows would be rejected for size anyway.
+**Per-row diagnosis (2026-08-25, revised).** All 28 rows were re-examined from banked
+evidence — live `episode_summary.json`, replay `cpustat` spans (summed over positive
+increments, because the container cgroup resets when it turns over), and replay log
+markers — by `kit/campaign/typeid_replay_invalid_report.py`, which banks the full table in
+`local_agents/ML_typeid/replay_invalid_report.tsv`. The key instrument is a two-point
+decomposition: the same action sequence was measured under two different wall clocks (live
+with model waits, replay without), so `fence = action_CPU + background_rate × wall` solves
+per row, and a large wall-proportional term is the signature of a leaked background
+process.
 
-Without this gate, the 12 lucene and caddy rows would have shipped as confident test or
-build labels, based on failed or half-finished replays.
+| Cause | Rows | Mechanism |
+| --- | --- | --- |
+| **gradle-wrapper-offline** | 7 (all lucene, 0.07–0.29×) | every `./gradlew` repeatedly tries to download `gradle-wrapper.jar` and fails offline — the JVM tests never start; the replay measured bootstrap only |
+| **background-dominated** | 8 (5 caddy, 2 micropython, 1 jq; 0.32–0.47×) | these replays finished in 25–95 s; the live fences were mostly leaked test servers/daemons burning 0.03–0.16 cores through the model-wait gaps — the replay compresses the wall and that component vanishes |
+| **drain-cap-background** | 13 (2.0–10.6×; 12 are E7-loop episodes) | the mirror image: a lingering process kept the fence from going quiet, so the replay sat pinned at the 2400 s drain cap, accruing ~12 core-s of slow background onto live fences of only 1–6 core-s |
+
+**Side-finding worth keeping:** degenerate live episodes can burn *tenths of a core* in
+leaked processes while the agent is only waiting on the model. The gate is catching real
+wall-proportional background burn, not replay noise — and that idle-time background burn is
+itself a property of live agentic episodes that any harness-level energy or capacity claim
+should account for.
+
+Three causes in detail, and an earlier version of this section got two of them wrong:
+
+- **gradle-wrapper-offline — the 7 lucene rows (ratios 0.07–0.29).** The replay logs show
+  every `./gradlew` invocation repeatedly attempting to download `gradle-wrapper.jar` from
+  the network and failing (12 attempts per episode), so the JVM tests never start and the
+  replay fence (16–49 core-s) is bootstrap plus wrapper attempts, against live fences of
+  92–522 core-s. It is the wrapper-jar download, not a "start-up network check" as
+  previously written.
+- **background-dominated — 8 rows: 5 caddy, 2 micropython, 1 jq (ratios 0.32–0.47).** The
+  earlier claim that these `go test` / C suites "ran past the 2400 s time cap" is **wrong**:
+  their replays completed in **25–95 s**. What actually happened: the live fences were
+  mostly wall-proportional background burn — leaked test servers/daemons at an implied
+  0.03–0.16 cores (caddy's integration tests start caddy servers) running through the live
+  episode's long model-wait gaps (600–1,400 s of wall). The replay compresses the wall to
+  under two minutes, that component vanishes, and only the action CPU remains — e.g.
+  caddy-6350: live 189 core-s over 934 s, replay 83 core-s over 95 s, background
+  0.13 cores. The replay is not wrong here; the two runs measure different amounts of
+  *idle-time background burn*. This is also a finding in its own right: degenerate live
+  episodes can burn tenths of a core in leaked processes while the agent is only waiting
+  on the model.
+- **drain-cap-background — 13 rows (ratios 2.0–10.6; 12 of 13 are E7-loop episodes).** The
+  mirror image: these replays all sat pinned at the **2400 s drain cap** (a lingering
+  process never let the fence go quiet), accruing ~0.005 cores of slow background for the
+  full 40 minutes (~12 core-s) on top of live fences of only 1–6 core-s — so the ratio
+  explodes upward. The tiny-fence instability noted before is real, but the cap-pinned
+  drain is the measured mechanism.
+
+Without this gate, the lucene rows would have shipped as confident labels from replays
+whose toolchain never ran, and the background-heavy rows as labels measuring a leaked
+server rather than the agent's work.
 
 ### "Mostly unclassified" — we saw the CPU, but the program name is not in our table
 
@@ -743,19 +781,23 @@ bandwidth and context-switch rate, at 100 ms windows on cores 4–11 SMT-off) is
 **Agent deck** (updated in place, now **41 slides**):
 <https://claude.ai/code/artifact/e93ebcb7-015d-4f40-8f83-62fe21777e62>
 
-Slides 37–41 carry this campaign: the selection matrix; TMA Level 1 of the 36 tasks (tool and
-harness fences, SPEC CPU 2026 INT/FP closing panel); the per-window distribution grids for both
-fences — the mentor's 16 metrics **including the three fe_miss metrics** plus DRAM read
-bandwidth and context switches (18 panels); and the gallery index. To compare within and across
-languages at 36 tasks, each grid panel clusters the **4 tasks of a language side by side**
-(boxes colored by the task's count-cell type B/T/S/M, so type-vs-signature is readable
-directly), languages in a fixed order, and a grey SPEC-26 box closing every panel. Note: the
-deck's share link is version-pinned — viewers of an existing share see the new slides only
-after the share pin is moved to the new version.
+Slides 37–42 carry this campaign: the selection matrix (37); **the replay-invalid gate with
+per-row causes** (38, added 2026-08-25 — the fig. 9 scatter of replay vs live fence with the
+three diagnosed cause families); TMA Level 1 of the 36 tasks (39: tool and harness fences,
+SPEC CPU 2026 INT/FP closing panel); the per-window distribution charts for both fences in
+the **final format (2026-08-25, mentor spec)** — one metric per full-width row, workload
+groups ordered **SPEC-int (14 benchmarks) → SPEC-fp (12) → one group per language**, each
+language's 4 tasks as per-window boxes in the language's color — covering the mentor's 16
+metrics **including the three fe_miss metrics** plus DRAM read bandwidth and context switches
+(18 rows; slides 40–41); and the gallery index (42). The SPEC side's per-window derivations
+were extended so all 18 metrics exist there too; the earlier compact 18-panel grids
+(count-cell-type coloring) remain banked beside the new figures. Note: the deck's share link
+is version-pinned — viewers of an existing share see the new slides only after the share pin
+is moved to the new version.
 
 **Per-task per-window galleries** (one artifact per task, modeled on the SPEC gallery: every
 metric with the tag-split tool-fence distribution, the harness-fence distribution, and both
-episode timelines at 100 ms; links also on deck slide 41 and banked in
+episode timelines at 100 ms; links also on deck slide 42 and banked in
 `local_agents/ML_iso36/gallery_links.json`):
 
 ### C
@@ -821,52 +863,4 @@ episode timelines at 100 ms; links also on deck slide 41 and banked in
 - docusaurus-10130 (T, top-up): <https://claude.ai/code/artifact/3c47000c-3b79-4886-bf94-9f2a81186aa9>
 - vuejs-core-11589 (S): <https://claude.ai/code/artifact/5e19e4bb-b819-4c9c-a837-d5daeb10b181>
 
-# Discord
 
-*(draft message for the team — paste as is, with 08b + 08d attached)*
-
----
-
-**Progress update: I built a second version of the type matrix, based on command counts instead of CPU time**
-
-Following the suggestion to try count-weighted classification, I built it for all 300 tasks and compared it with the current one. Two figures attached: the first is the current matrix (weighted by CPU time), the second is the new one (weighted by how many commands ran).
-
-**1. The two matrices really do disagree**
-
-```
-                 B     T     S     M    no evidence
-CPU time        55   162     0     8        75
-command count   61   109    60    42        28
-```
-
-They agree on only 112 of the 225 tasks that both can label, so the difference is not something we can ignore. The search column, which is empty under CPU time, suddenly has 60 tasks in it.
-
-But when I looked at why, the reason turned out to be the toolchain, not the task:
-
-- **Java** moves from 32 "test" to 24 "search". A JVM test run is a single `java` process that burns several minutes of CPU, while the agent typed a few dozen cheap `grep`s next to it. By headcount the greps win, but nobody would call that task a search task.
-- **Rust** moves the opposite way, 16 to 31 "build", because `cargo test` starts thousands of small `rustc` processes.
-- On average, one counted search command costs 2.2 ms, a test command 13 ms, and a build command 36 ms. Counting treats one `wc` as equal to one `cc1`.
-
-So counting is not biased towards search. It is biased towards whichever toolchain creates the most processes, which is a property of the build system rather than of the work being done. I have kept the count numbers as extra columns in the results file for comparison, but the label stays based on CPU time.
-
-**2. A bug I found while doing this**
-
-Our process log comes from a kernel interface called taskstats, which writes into a fixed-size buffer. When a build forks thousands of short-lived processes in a few seconds, the buffer fills up, the kernel drops records, and our listener was then killed by the resulting error. It happened in **23 of the 300 tasks**, mostly in Go, JavaScript and TypeScript, which fork the most. Those tasks recorded nothing after the crash point.
-
-**3. The fix, and where it stands now**
-
-Three changes: a 64 MB buffer instead of the default; the overflow error is now recorded as a `LOST` line and no longer kills the listener; and receiving is separated from parsing, so the buffer is drained as fast as possible.
-
-I tested it with a deliberate storm of 72,000 short-lived processes: 72,127 records captured, zero drops. I then shrank the buffer to 8 KB on purpose to force the failure, and the listener stayed alive and wrote 2,128 loss markers instead of dying.
-
-The 23 tasks are being re-measured right now with the fixed listener (no API cost, since we replay saved runs). About 9 of 23 are done.
-
-**4. Does this change the classification or the 30 chosen tasks?**
-
-Mostly no, with one exception worth knowing:
-
-- For the **count-based matrix**, no. If I drop all 23 affected tasks, the search column moves from 60 to 59. The missing data shifts build/test/mixed a little, but it is not what creates the search column.
-- For the **main matrix and the 30 chosen tasks**, mostly no — but **4 of the 30 picks are affected tasks**, so I would rather not send those to the profiling machine until the re-run finishes later today.
-- The conclusion itself is unchanged: tasks where search really does lead in CPU are all tiny (a few CPU-seconds) and would be rejected by the 20 CPU-second floor anyway. The empty search column is a fact about size, not a side effect of how we weight things.
-
-I will post the rebuilt matrix once the 23 re-runs finish.

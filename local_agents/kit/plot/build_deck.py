@@ -87,10 +87,13 @@ IMG = {k: uri(v) for k, v in {
     "ml_tl_fmt": "/home/thu/InferSuite/local_agents/SWE_clean/data/l3_study/plots/timeline_fmtlib_codeRead_MPKI_L1I.png",
     # 2026-08-24: the ML_iso36 count-view campaign (36 tasks x 9 languages, 9 groups incl fe_miss).
     "iso36_sel": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_selection_matrix.png",
+    "iso36_repinv": "/home/thu/InferSuite/docs/figures/typeid_cpu/09_replay_invalid_causes.png",
     "iso36_tma_t": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_tma_l1_tool.png",
     "iso36_tma_h": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_tma_l1_harness.png",
-    "iso36_grid_t": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_grid_tool.png",
-    "iso36_grid_h": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_grid_harness.png",
+    # 2026-08-25 final chart format (mentor spec): one metric per full-width row,
+    # SPEC-int | SPEC-fp per-benchmark boxes first, then language-colored task groups.
+    "iso36_grid_t": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_rows_tool.png",
+    "iso36_grid_h": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_rows_harness.png",
 }.items()}
 
 CSS = """
@@ -208,7 +211,7 @@ update();
 
 BODY = """
 <div class="progress"></div>
-<div class="counter">01 / 41</div>
+<div class="counter">01 / 42</div>
 <div class="hint">↓ / space · arrow keys to navigate</div>
 <div class="deck">
 
@@ -1072,6 +1075,30 @@ BODY = """
 
   <section class="slide">
     <div class="wrap">
+      <p class="eyebrow">Count-view campaign · the replay-invalid gate</p>
+      <h2>Every excluded row has a measured cause</h2>
+      <p class="lead">28 of the 300 census rows failed the replay gate (replay/live fence outside
+      [0.5, 2]) and carried no type label. Each was re-examined from banked evidence with a
+      two-point decomposition — the same action sequence measured under two different wall
+      clocks solves <b>fence = action CPU + background rate × wall</b> per row — and every
+      exclusion has a concrete mechanism, in three families.</p>
+      <div class="figcard"><img alt="Replay vs live tool fence, log-log, 300 census rows; the 28 invalid rows colored by diagnosed cause" src="__ISO36REPINV__"></div>
+      <div class="take">
+        <div class="chip proxy">7 lucene: <b>gradle wrapper download fails offline</b> — the JVM tests never ran; the replay measured bootstrap only</div>
+        <div class="chip tool">8 rows (caddy, micropython, jq): live fence was <b>leaked-server background burn</b> at 0.03–0.16 cores over the model-wait wall; the replay compresses the wall and it vanishes</div>
+        <div class="chip harness">13 rows (E7 loops): the replay <b>pinned at the 2400 s drain cap</b>, accruing ~12 core-s of slow background onto live fences of 1–6 core-s</div>
+      </div>
+      <p class="note"><b>Side-finding:</b> degenerate live episodes can burn tenths of a core in
+      leaked processes while the agent is only waiting on the model — the gate is catching real
+      wall-proportional background burn, not replay noise. Per-row table:
+      ML_typeid/replay_invalid_report.tsv (typeid_replay_invalid_report.py); an earlier
+      time-cap explanation for the caddy/micropython rows was wrong and is corrected in
+      docs/multi_full_stratification.md.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
       <p class="eyebrow">Count-view campaign · TMA Level 1, 36 tasks</p>
       <h2>One TMA shape across nine languages</h2>
       <p class="lead">Nine dedicated-group replay passes per task (the shared eight plus fe_miss),
@@ -1094,13 +1121,14 @@ BODY = """
   <section class="slide">
     <div class="wrap">
       <p class="eyebrow">Count-view campaign · per-window distributions, tool fence</p>
-      <h2>18 metrics, 36 tasks, SPEC closing every panel</h2>
-      <p class="lead">The full metric card at last: the 16-panel grid <b>including the three the
-      old capture could not profile</b> — branch-direction MPKI, BTB MPKI and µop-cache MPKI, from
-      the fe_miss group that SPEC always rotated and the agent side now does too — plus DRAM read
-      bandwidth and context switches. Four thin boxes per language, colored by the task's
-      count-cell type; the grey box closing every panel is the SPEC 26 suite.</p>
-      <div class="figcard"><img alt="18-metric per-window grid, tool fence, 36 tasks by language plus SPEC" src="__ISO36GRIDT__"></div>
+      <h2>18 metrics, one full-width row each — SPEC-int, SPEC-fp, then nine languages</h2>
+      <p class="lead">The full metric card in its final format: every metric gets an entire row,
+      with the <b>14 SPECrate-int and 12 SPECrate-fp benchmarks split into their own groups</b>
+      (each benchmark its own per-window box, two neutral greys), then the nine languages, four
+      tasks per group in the language's color. Includes the three metrics the old capture could
+      not profile — branch-direction MPKI, BTB MPKI and µop-cache MPKI from the fe_miss group —
+      plus DRAM read bandwidth and context switches per CPU-second.</p>
+      <div class="figcard"><img alt="18 metrics, one row each: SPEC-int, SPEC-fp, then 9 language groups of 4 tasks, tool fence" src="__ISO36GRIDT__"></div>
       <div class="take">
         <div class="chip tool">the three new counters all land on the separating side: BTB MPKI <b>44×</b> SPEC, µop-cache miss <b>3.5×</b>, branch-direction <b>3.2×</b></div>
         <div class="chip harness">context switches <b>1,012 vs 4.5</b> per CPU-second (<b>223×</b>) · kernel <b>29×</b> · L1I MPKI <b>12.7×</b></div>
@@ -1108,8 +1136,11 @@ BODY = """
       </div>
       <p class="note">Medians quoted from comparison_iso36.json — one implementation computes both
       sides over the nine shared groups; each metric rests on the 36 replays that ran its group.
-      Count-type coloring answers a design question directly: build/test/search/mixed tasks do
-      not separate microarchitecturally — the workload signature is agentic tool execution itself.</p>
+      Both sides are per-window (100 ms) distributions; the SPEC side's per-window derivations
+      were extended so all 18 metrics exist there too. Reading across a row: agent tasks are
+      near-uniform across languages while SPEC is heterogeneous — the workload signature is
+      agentic tool execution itself, not the language. The earlier count-type-colored 18-panel
+      grids remain banked beside this figure.</p>
     </div>
   </section>
 
@@ -1122,7 +1153,7 @@ BODY = """
       that dwarf SPEC's. As on the 12-task capture, many harness windows carry few instructions —
       wide boxes here are often too little work to measure, not erratic behaviour; medians are the
       robust layer.</p>
-      <div class="figcard"><img alt="18-metric per-window grid, harness fence, 36 tasks by language plus SPEC" src="__ISO36GRIDH__"></div>
+      <div class="figcard"><img alt="18 metrics, one row each: SPEC-int, SPEC-fp, then 9 language groups of 4 tasks, harness fence" src="__ISO36GRIDH__"></div>
       <div class="take">
         <div class="chip harness">harness windows are sparse on small tasks — the low-activity caveat of the 12-task grid applies unchanged</div>
         <div class="chip tool">both fences unfiltered, deliberately, so the two grids stay comparable</div>
@@ -1201,6 +1232,7 @@ BODY = (BODY.replace("__SPLIT__", IMG["split"]).replace("__CPU__", IMG["cpu"])
             .replace("__CPU12__", IMG["cpu12"])
             .replace("__GRIDISO8H__", IMG["grid_iso8_h"])
             .replace("__ISO36SEL__", IMG["iso36_sel"])
+            .replace("__ISO36REPINV__", IMG["iso36_repinv"])
             .replace("__ISO36TMAT__", IMG["iso36_tma_t"]).replace("__ISO36TMAH__", IMG["iso36_tma_h"])
             .replace("__ISO36GRIDT__", IMG["iso36_grid_t"]).replace("__ISO36GRIDH__", IMG["iso36_grid_h"]))
 

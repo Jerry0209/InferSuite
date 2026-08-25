@@ -362,6 +362,12 @@ def _window_metrics(g: str, v: dict[str, float], el: float) -> dict[str, float]:
         loads = l1 + l2 + l3 + lm
         if loads and "mem_load_retired.l1_hit" in v:
             out["AMAT_cyc"] = (5 * l1 + 15 * l2 + 50 * l3 + 250 * lm) / loads
+            # miss RATES (per-access %), same ladder as the agentic per-window layer
+            out["L1D_missrate_pct"] = 100.0 * (l2 + l3 + lm) / loads
+            if l2 + l3 + lm > 1e3:
+                out["L2_missrate_pct"] = 100.0 * (l3 + lm) / (l2 + l3 + lm)
+            if l3 + lm > 1e3:
+                out["LLC_missrate_pct"] = 100.0 * lm / (l3 + lm)
     elif g == "mlp":
         pc = v.get("l1d_pend_miss.pending_cycles", 0.0)
         if pc:
@@ -404,6 +410,10 @@ def _window_metrics(g: str, v: dict[str, float], el: float) -> dict[str, float]:
                 out["ctx_switch_PKI"] = kpi(v["context-switches"])
             if "page-faults" in v:
                 out["pagefault_PKI"] = kpi(v["page-faults"])
+        # per busy CPU-second (task-clock is msec) — the agentic campaign's ctx rate
+        tk = v.get("task-clock", 0.0)
+        if tk > 10 and "context-switches" in v:
+            out["ctx_per_cpu_s"] = v["context-switches"] / (tk / 1e3)
     elif g == "mem_bound":
         if C:
             for ev, k in (("exe_activity.bound_on_loads", "bound_on_loads_pct"),
@@ -427,6 +437,8 @@ def _window_metrics(g: str, v: dict[str, float], el: float) -> dict[str, float]:
                 out["baclears_MPKI"] = kpi(v["baclears.any"])
             if "frontend_retired.any_dsb_miss" in v:
                 out["dsb_miss_MPKI"] = kpi(v["frontend_retired.any_dsb_miss"])
+            if "br_misp_retired.cond" in v:
+                out["branchDir_MPKI"] = kpi(v["br_misp_retired.cond"])
         mc, mi = v.get("br_misp_retired.cond", 0.0), v.get("br_misp_retired.indirect", 0.0)
         if mc + mi:
             out["misp_indirect_pct"] = 100.0 * mi / (mc + mi)

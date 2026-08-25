@@ -17,7 +17,8 @@ Every number a figure displays is banked beside it (`iso36_tma_values.json`,
 |---|---|---|
 | `iso36_selection_matrix.png` | the 36 picks placed on the count-view type matrix; shade = cell population, '+' = majority top-up | selection metadata (no measurement) |
 | `iso36_tma_l1_{tool,harness}.png` | TMA Level 1 per fence, one panel per language (4 tasks each), SPEC CPU 2026 medians (INT / FP) as the closing panel | census counts pooled over each task's 9 episodes; per-episode spread banked |
-| `iso36_grid_{tool,harness}.png` | 18-metric per-window distribution grid: mentor's 16 + DRAM read GB/s + context switches per CPU-s; 9 language clusters of 4 boxes, colored by count-cell type (B/T/S/M); grey SPEC box closes every panel | agent boxes = per-window values (whis 5–95); SPEC box = 26 per-benchmark **episode** values (labelled; deliberately not per-window) |
+| `iso36_rows_{tool,harness}.png` | **the final chart format (mentor spec 2026-08-25)**: 18 metrics, one full-width row each; groups SPEC-int (14 benchmarks) → SPEC-fp (12) → 9 languages × 4 tasks; every column is that workload's per-window box; one color per language, two neutral greys for SPEC | per-window on BOTH sides (100 ms); SPEC per-window derivations extended in `spec26/kit/plot/spec_common.py` (miss rates, branch-direction MPKI, ctx/CPU-s) so all 18 metrics exist there; featured on deck slides 39–40 |
+| `iso36_grid_{tool,harness}.png` | the earlier compact 18-panel grid: 9 language clusters of 4 boxes colored by count-cell type (B/T/S/M); grey SPEC box closes every panel | agent boxes = per-window values (whis 5–95); SPEC box = 26 per-benchmark **episode** values (labelled; deliberately not per-window). Kept banked; superseded on the deck by `iso36_rows_*` |
 
 ## Metric definitions
 
