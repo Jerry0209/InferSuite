@@ -67,19 +67,6 @@ Languages are merged when their toolchain physics match — not when their synta
 Because each language lands in exactly one class, the nominal 9×5 ⟨language × mechanism⟩ grid has only 9 reachable cells — one cell wide per language. This is the sense in which the mechanism axis buys stratification, not a second dimension.
 
 
-
-镜像冻结了第三方依赖、并且在 base commit 上预构建过一次。但 episode 里没有任何东西是靠镜像验证的。agent 每次想验证自己改得对不对，就打一条命令，仓库自己的工具链就在容器里拉起来烧一次 CPU——一个 episode 里会发生 5 次、10 次、20 次。
-
-Axis 1 管的是这个「每次调用都要重复付」的成本，不是那笔一次性的安装成本。而这些成本在预构建之后原封不动地活着：
-
-类	镜像帮你省掉的（一次性）	每次调用仍然要跑的
-J Java	~/.m2 下载	JVM 启动、classpath 解析、surefire fork、JIT 预热
-I PHP/Ruby	vendor/ 安装	解释器启动 + 整个被选中的测试套件
-A Rust/Go	依赖闭包的编译	补丁弄脏的那部分重新编译、链接、运行
-B C/C++	—	make 重新推导依赖图；改了源码就必须真编译
-N JS/TS	node_modules 安装	transpiler/bundler 子进程，然后 JS runner
-
-
 ### Prior vs verdict
 
 The static label is only a prior. It becomes a verdict via instruction-weighted command-tag composition of the fence, median over the dedicated-group replay passes, behind the **ownership** (≥50% of fence instructions in toolchain-observed windows) and **adequacy** (≥20 windows, ≥150 Ginstr) gates — `classification_protocol.md:44`.
@@ -789,15 +776,20 @@ the **final format (2026-08-25, mentor spec)** — one metric per full-width row
 groups ordered **SPEC-int (14 benchmarks) → SPEC-fp (12) → one group per language**, each
 language's 4 tasks as per-window boxes in the language's color — covering the mentor's 16
 metrics **including the three fe_miss metrics** plus DRAM read bandwidth and context switches
-(18 rows; slides 40–41); and the gallery index (42). The SPEC side's per-window derivations
-were extended so all 18 metrics exist there too; the earlier compact 18-panel grids
-(count-cell-type coloring) remain banked beside the new figures. Note: the deck's share link
+(18 rows; slides 40–41); the **aggregated comparison view** (42, added 2026-08-25) — SPEC
+collapsed to two suite boxes (SPEC-int / SPEC-fp, each a box over per-benchmark
+window-medians so every benchmark votes once) plus a **Python group** (scikit-learn, astropy,
+sympy from the matched-configuration replays; the three fe_miss metrics carry a "to be
+measured" mark there and a fourth Python slot is reserved — no new profiling was run); and
+the gallery index (43). The SPEC side's per-window derivations were extended so all 18
+metrics exist there too; the earlier compact 18-panel grids (count-cell-type coloring) remain
+banked beside the new figures. Note: the deck's share link
 is version-pinned — viewers of an existing share see the new slides only after the share pin
 is moved to the new version.
 
 **Per-task per-window galleries** (one artifact per task, modeled on the SPEC gallery: every
 metric with the tag-split tool-fence distribution, the harness-fence distribution, and both
-episode timelines at 100 ms; links also on deck slide 42 and banked in
+episode timelines at 100 ms; links also on deck slide 43 and banked in
 `local_agents/ML_iso36/gallery_links.json`):
 
 ### C

@@ -94,6 +94,9 @@ IMG = {k: uri(v) for k, v in {
     # SPEC-int | SPEC-fp per-benchmark boxes first, then language-colored task groups.
     "iso36_grid_t": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_rows_tool.png",
     "iso36_grid_h": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_rows_harness.png",
+    # aggregated variant: SPEC collapsed to two suite bars + the Python comparison group
+    "iso36_agg_t": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_rows_agg_tool.png",
+    "iso36_agg_h": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_rows_agg_harness.png",
 }.items()}
 
 CSS = """
@@ -211,7 +214,7 @@ update();
 
 BODY = """
 <div class="progress"></div>
-<div class="counter">01 / 42</div>
+<div class="counter">01 / 43</div>
 <div class="hint">↓ / space · arrow keys to navigate</div>
 <div class="deck">
 
@@ -1163,6 +1166,25 @@ BODY = """
 
   <section class="slide">
     <div class="wrap">
+      <p class="eyebrow">Count-view campaign · aggregated view + Python</p>
+      <h2>The same rows, SPEC as two suite bars — and Python joins the comparison</h2>
+      <p class="lead">A companion view of the previous two slides: SPEC collapsed to <b>two
+      boxes — SPEC-int and SPEC-fp</b> (each benchmark votes once: the box is over
+      per-benchmark window-medians, so long benchmarks cannot dominate), and a <b>Python
+      group</b> — scikit-learn, astropy, sympy from the matched-configuration replays, the
+      same cores, SMT setting and 100 ms windows. Both fences below.</p>
+      <div class="figcard"><img alt="Aggregated rows, tool fence: SPEC-int and SPEC-fp suite boxes, Python group, 9 languages" src="__ISO36AGGT__"></div>
+      <div class="figcard"><img alt="Aggregated rows, harness fence: SPEC-int and SPEC-fp suite boxes, Python group, 9 languages" src="__ISO36AGGH__"></div>
+      <div class="take">
+        <div class="chip tool">Python behaves like the other nine languages on every shared metric — the agentic signature is language-independent, interpreter or compiler alike</div>
+        <div class="chip harness">the three fe_miss metrics carry a <b>"to be measured"</b> mark for Python — never captured there, and no new profiling was run (the box is in use); a fourth Python slot is reserved</div>
+        <div class="chip wait">contrary to expectation, context switches and DRAM bandwidth ARE banked for Python (priv and dram_bw groups) and are plotted</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
       <p class="eyebrow">Count-view campaign · per-task galleries</p>
       <h2>Every task, every metric, every window</h2>
       <p class="lead">One gallery per task: every per-window metric with the tool-fence
@@ -1234,7 +1256,8 @@ BODY = (BODY.replace("__SPLIT__", IMG["split"]).replace("__CPU__", IMG["cpu"])
             .replace("__ISO36SEL__", IMG["iso36_sel"])
             .replace("__ISO36REPINV__", IMG["iso36_repinv"])
             .replace("__ISO36TMAT__", IMG["iso36_tma_t"]).replace("__ISO36TMAH__", IMG["iso36_tma_h"])
-            .replace("__ISO36GRIDT__", IMG["iso36_grid_t"]).replace("__ISO36GRIDH__", IMG["iso36_grid_h"]))
+            .replace("__ISO36GRIDT__", IMG["iso36_grid_t"]).replace("__ISO36GRIDH__", IMG["iso36_grid_h"])
+            .replace("__ISO36AGGT__", IMG["iso36_agg_t"]).replace("__ISO36AGGH__", IMG["iso36_agg_h"]))
 
 HTML = ('<title>Agent CPU profiling — GLM-5.2 SWE-agent</title>\n'
         '<style>' + CSS + '</style>\n' + BODY + '\n<script>' + JS + '</script>\n')
