@@ -90,6 +90,7 @@ IMG = {k: uri(v) for k, v in {
     "iso36_repinv": "/home/thu/InferSuite/docs/figures/typeid_cpu/09_replay_invalid_causes.png",
     "iso36_cpuwork": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_cpu_work.png",
     "iso36_wall": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_active_wall.png",
+    "iso36_tma_comb": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_tma_l1_combined.png",
     "iso36_tma_t": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_tma_l1_tool.png",
     "iso36_tma_h": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_tma_l1_harness.png",
     # 2026-08-25 final chart format (mentor spec): one metric per full-width row,
@@ -216,7 +217,7 @@ update();
 
 BODY = """
 <div class="progress"></div>
-<div class="counter">01 / 45</div>
+<div class="counter">01 / 46</div>
 <div class="hint">↓ / space · arrow keys to navigate</div>
 <div class="deck">
 
@@ -1163,6 +1164,27 @@ BODY = """
 
   <section class="slide">
     <div class="wrap">
+      <p class="eyebrow">Count-view campaign · TMA Level 1, combined</p>
+      <h2>The whole partition's pipeline — both fences in one bar</h2>
+      <p class="lead">The roll-up of the previous slide: census counts summed across the tool AND
+      harness fences, so each task gets one bar answering "what did the measured partition's
+      pipeline do during this task". The combination is <b>slot-weighted by construction</b> —
+      each fence contributes in proportion to the pipeline slots it issued (the grey margin
+      shows the tool fence's share). SPEC-int and SPEC-fp close the figure.</p>
+      <div class="figcard"><img alt="TMA Level 1 with tool and harness fences combined, one bar per task, 36 tasks grouped by language, SPEC-int/SPEC-fp reference" src="__ISO36TMACOMB__"></div>
+      <div class="take">
+        <div class="chip tool">the uniformity survives the roll-up: combined frontend-bound median <b>30%</b> (21–37%), bad speculation <b>9–20%</b>, across every language and count-type</div>
+        <div class="chip harness">tool slots dominate most bars (median ~90%), so combining barely moves the heavyweights — the visible shifts are the small-fence tasks (valkey 51%, axios 59%, the rubocops 63–64% tool slots)</div>
+        <div class="chip wait">SPEC-int sits at 34% retiring / 26% frontend; SPEC-fp at 42% / 9% — no agent task comes near either profile</div>
+      </div>
+      <p class="note">Continuous PERF_METRICS census, counts summed over both fences and all nine
+      episodes per task; values + each task's tool-slot share banked in
+      iso36_tma_combined_values.json. Per-fence detail stays on the previous slide.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
       <p class="eyebrow">Count-view campaign · per-window distributions, tool fence</p>
       <h2>18 metrics, one full-width row each — SPEC-int, SPEC-fp, then nine languages</h2>
       <p class="lead">The full metric card in its final format: every metric gets an entire row,
@@ -1297,6 +1319,7 @@ BODY = (BODY.replace("__SPLIT__", IMG["split"]).replace("__CPU__", IMG["cpu"])
             .replace("__ISO36REPINV__", IMG["iso36_repinv"])
             .replace("__ISO36CPUWORK__", IMG["iso36_cpuwork"])
             .replace("__ISO36WALL__", IMG["iso36_wall"])
+            .replace("__ISO36TMACOMB__", IMG["iso36_tma_comb"])
             .replace("__ISO36TMAT__", IMG["iso36_tma_t"]).replace("__ISO36TMAH__", IMG["iso36_tma_h"])
             .replace("__ISO36GRIDT__", IMG["iso36_grid_t"]).replace("__ISO36GRIDH__", IMG["iso36_grid_h"])
             .replace("__ISO36AGGT__", IMG["iso36_agg_t"]).replace("__ISO36AGGH__", IMG["iso36_agg_h"]))
