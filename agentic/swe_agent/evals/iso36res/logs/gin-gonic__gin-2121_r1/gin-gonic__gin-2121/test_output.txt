@@ -1,0 +1,126 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   render/reader.go
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	binding.test
+	gin.test
+	render.test
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 2ee0e963942d91be7944dfcc07dc8c02a4a78566
+Author: thinkerou <thinkerou@gmail.com>
+Date:   Sun Nov 24 23:07:56 2019 +0800
+
+    Drop support go1.10 (#2147)
+
+diff --git a/.travis.yml b/.travis.yml
+index 748a07a..4a4ab81 100644
+--- a/.travis.yml
++++ b/.travis.yml
+@@ -3,7 +3,6 @@ language: go
+ matrix:
+   fast_finish: true
+   include:
+-  - go: 1.10.x
+   - go: 1.11.x
+     env: GO111MODULE=on
+   - go: 1.12.x
+diff --git a/README.md b/README.md
+index 3dd99d9..8aa5050 100644
+--- a/README.md
++++ b/README.md
+@@ -70,7 +70,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
+ 
+ To install Gin package, you need to install Go and set your Go workspace first.
+ 
+-1. The first need [Go](https://golang.org/) installed (**version 1.10+ is required**), then you can use the below Go command to install Gin.
++1. The first need [Go](https://golang.org/) installed (**version 1.11+ is required**), then you can use the below Go command to install Gin.
+ 
+ ```sh
+ $ go get -u github.com/gin-gonic/gin
+diff --git a/debug.go b/debug.go
+index 49080db..c66ca44 100644
+--- a/debug.go
++++ b/debug.go
+@@ -67,7 +67,7 @@ func getMinVer(v string) (uint64, error) {
+ 
+ func debugPrintWARNINGDefault() {
+ 	if v, e := getMinVer(runtime.Version()); e == nil && v <= ginSupportMinGoVer {
+-		debugPrint(`[WARNING] Now Gin requires Go 1.10 or later and Go 1.11 will be required soon.
++		debugPrint(`[WARNING] Now Gin requires Go 1.11 or later and Go 1.12 will be required soon.
+ 
+ `)
+ 	}
+diff --git a/debug_test.go b/debug_test.go
+index d6f320e..d707b4b 100644
+--- a/debug_test.go
++++ b/debug_test.go
+@@ -91,7 +91,7 @@ func TestDebugPrintWARNINGDefault(t *testing.T) {
+ 	})
+ 	m, e := getMinVer(runtime.Version())
+ 	if e == nil && m <= ginSupportMinGoVer {
+-		assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.10 or later and Go 1.11 will be required soon.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
++		assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.11 or later and Go 1.12 will be required soon.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
+ 	} else {
+ 		assert.Equal(t, "[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
+ 	}
++ git -c core.fileMode=false diff 2ee0e963942d91be7944dfcc07dc8c02a4a78566
+diff --git a/render/reader.go b/render/reader.go
+index 502d939..fd308a7 100644
+--- a/render/reader.go
++++ b/render/reader.go
+@@ -22,6 +22,9 @@ type Reader struct {
+ func (r Reader) Render(w http.ResponseWriter) (err error) {
+ 	r.WriteContentType(w)
+ 	if r.ContentLength >= 0 {
++		if r.Headers == nil {
++			r.Headers = make(map[string]string)
++		}
+ 		r.Headers["Content-Length"] = strconv.FormatInt(r.ContentLength, 10)
+ 	}
+ 	r.writeHeaders(w, r.Headers)
++ git checkout 2ee0e963942d91be7944dfcc07dc8c02a4a78566 context_test.go
+Updated 0 paths from 8751f33
++ rm -f render/reader_test.go
++ git apply -v -
+Checking patch context_test.go...
+Checking patch render/reader_test.go...
+Applied patch context_test.go cleanly.
+Applied patch render/reader_test.go cleanly.
++ : '>>>>> Start Test Output'
++ go test -v ./... -run '^Test.*Reader'
++ cat
+?   	github.com/gin-gonic/gin/ginS	[no test files]
+?   	github.com/gin-gonic/gin/internal/json	[no test files]
+=== RUN   TestContextRenderDataFromReader
+--- PASS: TestContextRenderDataFromReader (0.00s)
+=== RUN   TestContextRenderDataFromReaderNoHeaders
+--- PASS: TestContextRenderDataFromReaderNoHeaders (0.00s)
+PASS
+ok  	github.com/gin-gonic/gin	0.004s
+testing: warning: no tests to run
+PASS
+ok  	github.com/gin-gonic/gin/binding	0.004s [no tests to run]
+=== RUN   TestReaderRenderNoHeaders
+--- PASS: TestReaderRenderNoHeaders (0.00s)
+=== RUN   TestRenderReader
+--- PASS: TestRenderReader (0.00s)
+=== RUN   TestRenderReaderNoContentLength
+--- PASS: TestRenderReaderNoContentLength (0.00s)
+PASS
+ok  	github.com/gin-gonic/gin/render	0.003s
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout 2ee0e963942d91be7944dfcc07dc8c02a4a78566 context_test.go
+Updated 1 path from 8751f33
++ rm -f render/reader_test.go

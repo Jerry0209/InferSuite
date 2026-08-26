@@ -1,0 +1,33 @@
+diff --git a/gson/src/main/java/com/google/gson/stream/JsonWriter.java b/gson/src/main/java/com/google/gson/stream/JsonWriter.java
+index e2fc1961..86acb245 100644
+--- a/gson/src/main/java/com/google/gson/stream/JsonWriter.java
++++ b/gson/src/main/java/com/google/gson/stream/JsonWriter.java
+@@ -487,14 +487,15 @@ public class JsonWriter implements Closeable, Flushable {
+    * Encodes {@code value}.
+    *
+    * @param value a finite value. May not be {@link Double#isNaN() NaNs} or
+-   *     {@link Double#isInfinite() infinities}.
++   *     {@link Double#isInfinite() infinities} unless the writer is {@linkplain #setLenient(boolean)
++   *     lenient}.
+    * @return this writer.
+    */
+   public JsonWriter value(double value) throws IOException {
+-    if (Double.isNaN(value) || Double.isInfinite(value)) {
++    writeDeferredName();
++    if (!lenient && (Double.isNaN(value) || Double.isInfinite(value))) {
+       throw new IllegalArgumentException("Numeric values must be finite, but was " + value);
+     }
+-    writeDeferredName();
+     beforeValue();
+     out.append(Double.toString(value));
+     return this;
+@@ -516,7 +517,8 @@ public class JsonWriter implements Closeable, Flushable {
+    * Encodes {@code value}.
+    *
+    * @param value a finite value. May not be {@link Double#isNaN() NaNs} or
+-   *     {@link Double#isInfinite() infinities}.
++   *     {@link Double#isInfinite() infinities} unless the writer is {@linkplain #setLenient(boolean)
++   *     lenient}.
+    * @return this writer.
+    */
+   public JsonWriter value(Number value) throws IOException {

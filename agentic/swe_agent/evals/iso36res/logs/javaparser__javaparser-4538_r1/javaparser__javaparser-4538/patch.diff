@@ -1,0 +1,16 @@
+diff --git a/javaparser-core/src/main/java/com/github/javaparser/ast/Node.java b/javaparser-core/src/main/java/com/github/javaparser/ast/Node.java
+index 1728e7e57..a4c1d8e2e 100644
+--- a/javaparser-core/src/main/java/com/github/javaparser/ast/Node.java
++++ b/javaparser-core/src/main/java/com/github/javaparser/ast/Node.java
+@@ -1161,6 +1161,11 @@ public abstract class Node
+ 
+         @Override
+         public Node next() {
++            if (nodesStack.isEmpty()) {
++                // The root has no children, so it is the only node to visit.
++                hasNext = false;
++                return root;
++            }
+             final List<Node> nodes = nodesStack.peek();
+             final int cursor = cursorStack.peek();
+             final boolean levelHasNext = cursor < nodes.size();

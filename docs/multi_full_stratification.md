@@ -859,4 +859,42 @@ episode timelines at 100 ms; links also on deck slide 46 and banked in
 - docusaurus-10130 (T, top-up): <https://claude.ai/code/artifact/3c47000c-3b79-4886-bf94-9f2a81186aa9>
 - vuejs-core-11589 (S): <https://claude.ai/code/artifact/5e19e4bb-b819-4c9c-a837-d5daeb10b181>
 
+# Resolution status of the 36 picks — official SWE-bench evaluation (2026-08-26)
+
+The question "how many of the 36 actually solved their issue" had never been measured — the
+census ledger records only that an episode *submitted*. I ran the official evaluation: each
+pick's banked prediction (the `.pred` the live census episode wrote on ws02) evaluated by the
+SWE-bench harness (`swebench` 5.0.2, dockerized, dataset `swe-bench/SWE-Bench_Multilingual` —
+the same id the live episodes ran against) in the task's own image, judged on the official
+FAIL_TO_PASS + PASS_TO_PASS suites. 33 of the 36 had a prediction; all 33 evaluated cleanly
+(zero infrastructure failures), and I spot-checked per-instance test logs against the summary
+before trusting it.
+
+**Result: 32 of 36 resolved (89 %).**
+
+| | C | C++ | Rust | Go | Java | PHP | Ruby | JS | TS |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| resolved | 3/4 | 4/4 | 4/4 | 4/4 | 4/4 | 4/4 | 3/4 | 3/4 | 3/4 |
+
+The four misses, with two distinct failure modes:
+
+- **valkey-1499 (C×M), rubocop-13396 (Ruby×S), vuejs-core-11589 (TS×S)** — the live episodes
+  **never submitted a patch** (empty submission in the trajectory), so they were unresolved
+  before any test ran. Notably all three are S/M-cell picks — consistent with those cells
+  being where the corpus's odd episodes live (rubocop-13396 is also the low-classified row
+  flagged in the selection notes).
+- **axios-6539 (JS×T top-up)** — submitted a patch that fails its FAIL_TO_PASS tests: the one
+  genuine tried-and-failed case.
+
+Two framing notes before this number goes on a slide. First, 89 % is the resolve rate **of
+the selection**, which excluded loop-degenerate and replay-invalid episodes by construction —
+it must not be quoted as GLM-5.2's corpus-wide SWE-bench-Multilingual rate. Second, the
+useful reading for the profiling story is that the P7 replays are re-executing predominantly
+*successful* agent work: 32 of the 36 trajectories whose CPU we characterize end in a patch
+that actually fixes the issue, and the three that contribute no patch are exactly the small
+S/M-cell fences.
+
+Evidence banked at `agentic/swe_agent/evals/iso36res/` (harness report JSON, the 33
+predictions, per-instance eval logs), next to the earlier GLM-era eval proofs.
+
 

@@ -1,0 +1,181 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/TrieUtils.js
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 493afba6ec17d9c999dc5a15ac80c71c6bdba1c3
+Author: Julien Deniau <1398469+jdeniau@users.noreply.github.com>
+Date:   Mon May 13 10:59:44 2024 +0200
+
+    release 4.3.6 (#1997)
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index b4555daf..5abbf49e 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -8,6 +8,16 @@ Dates are formatted as YYYY-MM-DD.
+ 
+ ## Unreleased
+ 
++## [4.3.6] - 2024-05-13
++
++- Fix `Repeat(<value>).equals(undefined)` incorrectly returning true [#1994](https://github.com/immutable-js/immutable-js/pull/1994) by [@butchler](https://github.com/butchler)
++
++## [4.3.5] - 2024-01-16
++
++- Upgrade to TS 5.1 [#1972](https://github.com/immutable-js/immutable-js/pull/1972) by [@jdeniau](https://github.com/jdeniau)
++- Fix Set.fromKeys types with Map constructor in TS 5.0 [#1971](https://github.com/immutable-js/immutable-js/pull/1971) by [@jdeniau](https://github.com/jdeniau)
++- Fix Read the Docs link on readme [#1970](https://github.com/immutable-js/immutable-js/pull/1970) by [@joshding](https://github.com/joshding)
++
+ ## [4.3.4] - 2023-08-25
+ 
+ - Rollback toJS type due to circular reference error [#1958](https://github.com/immutable-js/immutable-js/pull/1958) by [@jdeniau](https://github.com/jdeniau)
+diff --git a/package-lock.json b/package-lock.json
+index 91950b5d..c2aa92dd 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,12 +1,12 @@
+ {
+   "name": "immutable",
+-  "version": "4.3.5",
++  "version": "4.3.6",
+   "lockfileVersion": 2,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "immutable",
+-      "version": "4.3.5",
++      "version": "4.3.6",
+       "license": "MIT",
+       "devDependencies": {
+         "@types/jest": "27.0.1",
+diff --git a/package.json b/package.json
+index 805cb84d..6a3ff383 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "immutable",
+-  "version": "4.3.5",
++  "version": "4.3.6",
+   "description": "Immutable Data Collections",
+   "license": "MIT",
+   "homepage": "https://immutable-js.com",
++ git -c core.fileMode=false diff 493afba6ec17d9c999dc5a15ac80c71c6bdba1c3
+diff --git a/src/TrieUtils.js b/src/TrieUtils.js
+index ded79911..b78b606c 100644
+--- a/src/TrieUtils.js
++++ b/src/TrieUtils.js
+@@ -79,6 +79,8 @@ function resolveIndex(index, size, defaultIndex) {
+     : isNeg(index)
+     ? size === Infinity
+       ? size
++      : size === undefined
++      ? NaN
+       : Math.max(0, size + index) | 0
+     : size === undefined || size === index
+     ? index
++ git checkout 493afba6ec17d9c999dc5a15ac80c71c6bdba1c3 __tests__/Range.ts
+Updated 0 paths from 9b55941f
++ git apply -v -
+Checking patch __tests__/Range.ts...
+Applied patch __tests__/Range.ts cleanly.
++ npm run build
+
+> immutable@4.3.6 build
+> run-s build:*
+
+
+> immutable@4.3.6 build:clean
+> rimraf dist
+
+
+> immutable@4.3.6 build:dist
+> rollup -c ./resources/rollup-config.js
+
+
+/testbed/src/Immutable.js → dist/immutable.js...
+(!) Circular dependencies
+src/Seq.js -> src/Collection.js -> src/Seq.js
+src/Map.js -> src/Operations.js -> src/Map.js
+src/OrderedMap.js -> src/Map.js -> src/Operations.js -> src/OrderedMap.js
+...and 6 more
+created dist/immutable.js in 787ms
+
+> immutable@4.3.6 build:esm
+> rollup -c ./resources/rollup-config-es.js
+
+
+/testbed/src/Immutable.js → dist/immutable.es.js...
+(!) Circular dependencies
+src/Seq.js -> src/Collection.js -> src/Seq.js
+src/Map.js -> src/Operations.js -> src/Map.js
+src/OrderedMap.js -> src/Map.js -> src/Operations.js -> src/OrderedMap.js
+...and 6 more
+created dist/immutable.es.js in 292ms
+
+> immutable@4.3.6 build:copy
+> cpy ./type-definitions/immutable.* dist
+
+
+> immutable@4.3.6 build:prepare
+> ./resources/prepare-dist.sh
+
+
+> immutable@4.3.6 build:stats
+> node ./resources/dist-stats.mjs
+
+  Raw:           172,924 bytes
+  Min:            65,352 bytes 62.2%              -287 bytes
+  Zip:            18,702 bytes 89.18%              +237 bytes
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 12.0.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+npm notice To update run: npm install -g npm@12.0.2
+npm notice
++ : '>>>>> Start Test Output'
++ npx jest __tests__/Range.ts --verbose
++ cat
+PASS __tests__/Range.ts
+  Range
+    ✓ fixed range (2 ms)
+    ✓ stepped range (1 ms)
+    ✓ open range (45 ms)
+    ✓ backwards range
+    ✓ empty range (1 ms)
+    ✓ includes first, excludes last (33 ms)
+    ✓ slices the same as array slices (20 ms)
+    ✓ slices range
+    ✓ empty slice of range (1 ms)
+    ✓ slices empty range
+    ✓ stepped range does not land on end
+    ✓ can be float
+    ✓ can be negative
+    ✓ can get from any index in O(1)
+    ✓ can find an index in O(1)
+    ✓ maps values (1 ms)
+    ✓ filters values
+    ✓ partitions values
+    ✓ reduces values
+    ✓ takes and skips values
+    ✓ can describe lazy operations (1 ms)
+    ✓ efficiently chains array methods
+    ✓ sliced sequence works even on filtered sequence
+
+Test Suites: 1 passed, 1 total
+Tests:       23 passed, 23 total
+Snapshots:   0 total
+Time:        0.972 s
+Ran all test suites matching /__tests__\/Range.ts/i.
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 493afba6ec17d9c999dc5a15ac80c71c6bdba1c3 __tests__/Range.ts
+>>>>> Test Exit Code: 0
+Updated 1 path from 9b55941f

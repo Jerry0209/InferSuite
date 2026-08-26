@@ -1,0 +1,21 @@
+diff --git a/src/diff/index.js b/src/diff/index.js
+index fc564d3b..b8987003 100644
+--- a/src/diff/index.js
++++ b/src/diff/index.js
+@@ -110,8 +110,14 @@ export function diff(
+ 			oldProps = c.props;
+ 			oldState = c.state;
+ 
+-			for (tmp = 0; tmp < c._stateCallbacks.length; tmp++) {
+-				c._renderCallbacks.push(c._stateCallbacks[tmp]);
++			// Add the pending setState callbacks to the render callbacks queue.
++			// Move all callbacks at once and reset the array so that callbacks
++			// added during the same render cycle aren't lost (see #3756).
++			if (c._stateCallbacks.length) {
++				c._renderCallbacks.push.apply(
++					c._renderCallbacks,
++					c._stateCallbacks
++				);
+ 				c._stateCallbacks = [];
+ 			}
+ 

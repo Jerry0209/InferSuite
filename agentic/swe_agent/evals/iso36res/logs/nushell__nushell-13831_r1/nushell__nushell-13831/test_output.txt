@@ -1,0 +1,236 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   crates/nu-command/src/strings/split/column.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit fb34a4fc6c9ca882cc6dc95d437902a45c402e9a
+Author: Jack Wright <56345+ayax79@users.noreply.github.com>
+Date:   Thu Sep 12 04:23:40 2024 -0700
+
+    Make `polars save` return an empty pipeline (#13833)
+    
+    # Description
+    In order to be more consistent with it's nu counterpart, `polars save`
+    now returns an empty pipeline instead of a message of the saved file.
+    
+    # User-Facing Changes
+    - `polars save` no longer displays a save message, making it consistent
+    with `save` behavior.
+
+diff --git a/crates/nu_plugin_polars/src/dataframe/command/core/save/mod.rs b/crates/nu_plugin_polars/src/dataframe/command/core/save/mod.rs
+index 0c15f5abb..6d92b9bd3 100644
+--- a/crates/nu_plugin_polars/src/dataframe/command/core/save/mod.rs
++++ b/crates/nu_plugin_polars/src/dataframe/command/core/save/mod.rs
+@@ -15,7 +15,7 @@ use nu_path::expand_path_with;
+ use nu_plugin::{EngineInterface, EvaluatedCall, PluginCommand};
+ use nu_protocol::{
+     Category, Example, LabeledError, PipelineData, ShellError, Signature, Span, Spanned,
+-    SyntaxShape, Type, Value,
++    SyntaxShape, Type,
+ };
+ use polars::error::PolarsError;
+ 
+@@ -209,12 +209,8 @@ fn command(
+             span: spanned_file.span,
+         }),
+     }?;
+-    let file_value = Value::string(format!("saved {:?}", &file_path), file_span);
+ 
+-    Ok(PipelineData::Value(
+-        Value::list(vec![file_value], call.head),
+-        None,
+-    ))
++    Ok(PipelineData::empty())
+ }
+ 
+ pub(crate) fn polars_file_save_error(e: PolarsError, span: Span) -> ShellError {
+@@ -264,16 +260,10 @@ pub(crate) mod test {
+                 Span::test_data(),
+             ),
+         );
+-        let pipeline_data = plugin_test.eval(&cmd)?;
++        let _pipeline_data = plugin_test.eval(&cmd)?;
+ 
+         assert!(tmp_file.exists());
+ 
+-        let value = pipeline_data.into_value(Span::test_data())?;
+-        let list = value.as_list()?;
+-        assert_eq!(list.len(), 1);
+-        let msg = list.first().expect("should have a value").as_str()?;
+-        assert!(msg.contains("saved"));
+-
+         Ok(())
+     }
+ 
+@@ -290,19 +280,4 @@ pub(crate) mod test {
+             extension,
+         )
+     }
+-
+-    //     #[test]
+-    //     pub fn test_to_ipc() -> Result<(), Box<dyn std::error::Error>> {
+-    //         test_sink("ipc")
+-    //     }
+-    //
+-    //     #[test]
+-    //     pub fn test_to_csv() -> Result<(), Box<dyn std::error::Error>> {
+-    //         test_sink("csv")
+-    //     }
+-    //
+-    //     #[test]
+-    //     pub fn test_to_json() -> Result<(), Box<dyn std::error::Error>> {
+-    //         test_sink("ndjson")
+-    //     }
+ }
++ git -c core.fileMode=false diff fb34a4fc6c9ca882cc6dc95d437902a45c402e9a
+diff --git a/crates/nu-command/src/strings/split/column.rs b/crates/nu-command/src/strings/split/column.rs
+index 4a9a96a8d..98b07b404 100644
+--- a/crates/nu-command/src/strings/split/column.rs
++++ b/crates/nu-command/src/strings/split/column.rs
+@@ -27,6 +27,12 @@ impl Command for SubCommand {
+             )
+             .switch("collapse-empty", "remove empty columns", Some('c'))
+             .switch("regex", "separator is a regular expression", Some('r'))
++            .named(
++                "number",
++                SyntaxShape::Int,
++                "Split into maximum number of columns",
++                Some('n'),
++            )
+             .rest(
+                 "rest",
+                 SyntaxShape::String,
+@@ -91,6 +97,14 @@ impl Command for SubCommand {
+                     }),
+                 ])),
+             },
++            Example {
++                description: "Split a string into at most 2 columns, putting the remainder in the last column",
++                example: "'a--b--c' | split column --number 2 '--'",
++                result: Some(Value::test_list(vec![Value::test_record(record! {
++                        "column1" => Value::test_string("a"),
++                        "column2" => Value::test_string("b--c"),
++                })])),
++            },
+         ]
+     }
+ 
+@@ -109,12 +123,14 @@ impl Command for SubCommand {
+         let rest: Vec<Spanned<String>> = call.rest(engine_state, stack, 1)?;
+         let collapse_empty = call.has_flag(engine_state, stack, "collapse-empty")?;
+         let has_regex = call.has_flag(engine_state, stack, "regex")?;
++        let max_split: Option<usize> = call.get_flag(engine_state, stack, "number")?;
+ 
+         let args = Arguments {
+             separator,
+             rest,
+             collapse_empty,
+             has_regex,
++            max_split,
+         };
+         split_column(engine_state, call, input, args)
+     }
+@@ -129,12 +145,14 @@ impl Command for SubCommand {
+         let rest: Vec<Spanned<String>> = call.rest_const(working_set, 1)?;
+         let collapse_empty = call.has_flag_const(working_set, "collapse-empty")?;
+         let has_regex = call.has_flag_const(working_set, "regex")?;
++        let max_split: Option<usize> = call.get_flag_const(working_set, "number")?;
+ 
+         let args = Arguments {
+             separator,
+             rest,
+             collapse_empty,
+             has_regex,
++            max_split,
+         };
+         split_column(working_set.permanent(), call, input, args)
+     }
+@@ -145,6 +163,7 @@ struct Arguments {
+     rest: Vec<Spanned<String>>,
+     collapse_empty: bool,
+     has_regex: bool,
++    max_split: Option<usize>,
+ }
+ 
+ fn split_column(
+@@ -169,7 +188,16 @@ fn split_column(
+     })?;
+ 
+     input.flat_map(
+-        move |x| split_column_helper(&x, &regex, &args.rest, args.collapse_empty, name_span),
++        move |x| {
++            split_column_helper(
++                &x,
++                &regex,
++                &args.rest,
++                args.collapse_empty,
++                args.max_split,
++                name_span,
++            )
++        },
+         engine_state.signals(),
+     )
+ }
+@@ -179,13 +207,19 @@ fn split_column_helper(
+     separator: &Regex,
+     rest: &[Spanned<String>],
+     collapse_empty: bool,
++    max_split: Option<usize>,
+     head: Span,
+ ) -> Vec<Value> {
+     if let Ok(s) = v.coerce_str() {
+-        let split_result: Vec<_> = separator
+-            .split(&s)
+-            .filter(|x| !(collapse_empty && x.is_empty()))
+-            .collect();
++        let mut split_result: Vec<&str> = match max_split {
++            Some(max_split) => separator.splitn(&s, max_split).collect(),
++            None => separator.split(&s).collect(),
++        };
++
++        if collapse_empty {
++            split_result.retain(|x| !x.is_empty());
++        }
++
+         let positional: Vec<_> = rest.iter().map(|f| f.item.clone()).collect();
+ 
+         // If they didn't provide column names, make up our own
++ git checkout fb34a4fc6c9ca882cc6dc95d437902a45c402e9a crates/nu-command/tests/commands/split_column.rs
+Updated 0 paths from 69a191779
++ git apply -v -
+Checking patch crates/nu-command/tests/commands/split_column.rs...
+Applied patch crates/nu-command/tests/commands/split_column.rs cleanly.
++ cargo build
+   Compiling nu-command v0.97.2 (/testbed/crates/nu-command)
+   Compiling nu v0.97.2 (/testbed)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 11.69s
++ : '>>>>> Start Test Output'
++ cat
++ cargo test -p nu-command --no-fail-fast split_column
+   Compiling nu-command v0.97.2 (/testbed/crates/nu-command)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.11s
+     Running unittests src/lib.rs (target/debug/deps/nu_command-354a35bb41065d1e)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 418 filtered out; finished in 0.00s
+
+     Running tests/main.rs (target/debug/deps/main-9c42f26a21470271)
+
+running 1 test
+test commands::split_column::to_column ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1662 filtered out; finished in 0.04s
+
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout fb34a4fc6c9ca882cc6dc95d437902a45c402e9a crates/nu-command/tests/commands/split_column.rs
+Updated 1 path from 69a191779

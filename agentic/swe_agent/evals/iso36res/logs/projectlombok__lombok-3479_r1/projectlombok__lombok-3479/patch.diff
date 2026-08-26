@@ -1,0 +1,49 @@
+diff --git a/src/core/lombok/eclipse/handlers/HandleExtensionMethod.java b/src/core/lombok/eclipse/handlers/HandleExtensionMethod.java
+index b84018c6..aff32abb 100644
+--- a/src/core/lombok/eclipse/handlers/HandleExtensionMethod.java
++++ b/src/core/lombok/eclipse/handlers/HandleExtensionMethod.java
+@@ -53,7 +53,7 @@ public class HandleExtensionMethod extends EclipseAnnotationHandler<ExtensionMet
+ 				(ClassFileConstants.AccAnnotation)) != 0;
+ 		
+ 		if (typeDecl == null || notAClass) {
+-			annotationNode.addError("@ExtensionMethod is legal only on classes and enums and interfaces.");
++			annotationNode.addError("@ExtensionMethod is legal only on classes and enums and interfaces and records.");
+ 			return;
+ 		}
+ 		
+diff --git a/src/core/lombok/javac/handlers/HandleExtensionMethod.java b/src/core/lombok/javac/handlers/HandleExtensionMethod.java
+index cb797f9e..55e74e0d 100644
+--- a/src/core/lombok/javac/handlers/HandleExtensionMethod.java
++++ b/src/core/lombok/javac/handlers/HandleExtensionMethod.java
+@@ -73,10 +73,10 @@ public class HandleExtensionMethod extends JavacAnnotationHandler<ExtensionMetho
+ 		
+ 		deleteAnnotationIfNeccessary(annotationNode, ExtensionMethod.class);
+ 		JavacNode typeNode = annotationNode.up();
+-		boolean isClassOrEnumOrInterface = isClassOrEnumOrInterface(typeNode);
++		boolean isClassOrEnumOrInterfaceOrRecord = isClassOrEnumOrInterfaceOrRecord(typeNode);
+ 		
+-		if (!isClassOrEnumOrInterface) {
+-			annotationNode.addError("@ExtensionMethod can only be used on a class or an enum or an interface");
++		if (!isClassOrEnumOrInterfaceOrRecord) {
++			annotationNode.addError("@ExtensionMethod can only be used on a class or an enum or an interface or a record");
+ 			return;
+ 		}
+ 		
+diff --git a/src/core/lombok/javac/handlers/JavacHandlerUtil.java b/src/core/lombok/javac/handlers/JavacHandlerUtil.java
+index 84f106be..7641b3ea 100644
+--- a/src/core/lombok/javac/handlers/JavacHandlerUtil.java
++++ b/src/core/lombok/javac/handlers/JavacHandlerUtil.java
+@@ -2126,6 +2126,13 @@ public class JavacHandlerUtil {
+ 		return isClassAndDoesNotHaveFlags(typeNode, Flags.ANNOTATION | RECORD);
+ 	}
+ 	
++	/**
++	 * Returns {@code true} if the provided node is an actual class, an enum, an interface or a record and not some other type declaration (so, not an annotation definition).
++	 */
++	public static boolean isClassOrEnumOrInterfaceOrRecord(JavacNode typeNode) {
++		return isClassAndDoesNotHaveFlags(typeNode, Flags.ANNOTATION);
++	}
++	
+ 	/**
+ 	 * Returns {@code true} if the provided node is an actual class, an enum or a record and not some other type declaration (so, not an annotation definition or interface).
+ 	 */

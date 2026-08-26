@@ -1,0 +1,41 @@
+{
+    "redis__redis-12272": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "infra_failure": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "GETRANGE against string value",
+                    "GETRANGE against integer-encoded value"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "SETRANGE against non-existing key",
+                    "SETRANGE against string-encoded key",
+                    "SETRANGE against integer-encoded key",
+                    "SETRANGE against key with wrong type",
+                    "SETRANGE with out of range offset",
+                    "GETRANGE against non-existing key",
+                    "GETRANGE against wrong key type",
+                    "GETRANGE fuzzing",
+                    "GETRANGE with huge ranges, Github issue #1844",
+                    "SETRANGE with huge offset"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

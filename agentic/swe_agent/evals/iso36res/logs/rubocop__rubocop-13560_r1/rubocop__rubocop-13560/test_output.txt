@@ -1,0 +1,461 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   docs/modules/ROOT/pages/cops_style.adoc
+	modified:   lib/rubocop/cop/style/file_null.rb
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	changelog/fix_false_positives_for_style_file_null.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit fd13dabcae2ad9fdf228029671dee6f1ee96248a
+Author: Daniel Vandersluis <daniel.vandersluis@gmail.com>
+Date:   Wed Dec 4 11:31:33 2024 -0500
+
+    [Fix #13299] Fix `Style/BlockDelimiters` to always accept braces when an operator method argument is chained
+    
+    Update `Style/BlockDelimiters` to not register an offense when braces are necessary to avoid changing precedence. Previously when an operator method was encountered, it was automatically evaluated (ie. not marked as ignored), but this can result in block delimiters being changed that affects block binding.
+    
+    Now operator methods are evaluated for nodes to ignore, other than if it only has a single argument which is of block type.
+    
+    As well, I added the missing `expect_corrections` tests for offenses without it.
+
+diff --git a/changelog/fix_fix_style_block_delimiters_when_an_operator_method.md b/changelog/fix_fix_style_block_delimiters_when_an_operator_method.md
+new file mode 100644
+index 000000000..2329fc3de
+--- /dev/null
++++ b/changelog/fix_fix_style_block_delimiters_when_an_operator_method.md
+@@ -0,0 +1 @@
++* [#13299](https://github.com/rubocop/rubocop/issues/13299): Fix `Style/BlockDelimiters` to always accept braces when an operator method argument is chained. ([@dvandersluis][])
+diff --git a/lib/rubocop/cop/style/block_delimiters.rb b/lib/rubocop/cop/style/block_delimiters.rb
+index b7ed0fb37..7ecb620df 100644
+--- a/lib/rubocop/cop/style/block_delimiters.rb
++++ b/lib/rubocop/cop/style/block_delimiters.rb
+@@ -183,7 +183,8 @@ module RuboCop
+         def on_send(node)
+           return unless node.arguments?
+           return if node.parenthesized?
+-          return if node.operator_method? || node.assignment_method?
++          return if node.assignment_method?
++          return if single_argument_operator_method?(node)
+ 
+           node.arguments.each do |arg|
+             get_blocks(arg) do |block|
+@@ -501,6 +502,12 @@ module RuboCop
+           # `begin`...`end` when changing `do-end` to `{}`.
+           block_node.each_child_node(:rescue, :ensure).any? && !block_node.single_line?
+         end
++
++        def single_argument_operator_method?(node)
++          return false unless node.operator_method?
++
++          node.arguments.one? && node.first_argument.block_type?
++        end
+       end
+     end
+   end
+diff --git a/spec/rubocop/cop/style/block_delimiters_spec.rb b/spec/rubocop/cop/style/block_delimiters_spec.rb
+index 6912d8b79..a07b230bd 100644
+--- a/spec/rubocop/cop/style/block_delimiters_spec.rb
++++ b/spec/rubocop/cop/style/block_delimiters_spec.rb
+@@ -35,6 +35,25 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+         RUBY
+       end
+ 
++      it 'accepts a multi-line block with chained method as an argument to an operator method' do
++        expect_no_offenses(<<~RUBY)
++          'Some text: %s' %
++            %w[foo bar].map { |v|
++              v.upcase
++            }.join(', ')
++        RUBY
++      end
++
++      it 'accepts a multi-line block with chained method as an argument to an operator method' \
++         'inside a kwarg' do
++        expect_no_offenses(<<~RUBY)
++          foo :bar, baz: 'Some text: %s' %
++                         %w[foo bar].map { |v|
++                          v.upcase
++                         }.join(', ')
++        RUBY
++      end
++
+       context 'Ruby >= 2.7', :ruby27 do
+         it 'accepts a multi-line numblock' do
+           expect_no_offenses(<<~RUBY)
+@@ -59,6 +78,25 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+             } + [0], 1
+           RUBY
+         end
++
++        it 'accepts a multi-line numblock with chained method as an argument to an operator method' do
++          expect_no_offenses(<<~RUBY)
++            foo %
++              %w[bar baz].map {
++                _1.upcase
++              }.join(', ')
++          RUBY
++        end
++
++        it 'accepts a multi-line numblock with chained method as an argument to an operator method' \
++           'inside a kwarg' do
++          expect_no_offenses(<<~RUBY)
++            foo :bar, baz: 'Some text: %s' %
++                           %w[foo bar].map {
++                            _1.upcase
++                           }.join(', ')
++          RUBY
++        end
+       end
+     end
+   end
+@@ -69,6 +107,10 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+         each do |x| end
+              ^^ Prefer `{...}` over `do...end` for single-line blocks.
+       RUBY
++
++      expect_correction(<<~RUBY)
++        each { |x| }
++      RUBY
+     end
+ 
+     it 'accepts a single line block with braces' do
+@@ -88,6 +130,10 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+           each do _1 end
+                ^^ Prefer `{...}` over `do...end` for single-line blocks.
+         RUBY
++
++        expect_correction(<<~RUBY)
++          each { _1 }
++        RUBY
+       end
+ 
+       it 'accepts a single line numblock with braces' do
+@@ -166,6 +212,12 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+           x
+         }
+       RUBY
++
++      expect_correction(<<~RUBY)
++        each do |x|
++          x
++        end
++      RUBY
+     end
+ 
+     it 'registers an offense for a multi-line block with do-end if the return value is assigned' do
+@@ -175,6 +227,12 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+           x
+         end
+       RUBY
++
++      expect_correction(<<~RUBY)
++        foo = map { |x|
++          x
++        }
++      RUBY
+     end
+ 
+     it 'registers an offense for a multi-line block with do-end if the ' \
+@@ -185,6 +243,12 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+           x
+         end)
+       RUBY
++
++      expect_correction(<<~RUBY)
++        puts (map { |x|
++          x
++        })
++      RUBY
+     end
+ 
+     it 'registers an offense for a multi-line block with do-end if the ' \
+@@ -195,6 +259,12 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+           x
+         end
+       RUBY
++
++      expect_correction(<<~RUBY)
++        foo.bar = map { |x|
++          x
++        }
++      RUBY
+     end
+ 
+     it 'accepts a multi-line block with do-end if it is the return value of its scope' do
+@@ -338,21 +408,6 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+       RUBY
+     end
+ 
+-    it 'autocorrects do-end to {} if it is a functional block' do
+-      expect_offense(<<~RUBY)
+-        foo = map do |x|
+-                  ^^ Prefer `{...}` over `do...end` for functional blocks.
+-          x
+-        end
+-      RUBY
+-
+-      expect_correction(<<~RUBY)
+-        foo = map { |x|
+-          x
+-        }
+-      RUBY
+-    end
+-
+     it 'autocorrects do-end to {} with appropriate spacing' do
+       expect_offense(<<~RUBY)
+         foo = map do|x|
+@@ -368,21 +423,6 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+       RUBY
+     end
+ 
+-    it 'autocorrects do-end to {} if it is a functional block and does not change the meaning' do
+-      expect_offense(<<~RUBY)
+-        puts (map do |x|
+-                  ^^ Prefer `{...}` over `do...end` for functional blocks.
+-          x
+-        end)
+-      RUBY
+-
+-      expect_correction(<<~RUBY)
+-        puts (map { |x|
+-          x
+-        })
+-      RUBY
+-    end
+-
+     it 'autocorrects do-end with `rescue` to {} if it is a functional block' do
+       expect_offense(<<~RUBY)
+         x = map do |a|
+@@ -473,6 +513,11 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+                ^ Avoid using `{...}` for multi-line blocks.
+           }
+         RUBY
++
++        expect_correction(<<~RUBY)
++          each do |x|
++          end
++        RUBY
+       end
+ 
+       it 'registers an offense when combined with attribute assignment' do
+@@ -481,6 +526,11 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+                             ^ Avoid using `{...}` for multi-line blocks.
+           }
+         RUBY
++
++        expect_correction(<<~RUBY)
++          foo.bar = baz.map do |x|
++          end
++        RUBY
+       end
+ 
+       it 'registers an offense when there is a comment after the closing brace and block body is not empty' do
+@@ -603,6 +653,16 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+             # ...
+           })
+         RUBY
++
++        expect_correction(<<~RUBY)
++          scope :foo, (lambda do |f|
++            where(condition: "value")
++          end)
++
++          expect { something }.to(raise_error(ErrorClass) do |error|
++            # ...
++          end)
++        RUBY
+       end
+ 
+       it 'can handle special method names such as []= and done?' do
+@@ -616,6 +676,16 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+             e.nil?
+           }
+         RUBY
++
++        expect_correction(<<~RUBY)
++          h2[k2] = Hash.new do |h3,k3|
++            h3[k3] = 0
++          end
++
++          x = done? list.reject { |e|
++            e.nil?
++          }
++        RUBY
+       end
+ 
+       it 'autocorrects { and } to do and end' do
+@@ -802,6 +872,14 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+           }
+         ]
+       RUBY
++
++      expect_correction(<<~RUBY)
++        Hash[
++          {foo: :bar}.map do |k, v|
++            [k, v]
++          end
++        ]
++      RUBY
+     end
+ 
+     context 'when there are braces around a multi-line block' do
+@@ -811,6 +889,11 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+                ^ Prefer `do...end` for multi-line blocks without chaining.
+           }
+         RUBY
++
++        expect_correction(<<~RUBY)
++          each do |x|
++          end
++        RUBY
+       end
+ 
+       it 'registers an offense when combined with attribute assignment' do
+@@ -819,6 +902,11 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+                             ^ Prefer `do...end` for multi-line blocks without chaining.
+           }
+         RUBY
++
++        expect_correction(<<~RUBY)
++          foo.bar = baz.map do |x|
++          end
++        RUBY
+       end
+ 
+       it 'allows when the block is being chained' do
+@@ -926,6 +1014,11 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+              ^^ Prefer `{...}` over `do...end` for blocks.
+         end
+       RUBY
++
++      expect_correction(<<~RUBY)
++        each { |x|
++        }
++      RUBY
+     end
+ 
+     it 'does not autocorrect do-end if {} would change the meaning' do
+@@ -965,6 +1058,11 @@ RSpec.describe RuboCop::Cop::Style::BlockDelimiters, :config do
+                           ^^ Prefer `{...}` over `do...end` for blocks.
+         end
+       RUBY
++
++      expect_correction(<<~RUBY)
++        foo.bar = baz.map { |x|
++        }
++      RUBY
+     end
+ 
+     it 'accepts a multi-line functional block with do-end if it is an ignored method' do
++ git -c core.fileMode=false diff fd13dabcae2ad9fdf228029671dee6f1ee96248a
+diff --git a/docs/modules/ROOT/pages/cops_style.adoc b/docs/modules/ROOT/pages/cops_style.adoc
+index f33620a34..8c2006a1a 100644
+--- a/docs/modules/ROOT/pages/cops_style.adoc
++++ b/docs/modules/ROOT/pages/cops_style.adoc
+@@ -5160,6 +5160,12 @@ OSes, `NUL` or `NUL:` on Windows), so that code is platform independent.
+ Only looks for full string matches, substrings within a longer string are not
+ considered.
+ 
++However, only files that use the string `'/dev/null'` are targeted for detection.
++This is because the string `'NUL'` is not limited to the null device.
++This behavior results in false negatives when the `'/dev/null'` string is not used,
++but it is a trade-off to avoid false positives. `NULL:`
++Unlike `'NUL'`, `'NUL:'` is regarded as something like `C:` and is always detected.
++
+ NOTE: Uses inside arrays and hashes are ignored.
+ 
+ [#safety-stylefilenull]
+diff --git a/lib/rubocop/cop/style/file_null.rb b/lib/rubocop/cop/style/file_null.rb
+index 140f3881f..1afef8800 100644
+--- a/lib/rubocop/cop/style/file_null.rb
++++ b/lib/rubocop/cop/style/file_null.rb
+@@ -8,6 +8,12 @@ module RuboCop
+       # Only looks for full string matches, substrings within a longer string are not
+       # considered.
+       #
++      # However, only files that use the string `'/dev/null'` are targeted for detection.
++      # This is because the string `'NUL'` is not limited to the null device.
++      # This behavior results in false negatives when the `'/dev/null'` string is not used,
++      # but it is a trade-off to avoid false positives. `NULL:`
++      # Unlike `'NUL'`, `'NUL:'` is regarded as something like `C:` and is always detected.
++      #
+       # NOTE: Uses inside arrays and hashes are ignored.
+       #
+       # @safety
+@@ -42,11 +48,21 @@ module RuboCop
+         REGEXP = %r{\A(/dev/null|NUL:?)\z}i.freeze
+         MSG = 'Use `File::NULL` instead of `%<source>s`.'
+ 
++        def on_new_investigation
++          return unless (ast = processed_source.ast)
++
++          @contain_dev_null_string_in_file = ast.each_descendant(:str).any? do |str|
++            content = str.str_content
++
++            valid_string?(content) && content.downcase == '/dev/null' # rubocop:disable Style/FileNull
++          end
++        end
++
+         def on_str(node)
+           value = node.value
+-
+-          return if invalid_string?(value)
++          return unless valid_string?(value)
+           return if acceptable?(node)
++          return if value.downcase == 'nul' && !@contain_dev_null_string_in_file # rubocop:disable Style/FileNull
+           return unless REGEXP.match?(value)
+ 
+           add_offense(node, message: format(MSG, source: value)) do |corrector|
+@@ -56,8 +72,8 @@ module RuboCop
+ 
+         private
+ 
+-        def invalid_string?(value)
+-          value.empty? || !value.valid_encoding?
++        def valid_string?(value)
++          !value.empty? && value.valid_encoding?
+         end
+ 
+         def acceptable?(node)
++ git checkout fd13dabcae2ad9fdf228029671dee6f1ee96248a spec/rubocop/cop/style/file_null_spec.rb
+Updated 0 paths from 0e291bf97
++ git apply -v -
+Checking patch spec/rubocop/cop/style/file_null_spec.rb...
+Applied patch spec/rubocop/cop/style/file_null_spec.rb cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ bundle exec rspec spec/rubocop/cop/style/file_null_spec.rb --no-color --format json
++ sed -n '/^{/,$p'
++ jq -r '.examples | group_by(.description) | .[] |
+    if any(select(.status == "failed")) then
+      (.[0] | "\(.description) - failed")
+    else
+      (.[0] | "\(.description) - \(.status)")
+    end'
+does not register an offense for a hash key - passed
+does not register an offense for a hash value - passed
+does not register an offense for a string within %w[] - passed
+does not register an offense for a string within an array - passed
+does not register an offense for a substring - passed
+does not register an offense for an empty string - passed
+does not register an offense when the entire string is `NUL` without '/dev/null' - passed
+does not register an offense when there is an invalid byte sequence error - passed
+is case insensitive - passed
+registers an offense and corrects when the entire string is `/dev/null` - passed
+registers an offense and corrects when the entire string is `NUL:` or '/dev/null' - passed
+registers an offense and corrects when the entire string is `NUL` or '/dev/null' - passed
+registers an offense when the entire string is `NUL:` without '/dev/null' - passed
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout fd13dabcae2ad9fdf228029671dee6f1ee96248a spec/rubocop/cop/style/file_null_spec.rb
+Updated 1 path from 0e291bf97

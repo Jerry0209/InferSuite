@@ -1,0 +1,15 @@
+diff --git a/src/Carbon/Traits/Comparison.php b/src/Carbon/Traits/Comparison.php
+index 30a4d73d..69d78715 100644
+--- a/src/Carbon/Traits/Comparison.php
++++ b/src/Carbon/Traits/Comparison.php
+@@ -994,6 +994,10 @@ trait Comparison
+             return $this->year === (int) $tester;
+         }
+ 
++        if (preg_match('/^(?:january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)$/i', $tester)) {
++            return $this->isSameMonth(static::parse($tester), false);
++        }
++
+         if (preg_match('/^\d{3,}-\d{1,2}$/', $tester)) {
+             return $this->isSameMonth(static::parse($tester));
+         }

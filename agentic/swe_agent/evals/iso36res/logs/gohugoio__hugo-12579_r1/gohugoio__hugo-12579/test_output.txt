@@ -1,0 +1,418 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   resources/page/pagegroup.go
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 9c4e14eb4f890d2a3caad2dcd9209609b7274914
+Author: bep <bjorn.erik.pedersen@gmail.com>
+Date:   Fri Jun 7 17:38:33 2024 +0200
+
+    Add option to not generate aliases for first page of pagination pages
+    
+    Also consolidate the pagination configuration into a struct.
+    
+    Closes #12572
+
+diff --git a/config/allconfig/allconfig.go b/config/allconfig/allconfig.go
+index 5ff456d55..64288e887 100644
+--- a/config/allconfig/allconfig.go
++++ b/config/allconfig/allconfig.go
+@@ -179,6 +179,9 @@ type Config struct {
+ 	// Server configuration.
+ 	Server config.Server `mapstructure:"-"`
+ 
++	// Pagination configuration.
++	Pagination config.Pagination `mapstructure:"-"`
++
+ 	// Privacy configuration.
+ 	Privacy privacy.Config `mapstructure:"-"`
+ 
+@@ -369,6 +372,17 @@ func (c *Config) CompileConfig(logger loggers.Logger) error {
+ 		return err
+ 	}
+ 
++	// Legacy paginate values.
++	if c.Paginate != 0 {
++		hugo.Deprecate("site config key paginate", "Use paginator.defaultPageSize instead.", "v0.128.0")
++		c.Pagination.DefaultPageSize = c.Paginate
++	}
++
++	if c.PaginatePath != "" {
++		hugo.Deprecate("site config key paginatePath", "Use paginator.path instead.", "v0.128.0")
++		c.Pagination.Path = c.PaginatePath
++	}
++
+ 	c.C = &ConfigCompiled{
+ 		Timeout:           timeout,
+ 		BaseURL:           baseURL,
+@@ -557,9 +571,11 @@ type RootConfig struct {
+ 	HasCJKLanguage bool
+ 
+ 	// The default number of pages per page when paginating.
++	// Deprecated: Use the Pagination struct.
+ 	Paginate int
+ 
+ 	// The path to use when creating pagination URLs, e.g. "page" in /page/2/.
++	// Deprecated: Use the Pagination struct.
+ 	PaginatePath string
+ 
+ 	// Whether to pluralize default list titles.
+diff --git a/config/allconfig/allconfig_integration_test.go b/config/allconfig/allconfig_integration_test.go
+index af4655fe8..a71a28ed7 100644
+--- a/config/allconfig/allconfig_integration_test.go
++++ b/config/allconfig/allconfig_integration_test.go
+@@ -102,3 +102,85 @@ suffixes = ["html", "xhtml"]
+ 	b.Assert(contentTypes.HTML.Suffixes(), qt.DeepEquals, []string{"html", "xhtml"})
+ 	b.Assert(contentTypes.Markdown.Suffixes(), qt.DeepEquals, []string{"md", "mdown", "markdown"})
+ }
++
++func TestPaginationConfigOld(t *testing.T) {
++	files := `
++-- hugo.toml --
++ [languages.en]
++ weight = 1
++ paginatePath = "page-en"
++ 
++ [languages.de]
++ weight = 2
++ paginatePath = "page-de"
++ paginate = 20
++`
++
++	b := hugolib.Test(t, files)
++
++	confEn := b.H.Sites[0].Conf.Pagination()
++	confDe := b.H.Sites[1].Conf.Pagination()
++
++	b.Assert(confEn.Path, qt.Equals, "page-en")
++	b.Assert(confEn.DefaultPageSize, qt.Equals, 10)
++	b.Assert(confDe.Path, qt.Equals, "page-de")
++	b.Assert(confDe.DefaultPageSize, qt.Equals, 20)
++}
++
++func TestPaginationConfigNew(t *testing.T) {
++	files := `
++-- hugo.toml --
++ [languages.en]
++ weight = 1
++ [languages.en.pagination]
++ defaultPageSize = 20
++ [languages.de]
++ weight = 2
++ [languages.de.pagination]
++ path = "page-de"
++
++`
++
++	b := hugolib.Test(t, files)
++
++	confEn := b.H.Sites[0].Conf.Pagination()
++	confDe := b.H.Sites[1].Conf.Pagination()
++
++	b.Assert(confEn.Path, qt.Equals, "page")
++	b.Assert(confEn.DefaultPageSize, qt.Equals, 20)
++	b.Assert(confDe.Path, qt.Equals, "page-de")
++	b.Assert(confDe.DefaultPageSize, qt.Equals, 10)
++}
++
++func TestPaginationConfigDisableAliases(t *testing.T) {
++	files := `
++-- hugo.toml --
++disableKinds = ["taxonomy", "term"]
++[pagination]
++disableAliases = true
++defaultPageSize = 2
++-- layouts/_default/list.html --
++{{ $paginator := .Paginate  site.RegularPages }}
++{{ template "_internal/pagination.html" . }}
++{{ range $paginator.Pages }}
++  {{ .Title }}
++{{ end }}
++-- content/p1.md --
++---
++title: "p1"
++---
++-- content/p2.md --
++---
++title: "p2"
++---
++-- content/p3.md --
++---
++title: "p3"
++---
++`
++
++	b := hugolib.Test(t, files)
++
++	b.AssertFileExists("public/page/1/index.html", false)
++	b.AssertFileContent("public/page/2/index.html", "pagination-default")
++}
+diff --git a/config/allconfig/alldecoders.go b/config/allconfig/alldecoders.go
+index fc033821e..46dd59bbc 100644
+--- a/config/allconfig/alldecoders.go
++++ b/config/allconfig/alldecoders.go
+@@ -327,6 +327,22 @@ var allDecoderSetups = map[string]decodeWeight{
+ 			return err
+ 		},
+ 	},
++	"pagination": {
++		key: "pagination",
++		decode: func(d decodeWeight, p decodeConfig) error {
++			p.c.Pagination = config.Pagination{
++				DefaultPageSize: 10,
++				Path:            "page",
++			}
++			if p.p.IsSet(d.key) {
++				if err := mapstructure.WeakDecode(p.p.Get(d.key), &p.c.Pagination); err != nil {
++					return err
++				}
++			}
++
++			return nil
++		},
++	},
+ 	"privacy": {
+ 		key: "privacy",
+ 		decode: func(d decodeWeight, p decodeConfig) error {
+diff --git a/config/allconfig/configlanguage.go b/config/allconfig/configlanguage.go
+index 1d2cb5ce3..38d2309ef 100644
+--- a/config/allconfig/configlanguage.go
++++ b/config/allconfig/configlanguage.go
+@@ -248,12 +248,8 @@ func (c ConfigLanguage) CreateTitle(s string) string {
+ 	return c.config.C.CreateTitle(s)
+ }
+ 
+-func (c ConfigLanguage) Paginate() int {
+-	return c.config.Paginate
+-}
+-
+-func (c ConfigLanguage) PaginatePath() string {
+-	return c.config.PaginatePath
++func (c ConfigLanguage) Pagination() config.Pagination {
++	return c.config.Pagination
+ }
+ 
+ func (c ConfigLanguage) StaticDirs() []string {
+diff --git a/config/allconfig/load.go b/config/allconfig/load.go
+index b24655ebc..edf8295bf 100644
+--- a/config/allconfig/load.go
++++ b/config/allconfig/load.go
+@@ -194,8 +194,8 @@ func (l configLoader) applyDefaultConfig() error {
+ 		"footnoteAnchorPrefix":                 "",
+ 		"footnoteReturnLinkContents":           "",
+ 		"newContentEditor":                     "",
+-		"paginate":                             10,
+-		"paginatePath":                         "page",
++		"paginate":                             0,  // Moved into the paginator struct in Hugo v0.128.0.
++		"paginatePath":                         "", // Moved into the paginator struct in Hugo v0.128.0.
+ 		"summaryLength":                        70,
+ 		"rssLimit":                             -1,
+ 		"sectionPagesMenu":                     "",
+diff --git a/config/commonConfig.go b/config/commonConfig.go
+index 1e43b1653..40650c575 100644
+--- a/config/commonConfig.go
++++ b/config/commonConfig.go
+@@ -410,3 +410,15 @@ func DecodeServer(cfg Provider) (Server, error) {
+ 
+ 	return *s, nil
+ }
++
++// Pagination configures the pagination behavior.
++type Pagination struct {
++	//  Default number of elements per page in pagination.
++	DefaultPageSize int
++
++	// The path element used during pagination.
++	Path string
++
++	// WHether to disable generation of alias for the first pagination page.
++	DisableAliases bool
++}
+diff --git a/config/configProvider.go b/config/configProvider.go
+index ba10d44dd..ee6691cf1 100644
+--- a/config/configProvider.go
++++ b/config/configProvider.go
+@@ -52,8 +52,7 @@ type AllProvider interface {
+ 	DefaultContentLanguageInSubdir() bool
+ 	IsLangDisabled(string) bool
+ 	SummaryLength() int
+-	Paginate() int
+-	PaginatePath() string
++	Pagination() Pagination
+ 	BuildExpired() bool
+ 	BuildFuture() bool
+ 	BuildDrafts() bool
+diff --git a/hugolib/site_render.go b/hugolib/site_render.go
+index 1cd509fea..a7ecf89af 100644
+--- a/hugolib/site_render.go
++++ b/hugolib/site_render.go
+@@ -223,7 +223,7 @@ func (s *Site) logMissingLayout(name, layout, kind, outputFormat string) {
+ 
+ // renderPaginator must be run after the owning Page has been rendered.
+ func (s *Site) renderPaginator(p *pageState, templ tpl.Template) error {
+-	paginatePath := s.conf.PaginatePath
++	paginatePath := s.Conf.Pagination().Path
+ 
+ 	d := p.targetPathDescriptor
+ 	f := p.s.rc.Format
+@@ -233,7 +233,7 @@ func (s *Site) renderPaginator(p *pageState, templ tpl.Template) error {
+ 		panic(fmt.Sprintf("invalid paginator state for %q", p.pathOrTitle()))
+ 	}
+ 
+-	if f.IsHTML {
++	if f.IsHTML && !s.Conf.Pagination().DisableAliases {
+ 		// Write alias for page 1
+ 		d.Addends = fmt.Sprintf("/%s/%d", paginatePath, 1)
+ 		targetPaths := page.CreateTargetPaths(d)
+diff --git a/resources/page/pagination.go b/resources/page/pagination.go
+index 4beb96e50..d24879e62 100644
+--- a/resources/page/pagination.go
++++ b/resources/page/pagination.go
+@@ -263,7 +263,7 @@ func splitPageGroups(pageGroups PagesGroup, size int) []paginatedElement {
+ 
+ func ResolvePagerSize(conf config.AllProvider, options ...any) (int, error) {
+ 	if len(options) == 0 {
+-		return conf.Paginate(), nil
++		return conf.Pagination().DefaultPageSize, nil
+ 	}
+ 
+ 	if len(options) > 1 {
+@@ -400,7 +400,7 @@ func newPaginationURLFactory(d TargetPathDescriptor) paginationURLFactory {
+ 		pathDescriptor := d
+ 		var rel string
+ 		if pageNumber > 1 {
+-			rel = fmt.Sprintf("/%s/%d/", d.PathSpec.Cfg.PaginatePath(), pageNumber)
++			rel = fmt.Sprintf("/%s/%d/", d.PathSpec.Cfg.Pagination().Path, pageNumber)
+ 			pathDescriptor.Addends = rel
+ 		}
+ 
++ git -c core.fileMode=false diff 9c4e14eb4f890d2a3caad2dcd9209609b7274914
+diff --git a/resources/page/pagegroup.go b/resources/page/pagegroup.go
+index 7129fae17..081708d62 100644
+--- a/resources/page/pagegroup.go
++++ b/resources/page/pagegroup.go
+@@ -205,7 +205,7 @@ func (p Pages) GroupByParam(key string, order ...string) (PagesGroup, error) {
+ 		}
+ 	}
+ 	if !tmp.IsValid() {
+-		return nil, errors.New("there is no such param")
++		return nil, nil
+ 	}
+ 
+ 	for _, e := range p {
++ git checkout 9c4e14eb4f890d2a3caad2dcd9209609b7274914 hugolib/site_test.go resources/page/pagegroup_test.go
+Updated 0 paths from e860d7bb4
++ git apply -v -
+Checking patch hugolib/site_test.go...
+Checking patch resources/page/pagegroup_test.go...
+Applied patch hugolib/site_test.go cleanly.
+Applied patch resources/page/pagegroup_test.go cleanly.
++ : '>>>>> Start Test Output'
++ go test -v ./resources/page -run '^TestGroupBy'
++ cat
+=== RUN   TestGroupByWithFieldNameArg
+=== PAUSE TestGroupByWithFieldNameArg
+=== RUN   TestGroupByWithMethodNameArg
+=== PAUSE TestGroupByWithMethodNameArg
+=== RUN   TestGroupByWithSectionArg
+=== PAUSE TestGroupByWithSectionArg
+=== RUN   TestGroupByInReverseOrder
+=== PAUSE TestGroupByInReverseOrder
+=== RUN   TestGroupByCalledWithEmptyPages
+=== PAUSE TestGroupByCalledWithEmptyPages
+=== RUN   TestGroupByParam
+=== PAUSE TestGroupByParam
+=== RUN   TestGroupByParamInReverseOrder
+=== PAUSE TestGroupByParamInReverseOrder
+=== RUN   TestGroupByParamCalledWithCapitalLetterString
+--- PASS: TestGroupByParamCalledWithCapitalLetterString (0.00s)
+=== RUN   TestGroupByParamCalledWithSomeUnavailableParams
+=== PAUSE TestGroupByParamCalledWithSomeUnavailableParams
+=== RUN   TestGroupByParamCalledWithEmptyPages
+=== PAUSE TestGroupByParamCalledWithEmptyPages
+=== RUN   TestGroupByParamCalledWithUnavailableParam
+=== PAUSE TestGroupByParamCalledWithUnavailableParam
+=== RUN   TestGroupByDate
+=== PAUSE TestGroupByDate
+=== RUN   TestGroupByDateInReverseOrder
+=== PAUSE TestGroupByDateInReverseOrder
+=== RUN   TestGroupByPublishDate
+=== PAUSE TestGroupByPublishDate
+=== RUN   TestGroupByPublishDateInReverseOrder
+=== PAUSE TestGroupByPublishDateInReverseOrder
+=== RUN   TestGroupByPublishDateWithEmptyPages
+=== PAUSE TestGroupByPublishDateWithEmptyPages
+=== RUN   TestGroupByExpiryDate
+=== PAUSE TestGroupByExpiryDate
+=== RUN   TestGroupByParamDate
+=== PAUSE TestGroupByParamDate
+=== RUN   TestGroupByParamDateWithStringParams
+=== PAUSE TestGroupByParamDateWithStringParams
+=== RUN   TestGroupByLastmod
+=== PAUSE TestGroupByLastmod
+=== RUN   TestGroupByLastmodInReverseOrder
+=== PAUSE TestGroupByLastmodInReverseOrder
+=== RUN   TestGroupByParamDateInReverseOrder
+=== PAUSE TestGroupByParamDateInReverseOrder
+=== RUN   TestGroupByParamDateWithEmptyPages
+=== PAUSE TestGroupByParamDateWithEmptyPages
+=== RUN   TestGroupByLocalizedDate
+--- PASS: TestGroupByLocalizedDate (0.01s)
+=== CONT  TestGroupByWithFieldNameArg
+=== CONT  TestGroupByDateInReverseOrder
+=== CONT  TestGroupByDate
+=== CONT  TestGroupByInReverseOrder
+=== CONT  TestGroupByParamCalledWithEmptyPages
+--- PASS: TestGroupByParamCalledWithEmptyPages (0.00s)
+=== CONT  TestGroupByParamCalledWithUnavailableParam
+=== CONT  TestGroupByParam
+=== CONT  TestGroupByParamDateWithEmptyPages
+=== CONT  TestGroupByParamCalledWithSomeUnavailableParams
+=== CONT  TestGroupByPublishDateWithEmptyPages
+=== CONT  TestGroupByParamDate
+--- PASS: TestGroupByParamDateWithEmptyPages (0.00s)
+=== CONT  TestGroupByPublishDateInReverseOrder
+=== CONT  TestGroupByPublishDate
+=== CONT  TestGroupByWithSectionArg
+=== CONT  TestGroupByCalledWithEmptyPages
+=== CONT  TestGroupByWithMethodNameArg
+=== CONT  TestGroupByParamDateWithStringParams
+--- PASS: TestGroupByPublishDateWithEmptyPages (0.00s)
+--- PASS: TestGroupByDate (0.00s)
+--- PASS: TestGroupByCalledWithEmptyPages (0.00s)
+--- PASS: TestGroupByParamCalledWithSomeUnavailableParams (0.00s)
+--- PASS: TestGroupByWithFieldNameArg (0.00s)
+--- PASS: TestGroupByParamDate (0.00s)
+=== CONT  TestGroupByParamDateInReverseOrder
+--- PASS: TestGroupByParam (0.00s)
+--- PASS: TestGroupByDateInReverseOrder (0.00s)
+--- PASS: TestGroupByParamCalledWithUnavailableParam (0.00s)
+--- PASS: TestGroupByInReverseOrder (0.00s)
+=== CONT  TestGroupByLastmod
+--- PASS: TestGroupByParamDateWithStringParams (0.00s)
+=== CONT  TestGroupByParamInReverseOrder
+=== CONT  TestGroupByExpiryDate
+--- PASS: TestGroupByPublishDateInReverseOrder (0.00s)
+--- PASS: TestGroupByPublishDate (0.00s)
+--- PASS: TestGroupByParamInReverseOrder (0.00s)
+--- PASS: TestGroupByLastmod (0.00s)
+=== CONT  TestGroupByLastmodInReverseOrder
+--- PASS: TestGroupByParamDateInReverseOrder (0.00s)
+--- PASS: TestGroupByWithMethodNameArg (0.00s)
+--- PASS: TestGroupByWithSectionArg (0.00s)
+--- PASS: TestGroupByExpiryDate (0.00s)
+--- PASS: TestGroupByLastmodInReverseOrder (0.00s)
+PASS
+ok  	github.com/gohugoio/hugo/resources/page	0.033s
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout 9c4e14eb4f890d2a3caad2dcd9209609b7274914 hugolib/site_test.go resources/page/pagegroup_test.go
+Updated 2 paths from e860d7bb4
