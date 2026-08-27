@@ -73,10 +73,11 @@ panel <- function(dd, m, show_x, fence, hdr = FALSE) {
   # outlier (mentor 2026-08-27: BTB, the load-MPKI ladder), key the cap off the 90th
   # percentile of the columns' p95s instead, so the outlier columns cannot set the axis --
   # they go off-scale and are named by the red-triangle note.
-  TRIM <- c("BTB MPKI (BAClears)", "L1D-load MPKI", "L2-load MPKI", "LLC MPKI")
+  TRIM <- c("BTB MPKI (BAClears)", "L1D-load MPKI", "L2-load MPKI", "LLC MPKI",
+            "L1D miss rate (%)")
   p97 <- dm |> group_by(col_f) |> summarise(q97 = quantile(value, .97),
                                             q95 = quantile(value, .95), .groups = "drop")
-  cap <- if (m %in% TRIM) quantile(p97$q95, .90) * 1.2 else max(p97$q97) * 1.15
+  cap <- if (m %in% TRIM) quantile(p97$q95, .85) * 1.2 else max(p97$q97) * 1.15
   mx <- dm |> group_by(col_f, fillg) |> summarise(mx = max(value), .groups = "drop") |>
     filter(mx > cap)
   p <- ggplot(dm, aes(x = col_f, y = value, fill = fillg)) +
