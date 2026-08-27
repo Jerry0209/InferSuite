@@ -105,8 +105,10 @@ IMG = {k: uri(v) for k, v in {
     "iso36_grid_t": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_rows_tool.png",
     "iso36_grid_h": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_rows_harness.png",
     # aggregated variant: SPEC collapsed to two suite bars + the Python comparison group
-    "iso36_agg_t": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_rows_agg_tool.png",
-    "iso36_agg_h": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_rows_agg_harness.png",
+    # 2026-08-27 revision: ggplot house style, MLP/AMAT dropped (16 rows), violin+box with
+    # median and mean, outlier-capped axes (stats on full data, view cut, off-scale annotated)
+    "iso36_agg_t": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_rows_agg_gg_tool.png",
+    "iso36_agg_h": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_rows_agg_gg_harness.png",
 }.items()}
 
 CSS = """
@@ -1285,12 +1287,15 @@ BODY = """
   <section class="slide">
     <div class="wrap">
       <p class="eyebrow">Count-view campaign · aggregated view + Python</p>
-      <h2>The same rows, SPEC as two suite bars — and Python joins the comparison</h2>
-      <p class="lead">A companion view of the previous two slides: SPEC collapsed to <b>two
-      boxes — SPEC-int and SPEC-fp</b> (each benchmark votes once: the box is over
-      per-benchmark window-medians, so long benchmarks cannot dominate), and a <b>Python
-      group</b> — scikit-learn, astropy, sympy from the matched-configuration replays, the
-      same cores, SMT setting and 100 ms windows. Both fences below.</p>
+      <h2>The same rows, SPEC as two suite violins — and Python joins the comparison</h2>
+      <p class="lead">A companion view of the previous two slides, revised 2026-08-27: SPEC
+      collapsed to <b>two violins — SPEC-int and SPEC-fp</b> (each benchmark votes once: the
+      distribution is over per-benchmark window-medians), a <b>Python group</b> from the
+      matched-configuration replays, then the nine languages. <b>16 metrics</b> (MLP and AMAT
+      dropped); every column is a <b>violin + box with the median bar and the mean diamond</b>;
+      outlier-heavy panels are <b>axis-capped, never data-trimmed</b> — stats are computed on
+      the full distributions, the view is cut at 1.15× the largest column p97, and a red
+      triangle names each off-scale maximum.</p>
       <div class="figcard"><img alt="Aggregated rows, tool fence: SPEC-int and SPEC-fp suite boxes, Python group, 9 languages" src="__ISO36AGGT__"></div>
       <div class="figcard"><img alt="Aggregated rows, harness fence: SPEC-int and SPEC-fp suite boxes, Python group, 9 languages" src="__ISO36AGGH__"></div>
       <div class="take">
