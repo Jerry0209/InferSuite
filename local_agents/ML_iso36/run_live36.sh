@@ -26,6 +26,10 @@ export TIER_PREFIX=glm WINSEC=0.1 SWE_SUBSET=multilingual SKIP_K3S=1
 export CPUS_MEASURED="${CPUS_MEASURED:-4-11}" CPUS_HOUSE="${CPUS_HOUSE:-0-3,12-15}"
 export GORDER_OVERRIDE="fpbr cache mlp fe fe_lat core_ports dram_bw priv fe_miss"
 export LOOP_GUARD_N="${LOOP_GUARD_N:-12}" REPEATS=1
+# NEVER greedy: campaign.conf defaults SWE_TEMP to 0.0, and the 2026-08-27 pilot proved the
+# documented failure mode again — both greedy episodes died in identical-action loops
+# (fluentd 531x). The census ran 0.6 (verified 285/285); live episodes must match.
+export SWE_TEMP="${SWE_TEMP:-0.6}"
 export SWE_IMG_PREPULL=1 SWE_IMG_GC="${SWE_IMG_GC:-1}"
 LOG="${LOG:-$HERE/live_sweep.log}"
 mkdir -p "$DATA_ROOT"

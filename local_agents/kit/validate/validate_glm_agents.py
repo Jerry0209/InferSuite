@@ -88,7 +88,8 @@ def roles_of(meta):
 def load_meta(rd):
     try:
         meta = json.load(open(f"{rd}/metadata.json"))
-        return meta, roles_of(meta), int(meta.get("winsec", 10))
+        # float, not int: int(0.1) == 0 and the 100 ms campaigns then divide by zero
+        return meta, roles_of(meta), float(meta.get("winsec", 10))
     except Exception:
         return {}, {}, 10
 

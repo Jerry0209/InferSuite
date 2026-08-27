@@ -399,7 +399,7 @@ loop_guard(){ # $1 agent.log, $2 scope unit
     # command word like "cat" — comparing it alone false-tripped on 13 different cats,
     # 2026-07-11). Block ends at the first padded-blank line.
     runlen=$(tail -c 300000 "$LOG" 2>/dev/null | \
-             awk '/ACTION/{blk=""; while ((getline ln) > 0) { gsub(/[ \t]+$/, "", ln); gsub(/^[ \t]+/, "", ln); if (ln == "") break; blk = blk ln }
+             awk '/ACTION/{blk=""; while ((getline ln) > 0) { gsub(/[ \t]+$/, "", ln); gsub(/^[ \t]+/, "", ln); if (ln == "" || ln ~ /DEBUG|INFO|MODEL INPUT|OBSERVATION/) break; blk = blk ln }
                   if (blk != "") { if (blk == prev) c++; else c = 1; prev = blk } } END{print c+0}')
     if [ "${runlen:-0}" -ge "$N" ]; then
       log "LOOP-GUARD tripped: last $runlen actions identical — stopping $UNIT"
@@ -1037,7 +1037,7 @@ typeid_loop_guard(){ # user-scope variant of loop_guard (same detection, systemc
   [ "$N" -gt 0 ] || return 0
   while systemctl --user is-active --quiet "$UNIT.scope" 2>/dev/null; do
     runlen=$(tail -c 300000 "$LOG" 2>/dev/null | \
-             awk '/ACTION/{blk=""; while ((getline ln) > 0) { gsub(/[ \t]+$/, "", ln); gsub(/^[ \t]+/, "", ln); if (ln == "") break; blk = blk ln }
+             awk '/ACTION/{blk=""; while ((getline ln) > 0) { gsub(/[ \t]+$/, "", ln); gsub(/^[ \t]+/, "", ln); if (ln == "" || ln ~ /DEBUG|INFO|MODEL INPUT|OBSERVATION/) break; blk = blk ln }
                   if (blk != "") { if (blk == prev) c++; else c = 1; prev = blk } } END{print c+0}')
     if [ "${runlen:-0}" -ge "$N" ]; then
       log "TYPEID LOOP-GUARD tripped: last $runlen actions identical — stopping $UNIT"
