@@ -215,8 +215,8 @@ axes[3].set_title("(d) median call duration (s)", pad=4)
 axes[0].set_yticks(list(Y) + [Y_AVG])
 axes[0].set_yticklabels(ylab + ["AVG"], fontsize=5.6)
 for lang, mid in lang_mid.items():
-    axes[0].text(-0.68, mid, lang, transform=axes[0].get_yaxis_transform(),
-                 ha="left", va="center", fontsize=7, fontweight="bold")
+    axes[0].text(-1.06, mid, lang, transform=axes[0].get_yaxis_transform(),
+                 ha="left", va="center", fontsize=7, fontweight="bold", clip_on=False)
 
 handles = [plt.Rectangle((0, 0), 1, 1, fc=C_WORK), plt.Rectangle((0, 0), 1, 1, fc=C_STALL),
            plt.Rectangle((0, 0), 1, 1, fc=C_TOOL), plt.Rectangle((0, 0), 1, 1, fc=C_HARN)]
