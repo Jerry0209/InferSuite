@@ -1,0 +1,174 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   CHANGELOG.md
+	modified:   lib/fluent/plugin/in_tail.rb
+	modified:   lib/fluent/version.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 07df9a0d850a4f03d95ac82e3d818a90631ad9d3
+Merge: 9b756efb 927f19e2
+Author: Takuro Ashie <ashie@clear-code.com>
+Date:   Tue Apr 13 14:25:39 2021 +0900
+
+    Merge pull request #3329 from ashie/followup-#3325
+    
+    WindowsFile: Show the path when Win32Error is occured
+
++ git -c core.fileMode=false diff 07df9a0d850a4f03d95ac82e3d818a90631ad9d3
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 207245f5..d17b0adf 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,5 +1,12 @@
+ # v1.12
+ 
++## Release v1.12.3 - 2021/04/14
++
++### Bug fix
++
++* in_tail: Fix a crash bug when stat() failed with ENOENT
++  https://github.com/fluent/fluentd/pull/3345
++
+ ## Release v1.12.2 - 2021/03/29
+ 
+ ### Enhancement
+diff --git a/lib/fluent/plugin/in_tail.rb b/lib/fluent/plugin/in_tail.rb
+index f397e765..fd6fbb93 100644
+--- a/lib/fluent/plugin/in_tail.rb
++++ b/lib/fluent/plugin/in_tail.rb
+@@ -394,54 +394,52 @@ module Fluent::Plugin
+ 
+     def start_watchers(targets_info)
+       targets_info.each_value { |target_info|
+-        pe = nil
+-        if @pf
+-          pe = @pf[target_info]
+-          if @read_from_head && pe.read_inode.zero?
+-            begin
+-              pe.update(Fluent::FileWrapper.stat(target_info.path).ino, 0)
+-            rescue Errno::ENOENT
+-              $log.warn "#{target_info.path} not found. Continuing without tailing it."
+-            end
+-          end
+-        end
++        start_watcher(target_info)
++      }
++    end
+ 
+-        begin
+-          tw = setup_watcher(target_info, pe)
+-        rescue WatcherSetupError => e
+-          log.warn "Skip #{target_info.path} because unexpected setup error happens: #{e}"
+-          next
++    def start_watcher(target_info)
++      pe = nil
++      if @pf
++        pe = @pf[target_info]
++        if @read_from_head && pe.read_inode.zero?
++          begin
++            pe.update(Fluent::FileWrapper.stat(target_info.path).ino, 0)
++          rescue Errno::ENOENT
++            $log.warn "#{target_info.path} not found. Continuing without tailing it."
++          end
+         end
++      end
+ 
+-        begin
+-          target_info = TargetInfo.new(target_info.path, Fluent::FileWrapper.stat(target_info.path).ino)
+-          @tails[target_info] = tw
+-        rescue Errno::ENOENT
+-          $log.warn "stat() for #{target_info.path} failed with ENOENT. Drop tail watcher for now."
+-          # explicitly detach and unwatch watcher `tw`.
+-          stop_watchers(target_info, immediate: true, unwatched: true)
+-        end
+-      }
++      tw = setup_watcher(target_info, pe)
++      target_info = TargetInfo.new(target_info.path, Fluent::FileWrapper.stat(target_info.path).ino)
++      @tails[target_info] = tw
++    rescue Errno::ENOENT
++      $log.warn "stat() for #{target_info.path} failed with ENOENT. Drop tail watcher for now."
++      # explicitly detach and unwatch watcher `tw`.
++      stop_watcher(tw, target_info.ino, immediate: true, unwatched: true) if tw
++    rescue WatcherSetupError => e
++      log.warn "Skip #{target_info.path} because unexpected setup error happens: #{e}"
+     end
+ 
+     def stop_watchers(targets_info, immediate: false, unwatched: false, remove_watcher: true)
+       targets_info.each_value { |target_info|
+-        if remove_watcher
+-          tw = @tails.delete(target_info)
+-        else
+-          tw = @tails[target_info]
+-        end
+-        if tw
+-          tw.unwatched = unwatched
+-          if immediate
+-            detach_watcher(tw, target_info.ino, false)
+-          else
+-            detach_watcher_after_rotate_wait(tw, target_info.ino)
+-          end
+-        end
++        tw = remove_watcher ? @tails.delete(target_info) : @tails[target_info]
++        stop_watcher(tw, target_info.ino, immediate: immediate, unwatched: unwatched) if tw
+       }
+     end
+ 
++    def stop_watcher(tw, ino, immediate: false, unwatched: false)
++      tw.unwatched = unwatched
++      if immediate
++        # During shutdown phase and on dropping a watcher, don't close io.
++        # It should be done in close after all threads are stopped. See close.
++        detach_watcher(tw, ino, false)
++      else
++        detach_watcher_after_rotate_wait(tw, ino)
++      end
++    end
++
+     def close_watcher_handles
+       @tails.keys.each do |target_info|
+         tw = @tails.delete(target_info)
+diff --git a/lib/fluent/version.rb b/lib/fluent/version.rb
+index 47546e0f..7413ca11 100644
+--- a/lib/fluent/version.rb
++++ b/lib/fluent/version.rb
+@@ -16,6 +16,6 @@
+ 
+ module Fluent
+ 
+-  VERSION = '1.12.2'
++  VERSION = '1.12.3'
+ 
+ end
++ git checkout 07df9a0d850a4f03d95ac82e3d818a90631ad9d3 test/plugin/test_in_tail.rb
+Updated 0 paths from 1cf20585
++ git apply -v -
+Checking patch test/plugin/test_in_tail.rb...
+Applied patch test/plugin/test_in_tail.rb cleanly.
++ : '>>>>> Start Test Output'
++ bundle exec ruby test/plugin/test_in_tail.rb -v -n /test_ENOENT_error_after_setup_watcher/
++ cat
+/testbed/lib/fluent/compat/parser.rb:28: warning: csv was loaded from the standard library, but will no longer be part of the default gems starting from Ruby 3.4.0.
+You can add csv to your Gemfile or gemspec to silence this warning.
+Loaded suite test/plugin/test_in_tail
+Started
+TailInputTest: 
+  test_ENOENT_error_after_setup_watcher:		.: (0.511440)
+
+Finished in 0.511846113 seconds.
+-------------------------------------------------------------------------------
+1 tests, 2 assertions, 0 failures, 0 errors, 0 pendings, 0 omissions, 0 notifications
+100% passed
+-------------------------------------------------------------------------------
+1.95 tests/s, 3.91 assertions/s
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 07df9a0d850a4f03d95ac82e3d818a90631ad9d3 test/plugin/test_in_tail.rb
+Updated 1 path from 1cf20585

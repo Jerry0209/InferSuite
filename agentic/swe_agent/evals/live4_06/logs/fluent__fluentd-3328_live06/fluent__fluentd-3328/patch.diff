@@ -1,0 +1,124 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 207245f5..d17b0adf 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,5 +1,12 @@
+ # v1.12
+ 
++## Release v1.12.3 - 2021/04/14
++
++### Bug fix
++
++* in_tail: Fix a crash bug when stat() failed with ENOENT
++  https://github.com/fluent/fluentd/pull/3345
++
+ ## Release v1.12.2 - 2021/03/29
+ 
+ ### Enhancement
+diff --git a/lib/fluent/plugin/in_tail.rb b/lib/fluent/plugin/in_tail.rb
+index f397e765..fd6fbb93 100644
+--- a/lib/fluent/plugin/in_tail.rb
++++ b/lib/fluent/plugin/in_tail.rb
+@@ -394,54 +394,52 @@ module Fluent::Plugin
+ 
+     def start_watchers(targets_info)
+       targets_info.each_value { |target_info|
+-        pe = nil
+-        if @pf
+-          pe = @pf[target_info]
+-          if @read_from_head && pe.read_inode.zero?
+-            begin
+-              pe.update(Fluent::FileWrapper.stat(target_info.path).ino, 0)
+-            rescue Errno::ENOENT
+-              $log.warn "#{target_info.path} not found. Continuing without tailing it."
+-            end
+-          end
+-        end
++        start_watcher(target_info)
++      }
++    end
+ 
+-        begin
+-          tw = setup_watcher(target_info, pe)
+-        rescue WatcherSetupError => e
+-          log.warn "Skip #{target_info.path} because unexpected setup error happens: #{e}"
+-          next
++    def start_watcher(target_info)
++      pe = nil
++      if @pf
++        pe = @pf[target_info]
++        if @read_from_head && pe.read_inode.zero?
++          begin
++            pe.update(Fluent::FileWrapper.stat(target_info.path).ino, 0)
++          rescue Errno::ENOENT
++            $log.warn "#{target_info.path} not found. Continuing without tailing it."
++          end
+         end
++      end
+ 
+-        begin
+-          target_info = TargetInfo.new(target_info.path, Fluent::FileWrapper.stat(target_info.path).ino)
+-          @tails[target_info] = tw
+-        rescue Errno::ENOENT
+-          $log.warn "stat() for #{target_info.path} failed with ENOENT. Drop tail watcher for now."
+-          # explicitly detach and unwatch watcher `tw`.
+-          stop_watchers(target_info, immediate: true, unwatched: true)
+-        end
+-      }
++      tw = setup_watcher(target_info, pe)
++      target_info = TargetInfo.new(target_info.path, Fluent::FileWrapper.stat(target_info.path).ino)
++      @tails[target_info] = tw
++    rescue Errno::ENOENT
++      $log.warn "stat() for #{target_info.path} failed with ENOENT. Drop tail watcher for now."
++      # explicitly detach and unwatch watcher `tw`.
++      stop_watcher(tw, target_info.ino, immediate: true, unwatched: true) if tw
++    rescue WatcherSetupError => e
++      log.warn "Skip #{target_info.path} because unexpected setup error happens: #{e}"
+     end
+ 
+     def stop_watchers(targets_info, immediate: false, unwatched: false, remove_watcher: true)
+       targets_info.each_value { |target_info|
+-        if remove_watcher
+-          tw = @tails.delete(target_info)
+-        else
+-          tw = @tails[target_info]
+-        end
+-        if tw
+-          tw.unwatched = unwatched
+-          if immediate
+-            detach_watcher(tw, target_info.ino, false)
+-          else
+-            detach_watcher_after_rotate_wait(tw, target_info.ino)
+-          end
+-        end
++        tw = remove_watcher ? @tails.delete(target_info) : @tails[target_info]
++        stop_watcher(tw, target_info.ino, immediate: immediate, unwatched: unwatched) if tw
+       }
+     end
+ 
++    def stop_watcher(tw, ino, immediate: false, unwatched: false)
++      tw.unwatched = unwatched
++      if immediate
++        # During shutdown phase and on dropping a watcher, don't close io.
++        # It should be done in close after all threads are stopped. See close.
++        detach_watcher(tw, ino, false)
++      else
++        detach_watcher_after_rotate_wait(tw, ino)
++      end
++    end
++
+     def close_watcher_handles
+       @tails.keys.each do |target_info|
+         tw = @tails.delete(target_info)
+diff --git a/lib/fluent/version.rb b/lib/fluent/version.rb
+index 47546e0f..7413ca11 100644
+--- a/lib/fluent/version.rb
++++ b/lib/fluent/version.rb
+@@ -16,6 +16,6 @@
+ 
+ module Fluent
+ 
+-  VERSION = '1.12.2'
++  VERSION = '1.12.3'
+ 
+ end
