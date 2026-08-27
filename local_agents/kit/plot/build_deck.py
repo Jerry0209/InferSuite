@@ -91,6 +91,7 @@ IMG = {k: uri(v) for k, v in {
     "iso36_cpuwork": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_cpu_work.png",
     "iso36_wall": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_active_wall.png",
     "iso36_tma_comb": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_tma_l1_combined.png",
+    "lvr_example": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/live_vs_replay/lvr_google.png",
     "iso36_tma_t": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_tma_l1_tool.png",
     "iso36_tma_h": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_tma_l1_harness.png",
     # 2026-08-25 final chart format (mentor spec): one metric per full-width row,
@@ -217,7 +218,7 @@ update();
 
 BODY = """
 <div class="progress"></div>
-<div class="counter">01 / 46</div>
+<div class="counter">01 / 47</div>
 <div class="hint">↓ / space · arrow keys to navigate</div>
 <div class="deck">
 
@@ -1185,6 +1186,31 @@ BODY = """
 
   <section class="slide">
     <div class="wrap">
+      <p class="eyebrow">Validation · live vs replay, same trajectory</p>
+      <h2>Does replay TMA equal live TMA? Twelve same-trajectory pairs say yes</h2>
+      <p class="lead">The 36 count-view tasks were live-run <b>without counters by design</b>
+      (the census machine's light mode), so the validation rides the twelve tasks whose recorded
+      trajectory exists under BOTH instruments: the live P7 episode (rotation, 2 s windows,
+      SMT-on) and its deterministic replay (dedicated groups, 100 ms, SMT-off). Per metric:
+      <b>orange violin = live</b>, green = replay; the TMA panels show one replay violin per
+      episode, so replay-to-replay consistency sits right next to the live census. Exemplar
+      below (gson/Java); all twelve are in the
+      <a href="https://claude.ai/code/artifact/a2ca53ea-cbcf-4427-b758-b933344fd64b"
+         target="_blank" rel="noopener" style="color:var(--accent)">validation gallery ↗</a>.</p>
+      <div class="figcard"><img alt="Live vs replay violin comparison, gson (Java): per-metric distributions, live rotation vs dedicated replay" src="__LVREXAMPLE__"></div>
+      <div class="take">
+        <div class="chip tool">TMA agrees: replay/live median ratios <b>retiring 1.00 · bad-spec 0.96 · frontend 0.86 · backend 1.12</b> across the 12 tasks</div>
+        <div class="chip harness">memory-ladder ratios sit near 1 (AMAT 0.96, MLP 1.04, L1D 0.83–0.84); IPC runs 1.22 — the measured SMT-off effect (+18.8%), not a replay artifact</div>
+        <div class="chip wait">a replay measures the work minus the idle: live windows straddle model-wait gaps, so wall-rate metrics (DRAM GB/s) are excluded and spreads differ by construction — medians are the comparable layer</div>
+      </div>
+      <p class="note">Per-task medians and window counts banked in live_vs_replay_values.json.
+      This is also the population report 19's fidelity checks were built on (fence CPU 0.98–1.04,
+      action counts exact); the per-window distributions above extend that to every metric.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
       <p class="eyebrow">Count-view campaign · per-window distributions, tool fence</p>
       <h2>18 metrics, one full-width row each — SPEC-int, SPEC-fp, then nine languages</h2>
       <p class="lead">The full metric card in its final format: every metric gets an entire row,
@@ -1320,6 +1346,7 @@ BODY = (BODY.replace("__SPLIT__", IMG["split"]).replace("__CPU__", IMG["cpu"])
             .replace("__ISO36CPUWORK__", IMG["iso36_cpuwork"])
             .replace("__ISO36WALL__", IMG["iso36_wall"])
             .replace("__ISO36TMACOMB__", IMG["iso36_tma_comb"])
+            .replace("__LVREXAMPLE__", IMG["lvr_example"])
             .replace("__ISO36TMAT__", IMG["iso36_tma_t"]).replace("__ISO36TMAH__", IMG["iso36_tma_h"])
             .replace("__ISO36GRIDT__", IMG["iso36_grid_t"]).replace("__ISO36GRIDH__", IMG["iso36_grid_h"])
             .replace("__ISO36AGGT__", IMG["iso36_agg_t"]).replace("__ISO36AGGH__", IMG["iso36_agg_h"]))
