@@ -40,7 +40,10 @@ base_th <- theme_house(base_size = 8, axis_title_size = 9) +
   theme(panel.grid.major.y = element_blank(),
         axis.text.y = element_text(size = 5.6, face = face_task),
         plot.title = element_text(size = 9, hjust = 0.5),
-        plot.margin = margin(2, 4, 2, 2))
+        # black bounding box per chart (mentor 2026-08-28): makes each chart's extent
+        # unambiguous and gives panel (d) its x=0 edge
+        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.55),
+        plot.margin = margin(2, 8, 2, 6))
 
 stacked_panel <- function(v1, v2, n1, n2, title) {
   dd <- d |>
