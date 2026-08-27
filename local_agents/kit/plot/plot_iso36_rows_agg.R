@@ -68,10 +68,15 @@ GS <- groups_span()
 panel <- function(dd, m, show_x, fence, hdr = FALSE) {
   dm <- dd |> filter(metric == m)
   use_log <- m %in% logm
-  # axis cap: 1.15x the largest column p97 -- whiskers (5-95) always fit, extreme
-  # outlier tails are cut from VIEW only (stats remain full-data)
-  p97 <- dm |> group_by(col_f) |> summarise(q = quantile(value, .97), .groups = "drop")
-  cap <- max(p97$q) * 1.15
+  # axis cap: default 1.15x the largest column p97 (whiskers always fit; extreme tails cut
+  # from VIEW only, stats remain full-data). For the metrics where a WHOLE COLUMN is the
+  # outlier (mentor 2026-08-27: BTB, the load-MPKI ladder), key the cap off the 90th
+  # percentile of the columns' p95s instead, so the outlier columns cannot set the axis --
+  # they go off-scale and are named by the red-triangle note.
+  TRIM <- c("BTB MPKI (BAClears)", "L1D-load MPKI", "L2-load MPKI", "LLC MPKI")
+  p97 <- dm |> group_by(col_f) |> summarise(q97 = quantile(value, .97),
+                                            q95 = quantile(value, .95), .groups = "drop")
+  cap <- if (m %in% TRIM) quantile(p97$q95, .90) * 1.2 else max(p97$q97) * 1.15
   mx <- dm |> group_by(col_f, fillg) |> summarise(mx = max(value), .groups = "drop") |>
     filter(mx > cap)
   p <- ggplot(dm, aes(x = col_f, y = value, fill = fillg)) +
