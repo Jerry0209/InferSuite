@@ -489,6 +489,20 @@ swe_episode(){ # $1 instance, $2 run n
   [ -f "$OUT/DONE" ] && { log "skip $SHORT run$N (DONE)"; return 0; }
   mkdir -p "$OUT"; rm -rf "$OUT"/*        # -r: traj/ dir from a failed attempt must go too
   log "================ swe $SHORT run$N ($MODEL_ID) ================"
+  # Multilingual live episodes (2026-08-27): the swebench image can be a multi-GB pull and
+  # the sandbox wait below is only 240 s — prepull with retries so a slow registry never
+  # reads as "no sandbox". Opt-in (SWE_IMG_PREPULL=1); SWE_IMG_GC=1 removes the image after
+  # the episode (tight-disk boxes). Mirrors typeid_replay_sweep's ensure_image.
+  if [ "${SWE_IMG_PREPULL:-0}" = 1 ]; then
+    local IMG="swebench/sweb.eval.x86_64.$(echo "$INST" | sed 's/__/_1776_/'):latest" _t
+    if ! docker image inspect "$IMG" >/dev/null 2>&1; then
+      for _t in 1 2 3; do
+        timeout 1500 docker pull "$IMG" >/dev/null 2>&1 && break
+        log "image pull retry $_t/3 $IMG"; sleep $((_t * 20))
+      done
+      docker image inspect "$IMG" >/dev/null 2>&1 || { log "ERROR: image pull failed $IMG"; return 1; }
+    fi
+  fi
   local ODIR="runs/${TIER_PREFIX}_live/${INST}_r${N}"
   rm -rf "$REPO/agentic/swe_agent/$ODIR"
   sudo systemctl stop "$UNIT.scope" 2>/dev/null          # active leftover from a prior run
@@ -535,6 +549,8 @@ swe_episode(){ # $1 instance, $2 run n
   sudo systemctl stop "$UNIT.scope" 2>/dev/null
   cp -r "$REPO/agentic/swe_agent/$ODIR" "$OUT/traj" 2>/dev/null
   swe_cleanup_sandbox
+  [ "${SWE_IMG_GC:-0}" = 1 ] && \
+    docker rmi "swebench/sweb.eval.x86_64.$(echo "$INST" | sed 's/__/_1776_/'):latest" >/dev/null 2>&1
   episode_ok "$OUT" "$SHORT-run$N"
 }
 
