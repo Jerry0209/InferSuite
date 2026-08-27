@@ -763,6 +763,62 @@ bandwidth and context-switch rate, at 100 ms windows on cores 4–11 SMT-off) is
 `local_agents/ML_iso36/README.md`.
 
 
+## The 4-panel live overview: methodology (2026-08-27)
+
+`local_agents/ML_iso36/plots/iso36_live_overview.{png,pdf}` (matplotlib) and
+`iso36_live_overview_gg.{png,pdf}` (house ggplot style), built by
+`kit/plot/plot_iso36_live_overview.py` / `.R`; every number is banked in
+`iso36_live_overview_values.json` and the `*_numbers.csv` behind the chart.
+
+**Live, not replay.** All four panels come from the **live census episodes** — the original
+ws02 runs with the model in the loop (`local_agents/ML_typeid/data/glm_swe_<short>/run_1/`).
+They must be live: panel (a)'s "stall" is dominated by model wait, which does not exist in a
+replay (a replay never calls the model). All 36 revised picks have usable census episodes —
+zero exclusions. Replay data plays no part in this figure, and the figure is unaffected by
+the (separate) P7 live campaign.
+
+**Panel (a) — CPU working vs stall (a TIME split).** Percentage of the episode wall where at
+least one fence (tool or harness) is above the burst detection floors (tool 0.005 / harness
+0.02 cores — the same floors as every burst figure), computed on a 0.2 s union grid so
+simultaneous fence activity is not double-counted. The stall side is dominated by the model
+round-trip. Headline: working 15 % / stall 85 % (AVG).
+
+**Panel (b) — tool vs harness (a WORK split, core-seconds).** Each fence's core-seconds —
+exact cgroup `cpu.stat` accounting, summed over positive increments (reset-safe against the
+container cgroup turning over) — as a share of the two fences' combined core-seconds:
+`tool% = tool_cs / (tool_cs + harness_cs)`. Headline: tool 79 % / harness 21 % (AVG), with
+the interpreter languages (PHP, Ruby, parts of JS) visibly harness-heavier.
+
+**Panel (c) — # tool calls.** Counting rule (printed on the figure and to stdout): **every
+action item in the SWE-agent trajectory = one command the agent issued and the sandbox
+executed, including failed/errored calls and the final `submit`;** model turns that produced
+no action never appear in `trajectory` and are therefore naturally excluded; no sub-agents
+exist in this harness. Worked example — redis-12272 has exactly 45 items, so its bar is 45:
+
+```
+trajectory[0]   action: 'str_replace_editor view /testbed'                 execution_time: 0.132 s
+trajectory[5]   action: 'str_replace_editor view …/string.tcl --view_range 610 625'   0.137 s
+trajectory[44]  action: 'submit'                                           execution_time: 0.141 s
+```
+
+**Panel (d) — median tool-call duration.** Every trajectory item carries SWE-agent's own
+`execution_time` — the wall time of that one command in the sandbox (45/45 items for redis).
+The per-task value is the median of that task's values (redis: 0.136 s); the AVG bar is the
+**mean of the 36 per-task medians** — no median-of-medians. Headline: 0.12 s (AVG), nearly
+flat across tasks because most calls are cheap search/view commands — the expensive
+build/test calls live in the tail, the action-mix ≠ CPU-mix finding again.
+
+**AVG convention (all panels).** Unweighted arithmetic mean of the per-task values, never
+time-weighted, so a long task cannot dominate the aggregate.
+
+**Renderings.** The matplotlib original follows the 4-panel paper spec (shared y, language
+groups, hatched AVG row). The second rendering follows the mentor's ggplot house style
+(skillhub `ggplot-house-style`, R 4.3 in the `rplot` conda env, verified by the skill's
+`setup_r_env.sh` gate): colors tied to series names via `kit/plot/iso36_style.R` (the deck's
+fence green/purple), a numbers-CSV behind the chart, ragg PNG + cairo-PDF with text as
+paths. Known gap: Roboto Condensed is not installed on the P7, so the house theme falls
+back (the skill's verifier reports WARN, not FAIL).
+
 ## Slides and per-task galleries (published 2026-08-24)
 
 **Agent deck** (updated in place, now **41 slides**):
