@@ -1,0 +1,88 @@
+diff --git a/src/uu/cksum/src/cksum.rs b/src/uu/cksum/src/cksum.rs
+index 0c807c8c4..57a7091c4 100644
+--- a/src/uu/cksum/src/cksum.rs
++++ b/src/uu/cksum/src/cksum.rs
+@@ -4,8 +4,9 @@
+ // file that was distributed with this source code.
+ 
+ // spell-checker:ignore (ToDO) fname, algo
++use clap::builder::ValueParser;
+ use clap::{crate_version, value_parser, Arg, ArgAction, Command};
+-use std::ffi::OsStr;
++use std::ffi::{OsStr, OsString};
+ use std::fs::File;
+ use std::io::{self, stdin, stdout, BufReader, Read, Write};
+ use std::iter;
+@@ -209,11 +210,15 @@ fn prompt_asterisk(tag: bool, binary: bool, had_reset: bool) -> bool {
+  * Don't do it with clap because if it struggling with the --overrides_with
+  * marking the value as set even if not present
+  */
+-fn had_reset(args: &[String]) -> bool {
++fn had_reset(args: &[impl AsRef<OsStr>]) -> bool {
+     // Indices where "--binary" or "-b", "--tag", and "--untagged" are found
+-    let binary_index = args.iter().position(|x| x == "--binary" || x == "-b");
+-    let tag_index = args.iter().position(|x| x == "--tag");
+-    let untagged_index = args.iter().position(|x| x == "--untagged");
++    let binary_index = args
++        .iter()
++        .position(|x| x.as_ref() == OsStr::new("--binary") || x.as_ref() == OsStr::new("-b"));
++    let tag_index = args.iter().position(|x| x.as_ref() == OsStr::new("--tag"));
++    let untagged_index = args
++        .iter()
++        .position(|x| x.as_ref() == OsStr::new("--untagged"));
+ 
+     // Check if all arguments are present and in the correct order
+     match (binary_index, tag_index, untagged_index) {
+@@ -234,7 +239,7 @@ fn handle_tag_text_binary_flags(matches: &clap::ArgMatches) -> UResult<(bool, bo
+ 
+     let binary_flag: bool = matches.get_flag(options::BINARY);
+ 
+-    let args: Vec<String> = std::env::args().collect();
++    let args: Vec<OsString> = std::env::args_os().collect();
+     let had_reset = had_reset(&args);
+ 
+     let asterisk: bool = prompt_asterisk(tag, binary_flag, had_reset);
+@@ -298,7 +303,7 @@ pub fn uumain(args: impl uucore::Args) -> UResult<()> {
+ 
+         // Execute the checksum validation based on the presence of files or the use of stdin
+ 
+-        let files = matches.get_many::<String>(options::FILE).map_or_else(
++        let files = matches.get_many::<OsString>(options::FILE).map_or_else(
+             || iter::once(OsStr::new("-")).collect::<Vec<_>>(),
+             |files| files.map(OsStr::new).collect::<Vec<_>>(),
+         );
+@@ -337,8 +342,8 @@ pub fn uumain(args: impl uucore::Args) -> UResult<()> {
+         asterisk,
+     };
+ 
+-    match matches.get_many::<String>(options::FILE) {
+-        Some(files) => cksum(opts, files.map(OsStr::new))?,
++    match matches.get_many::<OsString>(options::FILE) {
++        Some(files) => cksum(opts, files.map(|f| f.as_os_str()))?,
+         None => cksum(opts, iter::once(OsStr::new("-")))?,
+     };
+ 
+@@ -356,6 +361,7 @@ pub fn uu_app() -> Command {
+             Arg::new(options::FILE)
+                 .hide(true)
+                 .action(clap::ArgAction::Append)
++                .value_parser(ValueParser::os_string())
+                 .value_hint(clap::ValueHint::FilePath),
+         )
+         .arg(
+diff --git a/src/uucore/src/lib/features/checksum.rs b/src/uucore/src/lib/features/checksum.rs
+index c5366e181..fa44041fc 100644
+--- a/src/uucore/src/lib/features/checksum.rs
++++ b/src/uucore/src/lib/features/checksum.rs
+@@ -290,9 +290,9 @@ const SINGLE_SPACE_REGEX: &str = r"^(?P<checksum>[a-fA-F0-9]+)\s(?P<filename>\*?
+ 
+ fn get_filename_for_output(filename: &OsStr, input_is_stdin: bool) -> String {
+     if input_is_stdin {
+-        "standard input"
++        "standard input".to_string()
+     } else {
+-        filename.to_str().unwrap()
++        filename.to_string_lossy().into_owned()
+     }
+     .maybe_quote()
+     .to_string()

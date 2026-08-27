@@ -1,0 +1,1479 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   gradle/testing/defaults-tests.gradle
+	modified:   lucene/CHANGES.txt
+	modified:   lucene/core/src/java/org/apache/lucene/index/SegmentInfos.java
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit de820b67cc6d7fc90446affeb756e70a2ddf6b92
+Author: Michael McCandless <mikemccand@apache.org>
+Date:   Fri Nov 17 12:50:39 2023 -0500
+
+    Fix CheckIndex to detect major corruption with old (not the latest) commit point (#12530)
+    
+    * #7820: add initial (failing) test case exposing the bug in CheckIndex
+    
+    * #7820: initial fix to CheckIndex to detect 'on load' corruption of older segments files
+    
+    * exclamation point police
+    
+    * tidy
+    
+    * add missing @Override in new test case
+    
+    * fold feedback: merge SIS-loading logic into single for-loop; rename sis -> lastCommit
+    
+    * tidy
+    
+    * sidestep segments.gen file as well in case we are reading very old index
+    
+    * tidy
+    
+    * always load last commit point first so if it has an issue that will not be masked by issues with older commit points
+
+diff --git a/lucene/core/src/java/org/apache/lucene/index/CheckIndex.java b/lucene/core/src/java/org/apache/lucene/index/CheckIndex.java
+index 8a7e55d41f..6f191b944c 100644
+--- a/lucene/core/src/java/org/apache/lucene/index/CheckIndex.java
++++ b/lucene/core/src/java/org/apache/lucene/index/CheckIndex.java
+@@ -29,6 +29,7 @@ import java.text.NumberFormat;
+ import java.util.ArrayList;
+ import java.util.Arrays;
+ import java.util.Collections;
++import java.util.Comparator;
+ import java.util.HashMap;
+ import java.util.Iterator;
+ import java.util.List;
+@@ -586,7 +587,6 @@ public final class CheckIndex implements Closeable {
+     ensureOpen();
+     long startNS = System.nanoTime();
+ 
+-    SegmentInfos sis = null;
+     Status result = new Status();
+     result.dir = dir;
+     String[] files = dir.listAll();
+@@ -595,26 +595,99 @@ public final class CheckIndex implements Closeable {
+       throw new IndexNotFoundException(
+           "no segments* file found in " + dir + ": files: " + Arrays.toString(files));
+     }
+-    try {
+-      // Do not use SegmentInfos.read(Directory) since the spooky
+-      // retrying it does is not necessary here (we hold the write lock):
+-      sis =
+-          SegmentInfos.readCommit(
+-              dir, lastSegmentsFile, 0 /* always open old indices if codecs are around */);
+-    } catch (Throwable t) {
+-      if (failFast) {
+-        throw IOUtils.rethrowAlways(t);
++
++    // https://github.com/apache/lucene/issues/7820: also attempt to open any older commit
++    // points (segments_N), which will catch certain corruption like missing _N.si files
++    // for segments not also referenced by the newest commit point (which was already
++    // loaded, successfully, above).  Note that we do not do a deeper check of segments
++    // referenced ONLY by these older commit points, because such corruption would not
++    // prevent a new IndexWriter from opening on the newest commit point.  but it is still
++    // corruption, e.g. a reader opened on those old commit points can hit corruption
++    // exceptions which we (still) will not detect here.  progress not perfection!
++
++    SegmentInfos lastCommit = null;
++
++    List<String> allSegmentsFiles = new ArrayList<>();
++    for (String fileName : files) {
++      if (fileName.startsWith(IndexFileNames.SEGMENTS)
++          && fileName.equals(SegmentInfos.OLD_SEGMENTS_GEN) == false) {
++        allSegmentsFiles.add(fileName);
+       }
++    }
++
++    // Sort descending by generation so that we always attempt to read the last commit first.  This
++    // way if an index has a broken last commit AND a broken old commit, we report the last commit
++    // error first:
++    allSegmentsFiles.sort(
++        new Comparator<String>() {
++          @Override
++          public int compare(String a, String b) {
++            long genA = SegmentInfos.generationFromSegmentsFileName(a);
++            long genB = SegmentInfos.generationFromSegmentsFileName(b);
++
++            // reversed natural sort (largest generation first):
++            return -Long.compare(genA, genB);
++          }
++        });
++
++    for (String fileName : allSegmentsFiles) {
++
++      boolean isLastCommit = fileName.equals(lastSegmentsFile);
++
++      SegmentInfos infos;
++
++      try {
++        // Do not use SegmentInfos.read(Directory) since the spooky
++        // retrying it does is not necessary here (we hold the write lock):
++        // always open old indices if codecs are around
++        infos = SegmentInfos.readCommit(dir, fileName, 0);
++      } catch (Throwable t) {
++        if (failFast) {
++          throw IOUtils.rethrowAlways(t);
++        }
++
++        String message;
++
++        if (isLastCommit) {
++          message =
++              "ERROR: could not read latest commit point from segments file \""
++                  + fileName
++                  + "\" in directory";
++        } else {
++          message =
++              "ERROR: could not read old (not latest) commit point segments file \""
++                  + fileName
++                  + "\" in directory";
++        }
++        msg(infoStream, message);
++        result.missingSegments = true;
++        if (infoStream != null) {
++          t.printStackTrace(infoStream);
++        }
++        return result;
++      }
++
++      if (isLastCommit) {
++        // record the latest commit point: we will deeply check all segments referenced by it
++        lastCommit = infos;
++      }
++    }
++
++    // we know there is a lastSegmentsFileName, so we must've attempted to load it in the above for
++    // loop.  if it failed to load, we threw the exception (fastFail == true) or we returned the
++    // failure (fastFail == false).  so if we get here, we should // always have a valid lastCommit:
++    assert lastCommit != null;
++
++    if (lastCommit == null) {
+       msg(infoStream, "ERROR: could not read any segments file in directory");
+       result.missingSegments = true;
+-      if (infoStream != null) t.printStackTrace(infoStream);
+       return result;
+     }
+ 
+     if (infoStream != null) {
+       int maxDoc = 0;
+       int delCount = 0;
+-      for (SegmentCommitInfo info : sis) {
++      for (SegmentCommitInfo info : lastCommit) {
+         maxDoc += info.info.maxDoc();
+         delCount += info.getDelCount();
+       }
+@@ -631,7 +704,7 @@ public final class CheckIndex implements Closeable {
+     Version oldest = null;
+     Version newest = null;
+     String oldSegs = null;
+-    for (SegmentCommitInfo si : sis) {
++    for (SegmentCommitInfo si : lastCommit) {
+       Version version = si.info.getVersion();
+       if (version == null) {
+         // pre-3.1 segment
+@@ -646,14 +719,14 @@ public final class CheckIndex implements Closeable {
+       }
+     }
+ 
+-    final int numSegments = sis.size();
+-    final String segmentsFileName = sis.getSegmentsFileName();
++    final int numSegments = lastCommit.size();
++    final String segmentsFileName = lastCommit.getSegmentsFileName();
+     result.segmentsFileName = segmentsFileName;
+     result.numSegments = numSegments;
+-    result.userData = sis.getUserData();
++    result.userData = lastCommit.getUserData();
+     String userDataString;
+-    if (sis.getUserData().size() > 0) {
+-      userDataString = " userData=" + sis.getUserData();
++    if (lastCommit.getUserData().size() > 0) {
++      userDataString = " userData=" + lastCommit.getUserData();
+     } else {
+       userDataString = "";
+     }
+@@ -681,7 +754,7 @@ public final class CheckIndex implements Closeable {
+             + " "
+             + versionString
+             + " id="
+-            + StringHelper.idToString(sis.getId())
++            + StringHelper.idToString(lastCommit.getId())
+             + userDataString);
+ 
+     if (onlySegments != null) {
+@@ -696,14 +769,14 @@ public final class CheckIndex implements Closeable {
+       msg(infoStream, ":");
+     }
+ 
+-    result.newSegments = sis.clone();
++    result.newSegments = lastCommit.clone();
+     result.newSegments.clear();
+     result.maxSegmentName = -1;
+ 
+     // checks segments sequentially
+     if (executorService == null) {
+       for (int i = 0; i < numSegments; i++) {
+-        final SegmentCommitInfo info = sis.info(i);
++        final SegmentCommitInfo info = lastCommit.info(i);
+         updateMaxSegmentName(result, info);
+         if (onlySegments != null && !onlySegments.contains(info.info.name)) {
+           continue;
+@@ -718,7 +791,7 @@ public final class CheckIndex implements Closeable {
+                 + info.info.name
+                 + " maxDoc="
+                 + info.info.maxDoc());
+-        Status.SegmentInfoStatus segmentInfoStatus = testSegment(sis, info, infoStream);
++        Status.SegmentInfoStatus segmentInfoStatus = testSegment(lastCommit, info, infoStream);
+ 
+         processSegmentInfoStatusResult(result, info, segmentInfoStatus);
+       }
+@@ -729,7 +802,7 @@ public final class CheckIndex implements Closeable {
+ 
+       // checks segments concurrently
+       List<SegmentCommitInfo> segmentCommitInfos = new ArrayList<>();
+-      for (SegmentCommitInfo sci : sis) {
++      for (SegmentCommitInfo sci : lastCommit) {
+         segmentCommitInfos.add(sci);
+       }
+ 
+@@ -757,7 +830,7 @@ public final class CheckIndex implements Closeable {
+           continue;
+         }
+ 
+-        SegmentInfos finalSis = sis;
++        SegmentInfos finalSis = lastCommit;
+ 
+         ByteArrayOutputStream output = new ByteArrayOutputStream();
+         PrintStream stream = new PrintStream(output, true, IOUtils.UTF_8);
+@@ -813,7 +886,7 @@ public final class CheckIndex implements Closeable {
+ 
+     if (0 == result.numBadSegments) {
+       result.clean = true;
+-    } else
++    } else {
+       msg(
+           infoStream,
+           "WARNING: "
+@@ -821,14 +894,16 @@ public final class CheckIndex implements Closeable {
+               + " broken segments (containing "
+               + result.totLoseDocCount
+               + " documents) detected");
++    }
+ 
+-    if (!(result.validCounter = (result.maxSegmentName < sis.counter))) {
++    result.validCounter = result.maxSegmentName < lastCommit.counter;
++    if (result.validCounter == false) {
+       result.clean = false;
+       result.newSegments.counter = result.maxSegmentName + 1;
+       msg(
+           infoStream,
+           "ERROR: Next segment name counter "
+-              + sis.counter
++              + lastCommit.counter
+               + " is not greater than max segment name "
+               + result.maxSegmentName);
+     }
+@@ -921,7 +996,7 @@ public final class CheckIndex implements Closeable {
+         msg(infoStream, "    diagnostics = " + diagnostics);
+       }
+ 
+-      if (!info.hasDeletions()) {
++      if (info.hasDeletions() == false) {
+         msg(infoStream, "    no deletions");
+         segInfoStat.hasDeletions = false;
+       } else {
+@@ -1213,7 +1288,7 @@ public final class CheckIndex implements Closeable {
+         if (liveDocs != null) {
+           // it's ok for it to be non-null here, as long as none are set right?
+           for (int j = 0; j < liveDocs.length(); j++) {
+-            if (!liveDocs.get(j)) {
++            if (liveDocs.get(j) == false) {
+               throw new CheckIndexException(
+                   "liveDocs mismatch: info says no deletions but doc " + j + " is deleted.");
+             }
+@@ -1450,7 +1525,7 @@ public final class CheckIndex implements Closeable {
+                 + hasFreqs);
+       }
+ 
+-      if (!isVectors) {
++      if (isVectors == false) {
+         final boolean expectedHasPositions =
+             fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+         if (hasPositions != expectedHasPositions) {
+@@ -1810,7 +1885,7 @@ public final class CheckIndex implements Closeable {
+                   // free-for-all before?
+                   // but for offsets in the postings lists these checks are fine: they were always
+                   // enforced by IndexWriter
+-                  if (!isVectors) {
++                  if (isVectors == false) {
+                     if (startOffset < 0) {
+                       throw new CheckIndexException(
+                           "term "
+@@ -3660,7 +3735,7 @@ public final class CheckIndex implements Closeable {
+ 
+               // Make sure FieldInfo thinks this field is vector'd:
+               final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+-              if (!fieldInfo.hasVectors()) {
++              if (fieldInfo.hasVectors() == false) {
+                 throw new CheckIndexException(
+                     "docID="
+                         + j
+@@ -3696,7 +3771,7 @@ public final class CheckIndex implements Closeable {
+                   postings = termsEnum.postings(postings, PostingsEnum.ALL);
+                   assert postings != null;
+ 
+-                  if (!postingsTermsEnum.seekExact(term)) {
++                  if (postingsTermsEnum.seekExact(term) == false) {
+                     throw new CheckIndexException(
+                         "vector term="
+                             + term
+@@ -3852,7 +3927,7 @@ public final class CheckIndex implements Closeable {
+                                       + " but postings does not.");
+                             }
+                             BytesRef postingsPayload = postingsDocs.getPayload();
+-                            if (!payload.equals(postingsPayload)) {
++                            if (payload.equals(postingsPayload) == false) {
+                               throw new CheckIndexException(
+                                   "vector term="
+                                       + term
+@@ -4011,9 +4086,10 @@ public final class CheckIndex implements Closeable {
+       return 1;
+     }
+ 
+-    if (!assertsOn())
++    if (assertsOn() == false) {
+       System.out.println(
+           "\nNOTE: testing will be more thorough if you run java with '-ea:org.apache.lucene...', so assertions are enabled");
++    }
+ 
+     System.out.println("\nOpening index @ " + opts.indexPath + "\n");
+     Directory directory = null;
+@@ -4166,8 +4242,8 @@ public final class CheckIndex implements Closeable {
+       return 1;
+     }
+ 
+-    if (!result.clean) {
+-      if (!opts.doExorcise) {
++    if (result.clean == false) {
++      if (opts.doExorcise == false) {
+         opts.out.println(
+             "WARNING: would write new segments file, and "
+                 + result.totLoseDocCount
+diff --git a/lucene/core/src/java/org/apache/lucene/index/SegmentInfos.java b/lucene/core/src/java/org/apache/lucene/index/SegmentInfos.java
+index ad9f31650e..d8e3d622b5 100644
+--- a/lucene/core/src/java/org/apache/lucene/index/SegmentInfos.java
++++ b/lucene/core/src/java/org/apache/lucene/index/SegmentInfos.java
+@@ -122,7 +122,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
+   static final int VERSION_CURRENT = VERSION_86;
+ 
+   /** Name of the generation reference file name */
+-  private static final String OLD_SEGMENTS_GEN = "segments.gen";
++  static final String OLD_SEGMENTS_GEN = "segments.gen";
+ 
+   /** Used to name new segments. */
+   public long counter;
+@@ -146,7 +146,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
+    *
+    * @see #setInfoStream
+    */
+-  private static PrintStream infoStream = null;
++  private static PrintStream infoStream;
+ 
+   /** Id for this commit; only written starting with Lucene 5.0 */
+   private byte[] id;
+diff --git a/lucene/core/src/test/org/apache/lucene/index/TestCheckIndex.java b/lucene/core/src/test/org/apache/lucene/index/TestCheckIndex.java
+index 0b70d89741..752ce7a732 100644
+--- a/lucene/core/src/test/org/apache/lucene/index/TestCheckIndex.java
++++ b/lucene/core/src/test/org/apache/lucene/index/TestCheckIndex.java
+@@ -18,6 +18,7 @@ package org.apache.lucene.index;
+ 
+ import java.io.ByteArrayOutputStream;
+ import java.io.IOException;
++import java.util.List;
+ import org.apache.lucene.document.BinaryPoint;
+ import org.apache.lucene.document.Document;
+ import org.apache.lucene.document.Field;
+@@ -34,6 +35,7 @@ import org.apache.lucene.store.Directory;
+ import org.apache.lucene.tests.analysis.CannedTokenStream;
+ import org.apache.lucene.tests.analysis.Token;
+ import org.apache.lucene.tests.index.BaseTestCheckIndex;
++import org.apache.lucene.tests.store.MockDirectoryWrapper;
+ import org.apache.lucene.tests.util.TestUtil;
+ import org.apache.lucene.util.BytesRef;
+ import org.apache.lucene.util.IOUtils;
+@@ -218,4 +220,76 @@ public class TestCheckIndex extends BaseTestCheckIndex {
+     VectorUtil.l2normalize(v);
+     return v;
+   }
++
++  // Never deletes any commit points!  Do not use in production!!
++  private static class DeleteNothingIndexDeletionPolicy extends IndexDeletionPolicy {
++
++    public static final IndexDeletionPolicy INSTANCE = new DeleteNothingIndexDeletionPolicy();
++
++    private DeleteNothingIndexDeletionPolicy() {
++      // NO
++    }
++
++    @Override
++    public void onInit(List<? extends IndexCommit> commits) {}
++
++    @Override
++    public void onCommit(List<? extends IndexCommit> commits) {}
++  }
++
++  // https://github.com/apache/lucene/issues/7820 -- when the most recent commit point in
++  // the index is OK, but older commit points are broken, CheckIndex fails to detect and
++  // correct that, while opening an IndexWriter on the index will fail since IndexWriter
++  // loads all commit points on init
++  public void testPriorBrokenCommitPoint() throws Exception {
++
++    try (MockDirectoryWrapper dir = newMockDirectory()) {
++
++      // disable this normally useful test infra feature since this test intentionally leaves broken
++      // indices:
++      dir.setCheckIndexOnClose(false);
++
++      IndexWriterConfig iwc =
++          new IndexWriterConfig()
++              .setMergePolicy(NoMergePolicy.INSTANCE)
++              .setIndexDeletionPolicy(DeleteNothingIndexDeletionPolicy.INSTANCE);
++
++      try (IndexWriter iw = new IndexWriter(dir, iwc)) {
++
++        // create first segment, and commit point referencing only segment 0
++        Document doc = new Document();
++        doc.add(new StringField("id", "a", Field.Store.NO));
++        iw.addDocument(doc);
++        iw.commit();
++
++        // NOTE: we are (illegally) relying on precise file naming here -- if Codec or IW's
++        // behaviour changes, this may need fixing:
++        assertTrue(slowFileExists(dir, "_0.si"));
++
++        // create second segment, and another commit point referencing only segment 1
++        doc.add(new StringField("id", "a", Field.Store.NO));
++        iw.updateDocument(new Term("id", "a"), doc);
++        iw.commit();
++
++        // NOTE: we are (illegally) relying on precise file naming here -- if Codec or IW's
++        // behaviour changes, this may need fixing:
++        assertTrue(slowFileExists(dir, "_0.si"));
++        assertTrue(slowFileExists(dir, "_1.si"));
++      }
++
++      try (CheckIndex checkers = new CheckIndex(dir)) {
++        CheckIndex.Status checkIndexStatus = checkers.checkIndex();
++        assertTrue(checkIndexStatus.clean);
++      }
++
++      // now corrupt segment 0, which is referenced by only the first commit point, by removing its
++      // .si file (_0.si)
++      dir.deleteFile("_0.si");
++
++      try (CheckIndex checkers = new CheckIndex(dir)) {
++        CheckIndex.Status checkIndexStatus = checkers.checkIndex();
++        assertFalse(checkIndexStatus.clean);
++      }
++    }
++  }
+ }
++ git -c core.fileMode=false diff de820b67cc6d7fc90446affeb756e70a2ddf6b92
++ git checkout de820b67cc6d7fc90446affeb756e70a2ddf6b92 lucene/core/src/test/org/apache/lucene/index/TestIndexWriter.java lucene/test-framework/src/java/org/apache/lucene/tests/util/LuceneTestCase.java
+diff --git a/gradle/testing/defaults-tests.gradle b/gradle/testing/defaults-tests.gradle
+index 89c1d49c3c..a6c0eead42 100644
+--- a/gradle/testing/defaults-tests.gradle
++++ b/gradle/testing/defaults-tests.gradle
+@@ -171,15 +171,40 @@ allprojects {
+       reports.html.required = false
+ 
+       // Set up logging.
+-      testLogging {
+-        events TestLogEvent.FAILED
+-        exceptionFormat TestExceptionFormat.FULL
+-        showExceptions true
+-        showCauses true
+-        showStackTraces true
+-        stackTraceFilters.clear()
+-        showStandardStreams false
++testLogging {
++  showStandardStreams = true
++  // set options for log level LIFECYCLE
++  events TestLogEvent.FAILED,
++         TestLogEvent.PASSED,
++         TestLogEvent.SKIPPED,
++         TestLogEvent.STANDARD_OUT
++  exceptionFormat TestExceptionFormat.FULL
++  showExceptions true
++  showCauses true
++  showStackTraces true
++
++  // set options for log level DEBUG and INFO
++  debug {
++      events TestLogEvent.STARTED,
++             TestLogEvent.FAILED,
++             TestLogEvent.PASSED,
++             TestLogEvent.SKIPPED,
++             TestLogEvent.STANDARD_ERROR,
++             TestLogEvent.STANDARD_OUT
++      exceptionFormat TestExceptionFormat.FULL
++  }
++  info.events = debug.events
++  info.exceptionFormat = debug.exceptionFormat
++
++  afterSuite { desc, result ->
++      if (!desc.parent) { // will match the outermost suite
++          def output = "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
++          def startItem = '|  ', endItem = '  |'
++          def repeatLength = startItem.length() + output.length() + endItem.length()
++          println('\n' + ('-' * repeatLength) + '\n' + startItem + output + endItem + '\n' + ('-' * repeatLength))
+       }
++  }
++}
+ 
+       // Disable automatic test class detection, rely on class names only. This is needed for testing
+       // against JDKs where the bytecode is unparseable by Gradle, for example.
+diff --git a/lucene/CHANGES.txt b/lucene/CHANGES.txt
+index a66d86a5ae..8341d772d7 100644
+--- a/lucene/CHANGES.txt
++++ b/lucene/CHANGES.txt
+@@ -323,6 +323,8 @@ Bug Fixes
+ * GITHUB#12640: Ensure #finish is called on all drill-sideways collectors even if one throws a
+   CollectionTerminatedException (Greg Miller)
+ 
++* GITHUB#12626: Fix segmentInfos replace to set userData (Shibi Balamurugan, Uwe Schindler, Marcus Eagan, Michael Froh)
++
+ Build
+ ---------------------
+ 
+diff --git a/lucene/core/src/java/org/apache/lucene/index/SegmentInfos.java b/lucene/core/src/java/org/apache/lucene/index/SegmentInfos.java
+index d8e3d622b5..7caf2dbda8 100644
+--- a/lucene/core/src/java/org/apache/lucene/index/SegmentInfos.java
++++ b/lucene/core/src/java/org/apache/lucene/index/SegmentInfos.java
+@@ -1010,6 +1010,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
+   void replace(SegmentInfos other) {
+     rollbackSegmentInfos(other.asList());
+     lastGeneration = other.lastGeneration;
++    userData = other.userData;
+   }
+ 
+   /** Returns sum of all segment's maxDocs. Note that this does not include deletions */
+Updated 0 paths from 40276da26f
++ git apply -v -
+Checking patch lucene/core/src/test/org/apache/lucene/index/TestIndexWriter.java...
+Checking patch lucene/test-framework/src/java/org/apache/lucene/tests/util/LuceneTestCase.java...
+Applied patch lucene/core/src/test/org/apache/lucene/index/TestIndexWriter.java cleanly.
+Applied patch lucene/test-framework/src/java/org/apache/lucene/tests/util/LuceneTestCase.java cleanly.
++ : '>>>>> Start Test Output'
++ ./gradlew test --tests org.apache.lucene.index.TestIndexWriter
++ cat
+Downloading gradle-wrapper.jar from https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.jar
+Generating gradle.properties
+Downloading https://services.gradle.org/distributions/gradle-8.4-bin.zip
+............10%............20%.............30%............40%.............50%............60%.............70%............80%.............90%............100%
+
+Welcome to Gradle 8.4!
+
+Here are the highlights of this release:
+ - Compiling and testing with Java 21
+ - Faster Java compilation on Windows
+ - Role focused dependency configurations creation
+
+For more details see https://docs.gradle.org/8.4/release-notes.html
+
+Starting a Gradle Daemon (subsequent builds will be faster)
+
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+> Task :buildSrc:compileJava
+
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:processResources NO-SOURCE
+> Task :buildSrc:classes
+> Task :buildSrc:jar
+
+> Task :randomizationInfo
+Running tests with randomization seed: tests.seed=D3DA6B63CE49CD2C
+
+> Task :errorProneSkipped
+WARNING: errorprone disabled (skipped on builds not running inside CI environments, pass -Pvalidation.errorprone=true to enable)
+
+> Task :lucene:analysis:opennlp:processResources
+> Task :lucene:core:processResources
+> Task :lucene:analysis:common:processResources
+> Task :lucene:analysis:icu:processResources
+> Task :lucene:test-framework:processResources
+> Task :lucene:analysis:kuromoji:processResources
+> Task :lucene:facet:processResources NO-SOURCE
+> Task :lucene:memory:processResources NO-SOURCE
+> Task :lucene:highlighter:processResources NO-SOURCE
+> Task :lucene:analysis:morfologik:processResources
+> Task :lucene:codecs:processResources
+> Task :lucene:spatial3d:processResources NO-SOURCE
+> Task :lucene:spatial-extras:processResources NO-SOURCE
+> Task :lucene:backward-codecs:processResources
+> Task :lucene:analysis:stempel:processResources
+> Task :lucene:queryparser:processResources
+> Task :lucene:benchmark-jmh:processResources NO-SOURCE
+> Task :lucene:grouping:processResources NO-SOURCE
+> Task :lucene:analysis:smartcn:processResources
+> Task :lucene:classification:processResources NO-SOURCE
+> Task :lucene:classification:processTestResources
+> Task :lucene:queries:processResources NO-SOURCE
+> Task :lucene:benchmark:processResources NO-SOURCE
+> Task :lucene:benchmark-jmh:processTestResources NO-SOURCE
+> Task :lucene:demo:processResources NO-SOURCE
+> Task :lucene:analysis:phonetic:processResources
+> Task :lucene:join:processResources NO-SOURCE
+> Task :lucene:codecs:processTestResources
+> Task :lucene:sandbox:processResources
+> Task :lucene:misc:processResources NO-SOURCE
+> Task :lucene:monitor:processResources NO-SOURCE
+> Task :lucene:suggest:processResources
+> Task :lucene:distribution.tests:compileJava NO-SOURCE
+> Task :lucene:distribution.tests:processResources NO-SOURCE
+> Task :lucene:distribution.tests:classes UP-TO-DATE
+> Task :lucene:demo:processTestResources
+> Task :lucene:analysis.tests:processTestResources
+> Task :lucene:replicator:processResources NO-SOURCE
+> Task :lucene:expressions:processResources
+> Task :lucene:expressions:processTestResources
+> Task :lucene:highlighter:processTestResources
+> Task :lucene:analysis:nori:processResources
+> Task :lucene:core.tests:compileJava
+> Task :lucene:misc:processTestResources
+> Task :lucene:core.tests:processResources NO-SOURCE
+> Task :lucene:core.tests:classes
+> Task :lucene:grouping:processTestResources
+> Task :lucene:luke:processResources
+> Task :lucene:memory:processTestResources
+> Task :lucene:join:processTestResources
+> Task :lucene:facet:processTestResources
+> Task :lucene:core.tests:processTestResources
+> Task :lucene:monitor:processTestResources
+> Task :lucene:spatial-test-fixtures:processResources NO-SOURCE
+> Task :lucene:replicator:processTestResources
+> Task :lucene:sandbox:processTestResources
+> Task :lucene:luke:processTestResources
+> Task :lucene:queries:processTestResources
+> Task :lucene:spatial-test-fixtures:processTestResources NO-SOURCE
+> Task :lucene:spatial3d:processTestResources
+> Task :lucene:suggest:processTestResources
+> Task :lucene:queryparser:processTestResources
+> Task :lucene:benchmark:processTestResources
+> Task :lucene:spatial-extras:processTestResources
+> Task :lucene:test-framework:processTestResources
+> Task :lucene:analysis:icu:processTestResources
+> Task :lucene:analysis:morfologik.tests:processTestResources
+> Task :lucene:analysis:kuromoji:processTestResources
+> Task :lucene:analysis:phonetic:processTestResources
+> Task :lucene:analysis:nori:processTestResources
+> Task :lucene:analysis:morfologik:processTestResources
+> Task :lucene:analysis:stempel:processTestResources
+> Task :lucene:backward-codecs:processTestResources
+> Task :lucene:analysis:smartcn:processTestResources
+> Task :lucene:analysis:opennlp:processTestResources
+> Task :lucene:analysis:common:processTestResources
+> Task :lucene:distribution.tests:compileTestJava
+> Task :lucene:distribution.tests:processTestResources
+> Task :lucene:distribution.tests:testClasses
+> Task :gitStatus
+> Task :lucene:core.tests:jar
+
+> Task :lucene:core:compileJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:core:classes
+> Task :lucene:core:compileMain19Java
+> Task :lucene:core:compileMain20Java
+> Task :lucene:core:compileMain21Java
+> Task :lucene:core:processMain19Resources NO-SOURCE
+> Task :lucene:core:main19Classes
+> Task :lucene:core:processMain20Resources NO-SOURCE
+> Task :lucene:core:main20Classes
+> Task :lucene:core:processMain21Resources NO-SOURCE
+> Task :lucene:core:main21Classes
+> Task :lucene:core:jar
+> Task :lucene:core:processTestResources
+> Task :lucene:memory:compileJava
+> Task :lucene:memory:classes
+> Task :lucene:memory:jar
+> Task :lucene:replicator:compileJava
+> Task :lucene:replicator:classes
+> Task :lucene:replicator:jar
+> Task :lucene:misc:compileJava
+> Task :lucene:misc:classes
+> Task :lucene:misc:jar
+> Task :lucene:join:compileJava
+> Task :lucene:join:classes
+> Task :lucene:join:jar
+> Task :lucene:codecs:compileJava
+> Task :lucene:codecs:classes
+> Task :lucene:codecs:jar
+
+> Task :lucene:benchmark-jmh:compileJava
+/testbed/lucene/benchmark-jmh/src/java/module-info.java:20: warning: requires directive for an automatic module
+  requires jmh.core;
+              ^
+1 warning
+
+> Task :lucene:spatial3d:compileJava
+> Task :lucene:spatial3d:classes
+
+> Task :lucene:queries:compileJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:spatial3d:jar
+
+> Task :lucene:facet:compileJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:queries:classes
+> Task :lucene:queries:jar
+
+> Task :lucene:expressions:compileJava
+Note: /testbed/lucene/expressions/src/java/org/apache/lucene/expressions/js/JavascriptCompiler.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:expressions:classes
+> Task :lucene:expressions:jar
+> Task :lucene:backward-codecs:compileJava
+> Task :lucene:backward-codecs:classes
+> Task :lucene:backward-codecs:jar
+> Task :lucene:benchmark-jmh:classes
+> Task :lucene:benchmark-jmh:jar
+> Task :lucene:benchmark-jmh:compileTestJava NO-SOURCE
+> Task :lucene:benchmark-jmh:testClasses UP-TO-DATE
+> Task :lucene:benchmark-jmh:test NO-SOURCE
+> Task :lucene:benchmark-jmh:wipeTaskTemp
+> Task :lucene:grouping:compileJava
+> Task :lucene:grouping:classes
+> Task :lucene:grouping:jar
+> Task :lucene:facet:classes
+> Task :lucene:facet:jar
+> Task :lucene:spatial-extras:compileJava
+> Task :lucene:spatial-extras:classes
+> Task :lucene:spatial-extras:jar
+
+> Task :lucene:sandbox:compileJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:sandbox:classes
+> Task :lucene:sandbox:jar
+> Task :lucene:classification:compileJava
+> Task :lucene:classification:classes
+> Task :lucene:classification:jar
+> Task :lucene:highlighter:compileJava
+> Task :lucene:highlighter:classes
+> Task :lucene:highlighter:jar
+> Task :lucene:queryparser:compileJava
+> Task :lucene:queryparser:classes
+> Task :lucene:queryparser:jar
+
+> Task :lucene:analysis:common:compileJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:analysis:common:classes
+
+> Task :lucene:test-framework:compileJava
+Note: /testbed/lucene/test-framework/src/java/org/apache/lucene/tests/codecs/compressing/dummy/DummyCompressingCodec.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:analysis:common:jar
+> Task :lucene:test-framework:classes
+> Task :lucene:analysis:stempel:compileJava
+> Task :lucene:analysis:stempel:classes
+> Task :lucene:analysis:phonetic:compileJava
+> Task :lucene:analysis:phonetic:classes
+> Task :lucene:analysis:smartcn:compileJava
+> Task :lucene:analysis:smartcn:classes
+> Task :lucene:analysis:phonetic:jar
+> Task :lucene:analysis:nori:compileJava
+> Task :lucene:analysis:nori:classes
+> Task :lucene:analysis:stempel:jar
+> Task :lucene:demo:compileJava
+> Task :lucene:demo:classes
+> Task :lucene:demo:jar
+> Task :lucene:analysis:kuromoji:compileJava
+> Task :lucene:analysis:kuromoji:classes
+> Task :lucene:test-framework:jar
+> Task :lucene:analysis:smartcn:jar
+> Task :lucene:analysis:opennlp:compileJava
+> Task :lucene:suggest:compileJava
+> Task :lucene:analysis:opennlp:classes
+> Task :lucene:monitor:compileJava
+> Task :lucene:analysis:opennlp:jar
+> Task :lucene:suggest:classes
+> Task :lucene:classification:compileTestJava
+> Task :lucene:classification:testClasses
+> Task :lucene:suggest:jar
+> Task :lucene:monitor:classes
+> Task :lucene:analysis:morfologik:compileJava
+> Task :lucene:analysis:morfologik:classes
+> Task :lucene:analysis:morfologik:jar
+> Task :lucene:monitor:jar
+> Task :lucene:core.tests:compileTestJava
+> Task :lucene:core.tests:testClasses
+> Task :lucene:core.tests:testJar
+
+> Task :lucene:classification:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:core.tests:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:classification:wipeTaskTemp
+> Task :lucene:core.tests:wipeTaskTemp
+> Task :lucene:demo:compileTestJava
+> Task :lucene:demo:testClasses
+
+> Task :lucene:demo:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:demo:wipeTaskTemp
+> Task :lucene:analysis:kuromoji:jar
+> Task :lucene:expressions:compileTestJava
+> Task :lucene:expressions:testClasses
+
+> Task :lucene:expressions:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:expressions:wipeTaskTemp
+
+> Task :lucene:memory:compileTestJava
+
+> Task :lucene:memory:testClasses
+> Task :lucene:codecs:compileTestJava
+> Task :lucene:codecs:testClasses
+
+> Task :lucene:memory:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:memory:wipeTaskTemp
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+> Task :lucene:grouping:compileTestJava
+> Task :lucene:grouping:testClasses
+> Task :lucene:join:compileTestJava
+> Task :lucene:join:testClasses
+
+> Task :lucene:grouping:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:join:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:grouping:wipeTaskTemp
+> Task :lucene:join:wipeTaskTemp
+
+> Task :lucene:codecs:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:codecs:wipeTaskTemp
+> Task :lucene:analysis:nori:jar
+> Task :lucene:analysis:icu:compileJava
+> Task :lucene:analysis:icu:classes
+> Task :lucene:analysis:icu:jar
+Note: /testbed/lucene/backward-codecs/src/test/org/apache/lucene/backward_codecs/lucene90/TestLucene90SegmentInfoFormat.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:backward-codecs:compileTestJava
+
+> Task :lucene:misc:compileTestJava
+
+> Task :lucene:replicator:compileTestJava
+Note: /testbed/lucene/replicator/src/test/org/apache/lucene/replicator/nrt/SimpleTransLog.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:misc:testClasses
+> Task :lucene:backward-codecs:testClasses
+
+> Task :lucene:misc:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:misc:wipeTaskTemp
+> Task :lucene:replicator:testClasses
+
+> Task :lucene:replicator:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:replicator:wipeTaskTemp
+
+> Task :lucene:monitor:compileTestJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:monitor:testClasses
+
+> Task :lucene:monitor:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:monitor:wipeTaskTemp
+> Task :lucene:spatial-test-fixtures:compileJava
+> Task :lucene:spatial-test-fixtures:classes
+> Task :lucene:spatial-test-fixtures:jar
+> Task :lucene:analysis.tests:compileTestJava
+> Task :lucene:analysis.tests:testClasses
+> Task :lucene:analysis.tests:testJar
+
+> Task :lucene:analysis.tests:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis.tests:wipeTaskTemp
+
+> Task :lucene:highlighter:compileTestJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:spatial-test-fixtures:compileTestJava NO-SOURCE
+> Task :lucene:spatial-test-fixtures:testClasses UP-TO-DATE
+> Task :lucene:spatial-test-fixtures:test NO-SOURCE
+> Task :lucene:spatial-test-fixtures:wipeTaskTemp
+> Task :lucene:benchmark:compileJava
+> Task :lucene:benchmark:classes
+> Task :lucene:highlighter:testClasses
+
+> Task :lucene:facet:compileTestJava
+Note: /testbed/lucene/facet/src/test/org/apache/lucene/facet/taxonomy/TestTaxonomyFacetAssociations.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:sandbox:compileTestJava
+> Task :lucene:sandbox:testClasses
+
+> Task :lucene:backward-codecs:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:backward-codecs:wipeTaskTemp
+
+> Task :lucene:highlighter:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:highlighter:wipeTaskTemp
+> Task :lucene:facet:testClasses
+> Task :lucene:benchmark:jar
+
+> Task :lucene:facet:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:facet:wipeTaskTemp
+
+> Task :lucene:queries:compileTestJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:sandbox:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:queryparser:compileTestJava
+> Task :lucene:queryparser:testClasses
+> Task :lucene:sandbox:wipeTaskTemp
+> Task :lucene:queries:testClasses
+
+> Task :lucene:queryparser:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:queryparser:wipeTaskTemp
+
+> Task :lucene:queries:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:queries:wipeTaskTemp
+> Task :lucene:analysis:morfologik.tests:compileTestJava
+> Task :lucene:analysis:morfologik.tests:testClasses
+> Task :lucene:analysis:morfologik.tests:testJar
+
+> Task :lucene:analysis:morfologik.tests:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:morfologik.tests:wipeTaskTemp
+> Task :lucene:analysis:morfologik:compileTestJava
+> Task :lucene:analysis:morfologik:testClasses
+
+> Task :lucene:analysis:morfologik:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:morfologik:wipeTaskTemp
+> Task :lucene:spatial3d:compileTestJava
+> Task :lucene:spatial3d:testClasses
+
+> Task :lucene:spatial3d:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:spatial3d:wipeTaskTemp
+> Task :lucene:analysis:opennlp:compileTestJava
+> Task :lucene:analysis:opennlp:testClasses
+
+> Task :lucene:analysis:opennlp:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:opennlp:wipeTaskTemp
+> Task :lucene:analysis:icu:compileTestJava
+> Task :lucene:analysis:icu:testClasses
+
+> Task :lucene:analysis:icu:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:icu:wipeTaskTemp
+
+> Task :lucene:spatial-extras:compileTestJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:analysis:nori:compileTestJava
+> Task :lucene:analysis:nori:testClasses
+> Task :lucene:benchmark:compileTestJava
+> Task :lucene:benchmark:testClasses
+
+> Task :lucene:analysis:nori:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:nori:wipeTaskTemp
+> Task :lucene:analysis:kuromoji:compileTestJava
+> Task :lucene:analysis:kuromoji:testClasses
+
+> Task :lucene:analysis:kuromoji:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:kuromoji:wipeTaskTemp
+> Task :lucene:analysis:smartcn:compileTestJava
+> Task :lucene:analysis:smartcn:testClasses
+
+> Task :lucene:benchmark:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:benchmark:wipeTaskTemp
+
+> Task :lucene:analysis:smartcn:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:smartcn:wipeTaskTemp
+> Task :lucene:analysis:phonetic:compileTestJava
+> Task :lucene:analysis:phonetic:testClasses
+> Task :lucene:analysis:stempel:compileTestJava
+> Task :lucene:analysis:stempel:testClasses
+
+> Task :lucene:analysis:stempel:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:phonetic:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:stempel:wipeTaskTemp
+> Task :lucene:analysis:phonetic:wipeTaskTemp
+> Task :lucene:spatial-extras:testClasses
+
+> Task :lucene:spatial-extras:test
+
+---------------------------------------------------------------
+Note: /testbed/lucene/test-framework/src/test/org/apache/lucene/tests/util/TestReproduceMessage.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:spatial-extras:wipeTaskTemp
+
+> Task :lucene:test-framework:compileTestJava
+
+> Task :lucene:test-framework:testClasses
+
+> Task :lucene:test-framework:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:test-framework:wipeTaskTemp
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:suggest:compileTestJava
+
+> Task :lucene:suggest:testClasses
+
+> Task :lucene:suggest:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:suggest:wipeTaskTemp
+> Task :lucene:luke:compileJava
+> Task :lucene:luke:classes
+> Task :lucene:luke:jar
+> Task :lucene:distribution:assembleBinaryDirForTests
+> Task :lucene:luke:compileTestJava
+> Task :lucene:luke:testClasses
+
+> Task :lucene:luke:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:distribution.tests:test
+Testing binary distribution at: /testbed/lucene/distribution/build/packages/lucene-10.0.0-SNAPSHOT-itests
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:luke:wipeTaskTemp
+> Task :lucene:distribution.tests:wipeTaskTemp
+> Task :lucene:analysis:common:compileTestJava
+> Task :lucene:analysis:common:testClasses
+
+> Task :lucene:analysis:common:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:common:wipeTaskTemp
+
+> Task :lucene:core:compileTestJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:core:testClasses
+
+> Task :lucene:core:test
+
+org.apache.lucene.index.TestIndexWriter > testPendingNumDocs STANDARD_ERROR
+    Ago 27, 2026 7:19:48 A.M. org.apache.lucene.store.MemorySegmentIndexInputProvider <init>
+    INFO: Using MemorySegmentIndexInput with Java 21; to disable start with -Dorg.apache.lucene.store.MMapDirectory.enableMemorySegments=false
+
+org.apache.lucene.index.TestIndexWriter > testPendingNumDocs PASSED
+
+org.apache.lucene.index.TestIndexWriter > testWickedLongTerm PASSED
+
+org.apache.lucene.index.TestIndexWriter > testBadSegment PASSED
+
+org.apache.lucene.index.TestIndexWriter > testDontInvokeAnalyzerForUnAnalyzedFields PASSED
+
+org.apache.lucene.index.TestIndexWriter > testIterableFieldThrowsException PASSED
+
+org.apache.lucene.index.TestIndexWriter > testNegativePositions WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A command line option has enabled the Security Manager
+WARNING: The Security Manager is deprecated and will be removed in a future release
+PASSED
+
+org.apache.lucene.index.TestIndexWriter > testBrokenPayload PASSED
+
+org.apache.lucene.index.TestIndexWriter > testNullDocument PASSED
+
+org.apache.lucene.index.TestIndexWriter > testIndexNoDocuments PASSED
+
+org.apache.lucene.index.TestIndexWriter > testRecordsIndexCreatedVersion PASSED
+
+org.apache.lucene.index.TestIndexWriter > testNRTReaderVersion PASSED
+
+org.apache.lucene.index.TestIndexWriter > testSoftUpdateDocuments PASSED
+
+org.apache.lucene.index.TestIndexWriter > testCloseDuringCommit PASSED
+
+org.apache.lucene.index.TestIndexWriter > testMergeZeroDocsMergeIsClosedOnce PASSED
+
+org.apache.lucene.index.TestIndexWriter > testEmptyFSDirWithNoLock PASSED
+
+org.apache.lucene.index.TestIndexWriter > testNeverCheckOutOnFullFlush PASSED
+
+org.apache.lucene.index.TestIndexWriter > testDeleteUnusedFiles PASSED
+
+org.apache.lucene.index.TestIndexWriter > testCloseThenRollback PASSED
+
+org.apache.lucene.index.TestIndexWriter > testSetIndexCreatedVersion PASSED
+
+org.apache.lucene.index.TestIndexWriter > testVariableSchema PASSED
+
+org.apache.lucene.index.TestIndexWriter > testEmptyNorm PASSED
+
+org.apache.lucene.index.TestIndexWriter > testPendingDeleteDVGeneration PASSED
+
+org.apache.lucene.index.TestIndexWriter > testHasBlocksMergeFullyDelSegments PASSED
+
+org.apache.lucene.index.TestIndexWriter > testNRTSegmentsFile PASSED
+
+org.apache.lucene.index.TestIndexWriter > testDoubleClose PASSED
+
+org.apache.lucene.index.TestIndexWriter > testRandomOperationsWithSoftDeletes PASSED
+
+org.apache.lucene.index.TestIndexWriter > testGetCommitData PASSED
+
+org.apache.lucene.index.TestIndexWriter > testEnablingNorms PASSED
+
+org.apache.lucene.index.TestIndexWriter > testThreadInterruptDeadlock PASSED
+
+org.apache.lucene.index.TestIndexWriter > testManySeparateThreads PASSED
+
+org.apache.lucene.index.TestIndexWriter > testCorruptFirstCommit PASSED
+
+org.apache.lucene.index.TestIndexWriter > testPrepareCommitThenClose PASSED
+
+org.apache.lucene.index.TestIndexWriter > testRollbackThenClose PASSED
+
+org.apache.lucene.index.TestIndexWriter > testWithPendingDeletions PASSED
+
+org.apache.lucene.index.TestIndexWriter > testLeftoverTempFiles PASSED
+
+org.apache.lucene.index.TestIndexWriter > testPendingDeletionsRollbackWithReader PASSED
+
+org.apache.lucene.index.TestIndexWriter > testCarryOverHasBlocks PASSED
+
+org.apache.lucene.index.TestIndexWriter > testFlushWithNoMerging PASSED
+
+org.apache.lucene.index.TestIndexWriter > testIndexWriterBlocksOnStall PASSED
+
+org.apache.lucene.index.TestIndexWriter > testRefreshAndRollbackConcurrently PASSED
+
+org.apache.lucene.index.TestIndexWriter > testGetCommitDataFromOldSnapshot PASSED
+
+org.apache.lucene.index.TestIndexWriter > testDeadlock PASSED
+
+org.apache.lucene.index.TestIndexWriter > testCloseWhileMergeIsRunning PASSED
+
+org.apache.lucene.index.TestIndexWriter > testPendingDeletesAlreadyWrittenFiles PASSED
+
+org.apache.lucene.index.TestIndexWriter > testNRTAfterCommit PASSED
+
+org.apache.lucene.index.TestIndexWriter > testNoDocsIndex PASSED
+
+org.apache.lucene.index.TestIndexWriter > testIterableThrowsException2 PASSED
+
+org.apache.lucene.index.TestIndexWriter > testNRTAfterSetUserDataWithCommit PASSED
+
+org.apache.lucene.index.TestIndexWriter > testSoftAndHardLiveDocs PASSED
+
+org.apache.lucene.index.TestIndexWriter > testPositionIncrementGapEmptyField PASSED
+
+org.apache.lucene.index.TestIndexWriter > testOtherFiles PASSED
+
+org.apache.lucene.index.TestIndexWriter > testNotAllowUsingExistingFieldAsSoftDeletes PASSED
+
+org.apache.lucene.index.TestIndexWriter > testHighFreqTerm PASSED
+
+org.apache.lucene.index.TestIndexWriter > testMergeAllDeleted PASSED
+
+org.apache.lucene.index.TestIndexWriter > testEmptyFieldName PASSED
+
+org.apache.lucene.index.TestIndexWriter > testPreventAddingIndexesWithDifferentSoftDeletesField PASSED
+
+org.apache.lucene.index.TestIndexWriter > testNullDocuments PASSED
+
+org.apache.lucene.index.TestIndexWriter > testFlushLargestWriter PASSED
+
+org.apache.lucene.index.TestIndexWriter > testPreventChangingSoftDeletesField PASSED
+
+org.apache.lucene.index.TestIndexWriter > testPrepareCommitThenRollback2 PASSED
+
+org.apache.lucene.index.TestIndexWriter > testHoldLockOnLargestWriter PASSED
+
+org.apache.lucene.index.TestIndexWriter > testEnsureMaxSeqNoIsAccurateDuringFlush PASSED
+
+org.apache.lucene.index.TestIndexWriter > testCreateWithReader PASSED
+
+org.apache.lucene.index.TestIndexWriter > testDoBeforeAfterFlush PASSED
+
+org.apache.lucene.index.TestIndexWriter > testPrepareCommitThenRollback PASSED
+
+org.apache.lucene.index.TestIndexWriter > testAbortFullyDeletedSegment PASSED
+
+org.apache.lucene.index.TestIndexWriter > testEmptyFieldNameTerms PASSED
+
+org.apache.lucene.index.TestIndexWriter > testFullyDeletedSegmentsReleaseFiles PASSED
+
+org.apache.lucene.index.TestIndexWriter > testWhetherDeleteAllDeletesWriteLock PASSED
+
+org.apache.lucene.index.TestIndexWriter > testDeletesAppliedOnFlush PASSED
+
+org.apache.lucene.index.TestIndexWriter > testMaxThreadPriority PASSED
+
+org.apache.lucene.index.TestIndexWriter > testIds PASSED
+
+org.apache.lucene.index.TestIndexWriter > testMassiveField SKIPPED
+
+org.apache.lucene.index.TestIndexWriter > testCommitImmediatelyAfterNRTReopen PASSED
+
+org.apache.lucene.index.TestIndexWriter > testCommitWithUserDataOnly PASSED
+
+org.apache.lucene.index.TestIndexWriter > testRandomOperations PASSED
+
+org.apache.lucene.index.TestIndexWriter > testChangingRAMBuffer PASSED
+
+org.apache.lucene.index.TestIndexWriter > testUnlimitedMaxFieldLength PASSED
+
+org.apache.lucene.index.TestIndexWriter > testStopwordsPosIncHole PASSED
+
+org.apache.lucene.index.TestIndexWriter > testNullAnalyzer PASSED
+
+org.apache.lucene.index.TestIndexWriter > testApplyDeletesWithoutFlushes PASSED
+
+org.apache.lucene.index.TestIndexWriter > testNoUnwantedTVFiles PASSED
+
+org.apache.lucene.index.TestIndexWriter > testEmptyDirRollback PASSED
+
+org.apache.lucene.index.TestIndexWriter > testGetFieldNames PASSED
+
+org.apache.lucene.index.TestIndexWriter > testMergeOnCommitKeepFullyDeletedSegments PASSED
+
+org.apache.lucene.index.TestIndexWriter > testIndexStoreCombos PASSED
+
+org.apache.lucene.index.TestIndexWriter > testEmptyDocAfterFlushingRealDoc PASSED
+
+org.apache.lucene.index.TestIndexWriter > testNRTAfterSetUserDataWithoutCommit PASSED
+
+org.apache.lucene.index.TestIndexWriter > testDeleteUnusedFiles2 PASSED
+
+org.apache.lucene.index.TestIndexWriter > testDeleteSameTermAcrossFields PASSED
+
+org.apache.lucene.index.TestIndexWriter > testSegmentCommitInfoId PASSED
+
+org.apache.lucene.index.TestIndexWriter > testIterableThrowsException PASSED
+
+org.apache.lucene.index.TestIndexWriter > testChangesAfterClose PASSED
+
+org.apache.lucene.index.TestIndexWriter > testCheckPendingFlushPostUpdate PASSED
+
+org.apache.lucene.index.TestIndexWriter > testDeleteHappensBeforeWhileFlush PASSED
+
+org.apache.lucene.index.TestIndexWriter > testFlushWhileStartingNewThreads PASSED
+
+org.apache.lucene.index.TestIndexWriter > testHasUncommittedChangesAfterException PASSED
+
+org.apache.lucene.index.TestIndexWriter > testMaxCompletedSequenceNumber PASSED
+
+org.apache.lucene.index.TestIndexWriter > testHasUncommittedChanges PASSED
+
+org.apache.lucene.index.TestIndexWriter > testSegmentInfoIsSnapshot PASSED
+
+org.apache.lucene.index.TestIndexWriter > testSoftUpdatesConcurrentlyMixedDeletes PASSED
+
+org.apache.lucene.index.TestIndexWriter > testDeleteAllNRTLeftoverFiles PASSED
+
+org.apache.lucene.index.TestIndexWriter > testCloseableQueue PASSED
+
+org.apache.lucene.index.TestIndexWriter > testDocCount PASSED
+
+org.apache.lucene.index.TestIndexWriter > testEmptyFieldNameWithEmptyTerm PASSED
+
+org.apache.lucene.index.TestIndexWriter > testSoftUpdatesConcurrently PASSED
+
+org.apache.lucene.index.TestIndexWriter > testSmallRAMBuffer PASSED
+
+org.apache.lucene.index.TestIndexWriter > testStopwordsPosIncHole2 PASSED
+:lucene:core:test (SUCCESS): 108 test(s), 1 skipped
+
+-------------------------------------------------------------------
+|  Results: SUCCESS (108 tests, 107 passed, 0 failed, 1 skipped)  |
+-------------------------------------------------------------------
+
+> Task :lucene:core:wipeTaskTemp
+The slowest tests (exceeding 500 ms) during this run:
+   1.75s TestIndexWriter.testThreadInterruptDeadlock (:lucene:core)
+The slowest suites (exceeding 1s) during this run:
+   5.63s TestIndexWriter (:lucene:core)
+
+BUILD SUCCESSFUL in 1m 59s
+246 actionable tasks: 246 executed
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout de820b67cc6d7fc90446affeb756e70a2ddf6b92 lucene/core/src/test/org/apache/lucene/index/TestIndexWriter.java lucene/test-framework/src/java/org/apache/lucene/tests/util/LuceneTestCase.java
+Updated 2 paths from 40276da26f

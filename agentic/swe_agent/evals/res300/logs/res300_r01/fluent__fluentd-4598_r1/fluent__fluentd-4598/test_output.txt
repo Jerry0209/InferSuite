@@ -1,0 +1,98 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   Gemfile
+	modified:   lib/fluent/plugin_helper/http_server/server.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit a6978e59adaced5626506d5083056c39f4b629bf
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Thu Aug 15 17:02:36 2024 +0900
+
+    build(deps): bump ossf/scorecard-action from 2.3.1 to 2.4.0 (#4595)
+    
+    Bumps [ossf/scorecard-action](https://github.com/ossf/scorecard-action) from 2.3.1 to 2.4.0.
+    - [Release notes](https://github.com/ossf/scorecard-action/releases)
+    - [Changelog](https://github.com/ossf/scorecard-action/blob/main/RELEASE.md)
+    - [Commits](https://github.com/ossf/scorecard-action/compare/0864cf19026789058feabb7e87baa5f140aac736...62b2cac7ed8198b15735ed49ab1e5cf35480ba46)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: ossf/scorecard-action
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+    Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+diff --git a/.github/workflows/scorecards.yml b/.github/workflows/scorecards.yml
+index e1e2820b..e521169d 100644
+--- a/.github/workflows/scorecards.yml
++++ b/.github/workflows/scorecards.yml
+@@ -33,7 +33,7 @@ jobs:
+           persist-credentials: false
+ 
+       - name: "Run analysis"
+-        uses: ossf/scorecard-action@0864cf19026789058feabb7e87baa5f140aac736 # v2.3.1
++        uses: ossf/scorecard-action@62b2cac7ed8198b15735ed49ab1e5cf35480ba46 # v2.4.0
+         with:
+           results_file: results.sarif
+           results_format: sarif
++ git -c core.fileMode=false diff a6978e59adaced5626506d5083056c39f4b629bf
+diff --git a/Gemfile b/Gemfile
+index 88ae4bc4..a8e6b4e1 100644
+--- a/Gemfile
++++ b/Gemfile
+@@ -7,3 +7,4 @@ if File.exist?(local_gemfile)
+   puts "Loading Gemfile.local ..." if $DEBUG # `ruby -d` or `bundle -v`
+   instance_eval File.read(local_gemfile)
+ end
++gem 'console', '1.29'
+diff --git a/lib/fluent/plugin_helper/http_server/server.rb b/lib/fluent/plugin_helper/http_server/server.rb
+index 549db76c..9e807958 100644
+--- a/lib/fluent/plugin_helper/http_server/server.rb
++++ b/lib/fluent/plugin_helper/http_server/server.rb
+@@ -77,9 +77,7 @@ module Fluent
+ 
+         HttpServer::Methods::ALL.map { |e| e.downcase.to_sym }.each do |name|
+           define_method(name) do |path, app = nil, &block|
+-            unless path.end_with?('/')
+-              path << '/'
+-            end
++            path += '/' unless path.end_with?('/')
+ 
+             if (block && app) || (!block && !app)
+               raise 'You must specify either app or block in the same time'
++ git checkout a6978e59adaced5626506d5083056c39f4b629bf test/plugin_helper/test_http_server_helper.rb
+Updated 0 paths from 63da34f2
++ git apply -v -
+Checking patch test/plugin_helper/test_http_server_helper.rb...
+Applied patch test/plugin_helper/test_http_server_helper.rb cleanly.
++ : '>>>>> Start Test Output'
++ bundle exec ruby test/plugin_helper/test_http_server_helper.rb -v -n /mount/
++ cat
+Loaded suite test/plugin_helper/test_http_server_helper
+Started
+HttpHelperTest: 
+  Create a HTTP server: 
+    test: mount frozen path:				.: (0.003022)
+    test: mount given path:				.: (0.005543)
+
+Finished in 0.008892781 seconds.
+-------------------------------------------------------------------------------
+2 tests, 25 assertions, 0 failures, 0 errors, 0 pendings, 0 omissions, 0 notifications
+100% passed
+-------------------------------------------------------------------------------
+224.90 tests/s, 2811.27 assertions/s
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout a6978e59adaced5626506d5083056c39f4b629bf test/plugin_helper/test_http_server_helper.rb
+Updated 1 path from 63da34f2

@@ -1,0 +1,104 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/Illuminate/Validation/Concerns/FormatsMessages.php
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit b8ca298a5475497d01b194ed5688441454d8ee34
+Author: Anis uddin Ahmad <anisniit@gmail.com>
+Date:   Tue Aug 13 23:07:13 2024 +0600
+
+    Checking availability before calling Log::flushSharedContext() method (#52470)
+
+diff --git a/src/Illuminate/Queue/QueueServiceProvider.php b/src/Illuminate/Queue/QueueServiceProvider.php
+index 478352ae7e..95154bf980 100755
+--- a/src/Illuminate/Queue/QueueServiceProvider.php
++++ b/src/Illuminate/Queue/QueueServiceProvider.php
+@@ -198,7 +198,9 @@ protected function registerWorker()
+             };
+ 
+             $resetScope = function () use ($app) {
+-                $app['log']->flushSharedContext();
++                if (method_exists($app['log'], 'flushSharedContext')) {
++                    $app['log']->flushSharedContext();
++                }
+ 
+                 if (method_exists($app['log'], 'withoutContext')) {
+                     $app['log']->withoutContext();
++ git -c core.fileMode=false diff b8ca298a5475497d01b194ed5688441454d8ee34
+diff --git a/src/Illuminate/Validation/Concerns/FormatsMessages.php b/src/Illuminate/Validation/Concerns/FormatsMessages.php
+index 7f810d751b..f6c1f075b1 100644
+--- a/src/Illuminate/Validation/Concerns/FormatsMessages.php
++++ b/src/Illuminate/Validation/Concerns/FormatsMessages.php
+@@ -113,8 +113,8 @@ protected function getFromLocalArray($attribute, $lowerRule, $source = null)
+                     if (preg_match('#^'.$pattern.'\z#u', $key) === 1) {
+                         $message = $source[$sourceKey];
+ 
+-                        if (is_array($message) && isset($message[$lowerRule])) {
+-                            return $message[$lowerRule];
++                        if (is_array($message)) {
++                            return $message[$lowerRule] ?? null;
+                         }
+ 
+                         return $message;
+@@ -126,8 +126,8 @@ protected function getFromLocalArray($attribute, $lowerRule, $source = null)
+                 if (Str::is($sourceKey, $key)) {
+                     $message = $source[$sourceKey];
+ 
+-                    if ($sourceKey === $attribute && is_array($message) && isset($message[$lowerRule])) {
+-                        return $message[$lowerRule];
++                    if ($sourceKey === $attribute && is_array($message)) {
++                        return $message[$lowerRule] ?? null;
+                     }
+ 
+                     return $message;
++ git checkout b8ca298a5475497d01b194ed5688441454d8ee34 tests/Validation/ValidationValidatorTest.php
+Updated 0 paths from 4c56691dd8
++ git apply -v -
+Checking patch tests/Validation/ValidationValidatorTest.php...
+Applied patch tests/Validation/ValidationValidatorTest.php cleanly.
++ : '>>>>> Start Test Output'
++ vendor/bin/phpunit --testdox --colors=never tests/Validation/ValidationValidatorTest.php --filter custom
++ cat
+PHPUnit 11.5.56 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.3.16
+Configuration: /testbed/phpunit.xml.dist
+
+...................                                               19 / 19 (100%)
+
+Time: 00:00.039, Memory: 22.00 MB
+
+Validation Validator (Illuminate\Tests\Validation\ValidationValidator)
+ ✔ Custom replacers are called
+ ✔ Class based custom replacers
+ ✔ Displayable attributes are replaced in custom replacers
+ ✔ Custom validation lines are respected
+ ✔ Custom validation lines for size rules
+ ✔ Custom validation lines are respected with asterisks
+ ✔ Custom exception
+ ✔ Custom exception must extend validation exception
+ ✔ Validation dot custom dot anything can be translated
+ ✔ Custom validation is appended to messages
+ ✔ Validate email with custom class check
+ ✔ Custom validators
+ ✔ Class based custom validators
+ ✔ Class based custom validators using conventional method
+ ✔ Custom implicit validators
+ ✔ Custom dependent validators
+ ✔ Custom validation object
+ ✔ Custom validation object with dot keys is correctly passed value
+ ✔ Implicit custom validation objects
+
+OK (19 tests, 71 assertions)
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
+>>>>> Test Exit Code: 0
++ echo '>>>>> Test Exit Code: 0'
++ git checkout b8ca298a5475497d01b194ed5688441454d8ee34 tests/Validation/ValidationValidatorTest.php
+Updated 1 path from 4c56691dd8

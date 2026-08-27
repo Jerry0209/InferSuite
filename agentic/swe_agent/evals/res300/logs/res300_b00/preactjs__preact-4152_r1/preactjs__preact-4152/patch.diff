@@ -1,0 +1,14 @@
+diff --git a/src/diff/children.js b/src/diff/children.js
+index 35874a64..84d7b8b1 100644
+--- a/src/diff/children.js
++++ b/src/diff/children.js
+@@ -72,7 +72,8 @@ export function diffChildren(
+ 			typeof childVNode == 'string' ||
+ 			typeof childVNode == 'number' ||
+ 			// eslint-disable-next-line valid-typeof
+-			typeof childVNode == 'bigint'
++			typeof childVNode == 'bigint' ||
++			childVNode.constructor === String
+ 		) {
+ 			childVNode = newParentVNode._children[i] = createVNode(
+ 				null,

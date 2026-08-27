@@ -1,0 +1,489 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/rubocop/cop/style/safe_navigation.rb
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	changelog/fix_an_incorrect_autocorrect_for_style_safe_navigation.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit acae60d2b80987b0f4e3b6fd26c99b0975ba618e
+Author: Daniel Vandersluis <daniel.vandersluis@gmail.com>
+Date:   Tue Nov 5 11:00:15 2024 -0500
+
+    Update references to `children` on assignment nodes to node methods.
+
+diff --git a/lib/rubocop/cop/lint/literal_assignment_in_condition.rb b/lib/rubocop/cop/lint/literal_assignment_in_condition.rb
+index 423f422b7..4613dca93 100644
+--- a/lib/rubocop/cop/lint/literal_assignment_in_condition.rb
++++ b/lib/rubocop/cop/lint/literal_assignment_in_condition.rb
+@@ -40,7 +40,7 @@ module RuboCop
+           traverse_node(node.condition) do |asgn_node|
+             next unless asgn_node.loc.operator
+ 
+-            rhs = asgn_node.to_a.last
++            rhs = asgn_node.rhs
+             next if !all_literals?(rhs) || parallel_assignment_with_splat_operator?(rhs)
+ 
+             range = offense_range(asgn_node, rhs)
+diff --git a/lib/rubocop/cop/lint/useless_setter_call.rb b/lib/rubocop/cop/lint/useless_setter_call.rb
+index 97969421b..ec5de924d 100644
+--- a/lib/rubocop/cop/lint/useless_setter_call.rb
++++ b/lib/rubocop/cop/lint/useless_setter_call.rb
+@@ -102,24 +102,18 @@ module RuboCop
+             when :op_asgn
+               process_binary_operator_assignment(node)
+             when *ASSIGNMENT_TYPES
+-              _, rhs_node = *node
+-              process_assignment(node, rhs_node) if rhs_node
++              process_assignment(node, node.rhs) if node.rhs
+             end
+           end
+ 
+           def process_multiple_assignment(masgn_node)
+-            mlhs_node, mrhs_node = *masgn_node
+-
+-            mlhs_node.children.each_with_index do |lhs_node, index|
++            masgn_node.assignments.each_with_index do |lhs_node, index|
+               next unless ASSIGNMENT_TYPES.include?(lhs_node.type)
+ 
+-              lhs_variable_name, = *lhs_node
+-              rhs_node = mrhs_node.children[index]
+-
+-              if mrhs_node.array_type? && rhs_node
+-                process_assignment(lhs_variable_name, rhs_node)
++              if masgn_node.rhs.array_type? && (rhs_node = masgn_node.rhs.children[index])
++                process_assignment(lhs_node, rhs_node)
+               else
+-                @local[lhs_variable_name] = true
++                @local[lhs_node.name] = true
+               end
+             end
+ 
+@@ -127,33 +121,28 @@ module RuboCop
+           end
+ 
+           def process_logical_operator_assignment(asgn_node)
+-            lhs_node, rhs_node = *asgn_node
+-            return unless ASSIGNMENT_TYPES.include?(lhs_node.type)
++            return unless ASSIGNMENT_TYPES.include?(asgn_node.lhs.type)
+ 
+-            process_assignment(lhs_node, rhs_node)
++            process_assignment(asgn_node.lhs, asgn_node.rhs)
+ 
+             throw :skip_children
+           end
+ 
+           def process_binary_operator_assignment(op_asgn_node)
+-            lhs_node, = *op_asgn_node
++            lhs_node = op_asgn_node.lhs
+             return unless ASSIGNMENT_TYPES.include?(lhs_node.type)
+ 
+-            lhs_variable_name, = *lhs_node
+-            @local[lhs_variable_name] = true
++            @local[lhs_node.name] = true
+ 
+             throw :skip_children
+           end
+ 
+           def process_assignment(asgn_node, rhs_node)
+-            lhs_variable_name, = *asgn_node
+-
+-            @local[lhs_variable_name] = if rhs_node.variable?
+-                                          rhs_variable_name, = *rhs_node
+-                                          @local[rhs_variable_name]
+-                                        else
+-                                          constructor?(rhs_node)
+-                                        end
++            @local[asgn_node.name] = if rhs_node.variable?
++                                       @local[rhs_node.name]
++                                     else
++                                       constructor?(rhs_node)
++                                     end
+           end
+ 
+           def constructor?(node)
+diff --git a/lib/rubocop/cop/metrics/class_length.rb b/lib/rubocop/cop/metrics/class_length.rb
+index 1d46edddd..6ffc24539 100644
+--- a/lib/rubocop/cop/metrics/class_length.rb
++++ b/lib/rubocop/cop/metrics/class_length.rb
+@@ -54,9 +54,9 @@ module RuboCop
+           parent = node.parent
+ 
+           if parent&.assignment?
+-            block_node = parent.children[1]
++            block_node = parent.expression
+           elsif parent&.parent&.masgn_type?
+-            block_node = parent.parent.children[1]
++            block_node = parent.parent.expression
+           else
+             _scope, _name, block_node = *node
+           end
+diff --git a/lib/rubocop/cop/metrics/utils/abc_size_calculator.rb b/lib/rubocop/cop/metrics/utils/abc_size_calculator.rb
+index eb828c5d3..915ee4796 100644
+--- a/lib/rubocop/cop/metrics/utils/abc_size_calculator.rb
++++ b/lib/rubocop/cop/metrics/utils/abc_size_calculator.rb
+@@ -95,7 +95,7 @@ module RuboCop
+           def compound_assignment(node)
+             # Methods setter cannot be detected for multiple assignments
+             # and shorthand assigns, so we'll count them here instead
+-            children = node.masgn_type? ? node.children[0].children : node.children
++            children = node.masgn_type? ? node.assignments : node.children
+ 
+             will_be_miscounted = children.count do |child|
+               child.respond_to?(:setter_method?) && !child.setter_method?
+diff --git a/lib/rubocop/cop/naming/rescued_exceptions_variable_name.rb b/lib/rubocop/cop/naming/rescued_exceptions_variable_name.rb
+index 12bf991db..eeb26e252 100644
+--- a/lib/rubocop/cop/naming/rescued_exceptions_variable_name.rb
++++ b/lib/rubocop/cop/naming/rescued_exceptions_variable_name.rb
+@@ -109,7 +109,7 @@ module RuboCop
+               variable_name_matches?(lvasgn_node, name)
+             end
+           else
+-            node.children.first == name
++            node.name == name
+           end
+         end
+ 
+@@ -141,12 +141,7 @@ module RuboCop
+         # Further `lvar` nodes will not be corrected though since they now refer to a
+         # different variable.
+         def correct_reassignment(corrector, node, offending_name, preferred_name)
+-          if node.lvasgn_type?
+-            correct_node(corrector, node.child_nodes.first, offending_name, preferred_name)
+-          elsif node.masgn_type?
+-            # With multiple assign, the assignments are in an array as the last child
+-            correct_node(corrector, node.children.last, offending_name, preferred_name)
+-          end
++          correct_node(corrector, node.rhs, offending_name, preferred_name)
+         end
+ 
+         def preferred_name(variable_name)
+@@ -159,10 +154,7 @@ module RuboCop
+         end
+ 
+         def variable_name(node)
+-          asgn_node = node.exception_variable
+-          return unless asgn_node
+-
+-          asgn_node.children.last
++          node.exception_variable&.name
+         end
+ 
+         def message(node)
+diff --git a/lib/rubocop/cop/style/method_call_without_args_parentheses.rb b/lib/rubocop/cop/style/method_call_without_args_parentheses.rb
+index 6b2a0695c..f258d4315 100644
+--- a/lib/rubocop/cop/style/method_call_without_args_parentheses.rb
++++ b/lib/rubocop/cop/style/method_call_without_args_parentheses.rb
+@@ -98,20 +98,14 @@ module RuboCop
+             # `obj.method ||= value` parses as (or-asgn (send ...) ...)
+             # which IS an `asgn_node`. Similarly, `obj.method += value` parses
+             # as (op-asgn (send ...) ...), which is also an `asgn_node`.
+-            if asgn_node.shorthand_asgn?
+-              asgn_node, _value = *asgn_node
+-              next if asgn_node.send_type?
+-            end
++            next if asgn_node.shorthand_asgn? && asgn_node.lhs.send_type?
+ 
+             yield asgn_node
+           end
+         end
+ 
+         def variable_in_mass_assignment?(variable_name, node)
+-          mlhs_node, _mrhs_node = *node
+-          var_nodes = *mlhs_node
+-
+-          var_nodes.any? { |n| n.to_a.first == variable_name }
++          node.assignments.any? { |n| n.name == variable_name }
+         end
+ 
+         def offense_range(node)
+diff --git a/lib/rubocop/cop/style/parallel_assignment.rb b/lib/rubocop/cop/style/parallel_assignment.rb
+index cc0917215..be42a3160 100644
+--- a/lib/rubocop/cop/style/parallel_assignment.rb
++++ b/lib/rubocop/cop/style/parallel_assignment.rb
+@@ -28,28 +28,25 @@ module RuboCop
+ 
+         MSG = 'Do not use parallel assignment.'
+ 
+-        def on_masgn(node)
+-          lhs, rhs = *node
+-          lhs_elements = *lhs
++        def on_masgn(node) # rubocop:disable Metrics/AbcSize
++          rhs = node.rhs
+           rhs = rhs.body if rhs.rescue_type?
+           rhs_elements = Array(rhs).compact # edge case for one constant
+ 
+-          return if allowed_lhs?(lhs) || allowed_rhs?(rhs) ||
+-                    allowed_masign?(lhs_elements, rhs_elements)
++          return if allowed_lhs?(node.assignments) || allowed_rhs?(rhs) ||
++                    allowed_masign?(node.assignments, rhs_elements)
+ 
+           range = node.source_range.begin.join(rhs.source_range.end)
+ 
+           add_offense(range) do |corrector|
+-            autocorrect(corrector, node, lhs, rhs)
++            autocorrect(corrector, node, rhs)
+           end
+         end
+ 
+         private
+ 
+-        def autocorrect(corrector, node, lhs, rhs)
+-          left_elements = *lhs
+-          right_elements = Array(rhs).compact
+-          order = find_valid_order(left_elements, right_elements)
++        def autocorrect(corrector, node, rhs)
++          order = find_valid_order(node.assignments, Array(rhs).compact)
+           correction = assignment_corrector(node, rhs, order)
+ 
+           corrector.replace(correction.correction_range, correction.correction)
+@@ -61,9 +58,7 @@ module RuboCop
+                               add_self_to_getters(rhs_elements))
+         end
+ 
+-        def allowed_lhs?(node)
+-          elements = *node
+-
++        def allowed_lhs?(elements)
+           # Account for edge cases using one variable with a comma
+           # E.g.: `foo, = *bar`
+           elements.one? || elements.any?(&:splat_type?)
+diff --git a/lib/rubocop/cop/variable_force.rb b/lib/rubocop/cop/variable_force.rb
+index 205d8b217..27814589d 100644
+--- a/lib/rubocop/cop/variable_force.rb
++++ b/lib/rubocop/cop/variable_force.rb
+@@ -194,15 +194,10 @@ module RuboCop
+       end
+ 
+       def process_variable_operator_assignment(node)
+-        if LOGICAL_OPERATOR_ASSIGNMENT_TYPES.include?(node.type)
+-          asgn_node, rhs_node = *node
+-        else
+-          asgn_node, _operator, rhs_node = *node
+-        end
+-
++        asgn_node = node.lhs
+         return unless asgn_node.lvasgn_type?
+ 
+-        name = asgn_node.children.first
++        name = asgn_node.name
+ 
+         variable_table.declare_variable(name, asgn_node) unless variable_table.variable_exist?(name)
+ 
+@@ -222,7 +217,7 @@ module RuboCop
+         # before processing rhs nodes.
+ 
+         variable_table.reference_variable(name, node)
+-        process_node(rhs_node)
++        process_node(node.rhs)
+         variable_table.assign_to_variable(name, asgn_node)
+ 
+         skip_children!
+@@ -355,8 +350,7 @@ module RuboCop
+         when :lvasgn
+           AssignmentReference.new(node)
+         when *OPERATOR_ASSIGNMENT_TYPES
+-          asgn_node = node.children.first
+-          VariableReference.new(asgn_node.children.first) if asgn_node.lvasgn_type?
++          VariableReference.new(node.lhs.name) if node.lhs.lvasgn_type?
+         end
+       end
+ 
+diff --git a/spec/rubocop/cop/variable_force/assignment_spec.rb b/spec/rubocop/cop/variable_force/assignment_spec.rb
+index 59a0c642a..ac0a0df4a 100644
+--- a/spec/rubocop/cop/variable_force/assignment_spec.rb
++++ b/spec/rubocop/cop/variable_force/assignment_spec.rb
+@@ -23,7 +23,7 @@ RSpec.describe RuboCop::Cop::VariableForce::Assignment do
+ 
+   let(:lvasgn_node) { ast.each_node.find(&:lvasgn_type?) }
+ 
+-  let(:name) { lvasgn_node.children.first }
++  let(:name) { lvasgn_node.name }
+   let(:scope) { RuboCop::Cop::VariableForce::Scope.new(def_node) }
+   let(:variable) { RuboCop::Cop::VariableForce::Variable.new(name, lvasgn_node, scope) }
+   let(:assignment) { described_class.new(lvasgn_node, variable) }
++ git -c core.fileMode=false diff acae60d2b80987b0f4e3b6fd26c99b0975ba618e
+diff --git a/lib/rubocop/cop/style/safe_navigation.rb b/lib/rubocop/cop/style/safe_navigation.rb
+index 65d59776c..b8c477091 100644
+--- a/lib/rubocop/cop/style/safe_navigation.rb
++++ b/lib/rubocop/cop/style/safe_navigation.rb
+@@ -312,7 +312,7 @@ module RuboCop
+         end
+ 
+         def chain_length(method_chain, method)
+-          method.each_ancestor(:send).inject(0) do |total, ancestor|
++          method.each_ancestor(:send, :csend).inject(0) do |total, ancestor|
+             break total + 1 if ancestor == method_chain
+ 
+             total + 1
++ git checkout acae60d2b80987b0f4e3b6fd26c99b0975ba618e spec/rubocop/cop/style/safe_navigation_spec.rb
+Updated 0 paths from 00001e6fe
++ git apply -v -
+Checking patch spec/rubocop/cop/style/safe_navigation_spec.rb...
+Applied patch spec/rubocop/cop/style/safe_navigation_spec.rb cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ bundle exec rspec spec/rubocop/cop/style/safe_navigation_spec.rb --no-color --format json
++ sed -n '/^{/,$p'
++ jq -r '.examples | group_by(.description) | .[] |
+    if any(select(.status == "failed")) then
+      (.[0] | "\(.description) - failed")
+    else
+      (.[0] | "\(.description) - \(.status)")
+    end'
+allows a method call as a parameter when the parameter is safe guarded with an object check - passed
+allows a method call being passed to break safe guarded by an object check - passed
+allows a method call being passed to fail safe guarded by an object check - passed
+allows a method call being passed to next safe guarded by an object check - passed
+allows a method call being passed to raise safe guarded by an object check - passed
+allows a method call being passed to return safe guarded by an object check - passed
+allows a method call being passed to throw safe guarded by an object check - passed
+allows a method call being passed to yield safe guarded by an object check - passed
+allows a method call safeguarded when using `unless nil?` - passed
+allows a method call safeguarded with a negative check for the object when using `if` - passed
+allows a method call safeguarded with a negative check for the object when using `unless` - passed
+allows a method chain that is used in a comparison safe guarded by an object check - passed
+allows a negated `and` clause that does not do an object check - passed
+allows a nil object check followed by a method call - passed
+allows a nil object check followed by a method call with a block - passed
+allows a nil object check followed by a method call with params - passed
+allows a nil object check followed by a method call with params and a block - passed
+allows a non object check followed by a method call - passed
+allows a non object check followed by a method call with a block - passed
+allows a non object check followed by a method call with params - passed
+allows a non object check followed by a method call with params and a block - passed
+allows a non-nil object check followed by a method call - passed
+allows a non-nil object check followed by a method call with a block - passed
+allows a non-nil object check followed by a method call with params - passed
+allows a non-nil object check followed by a method call with params and a block - passed
+allows a single method call inside of a check for the object with an else - passed
+allows an `and` with a `block` that contains an `and` - passed
+allows an object check before a blank check - passed
+allows an object check before a long chain with a block - passed
+allows an object check before a method call that is used in a comparison - passed
+allows an object check before a method call that is used in a negated regex comparison - passed
+allows an object check before a method call that is used in a regex comparison - passed
+allows an object check before a method call that is used in a spaceship comparison - passed
+allows an object check before a method call that is used with `empty?` - passed
+allows an object check before a method chain longer than 2 methods - passed
+allows an object check before a method chain that is used in a comparison - passed
+allows an object check before a negated method call with a safe navigation - passed
+allows an object check before a negated predicate - passed
+allows an object check before a negated predicate method chain - passed
+allows an object check before a nil check on a long chain - passed
+allows an object check before a nil check on a short chain - passed
+allows an object check before hash access - passed
+allows an object check followed by 2 chained method calls - passed
+allows an object check followed by 4 chained method calls - passed
+allows an object check followed by 4 chained method calls with safe navigation - passed
+allows an object check followed by chained method calls - passed
+allows an object check followed by chained method calls with blocks - passed
+allows calls on nil - passed
+allows calls to methods not safeguarded by respond_to - passed
+allows calls using safe navigation - passed
+allows chained method calls during arithmetic operations safe guarded by an object check - passed
+allows chained method calls during assignment safe guarded by an object check - passed
+allows enumerable accessor method calls safeguarded by a respond_to check - passed
+allows for empty if blocks with comments - passed
+allows for nested `begin`s on the LHS - passed
+allows method call that is used in a comparison safe guarded by an object check - passed
+allows method call that is used in a negated regex comparison safe guarded by an object check - passed
+allows method call that is used in a regex comparison safe guarded by an object check - passed
+allows method call that is used in a spaceship comparison safe guarded by an object check - passed
+allows method calls safeguarded by a respond_to check - passed
+allows method calls safeguarded by a respond_to check on a different variable and method - passed
+allows method calls safeguarded by a respond_to check on adifferent variable but the same method - passed
+allows method calls safeguarded by a respond_to check to a different method - passed
+allows method calls that do not get called using . safe guarded by an object check - passed
+allows mixed `||` and `&&` inside begin node - passed
+allows non-convertible ternary expression - passed
+allows non-object checks - passed
+allows non-object checks with safe navigation - passed
+allows object checks in the condition of an elsif statement and a method call on that object in the body - passed
+corrects an object check followed by a chained method call - passed
+corrects an object check followed by a chained method call with a block - passed
+corrects an object check followed by a chained method call with a symbol proc - passed
+corrects an object check followed by a chained method call with params - passed
+corrects an object check followed by a method call and another check - passed
+does not lose comments within if expression - passed
+does not move comments that are inside an inner block - passed
+does not register an offense when a method call that nil responds to safe guarded by an object check - passed
+only moves comments that fall within the expression - passed
+registers an offense but does not autocorrect when the RHS of `and` is an `or` node containing an `and` - passed
+registers an offense for a chained method call safeguarded with a check for the object - passed
+registers an offense for a chained method call safeguarded with a negative nil check for the object - passed
+registers an offense for a chained method call safeguarded with an unless nil check for the object - passed
+registers an offense for a check for the object followed by a method call in the condition for an if expression - passed
+registers an offense for a method call on an accessor safeguarded by a check for the accessed variable - passed
+registers an offense for a method call safeguarded with a check for the object - passed
+registers an offense for a method call safeguarded with a negative check for the object - passed
+registers an offense for a method call safeguarded with a negative nil check for the object - passed
+registers an offense for a method call safeguarded with a nil check for the object - passed
+registers an offense for a method call that nil responds to safe guarded by an object check - passed
+registers an offense for a method call with a block safeguarded with a check for the object - passed
+registers an offense for a method call with a block safeguarded with a negative check for the object - passed
+registers an offense for a method call with a block safeguarded with a negative nil check for the object - passed
+registers an offense for a method call with a block safeguarded with a nil check for the object - passed
+registers an offense for a method call with params and a block safeguarded with a check for the object - passed
+registers an offense for a method call with params and a block safeguarded with a negative check for the object - passed
+registers an offense for a method call with params and a block safeguarded with a negative nil check for the object - passed
+registers an offense for a method call with params and a block safeguarded with a nil check for the object - passed
+registers an offense for a method call with params safeguarded with a check for the object - passed
+registers an offense for a method call with params safeguarded with a negative check for the object - passed
+registers an offense for a method call with params safeguarded with a negative nil check for the object - passed
+registers an offense for a method call with params safeguarded with a nil check for the object - passed
+registers an offense for a non-nil object check followed by a method call - passed
+registers an offense for a non-nil object check followed by a method call with a block - passed
+registers an offense for a non-nil object check followed by a method call with params - passed
+registers an offense for a non-nil object check followed by a method call with params and a block - passed
+registers an offense for a single method call inside of a check for the object - passed
+registers an offense for a single method call inside of a non-nil check for the object - passed
+registers an offense for a single method call inside of an unless negative check for the object - passed
+registers an offense for a single method call inside of an unless nil check for the object - passed
+registers an offense for a single method call with a block inside of a check for the object - passed
+registers an offense for a single method call with a block inside of a non-nil check for the object - passed
+registers an offense for a single method call with a block inside of an unless negative check for the object - passed
+registers an offense for a single method call with a block inside of an unless nil check for the object - passed
+registers an offense for a single method call with params and a block inside of a check for the object - passed
+registers an offense for a single method call with params and a block inside of a non-nil check for the object - passed
+registers an offense for a single method call with params and a block inside of an unless negative check for the object - passed
+registers an offense for a single method call with params and a block inside of an unless nil check for the object - passed
+registers an offense for a single method call with params inside of a check for the object - passed
+registers an offense for a single method call with params inside of a non-nil check for the object - passed
+registers an offense for a single method call with params inside of an unless negative check for the object - passed
+registers an offense for a single method call with params inside of an unless nil check for the object - passed
+registers an offense for an object check followed by 1 chained method calls - passed
+registers an offense for an object check followed by 3 chained method calls - passed
+registers an offense for an object check followed by a method call - passed
+registers an offense for an object check followed by a method call on a chained receiver - passed
+registers an offense for an object check followed by a method call with a block - passed
+registers an offense for an object check followed by a method call with a comment at EOL - passed
+registers an offense for an object check followed by a method call with params - passed
+registers an offense for an object check followed by a method call with params and a block - passed
+registers an offense for an object check followed by a method calls that nil responds to - passed
+registers an offense for an object check followed by chained method calls with blocks - passed
+registers an offense for convertible ternary expressions - passed
+registers an offense if followed by a different method - passed
+registers an offense if followed by a different variable - passed
+registers an offense if preceded by a different method - passed
+registers an offense if preceded by a different variable - passed
+registers an offense when safe guard check and safe navigation method call are connected with `&&` condition - passed
+registers an offense when the RHS of `and` is a nested `and` node - passed
+registers an offense when the RHS of `and` is an `and` node containing `or` - passed
+registers and corrects when and clauses contain `begin` nodes - passed
+registers and corrects when and clauses contain nested `begin` nodes - passed
+registers and corrects when the and keyword is used - passed
+registers and corrects when there are multiple clauses that could use safe navigation - passed
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout acae60d2b80987b0f4e3b6fd26c99b0975ba618e spec/rubocop/cop/style/safe_navigation_spec.rb
+>>>>> Test Exit Code: 0
+Updated 1 path from 00001e6fe

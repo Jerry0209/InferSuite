@@ -1,0 +1,200 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/uu/mkdir/src/mkdir.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit b89a6255a9cb5ee09867707f395d02929273dc45
+Author: Julian <61988360+just-an-engineer@users.noreply.github.com>
+Date:   Sat Sep 7 09:34:03 2024 -0400
+
+    dd: fix issue #5905 (different error msg from GNU) (#6622)
+    
+    * Changed dd parsing error message to be in line with GNU dd
+    
+    * Correct logic to make dd incorrect number error message fully compatible with GNU. Add test
+    
+    ---------
+    
+    Co-authored-by: just-an-engineer <Julian.Beltz@zetier.com>
+
+diff --git a/src/uu/dd/src/parseargs.rs b/src/uu/dd/src/parseargs.rs
+index 93d6c63a9..59836b1a1 100644
+--- a/src/uu/dd/src/parseargs.rs
++++ b/src/uu/dd/src/parseargs.rs
+@@ -430,7 +430,7 @@ impl std::fmt::Display for ParseError {
+                 write!(f, "Unrecognized conv=CONV -> {arg}")
+             }
+             Self::MultiplierStringParseFailure(arg) => {
+-                write!(f, "Unrecognized byte multiplier -> {arg}")
++                write!(f, "invalid number: ‘{arg}’")
+             }
+             Self::MultiplierStringOverflow(arg) => {
+                 write!(
+@@ -474,8 +474,9 @@ fn show_zero_multiplier_warning() {
+ }
+ 
+ /// Parse bytes using str::parse, then map error if needed.
+-fn parse_bytes_only(s: &str) -> Result<u64, ParseError> {
+-    s.parse()
++fn parse_bytes_only(s: &str, i: usize) -> Result<u64, ParseError> {
++    s[..i]
++        .parse()
+         .map_err(|_| ParseError::MultiplierStringParseFailure(s.to_string()))
+ }
+ 
+@@ -520,9 +521,9 @@ fn parse_bytes_no_x(full: &str, s: &str) -> Result<u64, ParseError> {
+                 return Err(ParseError::InvalidNumber(full.to_string()))
+             }
+         },
+-        (Some(i), None, None) => (parse_bytes_only(&s[..i])?, 1),
+-        (None, Some(i), None) => (parse_bytes_only(&s[..i])?, 2),
+-        (None, None, Some(i)) => (parse_bytes_only(&s[..i])?, 512),
++        (Some(i), None, None) => (parse_bytes_only(s, i)?, 1),
++        (None, Some(i), None) => (parse_bytes_only(s, i)?, 2),
++        (None, None, Some(i)) => (parse_bytes_only(s, i)?, 512),
+         _ => return Err(ParseError::MultiplierStringParseFailure(full.to_string())),
+     };
+     num.checked_mul(multiplier)
+diff --git a/tests/by-util/test_dd.rs b/tests/by-util/test_dd.rs
+index a8cb0aa64..bce1e31ec 100644
+--- a/tests/by-util/test_dd.rs
++++ b/tests/by-util/test_dd.rs
+@@ -1775,3 +1775,16 @@ fn test_stdin_stdout_not_rewound_even_when_connected_to_seekable_file() {
+     println!("stdout:\n{}", out_file_content);
+     assert_eq!(out_file_content, "bde");
+ }
++
++#[test]
++fn test_wrong_number_err_msg() {
++    new_ucmd!()
++        .args(&["count=kBb"])
++        .fails()
++        .stderr_contains("dd: invalid number: ‘kBb’\n");
++
++    new_ucmd!()
++        .args(&["count=1kBb555"])
++        .fails()
++        .stderr_contains("dd: invalid number: ‘1kBb555’\n");
++}
++ git -c core.fileMode=false diff b89a6255a9cb5ee09867707f395d02929273dc45
+diff --git a/src/uu/mkdir/src/mkdir.rs b/src/uu/mkdir/src/mkdir.rs
+index c29905ef4..ac27bb650 100644
+--- a/src/uu/mkdir/src/mkdir.rs
++++ b/src/uu/mkdir/src/mkdir.rs
+@@ -165,8 +165,17 @@ pub fn mkdir(path: &Path, recursive: bool, mode: u32, verbose: bool) -> UResult<
+     let path_buf = dir_strip_dot_for_creation(path);
+     let path = path_buf.as_path();
+ 
+-    create_dir(path, recursive, verbose, false)?;
+-    chmod(path, mode)
++    // Returns whether the directory was actually created.
++    let created = create_dir(path, recursive, verbose, false)?;
++    // Only set the permissions if the directory was actually created, not if it
++    // already existed. This matches the behavior of GNU `mkdir -p`, which does
++    // not attempt to change the permissions of a directory that already exists
++    // (and thus avoids failing with "Permission denied" when the user does not
++    // have permission to access the existing directory).
++    if created {
++        chmod(path, mode)?;
++    }
++    Ok(())
+ }
+ 
+ #[cfg(any(unix, target_os = "redox"))]
+@@ -188,7 +197,7 @@ fn chmod(_path: &Path, _mode: u32) -> UResult<()> {
+ 
+ // `is_parent` argument is not used on windows
+ #[allow(unused_variables)]
+-fn create_dir(path: &Path, recursive: bool, verbose: bool, is_parent: bool) -> UResult<()> {
++fn create_dir(path: &Path, recursive: bool, verbose: bool, is_parent: bool) -> UResult<bool> {
+     if path.exists() && !recursive {
+         return Err(USimpleError::new(
+             1,
+@@ -196,12 +205,14 @@ fn create_dir(path: &Path, recursive: bool, verbose: bool, is_parent: bool) -> U
+         ));
+     }
+     if path == Path::new("") {
+-        return Ok(());
++        return Ok(false);
+     }
+ 
+     if recursive {
+         match path.parent() {
+-            Some(p) => create_dir(p, recursive, verbose, true)?,
++            Some(p) => {
++                create_dir(p, recursive, verbose, true)?;
++            }
+             None => {
+                 USimpleError::new(1, "failed to create whole tree");
+             }
+@@ -222,9 +233,9 @@ fn create_dir(path: &Path, recursive: bool, verbose: bool, is_parent: bool) -> U
+                 // which is umask modified by 'u+wx'
+                 chmod(path, (!mode::get_umask() & 0o0777) | 0o0300)?;
+             }
+-            Ok(())
++            Ok(true)
+         }
+-        Err(_) if path.is_dir() => Ok(()),
++        Err(_) if path.is_dir() => Ok(false),
+         Err(e) => Err(e.into()),
+     }
+ }
++ git checkout b89a6255a9cb5ee09867707f395d02929273dc45 tests/by-util/test_mkdir.rs
+Updated 0 paths from 5f7bd225d
++ git apply -v -
+Checking patch tests/by-util/test_mkdir.rs...
+Applied patch tests/by-util/test_mkdir.rs cleanly.
++ : '>>>>> Start Test Output'
++ cargo test mkdir --no-fail-fast
++ cat
+   Compiling uu_mkdir v0.0.27 (/testbed/src/uu/mkdir)
+   Compiling coreutils v0.0.27 (/testbed)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.92s
+     Running unittests src/bin/coreutils.rs (target/debug/deps/coreutils-4c325d81403ca3f3)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/test_util_name.rs (target/debug/deps/test_util_name-517c0a2447987e84)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 78 filtered out; finished in 0.00s
+
+     Running tests/tests.rs (target/debug/deps/tests-e4edcbb27c0fea8e)
+
+running 18 tests
+test test_mkdir::test_mkdir_mkdir ... ok
+test test_mkdir::test_multi_symbolic ... ok
+test test_mkdir::test_mkdir_mode ... ok
+test test_mkdir::test_invalid_arg ... ok
+test test_mkdir::test_mkdir_dup_file ... ok
+test test_mkdir::test_mkdir_dup_dir_parent ... ok
+test test_mkdir::test_mkdir_dup_dir ... ok
+test test_mkdir::test_mkdir_parent ... ok
+test test_mkdir::test_mkdir_parent_mode_skip_existing_last_component_chmod ... ok
+test test_mkdir::test_symbolic_mode ... ok
+test test_mkdir::test_mkdir_verbose ... ok
+test test_mkdir::test_mkdir_parent_mode ... ok
+test test_mkdir::test_mkdir_no_parent ... ok
+test test_mkdir::test_mkdir_parent_mode_check_existing_parent ... ok
+test test_mkdir::test_symbolic_alteration ... ok
+test test_mkdir::test_recursive_reporting ... ok
+test test_mkdir::test_mkdir_trailing_dot ... ok
+test test_mkdir::test_umask_compliance ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 3108 filtered out; finished in 0.06s
+
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout b89a6255a9cb5ee09867707f395d02929273dc45 tests/by-util/test_mkdir.rs
+Updated 1 path from 5f7bd225d

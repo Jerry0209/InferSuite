@@ -1,0 +1,296 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   frameit/lib/frameit/device.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 950bb820237d52e15690408083e328f739ac0ef3
+Author: Evgeny Cherpak <cherpake@gmail.com>
+Date:   Fri Sep 30 17:43:36 2022 +0300
+
+    [deliver] add support to detecting and uploading 6.7" (iPhone 14 Pro Max) screenshots (#20694)
+    
+    * upload 6.7inch screenshots
+    
+    * Update deliver/spec/app_screenshot_spec.rb
+    
+    Co-authored-by: Roger Oba <rogerluan.oba@gmail.com>
+    
+    * fix
+    
+    * fix
+    
+    * Update deliver/lib/deliver/app_screenshot.rb
+    
+    Co-authored-by: Kohki Miki <giginet.net@gmail.com>
+    
+    * Update deliver/spec/app_screenshot_spec.rb
+    
+    Co-authored-by: Kohki Miki <giginet.net@gmail.com>
+    
+    * Update deliver/lib/deliver/app_screenshot.rb
+    
+    Co-authored-by: Kohki Miki <giginet.net@gmail.com>
+    
+    * Update deliver/lib/deliver/app_screenshot.rb
+    
+    Co-authored-by: Kohki Miki <giginet.net@gmail.com>
+    
+    * Update deliver/lib/deliver/app_screenshot.rb
+    
+    Co-authored-by: Kohki Miki <giginet.net@gmail.com>
+    
+    * revert Gemlock
+    
+    * Fix indendation.
+    
+    Co-authored-by: Roger Oba <rogerluan.oba@gmail.com>
+    Co-authored-by: Kohki Miki <giginet.net@gmail.com>
+
+diff --git a/deliver/lib/deliver/app_screenshot.rb b/deliver/lib/deliver/app_screenshot.rb
+index 519390c11..e4a46378c 100644
+--- a/deliver/lib/deliver/app_screenshot.rb
++++ b/deliver/lib/deliver/app_screenshot.rb
+@@ -23,6 +23,8 @@ module Deliver
+       IOS_61 = "iOS-6.1-in"
+       # iPhone XS Max
+       IOS_65 = "iOS-6.5-in"
++      # iPhone 14 Pro Max
++      IOS_67 = "iOS-6.7-in"
+ 
+       # iPad
+       IOS_IPAD = "iOS-iPad"
+@@ -47,6 +49,8 @@ module Deliver
+       IOS_61_MESSAGES = "iOS-6.1-in-messages"
+       # iPhone XS Max iMessage
+       IOS_65_MESSAGES = "iOS-6.5-in-messages"
++      # iPhone 14 Pro Max iMessage
++      IOS_67_MESSAGES = "iOS-6.7-in-messages"
+ 
+       # iPad iMessage
+       IOS_IPAD_MESSAGES = "iOS-iPad-messages"
+@@ -101,6 +105,7 @@ module Deliver
+         ScreenSize::IOS_55 => Spaceship::ConnectAPI::AppScreenshotSet::DisplayType::APP_IPHONE_55, # also 7 Plus & 8 Plus
+         ScreenSize::IOS_58 => Spaceship::ConnectAPI::AppScreenshotSet::DisplayType::APP_IPHONE_58,
+         ScreenSize::IOS_65 => Spaceship::ConnectAPI::AppScreenshotSet::DisplayType::APP_IPHONE_65,
++        ScreenSize::IOS_67 => Spaceship::ConnectAPI::AppScreenshotSet::DisplayType::APP_IPHONE_67,
+         ScreenSize::IOS_IPAD => Spaceship::ConnectAPI::AppScreenshotSet::DisplayType::APP_IPAD_97,
+         ScreenSize::IOS_IPAD_10_5 => Spaceship::ConnectAPI::AppScreenshotSet::DisplayType::APP_IPAD_105,
+         ScreenSize::IOS_IPAD_11 => Spaceship::ConnectAPI::AppScreenshotSet::DisplayType::APP_IPAD_PRO_3GEN_11,
+@@ -111,6 +116,7 @@ module Deliver
+         ScreenSize::IOS_55_MESSAGES => Spaceship::ConnectAPI::AppScreenshotSet::DisplayType::IMESSAGE_APP_IPHONE_55, # also 7 Plus & 8 Plus
+         ScreenSize::IOS_58_MESSAGES => Spaceship::ConnectAPI::AppScreenshotSet::DisplayType::IMESSAGE_APP_IPHONE_58,
+         ScreenSize::IOS_65_MESSAGES => Spaceship::ConnectAPI::AppScreenshotSet::DisplayType::IMESSAGE_APP_IPHONE_65,
++        ScreenSize::IOS_67_MESSAGES => Spaceship::ConnectAPI::AppScreenshotSet::DisplayType::IMESSAGE_APP_IPHONE_67,
+         ScreenSize::IOS_IPAD_MESSAGES => Spaceship::ConnectAPI::AppScreenshotSet::DisplayType::IMESSAGE_APP_IPAD_97,
+         ScreenSize::IOS_IPAD_PRO_MESSAGES => Spaceship::ConnectAPI::AppScreenshotSet::DisplayType::IMESSAGE_APP_IPAD_PRO_129,
+         ScreenSize::IOS_IPAD_PRO_12_9_MESSAGES => Spaceship::ConnectAPI::AppScreenshotSet::DisplayType::IMESSAGE_APP_IPAD_PRO_3GEN_129,
+@@ -135,6 +141,7 @@ module Deliver
+         ScreenSize::IOS_58 => "iPhone XS",
+         ScreenSize::IOS_61 => "iPhone XR",
+         ScreenSize::IOS_65 => "iPhone XS Max",
++        ScreenSize::IOS_67 => "iPhone 14 Pro Max",
+         ScreenSize::IOS_IPAD => "iPad",
+         ScreenSize::IOS_IPAD_10_5 => "iPad 10.5",
+         ScreenSize::IOS_IPAD_11 => "iPad 11",
+@@ -146,6 +153,7 @@ module Deliver
+         ScreenSize::IOS_58_MESSAGES => "iPhone XS (iMessage)",
+         ScreenSize::IOS_61_MESSAGES => "iPhone XR (iMessage)",
+         ScreenSize::IOS_65_MESSAGES => "iPhone XS Max (iMessage)",
++        ScreenSize::IOS_67_MESSAGES => "iPhone 14 Pro Max (iMessage)",
+         ScreenSize::IOS_IPAD_MESSAGES => "iPad (iMessage)",
+         ScreenSize::IOS_IPAD_PRO_MESSAGES => "iPad Pro (iMessage)",
+         ScreenSize::IOS_IPAD_PRO_12_9_MESSAGES => "iPad Pro (12.9-inch) (3rd generation) (iMessage)",
+@@ -175,6 +183,7 @@ module Deliver
+         ScreenSize::IOS_55_MESSAGES,
+         ScreenSize::IOS_58_MESSAGES,
+         ScreenSize::IOS_65_MESSAGES,
++        ScreenSize::IOS_67_MESSAGES,
+         ScreenSize::IOS_IPAD_MESSAGES,
+         ScreenSize::IOS_IPAD_PRO_MESSAGES,
+         ScreenSize::IOS_IPAD_PRO_12_9_MESSAGES,
+@@ -187,6 +196,10 @@ module Deliver
+       # This list does not include iPad Pro 12.9-inch (3rd generation)
+       # because it has same resoluation as IOS_IPAD_PRO and will clobber
+       return {
++        ScreenSize::IOS_67_MESSAGES => [
++          [1290, 2796],
++          [2796, 1290]
++        ],
+         ScreenSize::IOS_65_MESSAGES => [
+           [1242, 2688],
+           [2688, 1242],
+@@ -247,6 +260,10 @@ module Deliver
+       # This list does not include iPad Pro 12.9-inch (3rd generation)
+       # because it has same resoluation as IOS_IPAD_PRO and will clobber
+       return {
++        ScreenSize::IOS_67 => [
++          [1290, 2796],
++          [2796, 1290]
++        ],
+         ScreenSize::IOS_65 => [
+           [1242, 2688],
+           [2688, 1242],
+diff --git a/deliver/spec/app_screenshot_spec.rb b/deliver/spec/app_screenshot_spec.rb
+index 25639b182..301e325e5 100644
+--- a/deliver/spec/app_screenshot_spec.rb
++++ b/deliver/spec/app_screenshot_spec.rb
+@@ -66,6 +66,11 @@ describe Deliver::AppScreenshot do
+     end
+ 
+     describe "valid screen sizes" do
++      it "should calculate all 6.7 inch iPhone resolutions" do
++        expect_screen_size_from_file("iPhone14ProMax-Portrait{1290x2796}.jpg").to eq(ScreenSize::IOS_67)
++        expect_screen_size_from_file("iPhone14ProMax-Landscape{2796x1290}.jpg").to eq(ScreenSize::IOS_67)
++      end
++
+       it "should calculate all 6.5 inch iPhone resolutions" do
+         expect_screen_size_from_file("iPhoneXSMax-Portrait{1242x2688}.jpg").to eq(ScreenSize::IOS_65)
+         expect_screen_size_from_file("iPhoneXSMax-Landscape{2688x1242}.jpg").to eq(ScreenSize::IOS_65)
+@@ -148,6 +153,11 @@ describe Deliver::AppScreenshot do
+     end
+ 
+     describe "valid iMessage app screen sizes" do
++      it "should calculate all 6.7 inch iPhone resolutions" do
++        expect_screen_size_from_file("iMessage/en-GB/iPhone14ProMax-Portrait{1290x2796}.jpg").to eq(ScreenSize::IOS_67_MESSAGES)
++        expect_screen_size_from_file("iMessage/en-GB/iPhone14ProMax-Landscape{2796x1290}.jpg").to eq(ScreenSize::IOS_67_MESSAGES)
++      end
++
+       it "should calculate all 6.5 inch iPhone resolutions" do
+         expect_screen_size_from_file("iMessage/en-GB/iPhoneXSMax-Portrait{1242x2688}.jpg").to eq(ScreenSize::IOS_65_MESSAGES)
+         expect_screen_size_from_file("iMessage/en-GB/iPhoneXSMax-Landscape{2688x1242}.jpg").to eq(ScreenSize::IOS_65_MESSAGES)
+@@ -308,6 +318,11 @@ describe Deliver::AppScreenshot do
+       expect(app_screenshot_with(ScreenSize::IOS_61).device_type).to be_nil
+     end
+ 
++    it "should return iphone67 for 6.7 inch displays" do
++      expect(app_screenshot_with(ScreenSize::IOS_67).device_type).to eq("APP_IPHONE_67")
++      expect(app_screenshot_with(ScreenSize::IOS_67_MESSAGES).device_type).to eq("IMESSAGE_APP_IPHONE_67")
++    end
++
+     it "should return iphone65 for 6.5 inch displays" do
+       expect(app_screenshot_with(ScreenSize::IOS_65).device_type).to eq("APP_IPHONE_65")
+       expect(app_screenshot_with(ScreenSize::IOS_65_MESSAGES).device_type).to eq("IMESSAGE_APP_IPHONE_65")
+diff --git a/deliver/spec/app_screenshot_validator_spec.rb b/deliver/spec/app_screenshot_validator_spec.rb
+index df859e819..544d1bd0e 100644
+--- a/deliver/spec/app_screenshot_validator_spec.rb
++++ b/deliver/spec/app_screenshot_validator_spec.rb
+@@ -30,6 +30,8 @@ describe Deliver::AppScreenshotValidator do
+     it 'should return true for valid screenshot' do
+       expect_no_error(app_screenshot_with(ScreenSize::IOS_65, :png, 'image.png'))
+       expect_no_error(app_screenshot_with(ScreenSize::IOS_65, :jpeg, 'image.jpeg'))
++      expect_no_error(app_screenshot_with(ScreenSize::IOS_67, :png, 'image.png'))
++      expect_no_error(app_screenshot_with(ScreenSize::IOS_67, :jpeg, 'image.jpeg'))
+     end
+ 
+     it 'should detect valid size screenshot' do
+diff --git a/spaceship/lib/spaceship/connect_api/models/app_screenshot_set.rb b/spaceship/lib/spaceship/connect_api/models/app_screenshot_set.rb
+index c363059db..b64925f05 100644
+--- a/spaceship/lib/spaceship/connect_api/models/app_screenshot_set.rb
++++ b/spaceship/lib/spaceship/connect_api/models/app_screenshot_set.rb
+@@ -17,6 +17,7 @@ module Spaceship
+         APP_IPHONE_55 = "APP_IPHONE_55"
+         APP_IPHONE_58 = "APP_IPHONE_58"
+         APP_IPHONE_65 = "APP_IPHONE_65"
++        APP_IPHONE_67 = "APP_IPHONE_67"
+ 
+         APP_IPAD_97 = "APP_IPAD_97"
+         APP_IPAD_105 = "APP_IPAD_105"
+@@ -29,6 +30,7 @@ module Spaceship
+         IMESSAGE_APP_IPHONE_55 = "IMESSAGE_APP_IPHONE_55"
+         IMESSAGE_APP_IPHONE_58 = "IMESSAGE_APP_IPHONE_58"
+         IMESSAGE_APP_IPHONE_65 = "IMESSAGE_APP_IPHONE_65"
++        IMESSAGE_APP_IPHONE_67 = "IMESSAGE_APP_IPHONE_67"
+ 
+         IMESSAGE_APP_IPAD_97 = "IMESSAGE_APP_IPAD_97"
+         IMESSAGE_APP_IPAD_105 = "IMESSAGE_APP_IPAD_105"
+@@ -50,6 +52,7 @@ module Spaceship
+           IMESSAGE_APP_IPHONE_55,
+           IMESSAGE_APP_IPHONE_58,
+           IMESSAGE_APP_IPHONE_65,
++          IMESSAGE_APP_IPHONE_67,
+ 
+           IMESSAGE_APP_IPAD_97,
+           IMESSAGE_APP_IPAD_105,
+@@ -65,6 +68,7 @@ module Spaceship
+           APP_IPHONE_55,
+           APP_IPHONE_58,
+           APP_IPHONE_65,
++          APP_IPHONE_67,
+ 
+           APP_IPAD_97,
+           APP_IPAD_105,
+@@ -77,6 +81,7 @@ module Spaceship
+           IMESSAGE_APP_IPHONE_55,
+           IMESSAGE_APP_IPHONE_58,
+           IMESSAGE_APP_IPHONE_65,
++          IMESSAGE_APP_IPHONE_67,
+ 
+           IMESSAGE_APP_IPAD_97,
+           IMESSAGE_APP_IPAD_105,
++ git -c core.fileMode=false diff 950bb820237d52e15690408083e328f739ac0ef3
+diff --git a/frameit/lib/frameit/device.rb b/frameit/lib/frameit/device.rb
+index 4005050bf..a7e78d404 100644
+--- a/frameit/lib/frameit/device.rb
++++ b/frameit/lib/frameit/device.rb
+@@ -43,6 +43,13 @@ module Frameit
+       formatted_name.gsub("Apple", "").strip.to_s
+     end
+ 
++    # Returns the length of the name / id that matches the filename.
++    # This is used to prefer more specific matches (e.g. "iPhone 13 Pro" over "iPhone 13")
++    # when multiple devices match the filename with the same priority.
++    def matching_name_length(filename)
++      [formatted_name_without_apple, id].select { |name| !name.nil? && filename.include?(name) }.map(&:length).max || 0
++    end
++
+     def self.detect_device(path, platform)
+       size = FastImage.size(path)
+ 
+@@ -55,7 +62,10 @@ module Frameit
+         device = Devices.const_get(c)
+         next unless device.resolutions.include?(size)
+         # assign to filename_device if the filename contains the formatted name / id and its priority is higher than the current filename_device
+-        filename_device = device if (filename.include?(device.formatted_name_without_apple) || filename.include?(device.id)) && (filename_device.nil? || filename_device.priority < device.priority)
++        # if the priority is the same, the device with the longer matching name / id wins (e.g. "iPhone 13 Pro" over "iPhone 13")
++        if (filename.include?(device.formatted_name_without_apple) || filename.include?(device.id)) && (filename_device.nil? || filename_device.priority < device.priority || (filename_device.priority == device.priority && device.matching_name_length(filename) > filename_device.matching_name_length(filename)))
++          filename_device = device
++        end
+         next unless device.is_chosen_platform?(platform) && (found_device.nil? || device.priority > found_device.priority)
+         found_device = device
+       end
++ git checkout 950bb820237d52e15690408083e328f739ac0ef3 frameit/spec/device_spec.rb
+Updated 0 paths from a7afc5415
++ git apply -v -
+Checking patch frameit/spec/device_spec.rb...
+Applied patch frameit/spec/device_spec.rb cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ FASTLANE_SKIP_UPDATE_CHECK=1
++ bundle exec rspec ./frameit/spec/device_spec.rb --no-color --format json
++ tail -n +2
++ jq -r '.examples[] | "\(.description) - \(.id) - \(.status)"'
+should detect iPhone XS in portrait and landscape if filename contains "Apple iPhone XS" - ./frameit/spec/device_spec.rb[1:1:1:1] - passed
+should detect iPhone 13 in portrait and landscape based on priority - ./frameit/spec/device_spec.rb[1:1:1:2] - failed
+should detect iPhone X instead of iPhone XS because of the file name containing device name - ./frameit/spec/device_spec.rb[1:1:1:3] - passed
+should detect iPhone X instead of iPhone XS because of the file name containing device ID - ./frameit/spec/device_spec.rb[1:1:1:4] - passed
+should detect iPhone X instead of iPhone XS because of CLI parameters or fastfile - ./frameit/spec/device_spec.rb[1:1:1:5] - passed
+should detect Google Pixel 5 in portrait and landscape based on priority - ./frameit/spec/device_spec.rb[1:1:2:1] - passed
+should detect Google Pixel 3 XL in portrait and landscape based on priority - ./frameit/spec/device_spec.rb[1:1:2:2] - passed
+should detect Samsung Galaxy S9 because of file name containing device ID - ./frameit/spec/device_spec.rb[1:1:2:3] - passed
+should detect Samsung Galaxy S8 because of file name containing device name - ./frameit/spec/device_spec.rb[1:1:2:4] - passed
+should force iPhone X despite arbitrary file name and resolution via device ID - ./frameit/spec/device_spec.rb[1:1:3:1] - passed
+should force iPhone X despite arbitrary file name and resolution via device name - ./frameit/spec/device_spec.rb[1:1:3:2] - passed
+should force iPhone XS despite arbitrary file name and resolution via Deliver::AppScreenshot::ScreenSize - ./frameit/spec/device_spec.rb[1:1:3:3] - passed
+shouldn't allow arbitrary unsupported resolution 1080x1000 - ./frameit/spec/device_spec.rb[1:1:4:1] - passed
++ SWEBENCH_TEST_EXIT_CODE=1
++ : '>>>>> End Test Output'
+>>>>> Test Exit Code: 1
++ echo '>>>>> Test Exit Code: 1'
++ git checkout 950bb820237d52e15690408083e328f739ac0ef3 frameit/spec/device_spec.rb
+Updated 1 path from a7afc5415

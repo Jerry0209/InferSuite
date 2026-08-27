@@ -1,0 +1,200 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   gson/src/main/java/com/google/gson/internal/bind/JsonTreeReader.java
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 7719e73a108c450666613c279bedaed724cd9cc9
+Merge: 4a57ba6a 9d8d7a43
+Author: Jake Wharton <jakewharton@gmail.com>
+Date:   Tue Feb 7 19:17:28 2017 -0500
+
+    Merge pull request #1012 from BloodShura/master
+    
+    All JsonElement::getAsJsonXXX methods now include the JSON string on thrown exception's message
+
++ git -c core.fileMode=false diff 7719e73a108c450666613c279bedaed724cd9cc9
+diff --git a/gson/src/main/java/com/google/gson/internal/bind/JsonTreeReader.java b/gson/src/main/java/com/google/gson/internal/bind/JsonTreeReader.java
+index 01212315..387b29e9 100644
+--- a/gson/src/main/java/com/google/gson/internal/bind/JsonTreeReader.java
++++ b/gson/src/main/java/com/google/gson/internal/bind/JsonTreeReader.java
+@@ -259,9 +259,13 @@ public final class JsonTreeReader extends JsonReader {
+       pathNames[stackSize - 2] = "null";
+     } else {
+       popStack();
+-      pathNames[stackSize - 1] = "null";
++      if (stackSize > 0) {
++        pathNames[stackSize - 1] = "null";
++      }
++    }
++    if (stackSize > 0) {
++      pathIndices[stackSize - 1]++;
+     }
+-    pathIndices[stackSize - 1]++;
+   }
+ 
+   @Override public String toString() {
++ rm -f gson/src/test/java/com/google/gson/internal/bind/JsonTreeReaderTest.java
++ git apply -v -
+Checking patch gson/src/test/java/com/google/gson/internal/bind/JsonTreeReaderTest.java...
+Applied patch gson/src/test/java/com/google/gson/internal/bind/JsonTreeReaderTest.java cleanly.
++ : '>>>>> Start Test Output'
++ mvnd test -B -T 1C -pl gson -Dtest=com.google.gson.internal.bind.JsonTreeReaderTest#testSkipValue_emptyJsonObject
++ cat
+Aug 27, 2026 9:22:21 AM org.jline.utils.Log logr
+WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[main] WARNING org.jline - Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[INFO] Processing build on daemon ce465c66
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.google.code.gson:gson:jar:2.8.1-SNAPSHOT
+[WARNING] 'build.plugins.plugin.version' for org.apache.maven.plugins:maven-jar-plugin is missing. @ line 46, column 15
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] BuildTimeEventSpy is registered.
+[INFO] 
+[INFO] Using the SmartBuilder implementation with a thread count of 28
+[INFO] 
+[INFO] ---------------------< com.google.code.gson:gson >----------------------
+[INFO] Building Gson 2.8.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:1.0:enforce (enforce-maven) @ gson ---
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ gson ---
+[INFO] skip non existing resourceDirectory /testbed/gson/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.0:compile (default-compile) @ gson ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 67 source files to /testbed/gson/target/classes
+[WARNING] /testbed/gson/src/main/java/com/google/gson/internal/ConstructorConstructor.java: /testbed/gson/src/main/java/com/google/gson/internal/ConstructorConstructor.java uses or overrides a deprecated API.
+[WARNING] /testbed/gson/src/main/java/com/google/gson/internal/ConstructorConstructor.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- bnd:3.1.0:bnd-process (default) @ gson ---
+[WARNING] Export com.google.gson,  has 1,  private references [com.google.gson.internal], 
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ gson ---
+[INFO] skip non existing resourceDirectory /testbed/gson/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.0:testCompile (default-testCompile) @ gson ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 96 source files to /testbed/gson/target/test-classes
+[WARNING] /testbed/gson/src/test/java/com/google/gson/stream/JsonReaderPathTest.java: Some input files use or override a deprecated API.
+[WARNING] /testbed/gson/src/test/java/com/google/gson/stream/JsonReaderPathTest.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ gson ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junit4.JUnit4Provider
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit4/3.2.5/surefire-junit4-3.2.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit4/3.2.5/surefire-junit4-3.2.5.pom (3.0 kB at 8.1 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-providers/3.2.5/surefire-providers-3.2.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-providers/3.2.5/surefire-providers-3.2.5.pom (2.6 kB at 51 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit4/3.2.5/common-junit4-3.2.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit4/3.2.5/common-junit4-3.2.5.pom (3.1 kB at 76 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit3/3.2.5/common-junit3-3.2.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit3/3.2.5/common-junit3-3.2.5.pom (2.8 kB at 63 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.2.5/common-java5-3.2.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.2.5/common-java5-3.2.5.pom (2.8 kB at 76 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit4/3.2.5/surefire-junit4-3.2.5.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit4/3.2.5/surefire-junit4-3.2.5.jar (18 kB at 575 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit4/3.2.5/common-junit4-3.2.5.jar
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit3/3.2.5/common-junit3-3.2.5.jar
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.2.5/common-java5-3.2.5.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit4/3.2.5/common-junit4-3.2.5.jar (26 kB at 718 kB/s)
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit3/3.2.5/common-junit3-3.2.5.jar (12 kB at 243 kB/s)
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.2.5/common-java5-3.2.5.jar (18 kB at 351 kB/s)
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.google.gson.internal.bind.JsonTreeReaderTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.036 s -- in com.google.gson.internal.bind.JsonTreeReaderTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  7.657 s (Wall Clock)
+[INFO] Finished at: 2026-08-27T09:22:30Z
+[INFO] ------------------------------------------------------------------------
++ mvnd test -B -T 1C -pl gson -Dtest=com.google.gson.internal.bind.JsonTreeReaderTest#testSkipValue_filledJsonObject
+Aug 27, 2026 9:22:30 AM org.jline.utils.Log logr
+WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[main] WARNING org.jline - Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[INFO] Processing build on daemon ce465c66
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.google.code.gson:gson:jar:2.8.1-SNAPSHOT
+[WARNING] 'build.plugins.plugin.version' for org.apache.maven.plugins:maven-jar-plugin is missing. @ line 46, column 15
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[INFO] BuildTimeEventSpy is registered.
+[INFO] 
+[WARNING] 
+[INFO] Using the SmartBuilder implementation with a thread count of 28
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] 
+[INFO] ---------------------< com.google.code.gson:gson >----------------------
+[INFO] Building Gson 2.8.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:1.0:enforce (enforce-maven) @ gson ---
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ gson ---
+[INFO] skip non existing resourceDirectory /testbed/gson/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.0:compile (default-compile) @ gson ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 67 source files to /testbed/gson/target/classes
+[WARNING] /testbed/gson/src/main/java/com/google/gson/internal/ConstructorConstructor.java: /testbed/gson/src/main/java/com/google/gson/internal/ConstructorConstructor.java uses or overrides a deprecated API.
+[WARNING] /testbed/gson/src/main/java/com/google/gson/internal/ConstructorConstructor.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- bnd:3.1.0:bnd-process (default) @ gson ---
+[WARNING] Export com.google.gson,  has 1,  private references [com.google.gson.internal], 
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ gson ---
+[INFO] skip non existing resourceDirectory /testbed/gson/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.0:testCompile (default-testCompile) @ gson ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 96 source files to /testbed/gson/target/test-classes
+[WARNING] /testbed/gson/src/test/java/com/google/gson/stream/JsonReaderPathTest.java: Some input files use or override a deprecated API.
+[WARNING] /testbed/gson/src/test/java/com/google/gson/stream/JsonReaderPathTest.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ gson ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junit4.JUnit4Provider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.google.gson.internal.bind.JsonTreeReaderTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.024 s -- in com.google.gson.internal.bind.JsonTreeReaderTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.694 s (Wall Clock)
+[INFO] Finished at: 2026-08-27T09:22:31Z
+[INFO] ------------------------------------------------------------------------
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
+>>>>> Test Exit Code: 0
++ echo '>>>>> Test Exit Code: 0'
++ rm -f gson/src/test/java/com/google/gson/internal/bind/JsonTreeReaderTest.java

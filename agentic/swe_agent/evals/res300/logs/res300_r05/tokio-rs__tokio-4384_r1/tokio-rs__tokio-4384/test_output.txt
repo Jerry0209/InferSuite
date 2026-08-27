@@ -1,0 +1,362 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   tokio/src/loom/std/atomic_u16.rs
+	modified:   tokio/src/loom/std/atomic_u32.rs
+	modified:   tokio/src/loom/std/atomic_u64.rs
+	modified:   tokio/src/loom/std/atomic_u8.rs
+	modified:   tokio/src/loom/std/atomic_usize.rs
+	modified:   tokio/src/loom/std/parking_lot.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 553cc3b194df875cac8736473e1f01cf3e40a660
+Author: Trey Smith <trey@wave.us>
+Date:   Sat Jan 8 07:21:11 2022 -0500
+
+    net: document that port 0 picks a random port (#4386)
+
+diff --git a/tokio/src/net/udp.rs b/tokio/src/net/udp.rs
+index 68cc9823..a6d80c6f 100644
+--- a/tokio/src/net/udp.rs
++++ b/tokio/src/net/udp.rs
+@@ -128,6 +128,10 @@ impl UdpSocket {
+     /// This function will create a new UDP socket and attempt to bind it to
+     /// the `addr` provided.
+     ///
++    /// Binding with a port number of 0 will request that the OS assigns a port
++    /// to this listener. The port allocated can be queried via the `local_addr`
++    /// method.
++    ///
+     /// # Example
+     ///
+     /// ```no_run
++ git -c core.fileMode=false diff 553cc3b194df875cac8736473e1f01cf3e40a660
+diff --git a/tokio/src/loom/std/atomic_u16.rs b/tokio/src/loom/std/atomic_u16.rs
+index c1c53120..efd025ff 100644
+--- a/tokio/src/loom/std/atomic_u16.rs
++++ b/tokio/src/loom/std/atomic_u16.rs
+@@ -1,6 +1,7 @@
+ use std::cell::UnsafeCell;
+ use std::fmt;
+ use std::ops::Deref;
++use std::panic::{RefUnwindSafe, UnwindSafe};
+ 
+ /// `AtomicU16` providing an additional `load_unsync` function.
+ pub(crate) struct AtomicU16 {
+@@ -10,6 +11,9 @@ pub(crate) struct AtomicU16 {
+ unsafe impl Send for AtomicU16 {}
+ unsafe impl Sync for AtomicU16 {}
+ 
++impl UnwindSafe for AtomicU16 {}
++impl RefUnwindSafe for AtomicU16 {}
++
+ impl AtomicU16 {
+     pub(crate) const fn new(val: u16) -> AtomicU16 {
+         let inner = UnsafeCell::new(std::sync::atomic::AtomicU16::new(val));
+diff --git a/tokio/src/loom/std/atomic_u32.rs b/tokio/src/loom/std/atomic_u32.rs
+index 61f95fb3..9d958a10 100644
+--- a/tokio/src/loom/std/atomic_u32.rs
++++ b/tokio/src/loom/std/atomic_u32.rs
+@@ -1,6 +1,7 @@
+ use std::cell::UnsafeCell;
+ use std::fmt;
+ use std::ops::Deref;
++use std::panic::{RefUnwindSafe, UnwindSafe};
+ 
+ /// `AtomicU32` providing an additional `load_unsync` function.
+ pub(crate) struct AtomicU32 {
+@@ -10,6 +11,9 @@ pub(crate) struct AtomicU32 {
+ unsafe impl Send for AtomicU32 {}
+ unsafe impl Sync for AtomicU32 {}
+ 
++impl UnwindSafe for AtomicU32 {}
++impl RefUnwindSafe for AtomicU32 {}
++
+ impl AtomicU32 {
+     pub(crate) const fn new(val: u32) -> AtomicU32 {
+         let inner = UnsafeCell::new(std::sync::atomic::AtomicU32::new(val));
+diff --git a/tokio/src/loom/std/atomic_u64.rs b/tokio/src/loom/std/atomic_u64.rs
+index 8ea6bd40..9ad1813f 100644
+--- a/tokio/src/loom/std/atomic_u64.rs
++++ b/tokio/src/loom/std/atomic_u64.rs
+@@ -12,6 +12,7 @@ cfg_has_atomic_u64! {
+ 
+ cfg_not_has_atomic_u64! {
+     use crate::loom::sync::Mutex;
++    use std::panic::{RefUnwindSafe, UnwindSafe};
+     use std::sync::atomic::Ordering;
+ 
+     #[derive(Debug)]
+@@ -19,6 +20,9 @@ cfg_not_has_atomic_u64! {
+         inner: Mutex<u64>,
+     }
+ 
++    impl UnwindSafe for AtomicU64 {}
++    impl RefUnwindSafe for AtomicU64 {}
++
+     impl AtomicU64 {
+         pub(crate) fn new(val: u64) -> Self {
+             Self {
+diff --git a/tokio/src/loom/std/atomic_u8.rs b/tokio/src/loom/std/atomic_u8.rs
+index 408aea33..eb853f07 100644
+--- a/tokio/src/loom/std/atomic_u8.rs
++++ b/tokio/src/loom/std/atomic_u8.rs
+@@ -1,6 +1,7 @@
+ use std::cell::UnsafeCell;
+ use std::fmt;
+ use std::ops::Deref;
++use std::panic::{RefUnwindSafe, UnwindSafe};
+ 
+ /// `AtomicU8` providing an additional `load_unsync` function.
+ pub(crate) struct AtomicU8 {
+@@ -10,6 +11,9 @@ pub(crate) struct AtomicU8 {
+ unsafe impl Send for AtomicU8 {}
+ unsafe impl Sync for AtomicU8 {}
+ 
++impl UnwindSafe for AtomicU8 {}
++impl RefUnwindSafe for AtomicU8 {}
++
+ impl AtomicU8 {
+     pub(crate) const fn new(val: u8) -> AtomicU8 {
+         let inner = UnsafeCell::new(std::sync::atomic::AtomicU8::new(val));
+diff --git a/tokio/src/loom/std/atomic_usize.rs b/tokio/src/loom/std/atomic_usize.rs
+index 0d5f36e4..e813ae14 100644
+--- a/tokio/src/loom/std/atomic_usize.rs
++++ b/tokio/src/loom/std/atomic_usize.rs
+@@ -1,6 +1,7 @@
+ use std::cell::UnsafeCell;
+ use std::fmt;
+ use std::ops;
++use std::panic::{RefUnwindSafe, UnwindSafe};
+ 
+ /// `AtomicUsize` providing an additional `load_unsync` function.
+ pub(crate) struct AtomicUsize {
+@@ -10,6 +11,9 @@ pub(crate) struct AtomicUsize {
+ unsafe impl Send for AtomicUsize {}
+ unsafe impl Sync for AtomicUsize {}
+ 
++impl UnwindSafe for AtomicUsize {}
++impl RefUnwindSafe for AtomicUsize {}
++
+ impl AtomicUsize {
+     pub(crate) const fn new(val: usize) -> AtomicUsize {
+         let inner = UnsafeCell::new(std::sync::atomic::AtomicUsize::new(val));
+diff --git a/tokio/src/loom/std/parking_lot.rs b/tokio/src/loom/std/parking_lot.rs
+index 034a0ce6..201e64eb 100644
+--- a/tokio/src/loom/std/parking_lot.rs
++++ b/tokio/src/loom/std/parking_lot.rs
+@@ -6,6 +6,7 @@
+ use std::fmt;
+ use std::marker::PhantomData;
+ use std::ops::{Deref, DerefMut};
++use std::panic::RefUnwindSafe;
+ use std::sync::LockResult;
+ use std::time::Duration;
+ 
+@@ -27,6 +28,10 @@ pub(crate) struct RwLock<T>(PhantomData<std::sync::RwLock<T>>, parking_lot::RwLo
+ #[derive(Debug)]
+ pub(crate) struct Condvar(PhantomData<std::sync::Condvar>, parking_lot::Condvar);
+ 
++impl<T: ?Sized> RefUnwindSafe for Mutex<T> {}
++
++impl<T> RefUnwindSafe for RwLock<T> {}
++
+ #[derive(Debug)]
+ pub(crate) struct MutexGuard<'a, T: ?Sized>(
+     PhantomData<std::sync::MutexGuard<'a, T>>,
++ rm -f tokio/tests/net_types_unwind.rs
++ git apply -v -
+Checking patch tokio/tests/net_types_unwind.rs...
+Applied patch tokio/tests/net_types_unwind.rs cleanly.
++ : '>>>>> Start Test Output'
++ RUSTFLAGS=-Awarnings
++ cargo test --package tokio --test net_types_unwind --features full --no-fail-fast
++ cat
+    Updating crates.io index
+ Downloading crates ...
+  Downloaded async-stream v0.3.6
+  Downloaded bit-set v0.8.0
+  Downloaded async-stream-impl v0.3.6
+  Downloaded bit-vec v0.8.0
+  Downloaded autocfg v1.5.0
+  Downloaded bitflags v1.3.2
+  Downloaded bitflags v2.10.0
+  Downloaded instant v0.1.13
+  Downloaded fragile v2.0.1
+  Downloaded rand_core v0.9.3
+  Downloaded aho-corasick v1.1.4
+  Downloaded signal-hook-registry v1.4.7
+  Downloaded rand_chacha v0.3.1
+  Downloaded predicates v1.0.8
+  Downloaded rand_xorshift v0.4.0
+  Downloaded quote v1.0.42
+  Downloaded ppv-lite86 v0.2.21
+  Downloaded once_cell v1.21.3
+  Downloaded quick-error v1.2.3
+  Downloaded futures-executor v0.3.31
+  Downloaded fnv v1.0.7
+  Downloaded float-cmp v0.8.0
+  Downloaded proc-macro2 v1.0.103
+  Downloaded memoffset v0.6.5
+  Downloaded futures v0.3.31
+  Downloaded termtree v0.5.1
+  Downloaded futures-core v0.3.31
+  Downloaded log v0.4.29
+  Downloaded slab v0.4.11
+  Downloaded num_cpus v1.17.0
+  Downloaded unarray v0.1.4
+  Downloaded scopeguard v1.2.0
+  Downloaded rand_chacha v0.9.0
+  Downloaded mio v0.8.11
+  Downloaded wait-timeout v0.2.1
+  Downloaded futures-task v0.3.31
+  Downloaded fragile v1.2.2
+  Downloaded cfg-if v1.0.4
+  Downloaded predicates-tree v1.0.12
+  Downloaded normalize-line-endings v0.3.0
+  Downloaded lazy_static v1.5.0
+  Downloaded futures-io v0.3.31
+  Downloaded futures-macro v0.3.31
+  Downloaded predicates-core v1.0.9
+  Downloaded errno v0.3.14
+  Downloaded rand_core v0.6.4
+  Downloaded pin-utils v0.1.0
+  Downloaded fastrand v2.3.0
+  Downloaded lock_api v0.4.14
+  Downloaded downcast v0.10.0
+  Downloaded unicode-ident v1.0.22
+  Downloaded pin-project-lite v0.2.16
+  Downloaded parking_lot_core v0.8.6
+  Downloaded getrandom v0.2.16
+  Downloaded smallvec v1.15.1
+  Downloaded parking_lot v0.11.2
+  Downloaded rand v0.9.2
+  Downloaded bytes v1.11.0
+  Downloaded rand v0.8.5
+  Downloaded regex v1.12.2
+  Downloaded difference v2.0.0
+  Downloaded futures-util v0.3.31
+  Downloaded zerocopy v0.8.31
+  Downloaded syn v2.0.111
+  Downloaded proptest v1.9.0
+  Downloaded syn v1.0.109
+  Downloaded nix v0.23.2
+  Downloaded futures-sink v0.3.31
+  Downloaded num-traits v0.2.19
+  Downloaded mockall_derive v0.10.2
+  Downloaded mockall v0.10.2
+  Downloaded getrandom v0.3.4
+  Downloaded regex-syntax v0.8.8
+  Downloaded futures-channel v0.3.31
+  Downloaded rustix v1.1.2
+  Downloaded tempfile v3.23.0
+  Downloaded socket2 v0.4.10
+  Downloaded rusty-fork v0.3.1
+  Downloaded memchr v2.7.6
+  Downloaded regex-automata v0.4.13
+  Downloaded libc v0.2.178
+  Downloaded linux-raw-sys v0.11.0
+   Compiling libc v0.2.178
+   Compiling cfg-if v1.0.4
+   Compiling proc-macro2 v1.0.103
+   Compiling unicode-ident v1.0.22
+   Compiling quote v1.0.42
+   Compiling autocfg v1.5.0
+   Compiling memchr v2.7.6
+   Compiling getrandom v0.3.4
+   Compiling syn v1.0.109
+   Compiling futures-core v0.3.31
+   Compiling pin-project-lite v0.2.16
+   Compiling zerocopy v0.8.31
+   Compiling once_cell v1.21.3
+   Compiling parking_lot_core v0.8.6
+   Compiling rustix v1.1.2
+   Compiling smallvec v1.15.1
+   Compiling scopeguard v1.2.0
+   Compiling regex-syntax v0.8.8
+   Compiling futures-sink v0.3.31
+   Compiling bitflags v2.10.0
+   Compiling log v0.4.29
+   Compiling linux-raw-sys v0.11.0
+   Compiling instant v0.1.13
+   Compiling slab v0.4.11
+   Compiling fastrand v2.3.0
+   Compiling futures-task v0.3.31
+   Compiling pin-utils v0.1.0
+   Compiling predicates-core v1.0.9
+   Compiling futures-io v0.3.31
+   Compiling bytes v1.11.0
+   Compiling futures-channel v0.3.31
+   Compiling lock_api v0.4.14
+   Compiling difference v2.0.0
+   Compiling termtree v0.5.1
+   Compiling bit-vec v0.8.0
+   Compiling fragile v2.0.1
+   Compiling normalize-line-endings v0.3.0
+   Compiling quick-error v1.2.3
+   Compiling fnv v1.0.7
+   Compiling predicates-tree v1.0.12
+   Compiling unarray v0.1.4
+   Compiling bitflags v1.3.2
+   Compiling downcast v0.10.0
+   Compiling lazy_static v1.5.0
+   Compiling fragile v1.2.2
+   Compiling num-traits v0.2.19
+   Compiling memoffset v0.6.5
+   Compiling bit-set v0.8.0
+   Compiling aho-corasick v1.1.4
+   Compiling syn v2.0.111
+   Compiling float-cmp v0.8.0
+   Compiling getrandom v0.2.16
+   Compiling socket2 v0.4.10
+   Compiling mio v0.8.11
+   Compiling signal-hook-registry v1.4.7
+   Compiling num_cpus v1.17.0
+   Compiling wait-timeout v0.2.1
+   Compiling nix v0.23.2
+   Compiling rand_core v0.9.3
+   Compiling rand_core v0.6.4
+   Compiling parking_lot v0.11.2
+   Compiling tempfile v3.23.0
+   Compiling regex-automata v0.4.13
+   Compiling rand_xorshift v0.4.0
+   Compiling rand v0.9.2
+   Compiling ppv-lite86 v0.2.21
+   Compiling rusty-fork v0.3.1
+   Compiling rand_chacha v0.3.1
+   Compiling rand_chacha v0.9.0
+   Compiling proptest v1.9.0
+   Compiling rand v0.8.5
+   Compiling tokio-macros v1.7.0 (/testbed/tokio-macros)
+   Compiling mockall_derive v0.10.2
+   Compiling regex v1.12.2
+   Compiling predicates v1.0.8
+   Compiling tokio v1.15.0 (/testbed/tokio)
+   Compiling futures-macro v0.3.31
+   Compiling async-stream-impl v0.3.6
+   Compiling async-stream v0.3.6
+   Compiling futures-util v0.3.31
+   Compiling mockall v0.10.2
+   Compiling futures-executor v0.3.31
+   Compiling futures v0.3.31
+   Compiling tokio-stream v0.1.8 (/testbed/tokio-stream)
+   Compiling tokio-test v0.4.2 (/testbed/tokio-test)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.62s
+     Running tests/net_types_unwind.rs (target/debug/deps/net_types_unwind-7906b4d122201652)
+
+running 2 tests
+test net_types_are_unwind_safe ... ok
+test unix_net_types_are_unwind_safe ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ rm -f tokio/tests/net_types_unwind.rs
+>>>>> Test Exit Code: 0

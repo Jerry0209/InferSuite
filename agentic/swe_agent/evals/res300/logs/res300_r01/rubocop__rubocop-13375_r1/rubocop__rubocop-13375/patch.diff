@@ -1,0 +1,20 @@
+diff --git a/changelog/fix_incorrect_exit_status_with_display_only_correctable.md b/changelog/fix_incorrect_exit_status_with_display_only_correctable.md
+new file mode 100644
+index 000000000..a7cab605d
+--- /dev/null
++++ b/changelog/fix_incorrect_exit_status_with_display_only_correctable.md
+@@ -0,0 +1 @@
++* [#13351](https://github.com/rubocop/rubocop/issues/13351): Fix an incorrect exit status when `--display-only-correctable` or `--display-only-safe-correctable` is used and there are no correctable offenses to display.
+diff --git a/lib/rubocop/runner.rb b/lib/rubocop/runner.rb
+index 51f18dca0..875ed8a55 100644
+--- a/lib/rubocop/runner.rb
++++ b/lib/rubocop/runner.rb
+@@ -139,7 +139,7 @@ module RuboCop
+         offenses = process_file(file)
+         yield file
+ 
+-        if offenses.any? { |o| considered_failure?(o) }
++        if offenses_to_report(offenses).any? { |o| considered_failure?(o) }
+           break false if @options[:fail_fast]
+ 
+           next false

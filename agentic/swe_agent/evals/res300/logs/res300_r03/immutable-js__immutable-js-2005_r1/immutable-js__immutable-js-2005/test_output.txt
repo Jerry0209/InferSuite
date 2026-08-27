@@ -1,0 +1,132 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/OrderedMap.js
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 77434b3cbbc8ee21206f4cc6965e1c9b09cc92b6
+Merge: b22f48e4 f7849ac2
+Author: Julien Deniau <julien.deniau@gmail.com>
+Date:   Mon Jul 22 13:06:40 2024 +0000
+
+    Merge branch 'butchler-first-last-types' into 5.x
+
++ git -c core.fileMode=false diff 77434b3cbbc8ee21206f4cc6965e1c9b09cc92b6
+diff --git a/src/OrderedMap.js b/src/OrderedMap.js
+index 5b0791a8..387f4749 100644
+--- a/src/OrderedMap.js
++++ b/src/OrderedMap.js
+@@ -62,10 +62,15 @@ export class OrderedMap extends Map {
+   }
+ 
+   __iterate(fn, reverse) {
+-    return this._list.__iterate(
+-      entry => entry && fn(entry[1], entry[0], this),
+-      reverse
+-    );
++    let iterations = 0;
++    this._list.__iterate(entry => {
++      if (entry) {
++        iterations++;
++        return fn(entry[1], entry[0], this);
++      }
++      return undefined;
++    }, reverse);
++    return iterations;
+   }
+ 
+   __iterator(type, reverse) {
++ git checkout 77434b3cbbc8ee21206f4cc6965e1c9b09cc92b6 __tests__/OrderedMap.ts __tests__/OrderedSet.ts
+Updated 0 paths from 7cd8bc84
++ git apply -v -
+Checking patch __tests__/OrderedMap.ts...
+Checking patch __tests__/OrderedSet.ts...
+Applied patch __tests__/OrderedMap.ts cleanly.
+Applied patch __tests__/OrderedSet.ts cleanly.
++ npm run build
+
+> immutable@5.0.0-beta.5 build
+> run-s build:*
+
+
+> immutable@5.0.0-beta.5 build:clean
+> rimraf dist
+
+
+> immutable@5.0.0-beta.5 build:dist
+> rollup -c ./resources/rollup-config.mjs
+
+[36m
+[1m/testbed/src/Immutable.js[22m → [1mdist/immutable.js, dist/immutable.min.js, dist/es[22m...[39m
+[1m[33m(!) Circular dependencies[39m[22m
+src/Seq.js -> src/Collection.js -> src/Seq.js
+src/Map.js -> src/Operations.js -> src/Map.js
+src/OrderedMap.js -> src/Map.js -> src/Operations.js -> src/OrderedMap.js
+...and 6 more
+[32mcreated [1mdist/immutable.js, dist/immutable.min.js, dist/es[22m in [1m2.2s[22m[39m
+
+> immutable@5.0.0-beta.5 build:types
+> cpy ./type-definitions/immutable.* dist
+
+
+> immutable@5.0.0-beta.5 build:prepare
+> ./resources/prepare-dist.sh
+
+
+> immutable@5.0.0-beta.5 build:stats
+> node ./resources/dist-stats.mjs
+
+200
+200
+  Raw:           171,777 bytes
+  Min:            65,783 bytes 61.7%              +144 bytes
+  Zip:            18,567 bytes 89.19%              +102 bytes
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 12.0.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+npm notice To update run: npm install -g npm@12.0.2
+npm notice
++ : '>>>>> Start Test Output'
++ cat
++ npx jest __tests__/OrderedMap.ts __tests__/OrderedSet.ts --silent --json
++ jq -r '.testResults[].assertionResults[] | "[" + (.status | ascii_upcase) + "] " + ((.ancestorTitles | join(" > ")) + (if .ancestorTitles | length > 0 then " > " else "" end) + .title)'
+PASS __tests__/OrderedSet.ts
+PASS __tests__/OrderedMap.ts
+
+Test Suites: 2 passed, 2 total
+Tests:       22 passed, 22 total
+Snapshots:   0 total
+Time:        1.74 s
+[PASSED] OrderedSet > provides initial values in a mixed order
+[PASSED] OrderedSet > maintains order when new values are added
+[PASSED] OrderedSet > resets order when a value is deleted
+[PASSED] OrderedSet > removes correctly
+[PASSED] OrderedSet > respects order for equality
+[PASSED] OrderedSet > respects order when unioning
+[PASSED] OrderedSet > can be zipped
+[PASSED] OrderedSet > handles `subtract` when Set contains >=32 elements
+[PASSED] OrderedSet > handles consecutive `subtract` invocations
+[PASSED] OrderedSet > keeps the Set ordered when updating a value with .map()
+[PASSED] OrderedSet > hashCode should return the same value if the values are the same
+[PASSED] OrderedMap > converts from object
+[PASSED] OrderedMap > constructor provides initial values
+[PASSED] OrderedMap > provides initial values in a mixed order
+[PASSED] OrderedMap > constructor accepts sequences
+[PASSED] OrderedMap > maintains order when new keys are set
+[PASSED] OrderedMap > resets order when a keys is deleted
+[PASSED] OrderedMap > removes correctly
+[PASSED] OrderedMap > respects order for equality
+[PASSED] OrderedMap > respects order when merging
+[PASSED] OrderedMap > performs deleteAll correctly after resizing internal list
+[PASSED] OrderedMap > hashCode should return the same value if the values are the same
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout 77434b3cbbc8ee21206f4cc6965e1c9b09cc92b6 __tests__/OrderedMap.ts __tests__/OrderedSet.ts
+Updated 2 paths from 7cd8bc84

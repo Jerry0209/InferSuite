@@ -1,0 +1,187 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   resources/page/page_paths.go
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 060cce0a910ffd9dc4e92efbe758fc5f187c3145
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Wed Mar 20 08:49:14 2024 +0000
+
+    build(deps): bump github.com/pelletier/go-toml/v2 from 2.1.1 to 2.2.0
+    
+    Bumps [github.com/pelletier/go-toml/v2](https://github.com/pelletier/go-toml) from 2.1.1 to 2.2.0.
+    - [Release notes](https://github.com/pelletier/go-toml/releases)
+    - [Changelog](https://github.com/pelletier/go-toml/blob/v2/.goreleaser.yaml)
+    - [Commits](https://github.com/pelletier/go-toml/compare/v2.1.1...v2.2.0)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: github.com/pelletier/go-toml/v2
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+diff --git a/go.mod b/go.mod
+index db1a5dc49..3652ebc5f 100644
+--- a/go.mod
++++ b/go.mod
+@@ -55,7 +55,7 @@ require (
+ 	github.com/niklasfasching/go-org v1.7.0
+ 	github.com/olekukonko/tablewriter v0.0.5
+ 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58
+-	github.com/pelletier/go-toml/v2 v2.1.1
++	github.com/pelletier/go-toml/v2 v2.2.0
+ 	github.com/rogpeppe/go-internal v1.12.0
+ 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
+ 	github.com/sanity-io/litter v1.5.5
+diff --git a/go.sum b/go.sum
+index cbc25f367..da02b79a8 100644
+--- a/go.sum
++++ b/go.sum
+@@ -376,8 +376,8 @@ github.com/olekukonko/tablewriter v0.0.5 h1:P2Ga83D34wi1o9J6Wh1mRuqd4mF/x/lgBS7N
+ github.com/olekukonko/tablewriter v0.0.5/go.mod h1:hPp6KlRPjbx+hW8ykQs1w3UBbZlj6HuIJcUGPhkA7kY=
+ github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 h1:onHthvaw9LFnH4t2DcNVpwGmV9E1BkGknEliJkfwQj0=
+ github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58/go.mod h1:DXv8WO4yhMYhSNPKjeNKa5WY9YCIEBRbNzFFPJbWO6Y=
+-github.com/pelletier/go-toml/v2 v2.1.1 h1:LWAJwfNvjQZCFIDKWYQaM62NcYeYViCmWIwmOStowAI=
+-github.com/pelletier/go-toml/v2 v2.1.1/go.mod h1:tJU2Z3ZkXwnxa4DPO899bsyIoywizdUvyaeZurnPPDc=
++github.com/pelletier/go-toml/v2 v2.2.0 h1:QLgLl2yMN7N+ruc31VynXs1vhMZa7CeHHejIeBAsoHo=
++github.com/pelletier/go-toml/v2 v2.2.0/go.mod h1:1t835xjRzz80PqgE6HHgN2JOsmgYu/h4qDAS4n929Rs=
+ github.com/perimeterx/marshmallow v1.1.5 h1:a2LALqQ1BlHM8PZblsDdidgv1mWi1DgC2UmX50IvK2s=
+ github.com/perimeterx/marshmallow v1.1.5/go.mod h1:dsXbUu8CRzfYP5a87xpp0xq9S3u0Vchtcl8we9tYaXw=
+ github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 h1:KoWmjvw+nsYOo29YJK9vDA65RGE3NrOnUtO7a+RF9HU=
+@@ -417,6 +417,7 @@ github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An
+ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
+ github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
+ github.com/stretchr/objx v0.5.0/go.mod h1:Yh+to48EsGEfYuaHDzXPcE3xhTkx73EhmCGUpEOglKo=
++github.com/stretchr/objx v0.5.2/go.mod h1:FRsXN1f5AsAjCGJKqEizvkpNtU+EGNCLh3NxZ/8L+MA=
+ github.com/stretchr/testify v0.0.0-20161117074351-18a02ba4a312/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
+ github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
+ github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
+@@ -425,8 +426,9 @@ github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
+ github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
+ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
+ github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
+-github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
+ github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
++github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
++github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
+ github.com/tdewolff/minify/v2 v2.20.19 h1:tX0SR0LUrIqGoLjXnkIzRSIbKJ7PaNnSENLD4CyH6Xo=
+ github.com/tdewolff/minify/v2 v2.20.19/go.mod h1:ulkFoeAVWMLEyjuDz1ZIWOA31g5aWOawCFRp9R/MudM=
+ github.com/tdewolff/parse/v2 v2.7.12 h1:tgavkHc2ZDEQVKy1oWxwIyh5bP4F5fEh/JmBwPP/3LQ=
++ git -c core.fileMode=false diff 060cce0a910ffd9dc4e92efbe758fc5f187c3145
+diff --git a/resources/page/page_paths.go b/resources/page/page_paths.go
+index 8052287c6..2e996e21e 100644
+--- a/resources/page/page_paths.go
++++ b/resources/page/page_paths.go
+@@ -268,6 +268,12 @@ func CreateTargetPaths(d TargetPathDescriptor) (tp TargetPaths) {
+ 		tp.SubResourceBaseTarget = pb.PathDir()
+ 		tp.SubResourceBaseLink = pb.LinkDir()
+ 	}
++
++	// paths.{URL,Path}Escape rely on url.Parse which
++	// will consider # a fragment identifier, so it and
++	// and everything after it will be stripped from
++	// `link`, so we need to escape it first.
++	link = strings.ReplaceAll(link, "#", "%23")
+ 	if d.URL != "" {
+ 		tp.Link = paths.URLEscape(link)
+ 	} else {
++ rm -f resources/page/path_integration_test.go
++ git apply -v -
+Checking patch resources/page/path_integration_test.go...
+Applied patch resources/page/path_integration_test.go cleanly.
++ : '>>>>> Start Test Output'
++ go test -v ./resources/page/... -run '^Test.*Permalink'
++ cat
+?   	github.com/gohugoio/hugo/resources/page/page_generate	[no test files]
+?   	github.com/gohugoio/hugo/resources/page/siteidentities	[no test files]
+=== RUN   TestPermalinkExpansion
+=== PAUSE TestPermalinkExpansion
+=== RUN   TestPermalinkExpansionMultiSection
+=== PAUSE TestPermalinkExpansionMultiSection
+=== RUN   TestPermalinkExpansionConcurrent
+=== PAUSE TestPermalinkExpansionConcurrent
+=== RUN   TestPermalinkExpansionSliceSyntax
+=== PAUSE TestPermalinkExpansionSliceSyntax
+=== RUN   TestPermalinkExpansionSectionsRepeated
+=== PAUSE TestPermalinkExpansionSectionsRepeated
+=== RUN   TestHashSignInPermalink
+=== PAUSE TestHashSignInPermalink
+=== RUN   TestPermalinks
+=== PAUSE TestPermalinks
+=== RUN   TestPermalinksOldSetup
+=== PAUSE TestPermalinksOldSetup
+=== RUN   TestPermalinksNestedSections
+=== PAUSE TestPermalinksNestedSections
+=== CONT  TestPermalinkExpansion
+=== RUN   TestPermalinkExpansion/title
+=== RUN   TestPermalinkExpansion/year-month-title
+=== RUN   TestPermalinkExpansion/yearyeardaymonthmonthnamedayweekdayweekdayname
+=== RUN   TestPermalinkExpansion/section
+=== RUN   TestPermalinkExpansion/title#01
+=== RUN   TestPermalinkExpansion/slug
+=== RUN   TestPermalinkExpansion/slugorfilename
+=== RUN   TestPermalinkExpansion/filename
+=== RUN   TestPermalinkExpansion/06-1-2-Monday
+=== RUN   TestPermalinkExpansion/2006_01_02_15_04_05.000
+=== RUN   TestPermalinkExpansion/sections
+=== RUN   TestPermalinkExpansion/sectionslast
+=== RUN   TestPermalinkExpansion/sections0sectionslast
+--- PASS: TestPermalinkExpansion (0.00s)
+    --- PASS: TestPermalinkExpansion/title (0.00s)
+    --- PASS: TestPermalinkExpansion/year-month-title (0.00s)
+    --- PASS: TestPermalinkExpansion/yearyeardaymonthmonthnamedayweekdayweekdayname (0.00s)
+    --- PASS: TestPermalinkExpansion/section (0.00s)
+    --- PASS: TestPermalinkExpansion/title#01 (0.00s)
+    --- PASS: TestPermalinkExpansion/slug (0.00s)
+    --- PASS: TestPermalinkExpansion/slugorfilename (0.00s)
+    --- PASS: TestPermalinkExpansion/filename (0.00s)
+    --- PASS: TestPermalinkExpansion/06-1-2-Monday (0.00s)
+    --- PASS: TestPermalinkExpansion/2006_01_02_15_04_05.000 (0.00s)
+    --- PASS: TestPermalinkExpansion/sections (0.00s)
+    --- PASS: TestPermalinkExpansion/sectionslast (0.00s)
+    --- PASS: TestPermalinkExpansion/sections0sectionslast (0.00s)
+=== CONT  TestPermalinksNestedSections
+=== CONT  TestPermalinkExpansionConcurrent
+=== CONT  TestHashSignInPermalink
+=== CONT  TestPermalinkExpansionMultiSection
+=== CONT  TestPermalinkExpansionSectionsRepeated
+--- PASS: TestPermalinkExpansionMultiSection (0.00s)
+=== CONT  TestPermalinksOldSetup
+=== CONT  TestPermalinks
+=== CONT  TestPermalinkExpansionSliceSyntax
+--- PASS: TestPermalinkExpansionConcurrent (0.00s)
+=== RUN   TestPermalinkExpansionSliceSyntax/Basic
+=== RUN   TestPermalinkExpansionSliceSyntax/Out_of_bounds
+--- PASS: TestPermalinkExpansionSliceSyntax (0.00s)
+    --- PASS: TestPermalinkExpansionSliceSyntax/Basic (0.00s)
+    --- PASS: TestPermalinkExpansionSliceSyntax/Out_of_bounds (0.00s)
+--- PASS: TestHashSignInPermalink (0.02s)
+--- PASS: TestPermalinkExpansionSectionsRepeated (0.02s)
+=== NAME  TestPermalinksOldSetup
+    permalinks_integration_test.go:135: 
+--- PASS: TestPermalinksOldSetup (0.02s)
+=== NAME  TestPermalinksNestedSections
+    permalinks_integration_test.go:188: 
+--- PASS: TestPermalinksNestedSections (0.02s)
+=== NAME  TestPermalinks
+    permalinks_integration_test.go:84: 
+--- PASS: TestPermalinks (0.02s)
+PASS
+ok  	github.com/gohugoio/hugo/resources/page	0.064s
+testing: warning: no tests to run
+PASS
+ok  	github.com/gohugoio/hugo/resources/page/pagemeta	0.036s [no tests to run]
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ rm -f resources/page/path_integration_test.go
+>>>>> Test Exit Code: 0

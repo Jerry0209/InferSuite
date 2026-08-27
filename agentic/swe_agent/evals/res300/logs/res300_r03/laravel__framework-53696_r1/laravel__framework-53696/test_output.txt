@@ -1,0 +1,141 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/Illuminate/Database/Schema/Blueprint.php
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 9ec9479e8e10d766eeeb85a3bdd451a505abf8ec
+Author: Mior Muhammad Zaki <crynobone@gmail.com>
+Date:   Fri Nov 29 21:52:32 2024 +0800
+
+    [11.x] Test Improvements (#53708)
+    
+    Add additional tests to verify scheme and port configuration usage to
+    configure `symfony/mailer`
+    
+    Signed-off-by: Mior Muhammad Zaki <crynobone@gmail.com>
+
+diff --git a/tests/Mail/MailManagerTest.php b/tests/Mail/MailManagerTest.php
+index 2df7689923..e357457e76 100644
+--- a/tests/Mail/MailManagerTest.php
++++ b/tests/Mail/MailManagerTest.php
+@@ -28,13 +28,17 @@ public function testEmptyTransportConfig($transport)
+         $this->app['mail.manager']->mailer('custom_smtp');
+     }
+ 
+-    #[TestWith(['smtp'])]
+-    #[TestWith(['smtps'])]
+-    public function testMailUrlConfig($scheme)
++    #[TestWith([null, 5876])]
++    #[TestWith([null, 465])]
++    #[TestWith(['smtp', 25])]
++    #[TestWith(['smtp', 2525])]
++    #[TestWith(['smtps', 465])]
++    #[TestWith(['smtp', 465])]
++    public function testMailUrlConfig($scheme, $port)
+     {
+         $this->app['config']->set('mail.mailers.smtp_url', [
+             'scheme' => $scheme,
+-            'url' => 'smtp://usr:pwd@127.0.0.2:5876',
++            'url' => "smtp://usr:pwd@127.0.0.2:{$port}",
+         ]);
+ 
+         $mailer = $this->app['mail.manager']->mailer('smtp_url');
+@@ -44,7 +48,8 @@ public function testMailUrlConfig($scheme)
+         $this->assertSame('usr', $transport->getUsername());
+         $this->assertSame('pwd', $transport->getPassword());
+         $this->assertSame('127.0.0.2', $transport->getStream()->getHost());
+-        $this->assertSame(5876, $transport->getStream()->getPort());
++        $this->assertSame($port, $transport->getStream()->getPort());
++        $this->assertSame($port === 465, $transport->getStream()->isTLS());
+     }
+ 
+     public function testBuild()
++ git -c core.fileMode=false diff 9ec9479e8e10d766eeeb85a3bdd451a505abf8ec
+diff --git a/src/Illuminate/Database/Schema/Blueprint.php b/src/Illuminate/Database/Schema/Blueprint.php
+index a0311db8d7..8d72a2638e 100755
+--- a/src/Illuminate/Database/Schema/Blueprint.php
++++ b/src/Illuminate/Database/Schema/Blueprint.php
+@@ -1038,7 +1038,7 @@ public function foreignIdFor($model, $column = null)
+ 
+         $column = $column ?: $model->getForeignKey();
+ 
+-        if ($model->getKeyType() === 'int' && $model->getIncrementing()) {
++        if ($model->getKeyType() === 'int') {
+             return $this->foreignId($column)
+                 ->table($model->getTable())
+                 ->referencesModelColumn($model->getKeyName());
++ git checkout 9ec9479e8e10d766eeeb85a3bdd451a505abf8ec tests/Database/DatabaseSchemaBlueprintTest.php tests/Database/stubs/EloquentModelUuidStub.php tests/Database/stubs/EloquentModelUlidStub.php
+Updated 0 paths from f74d7c99da
++ rm -f tests/Database/Fixtures/Models/EloquentModelUsingNonIncrementedInt.php tests/Database/Fixtures/Models/EloquentModelUsingUlid.php
++ git apply -v -
+Checking patch tests/Database/DatabaseSchemaBlueprintTest.php...
+Checking patch tests/Database/Fixtures/Models/EloquentModelUsingNonIncrementedInt.php...
+Checking patch tests/Database/Fixtures/Models/EloquentModelUsingUlid.php...
+Checking patch tests/Database/stubs/EloquentModelUuidStub.php => tests/Database/Fixtures/Models/EloquentModelUsingUuid.php...
+Checking patch tests/Database/stubs/EloquentModelUlidStub.php...
+Applied patch tests/Database/DatabaseSchemaBlueprintTest.php cleanly.
+Applied patch tests/Database/Fixtures/Models/EloquentModelUsingNonIncrementedInt.php cleanly.
+Applied patch tests/Database/Fixtures/Models/EloquentModelUsingUlid.php cleanly.
+Applied patch tests/Database/stubs/EloquentModelUuidStub.php => tests/Database/Fixtures/Models/EloquentModelUsingUuid.php cleanly.
+Applied patch tests/Database/stubs/EloquentModelUlidStub.php cleanly.
++ : '>>>>> Start Test Output'
++ vendor/bin/phpunit --testdox --colors=never tests/Database/DatabaseSchemaBlueprintTest.php
++ cat
+PHPUnit 11.5.56 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.3.16
+Configuration: /testbed/phpunit.xml.dist
+
+.................................                                 33 / 33 (100%)
+
+Time: 00:00.033, Memory: 14.00 MB
+
+Database Schema Blueprint (Illuminate\Tests\Database\DatabaseSchemaBlueprint)
+ ✔ To sql runs commands from blueprint
+ ✔ Index default names
+ ✔ Index default names when prefix supplied
+ ✔ Drop index default names
+ ✔ Drop index default names when prefix supplied
+ ✔ Default current date time
+ ✔ Default current timestamp
+ ✔ Remove column
+ ✔ Rename column
+ ✔ Native rename column on mysql 57
+ ✔ Native rename column on legacy maria d b
+ ✔ Drop column
+ ✔ Macroable
+ ✔ Default using id morph
+ ✔ Default using nullable id morph
+ ✔ Default using uuid morph
+ ✔ Default using nullable uuid morph
+ ✔ Default using ulid morph
+ ✔ Default using nullable ulid morph
+ ✔ Generate relationship column with incremental model
+ ✔ Generate relationship column with non incremental model
+ ✔ Generate relationship column with uuid model
+ ✔ Generate relationship column with ulid model
+ ✔ Generate relationship constrained column
+ ✔ Generate relationship for model with non standard primary key name
+ ✔ Drop relationship column with incremental model
+ ✔ Drop relationship column with uuid model
+ ✔ Drop constrained relationship column with incremental model
+ ✔ Drop constrained relationship column with uuid model
+ ✔ Tiny text column
+ ✔ Tiny text nullable column
+ ✔ Raw column
+ ✔ Table comment
+
+OK (33 tests, 66 assertions)
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout 9ec9479e8e10d766eeeb85a3bdd451a505abf8ec tests/Database/DatabaseSchemaBlueprintTest.php tests/Database/stubs/EloquentModelUuidStub.php tests/Database/stubs/EloquentModelUlidStub.php
+Updated 3 paths from f74d7c99da
++ rm -f tests/Database/Fixtures/Models/EloquentModelUsingNonIncrementedInt.php tests/Database/Fixtures/Models/EloquentModelUsingUlid.php

@@ -1,0 +1,436 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   gson/src/main/java/com/google/gson/DefaultDateTypeAdapter.java
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit f0aa1118e9ef66ed324f9a63cdfb551cb4e9eca5
+Author: Ori Schwartz <orischwartz@users.noreply.github.com>
+Date:   Mon Sep 18 02:46:52 2017 -0400
+
+    Java protobuf uses lower camel for all field names. When using reflection to find the generic type of repeated fields, can't use the user specified formats for field name conversion. (#1119)
+
+diff --git a/proto/src/main/java/com/google/gson/protobuf/ProtoTypeAdapter.java b/proto/src/main/java/com/google/gson/protobuf/ProtoTypeAdapter.java
+index 5570edc9..0a137342 100644
+--- a/proto/src/main/java/com/google/gson/protobuf/ProtoTypeAdapter.java
++++ b/proto/src/main/java/com/google/gson/protobuf/ProtoTypeAdapter.java
+@@ -19,7 +19,6 @@ package com.google.gson.protobuf;
+ import static com.google.common.base.Preconditions.checkNotNull;
+ 
+ import com.google.common.base.CaseFormat;
+-import com.google.common.base.Converter;
+ import com.google.common.collect.MapMaker;
+ import com.google.gson.JsonArray;
+ import com.google.gson.JsonDeserializationContext;
+@@ -94,7 +93,8 @@ public class ProtoTypeAdapter
+     private final Set<Extension<FieldOptions, String>> serializedNameExtensions;
+     private final Set<Extension<EnumValueOptions, String>> serializedEnumValueExtensions;
+     private EnumSerialization enumSerialization;
+-    private Converter<String, String> fieldNameSerializationFormat;
++    private CaseFormat protoFormat;
++    private CaseFormat jsonFormat;
+ 
+     private Builder(EnumSerialization enumSerialization, CaseFormat fromFieldNameFormat,
+         CaseFormat toFieldNameFormat) {
+@@ -126,7 +126,8 @@ public class ProtoTypeAdapter
+      */
+     public Builder setFieldNameSerializationFormat(CaseFormat fromFieldNameFormat,
+         CaseFormat toFieldNameFormat) {
+-      fieldNameSerializationFormat = fromFieldNameFormat.converterTo(toFieldNameFormat);
++      this.protoFormat = fromFieldNameFormat;
++      this.jsonFormat = toFieldNameFormat;
+       return this;
+     }
+ 
+@@ -174,7 +175,7 @@ public class ProtoTypeAdapter
+     }
+ 
+     public ProtoTypeAdapter build() {
+-      return new ProtoTypeAdapter(enumSerialization, fieldNameSerializationFormat,
++      return new ProtoTypeAdapter(enumSerialization, protoFormat, jsonFormat,
+           serializedNameExtensions, serializedEnumValueExtensions);
+     }
+   }
+@@ -195,16 +196,19 @@ public class ProtoTypeAdapter
+       new MapMaker().makeMap();
+ 
+   private final EnumSerialization enumSerialization;
+-  private final Converter<String, String> fieldNameSerializationFormat;
++  private final CaseFormat protoFormat;
++  private final CaseFormat jsonFormat;
+   private final Set<Extension<FieldOptions, String>> serializedNameExtensions;
+   private final Set<Extension<EnumValueOptions, String>> serializedEnumValueExtensions;
+ 
+   private ProtoTypeAdapter(EnumSerialization enumSerialization,
+-      Converter<String, String> fieldNameSerializationFormat,
++      CaseFormat protoFormat,
++      CaseFormat jsonFormat,
+       Set<Extension<FieldOptions, String>> serializedNameExtensions,
+       Set<Extension<EnumValueOptions, String>> serializedEnumValueExtensions) {
+     this.enumSerialization = enumSerialization;
+-    this.fieldNameSerializationFormat = fieldNameSerializationFormat;
++    this.protoFormat = protoFormat;
++    this.jsonFormat = jsonFormat;
+     this.serializedNameExtensions = serializedNameExtensions;
+     this.serializedEnumValueExtensions = serializedEnumValueExtensions;
+   }
+@@ -284,8 +288,9 @@ public class ProtoTypeAdapter
+               protoBuilder.setField(fieldDescriptor, fieldValue);
+             } else if (fieldDescriptor.isRepeated()) {
+               // If the type is an array, then we have to grab the type from the class.
++              // protobuf java field names are always lower camel case
+               String protoArrayFieldName =
+-                  fieldNameSerializationFormat.convert(fieldDescriptor.getName()) + "_";
++                  protoFormat.to(CaseFormat.LOWER_CAMEL, fieldDescriptor.getName()) + "_";
+               Field protoArrayField = protoClass.getDeclaredField(protoArrayFieldName);
+               Type protoArrayFieldType = protoArrayField.getGenericType();
+               fieldValue = context.deserialize(jsonElement, protoArrayFieldType);
+@@ -325,7 +330,7 @@ public class ProtoTypeAdapter
+         return options.getExtension(extension);
+       }
+     }
+-    return fieldNameSerializationFormat.convert(defaultName);
++    return protoFormat.to(jsonFormat, defaultName);
+   }
+ 
+   /**
+diff --git a/proto/src/main/protobuf/bag.proto b/proto/src/main/protobuf/bag.proto
+index 26189a24..48cc9639 100644
+--- a/proto/src/main/protobuf/bag.proto
++++ b/proto/src/main/protobuf/bag.proto
+@@ -24,6 +24,11 @@ message SimpleProto {
+   optional int32 count = 2;
+ }
+ 
++message ProtoWithDifferentCaseFormat {
++  repeated string name_that_tests_case_format = 1;
++  optional string another_field = 2;
++}
++
+ message ProtoWithRepeatedFields {
+   repeated int64 numbers = 1;
+   repeated SimpleProto simples = 2;
+diff --git a/proto/src/test/java/com/google/gson/protobuf/functional/ProtosWithComplexAndRepeatedFieldsTest.java b/proto/src/test/java/com/google/gson/protobuf/functional/ProtosWithComplexAndRepeatedFieldsTest.java
+index 964549d6..b61d3f50 100644
+--- a/proto/src/test/java/com/google/gson/protobuf/functional/ProtosWithComplexAndRepeatedFieldsTest.java
++++ b/proto/src/test/java/com/google/gson/protobuf/functional/ProtosWithComplexAndRepeatedFieldsTest.java
+@@ -15,10 +15,13 @@
+  */
+ package com.google.gson.protobuf.functional;
+ 
++import com.google.common.base.CaseFormat;
+ import com.google.gson.Gson;
+ import com.google.gson.GsonBuilder;
++import com.google.gson.JsonObject;
+ import com.google.gson.protobuf.ProtoTypeAdapter;
+ import com.google.gson.protobuf.ProtoTypeAdapter.EnumSerialization;
++import com.google.gson.protobuf.generated.Bag.ProtoWithDifferentCaseFormat;
+ import com.google.gson.protobuf.generated.Bag.ProtoWithRepeatedFields;
+ import com.google.gson.protobuf.generated.Bag.SimpleProto;
+ import com.google.protobuf.GeneratedMessage;
+@@ -32,6 +35,7 @@ import junit.framework.TestCase;
+  */
+ public class ProtosWithComplexAndRepeatedFieldsTest extends TestCase {
+   private Gson gson;
++  private Gson upperCamelGson;
+ 
+   @Override
+   protected void setUp() throws Exception {
+@@ -43,6 +47,14 @@ public class ProtosWithComplexAndRepeatedFieldsTest extends TestCase {
+                     .setEnumSerialization(EnumSerialization.NUMBER)
+                     .build())
+             .create();
++    upperCamelGson =
++        new GsonBuilder()
++            .registerTypeHierarchyAdapter(
++                GeneratedMessage.class, ProtoTypeAdapter.newBuilder()
++                    .setFieldNameSerializationFormat(
++                        CaseFormat.LOWER_UNDERSCORE, CaseFormat.UPPER_CAMEL)
++                    .build())
++            .create();
+   }
+ 
+   public void testSerializeRepeatedFields() {
+@@ -67,4 +79,23 @@ public class ProtosWithComplexAndRepeatedFieldsTest extends TestCase {
+     assertEquals("bar", proto.getSimples(0).getMsg());
+     assertEquals(7, proto.getSimples(1).getCount());
+   }
++
++  public void testSerializeDifferentCaseFormat() {
++    final ProtoWithDifferentCaseFormat proto =
++      ProtoWithDifferentCaseFormat.newBuilder()
++        .setAnotherField("foo")
++        .addNameThatTestsCaseFormat("bar")
++        .build();
++    final JsonObject json = upperCamelGson.toJsonTree(proto).getAsJsonObject();
++    assertEquals("foo", json.get("AnotherField").getAsString());
++    assertEquals("bar", json.get("NameThatTestsCaseFormat").getAsJsonArray().get(0).getAsString());
++  }
++
++  public void testDeserializeDifferentCaseFormat() {
++    final String json = "{NameThatTestsCaseFormat:['bar'],AnotherField:'foo'}";
++    ProtoWithDifferentCaseFormat proto =
++      upperCamelGson.fromJson(json, ProtoWithDifferentCaseFormat.class);
++    assertEquals("foo", proto.getAnotherField());
++    assertEquals("bar", proto.getNameThatTestsCaseFormat(0));
++  }
+ }
++ git -c core.fileMode=false diff f0aa1118e9ef66ed324f9a63cdfb551cb4e9eca5
+diff --git a/gson/src/main/java/com/google/gson/DefaultDateTypeAdapter.java b/gson/src/main/java/com/google/gson/DefaultDateTypeAdapter.java
+index 95eb42be..3ce97fe8 100644
+--- a/gson/src/main/java/com/google/gson/DefaultDateTypeAdapter.java
++++ b/gson/src/main/java/com/google/gson/DefaultDateTypeAdapter.java
+@@ -84,6 +84,10 @@ final class DefaultDateTypeAdapter extends TypeAdapter<Date> {
+   // See issue 162
+   @Override
+   public void write(JsonWriter out, Date value) throws IOException {
++    if (value == null) {
++      out.nullValue();
++      return;
++    }
+     synchronized (localFormat) {
+       String dateFormatAsString = enUsFormat.format(value);
+       out.value(dateFormatAsString);
+@@ -92,8 +96,9 @@ final class DefaultDateTypeAdapter extends TypeAdapter<Date> {
+ 
+   @Override
+   public Date read(JsonReader in) throws IOException {
+-    if (in.peek() != JsonToken.STRING) {
+-      throw new JsonParseException("The date should be a string value");
++    if (in.peek() == JsonToken.NULL) {
++      in.nextNull();
++      return null;
+     }
+     Date date = deserializeToDate(in.nextString());
+     if (dateType == Date.class) {
++ git checkout f0aa1118e9ef66ed324f9a63cdfb551cb4e9eca5 gson/src/test/java/com/google/gson/DefaultDateTypeAdapterTest.java
+Updated 0 paths from 51b36c06
++ git apply -v -
+Checking patch gson/src/test/java/com/google/gson/DefaultDateTypeAdapterTest.java...
+Applied patch gson/src/test/java/com/google/gson/DefaultDateTypeAdapterTest.java cleanly.
++ : '>>>>> Start Test Output'
++ mvnd test -B -T 1C -pl gson -Dtest=com.google.gson.DefaultDateTypeAdapterTest#testNullValue
++ cat
+Aug 27, 2026 9:22:22 AM org.jline.utils.Log logr
+WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[main] WARNING org.jline - Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[INFO] Processing build on daemon 10024fc6
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.google.code.gson:gson:jar:2.8.2-SNAPSHOT
+[WARNING] 'build.plugins.plugin.version' for org.apache.maven.plugins:maven-jar-plugin is missing. @ line 46, column 15
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] BuildTimeEventSpy is registered.
+[INFO] 
+[INFO] Using the SmartBuilder implementation with a thread count of 28
+[INFO] 
+[INFO] ---------------------< com.google.code.gson:gson >----------------------
+[INFO] Building Gson 2.8.2-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:1.0:enforce (enforce-maven) @ gson ---
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ gson ---
+[INFO] skip non existing resourceDirectory /testbed/gson/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.0:compile (default-compile) @ gson ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 67 source files to /testbed/gson/target/classes
+[WARNING] /testbed/gson/src/main/java/com/google/gson/internal/ConstructorConstructor.java: /testbed/gson/src/main/java/com/google/gson/internal/ConstructorConstructor.java uses or overrides a deprecated API.
+[WARNING] /testbed/gson/src/main/java/com/google/gson/internal/ConstructorConstructor.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- bnd:3.1.0:bnd-process (default) @ gson ---
+[WARNING] Export com.google.gson,  has 1,  private references [com.google.gson.internal], 
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ gson ---
+[INFO] skip non existing resourceDirectory /testbed/gson/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.0:testCompile (default-testCompile) @ gson ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 97 source files to /testbed/gson/target/test-classes
+[WARNING] /testbed/gson/src/test/java/com/google/gson/stream/JsonReaderPathTest.java: Some input files use or override a deprecated API.
+[WARNING] /testbed/gson/src/test/java/com/google/gson/stream/JsonReaderPathTest.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ gson ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junit4.JUnit4Provider
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit4/3.2.5/surefire-junit4-3.2.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit4/3.2.5/surefire-junit4-3.2.5.pom (3.0 kB at 15 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-providers/3.2.5/surefire-providers-3.2.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-providers/3.2.5/surefire-providers-3.2.5.pom (2.6 kB at 104 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit4/3.2.5/common-junit4-3.2.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit4/3.2.5/common-junit4-3.2.5.pom (3.1 kB at 120 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit3/3.2.5/common-junit3-3.2.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit3/3.2.5/common-junit3-3.2.5.pom (2.8 kB at 103 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.2.5/common-java5-3.2.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.2.5/common-java5-3.2.5.pom (2.8 kB at 97 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit4/3.2.5/surefire-junit4-3.2.5.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit4/3.2.5/surefire-junit4-3.2.5.jar (18 kB at 660 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit4/3.2.5/common-junit4-3.2.5.jar
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit3/3.2.5/common-junit3-3.2.5.jar
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.2.5/common-java5-3.2.5.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit4/3.2.5/common-junit4-3.2.5.jar (26 kB at 698 kB/s)
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.2.5/common-java5-3.2.5.jar (18 kB at 374 kB/s)
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit3/3.2.5/common-junit3-3.2.5.jar (12 kB at 135 kB/s)
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.google.gson.DefaultDateTypeAdapterTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.064 s -- in com.google.gson.DefaultDateTypeAdapterTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  7.538 s (Wall Clock)
+[INFO] Finished at: 2026-08-27T09:22:31Z
+[INFO] ------------------------------------------------------------------------
++ mvnd test -B -T 1C -pl gson -Dtest=com.google.gson.DefaultDateTypeAdapterTest#testDatePattern
+Aug 27, 2026 9:22:31 AM org.jline.utils.Log logr
+WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[main] WARNING org.jline - Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[INFO] Processing build on daemon 10024fc6
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.google.code.gson:gson:jar:2.8.2-SNAPSHOT
+[WARNING] 'build.plugins.plugin.version' for org.apache.maven.plugins:maven-jar-plugin is missing. @ line 46, column 15
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] BuildTimeEventSpy is registered.
+[INFO] 
+[INFO] Using the SmartBuilder implementation with a thread count of 28
+[INFO] 
+[INFO] ---------------------< com.google.code.gson:gson >----------------------
+[INFO] Building Gson 2.8.2-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:1.0:enforce (enforce-maven) @ gson ---
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ gson ---
+[INFO] skip non existing resourceDirectory /testbed/gson/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.0:compile (default-compile) @ gson ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 67 source files to /testbed/gson/target/classes
+[WARNING] /testbed/gson/src/main/java/com/google/gson/internal/ConstructorConstructor.java: /testbed/gson/src/main/java/com/google/gson/internal/ConstructorConstructor.java uses or overrides a deprecated API.
+[WARNING] /testbed/gson/src/main/java/com/google/gson/internal/ConstructorConstructor.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- bnd:3.1.0:bnd-process (default) @ gson ---
+[WARNING] Export com.google.gson,  has 1,  private references [com.google.gson.internal], 
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ gson ---
+[INFO] skip non existing resourceDirectory /testbed/gson/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.0:testCompile (default-testCompile) @ gson ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 97 source files to /testbed/gson/target/test-classes
+[WARNING] /testbed/gson/src/test/java/com/google/gson/stream/JsonReaderPathTest.java: Some input files use or override a deprecated API.
+[WARNING] /testbed/gson/src/test/java/com/google/gson/stream/JsonReaderPathTest.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ gson ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junit4.JUnit4Provider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.google.gson.DefaultDateTypeAdapterTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.036 s -- in com.google.gson.DefaultDateTypeAdapterTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.416 s (Wall Clock)
+[INFO] Finished at: 2026-08-27T09:22:33Z
+[INFO] ------------------------------------------------------------------------
++ mvnd test -B -T 1C -pl gson -Dtest=com.google.gson.DefaultDateTypeAdapterTest#testInvalidDatePattern
+Aug 27, 2026 9:22:33 AM org.jline.utils.Log logr
+WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[main] WARNING org.jline - Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[INFO] Processing build on daemon 10024fc6
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.google.code.gson:gson:jar:2.8.2-SNAPSHOT
+[WARNING] 'build.plugins.plugin.version' for org.apache.maven.plugins:maven-jar-plugin is missing. @ line 46, column 15
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] BuildTimeEventSpy is registered.
+[INFO] 
+[INFO] Using the SmartBuilder implementation with a thread count of 28
+[INFO] 
+[INFO] ---------------------< com.google.code.gson:gson >----------------------
+[INFO] Building Gson 2.8.2-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:1.0:enforce (enforce-maven) @ gson ---
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ gson ---
+[INFO] skip non existing resourceDirectory /testbed/gson/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.0:compile (default-compile) @ gson ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 67 source files to /testbed/gson/target/classes
+[WARNING] /testbed/gson/src/main/java/com/google/gson/internal/ConstructorConstructor.java: /testbed/gson/src/main/java/com/google/gson/internal/ConstructorConstructor.java uses or overrides a deprecated API.
+[WARNING] /testbed/gson/src/main/java/com/google/gson/internal/ConstructorConstructor.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- bnd:3.1.0:bnd-process (default) @ gson ---
+[WARNING] Export com.google.gson,  has 1,  private references [com.google.gson.internal], 
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ gson ---
+[INFO] skip non existing resourceDirectory /testbed/gson/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.0:testCompile (default-testCompile) @ gson ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 97 source files to /testbed/gson/target/test-classes
+[WARNING] /testbed/gson/src/test/java/com/google/gson/stream/JsonReaderPathTest.java: Some input files use or override a deprecated API.
+[WARNING] /testbed/gson/src/test/java/com/google/gson/stream/JsonReaderPathTest.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ gson ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junit4.JUnit4Provider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.google.gson.DefaultDateTypeAdapterTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.034 s -- in com.google.gson.DefaultDateTypeAdapterTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.190 s (Wall Clock)
+[INFO] Finished at: 2026-08-27T09:22:34Z
+[INFO] ------------------------------------------------------------------------
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout f0aa1118e9ef66ed324f9a63cdfb551cb4e9eca5 gson/src/test/java/com/google/gson/DefaultDateTypeAdapterTest.java
+>>>>> Test Exit Code: 0
+Updated 1 path from 51b36c06

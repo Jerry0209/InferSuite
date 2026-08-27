@@ -1,0 +1,641 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/faker/default/internet.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 4d52bc1e148d5290da10cb2775e244e0023778b0
+Author: Ashwin Elangovan <ashelangovan@gmail.com>
+Date:   Thu Mar 23 09:31:03 2023 -0700
+
+    Add default_country_code in locale (#2732)
+
+diff --git a/lib/locales/ar.yml b/lib/locales/ar.yml
+index d33f5e58..21b99611 100644
+--- a/lib/locales/ar.yml
++++ b/lib/locales/ar.yml
+@@ -25,6 +25,7 @@ ar:
+         - "#{street_address}, #{city}"
+         - "#{secondary_address} #{street_address}, #{city}"
+       default_country: [المملكة العربية السعودية]
++      default_country_code: ["SA"]
+     company:
+       suffix: [شركة, وأبناؤه, المحدودة]
+       buzzwords:
+diff --git a/lib/locales/bg.yml b/lib/locales/bg.yml
+index c5e8b796..5cf6b086 100644
+--- a/lib/locales/bg.yml
++++ b/lib/locales/bg.yml
+@@ -15,7 +15,7 @@ bg:
+       street_address:
+         - "#{street_name}, #{building_number}"
+       default_country: [България]
+-
++      default_country_code: ["BG"]
+     internet:
+       free_email: [abv.bg, mail.bg, dir.bg, gmail.com, yahoo.com, hotmail.com]
+       domain_suffix: [com, bg, info, бг, net, org]
+diff --git a/lib/locales/da-DK.yml b/lib/locales/da-DK.yml
+index a1347fc2..217349b2 100644
+--- a/lib/locales/da-DK.yml
++++ b/lib/locales/da-DK.yml
+@@ -22,6 +22,7 @@ da-DK:
+       street_address:
+         - "#{street_name} #{building_number}"
+       default_country: [Danmark]
++      default_country_code: ["DK"]
+ 
+     company:
+       suffix: ["A/S", "ApS", "I/S", "IVS", "Holding", "SMBA", "K/S", "SPW"]
+diff --git a/lib/locales/de-AT.yml b/lib/locales/de-AT.yml
+index 11ff09cf..03f066c8 100644
+--- a/lib/locales/de-AT.yml
++++ b/lib/locales/de-AT.yml
+@@ -16,7 +16,7 @@ de-AT:
+       street_address:
+         - "#{street_name} #{building_number}"
+       default_country: [Österreich]
+-
++      default_country_code: ["AT"]
+     company:
+       suffix: [GmbH, AG, Gruppe, KG, GmbH & Co. KG, UG, OG]
+       legal_form: [GmbH, AG, Gruppe, KG, GmbH & Co. KG, UG, OG]
+diff --git a/lib/locales/de-CH.yml b/lib/locales/de-CH.yml
+index a165e676..696c6bec 100644
+--- a/lib/locales/de-CH.yml
++++ b/lib/locales/de-CH.yml
+@@ -3,6 +3,7 @@ de-CH:
+     address:
+       postcode: ['1###', '2###', '3###', '4###', '5###', '6###', '7###', '8###', '9###']
+       default_country: [Schweiz]
++      default_country_code: ["CH"]
+ 
+     name:
+       last_name:
+diff --git a/lib/locales/de.yml b/lib/locales/de.yml
+index 336f18c9..21420742 100644
+--- a/lib/locales/de.yml
++++ b/lib/locales/de.yml
+@@ -22,6 +22,7 @@ de:
+       street_address:
+         - "#{street_name} #{building_number}"
+       default_country: [Deutschland]
++      default_country_code: ["DE"]
+ 
+     company:
+       suffix: [GmbH, AG, Gruppe, KG, GmbH & Co. KG, UG, OHG]
+diff --git a/lib/locales/en-AU.yml b/lib/locales/en-AU.yml
+index f2fe623d..ecf3fe61 100644
+--- a/lib/locales/en-AU.yml
++++ b/lib/locales/en-AU.yml
+@@ -35,6 +35,7 @@ en-AU:
+       secondary_address: ['Apartment #', 'Apt #', 'Unit #', 'U#', 'Flat #', 'House #', 'Level #']
+       full_address: ["#{street_address}, #{city} #{postcode}", "#{street_address}, #{secondary_address}, #{city} #{postcode}", "#{secondary_address}, #{street_address}, #{city} #{postcode}", "#{mail_box} #{city} #{postcode}"]
+       default_country: [Australia, Aus]
++      default_country_code: ["AU"]
+       time_zone: [Australia/Sydney, Australia/Brisbane, Australia/Melbourne, Australia/Hobart, Australia/Adelaide, Australia/Perth, Australia/Darwin, Australia/Canberra]
+     country_code: '61'
+     phone_number:
+diff --git a/lib/locales/en-CA.yml b/lib/locales/en-CA.yml
+index 6bae3cb4..d2a2a08d 100644
+--- a/lib/locales/en-CA.yml
++++ b/lib/locales/en-CA.yml
+@@ -5,6 +5,7 @@ en-CA:
+       state: [Alberta, British Columbia, Manitoba, New Brunswick, Newfoundland and Labrador, Nova Scotia, Northwest Territories, Nunavut, Ontario, Prince Edward Island, Quebec, Saskatchewan, Yukon]
+       state_abbr: ["AB", "BC", "MB", "NB", "NL", "NS", "NU", "NT", "ON", "PE", "QC", "SK", "YT"]
+       default_country: [Canada]
++      default_country_code: ["CA"]
+ 
+     internet:
+       free_email: [gmail.com, yahoo.ca, hotmail.com]
+diff --git a/lib/locales/en-GB.yml b/lib/locales/en-GB.yml
+index 1aac1c94..d1078a56 100644
+--- a/lib/locales/en-GB.yml
++++ b/lib/locales/en-GB.yml
+@@ -5,6 +5,7 @@ en-GB:
+       county: [Avon, Bedfordshire, Berkshire, Borders, Buckinghamshire, Cambridgeshire, Central, Cheshire, Cleveland, Clwyd, Cornwall, County Antrim, County Armagh, County Down, County Fermanagh, County Londonderry, County Tyrone, Cumbria, Derbyshire, Devon, Dorset, Dumfries and Galloway, Durham, Dyfed, East Sussex, Essex, Fife, Gloucestershire, Grampian, Greater Manchester, Gwent, Gwynedd County, Hampshire, Herefordshire, Hertfordshire, Highlands and Islands, Humberside, Isle of Wight, Kent, Lancashire, Leicestershire, Lincolnshire, Lothian, Merseyside, Mid Glamorgan, Norfolk, North Yorkshire, Northamptonshire, Northumberland, Nottinghamshire, Oxfordshire, Powys, Rutland, Shropshire, Somerset, South Glamorgan, South Yorkshire, Staffordshire, Strathclyde, Suffolk, Surrey, Tayside, Tyne and Wear, Warwickshire, West Glamorgan, West Midlands, West Sussex, West Yorkshire, Wiltshire, Worcestershire]
+       uk_country: [England, Scotland, Wales, Northern Ireland]
+       default_country: [England, Scotland, Wales, Northern Ireland]
++      default_country_code: ["GB"]
+     internet:
+       domain_suffix: [co.uk, com, biz, info, name]
+     country_code: ['44']
+diff --git a/lib/locales/en-MS.yml b/lib/locales/en-MS.yml
+index b8571dd4..c24a2f58 100644
+--- a/lib/locales/en-MS.yml
++++ b/lib/locales/en-MS.yml
+@@ -41,6 +41,7 @@ en-MS:
+       street_address:
+         - "No. #{building_number}, #{street_name}"
+       default_country: [Malaysia]
++      default_country_code: ["MY"]
+     country_code: ['603-56', '603-80']
+     phone_number:
+       formats: ['03#######', '01########']
+diff --git a/lib/locales/en-NG.yml b/lib/locales/en-NG.yml
+index 930451b4..5be53fa5 100644
+--- a/lib/locales/en-NG.yml
++++ b/lib/locales/en-NG.yml
+@@ -73,5 +73,6 @@ en-NG:
+         - "#{cities}"
+       region: [South-West, North-East, South-South, North-Central, South-East, North-West]
+       default_country: [Nigeria]
++      default_country_code: ["NG"]
+     phone_number:
+       formats: ['080########', '070########', '090########', '081########', '071########', '091########']
+diff --git a/lib/locales/en-NZ.yml b/lib/locales/en-NZ.yml
+index 0ef75714..b2a514fb 100644
+--- a/lib/locales/en-NZ.yml
++++ b/lib/locales/en-NZ.yml
+@@ -130,6 +130,7 @@ en-NZ:
+         Mews, Parade, Pass, Place, Plaza, Ridge, Road, Run, Square, Street, St, Summit, Terrace, Track, Trail, View Road, Way, Esplanade
+       ]
+       default_country: [New Zealand]
++      default_country_code: ["NZ"]
+       city: [
+         Auckland, Wellington, Christchurch, Hamilton, Tauranga, Napier, Hastings, Dunedin,
+         Palmerston North, Nelson, Rotorua, Whangarei, New Plymouth,
+diff --git a/lib/locales/en-PAK.yml b/lib/locales/en-PAK.yml
+index 6bafbc57..19fe1854 100644
+--- a/lib/locales/en-PAK.yml
++++ b/lib/locales/en-PAK.yml
+@@ -9,6 +9,7 @@ en-PAK:
+       postcode: ['####0']
+       state: [Balochistan, Khyber Pakhtunkhwa, Punjab, Sindh, Islamabad Capital Territory, Federally Administered Tribal Areas, Azad Jammu and Kashmir, Gilgit-Baltistan]
+       default_country: [Pakistan, Islamic Republic of Pakistan]
++      default_country_code: ["PK"]
+     internet:
+       free_email: [gmail.com, yahoo.com, hotmail.com]
+       domain_suffix: [pk, com, com.pk, name, net, org, html, edu]
+diff --git a/lib/locales/en-SG.yml b/lib/locales/en-SG.yml
+index 4d867ac6..2d6c1a7d 100644
+--- a/lib/locales/en-SG.yml
++++ b/lib/locales/en-SG.yml
+@@ -29,6 +29,7 @@ en-SG:
+       street_address:
+         - "#{building_number} #{street_name}"
+       default_country: [Singapore]
++      default_country_code: ["SG"]
+     country_code: ['65']
+     phone_number:
+       formats: ['6### ####', '9### ####', '8### ####']
+diff --git a/lib/locales/en-UG.yml b/lib/locales/en-UG.yml
+index d355f6f9..caeba445 100644
+--- a/lib/locales/en-UG.yml
++++ b/lib/locales/en-UG.yml
+@@ -4,6 +4,7 @@ en-UG:
+       domain_suffix: [ug, com, org, co.ug, org.ug, net]
+     address:
+       default_country: [Uganda, The Republic of Uganda, UG]
++      default_country_code: ["UG"]
+       # city names from http://en.wikipedia.org/wiki/List_of_cities_and_towns_in_Uganda
+       city_names: [
+         Alebtong, Abim, Adjumani, Amolatar, Amuria, Amuru, Apac, Arua,
+diff --git a/lib/locales/en-US.yml b/lib/locales/en-US.yml
+index e0efcf1f..0eb2206f 100644
+--- a/lib/locales/en-US.yml
++++ b/lib/locales/en-US.yml
+@@ -31,6 +31,7 @@ en-US:
+         - "#{street_address}, #{city}, #{state_abbr} #{postcode}"
+         - "#{secondary_address} #{street_address}, #{city}, #{state_abbr} #{postcode}"
+       default_country: [United States, United States of America, USA]
++      default_country_code: ["US"]
+       postcode_by_state:
+         AL: '350##'
+         AK: '995##'
+diff --git a/lib/locales/en-ZA.yml b/lib/locales/en-ZA.yml
+index d6ecb9d6..6be6790a 100644
+--- a/lib/locales/en-ZA.yml
++++ b/lib/locales/en-ZA.yml
+@@ -4,6 +4,7 @@ en-ZA:
+       domain_suffix: [org.za, co.za, com]
+     address:
+       default_country: [South Africa, The Replublic of South Africa, SA, Afrique du Sud, Zuid-Afrika]
++      default_country_code: ["ZA"]
+       postcode: ['####', '#####']
+       provinces: [Limpopo, Gauteng, Free State, North West, Northern Cape, Western Cape, KwaZulu-Natal, Mpumalanga, Eastern Cape]
+       province:
+diff --git a/lib/locales/en-au-ocker.yml b/lib/locales/en-au-ocker.yml
+index cdfcdf72..f41644f9 100644
+--- a/lib/locales/en-au-ocker.yml
++++ b/lib/locales/en-au-ocker.yml
+@@ -27,6 +27,8 @@ en-au-ocker:
+       building_number: ['####', '###', '##']
+       street_suffix: [Avenue, Boulevard, Circle, Circuit, Court, Crescent, Crest, Drive, Estate Dr, Grove, Hill, Island, Junction, Knoll, Lane, Loop, Mall, Manor, Meadow, Mews, Parade, Parkway, Pass, Place, Plaza, Ridge, Road, Run, Square, Station St, Street, Summit, Terrace, Track, Trail, View Rd, Way]
+       default_country: [Australia]
++      default_country_code: ["AU"]
++
+     country_code: ['61']
+     phone_number:
+       formats: ['0# #### ####', '# #### ####', '4## ### ###'] #iOS AUS phone formats
+diff --git a/lib/locales/es-AR.yml b/lib/locales/es-AR.yml
+index 03ea4bfe..12ff3c8c 100644
+--- a/lib/locales/es-AR.yml
++++ b/lib/locales/es-AR.yml
+@@ -2481,6 +2481,7 @@ es-AR:
+                 zambia: ZM
+                 zimbabwe: ZW
+             default_country: [Argentina]
++            default_country_code: ["AR"]
+ 
+         football:
+             teams:
+diff --git a/lib/locales/es-MX.yml b/lib/locales/es-MX.yml
+index 949d31f9..ffbbf9c7 100644
+--- a/lib/locales/es-MX.yml
++++ b/lib/locales/es-MX.yml
+@@ -26,6 +26,7 @@ es-MX:
+         - "#{street_name} #{building_number}"
+         - "#{street_name} #{building_number} #{secondary_address}"
+       default_country: [México]
++      default_country_code: ["MX"]
+ 
+     company:
+       suffix: [S.A., S.A. de C.V., S.R.L, S.A.B., S.C.]
+diff --git a/lib/locales/es.yml b/lib/locales/es.yml
+index 841fb6cc..1cf686ad 100644
+--- a/lib/locales/es.yml
++++ b/lib/locales/es.yml
+@@ -22,6 +22,7 @@ es:
+         - "#{street_name}#{building_number}"
+         - "#{street_name}#{building_number} #{secondary_address}"
+       default_country: [España]
++      default_country_code: ["ES"]
+ 
+     company:
+       suffix: [S.L., e Hijos, S.A., Hermanos]
+diff --git a/lib/locales/fi-FI.yml b/lib/locales/fi-FI.yml
+index 690a789f..14fe6cca 100644
+--- a/lib/locales/fi-FI.yml
++++ b/lib/locales/fi-FI.yml
+@@ -20,6 +20,7 @@ fi-FI:
+       street_address:
+         - "#{street_name} #{building_number}"
+       default_country: [Suomi]
++      default_country_code: ["FI"]
+ 
+     name:
+       female_first_name: [Maria, Helena, Anneli, Johanna, Kaarina, Marjatta, Hannele, Kristiina, Liisa, Emilia, Elina, Tuulikki, Annikki, Maarit, Sofia, Susanna, Leena, Katariina, Anna, Marja, Sinikka, Inkeri, Riitta, Kyllikki, Aino, Tuula, Anne, Päivi, Orvokki, Ritva, Tellervo, Maija, Pirjo, Karoliina, Pauliina, Minna, Sari, Irmeli, Eeva, Tiina, Laura, Eveliina, Marika, Elisabet, Tarja, Pirkko, Satu, Anja, Mari, Hanna]
+diff --git a/lib/locales/fr-CA.yml b/lib/locales/fr-CA.yml
+index 0b54f569..5da5cdbd 100644
+--- a/lib/locales/fr-CA.yml
++++ b/lib/locales/fr-CA.yml
+@@ -12,6 +12,7 @@ fr-CA:
+       street_address:
+         - " #{street_name} #{building_number}"
+       default_country: [Canada]
++      default_country_code: ["CA"]
+ 
+     internet:
+       free_email: [gmail.com, yahoo.ca, hotmail.com]
+diff --git a/lib/locales/fr-CH.yml b/lib/locales/fr-CH.yml
+index de08d115..a35e60a0 100644
+--- a/lib/locales/fr-CH.yml
++++ b/lib/locales/fr-CH.yml
+@@ -15,6 +15,7 @@ fr-CH:
+       street_address:
+         - "#{street_name} #{building_number}"
+       default_country: [Suisse]
++      default_country_code: ["CH"]
+ 
+     company:
+       suffix: [AG, GmbH, et associés, "& Co.", Groupe, LLC, Inc.]
+diff --git a/lib/locales/hy.yml b/lib/locales/hy.yml
+index 48c25845..b698e5a5 100644
+--- a/lib/locales/hy.yml
++++ b/lib/locales/hy.yml
+@@ -235,6 +235,7 @@ hy:
+         ZM: Զամբիա
+         ZW: Զիմբաբվե
+       default_country: [Հայաստան]
++      default_country_code: ["AM"]
+       state: [Արագածոտն, Արարատ, Արմավիր, Գեղարքունիք, Լոռի, Կոտայք, Շիրակ, Սյունիք, Տավուշ, Վայոց Ձոր]
+       state_abbr: [ԱԳ, ԱՐ, ԱՄ, ԳՂ, ԼՌ, ԿՏ, ՇԿ, ՍՅ, ՎՁ, ՏՎ]
+       community: [Աջափնյակ, Ավան, Արաբկիր, Դավիթաշեն, Էրեբունի, Կենտրոն, Մալաթիա-Սեբաստիա, Նոր Նորք, Նորք-Մարաշ, Նուբարաշեն, Շենգավիթ, Քանաքեռ-Զեյթուն, Ապարան, Ալագյազ, Արագածավան, Ծաղկահովիտ, Ճամբարակ, Վարդենիս, Մասրիկ, Շողակաթ, Ալավերդի, Ախթալա, Ստեփանավան, Տաշիր, Գյուլագարակ, Բերդ, Մեծավան, Շնող, Սարչապետ, Օձուն, Բյուրեղավան, Եղվարդ, Չարենցավան, Ակունք, Մեղրաձոր, Ջրվեժ, Անի, Ախուրյան, Մարմաշեն, Կապան, Սիսիան, Քաջարան, Արենի, Գլաձոր, Եղեգիս, Բերդ]
+diff --git a/lib/locales/it.yml b/lib/locales/it.yml
+index 1b897dba..30c7101e 100644
+--- a/lib/locales/it.yml
++++ b/lib/locales/it.yml
+@@ -22,6 +22,7 @@ it:
+         - "#{street_name} #{building_number}"
+         - "#{street_name} #{building_number}, #{secondary_address}"
+       default_country: [Italia]
++      default_country_code: ["IT"]
+ 
+     company:
+       suffix: [SPA, e figli, Group, s.r.l.]
+diff --git a/lib/locales/ko.yml b/lib/locales/ko.yml
+index 93691388..51b8bfa5 100644
+--- a/lib/locales/ko.yml
++++ b/lib/locales/ko.yml
+@@ -13,6 +13,7 @@ ko:
+       street_name:
+         - "#{street_root}#{street_suffix}"
+       default_country: [대한민국]
++      default_country_code: ["KR"]
+ 
+     color:
+       name: ['빨간색', '다홍색', '주황색', '귤색', '노란색', '연두색', '녹색', '청록색', '하늘색', '파란색', '남색', '보라색', '자주색', '자홍색', '분홍색', '산호색', '라임색', '올리브색', '카키색', '군청색', '바다색', '버건디색', '베이지색', '갈색', '민트색', '황토색', '금색', '음색', '검은색', '회색', '흰색']
+diff --git a/lib/locales/mi-NZ.yml b/lib/locales/mi-NZ.yml
+index 561d5563..d1a42456 100644
+--- a/lib/locales/mi-NZ.yml
++++ b/lib/locales/mi-NZ.yml
+@@ -222,6 +222,8 @@ mi-NZ:
+         - Esplanade
+       default_country:
+         - Aotearoa
++      default_country_code:
++        - NZ
+       city:
+         - Ahuriri
+         - Awaroa
+diff --git a/lib/locales/nb-NO.yml b/lib/locales/nb-NO.yml
+index 04d6d67b..638c603a 100644
+--- a/lib/locales/nb-NO.yml
++++ b/lib/locales/nb-NO.yml
+@@ -22,6 +22,7 @@ nb-NO:
+       street_address:
+         - "#{street_name} #{building_number}"
+       default_country: [Norge]
++      default_country_code: ["NO"]
+ 
+     company:
+       suffix: ["Gruppen", "AS", "ASA", "BA", "RFH", "og Sønner"]
+diff --git a/lib/locales/nl.yml b/lib/locales/nl.yml
+index d6c9b6b4..5343d987 100644
+--- a/lib/locales/nl.yml
++++ b/lib/locales/nl.yml
+@@ -47,6 +47,7 @@ nl:
+       postcode: /[1-9][0-9]{3} (AA|AB|AC|AD|AE|AF|AG|AH|AI|AJ|AK|AL|AM|AN|AO|AP|AQ|AR|AS|AT|AU|AV|AW|AX|AY|AZ|BA|BB|BC|BD|BE|BF|BG|BH|BI|BJ|BK|BL|BM|BN|BO|BP|BQ|BR|BS|BT|BU|BV|BW|BX|BY|BZ|CA|CB|CC|CD|CE|CF|CG|CH|CI|CJ|CK|CL|CM|CN|CO|CP|CQ|CR|CS|CT|CU|CV|CW|CX|CY|CZ|DA|DB|DC|DD|DE|DF|DG|DH|DI|DJ|DK|DL|DM|DN|DO|DP|DQ|DR|DS|DT|DU|DV|DW|DX|DY|DZ|EA|EB|EC|ED|EE|EF|EG|EH|EI|EJ|EK|EL|EM|EN|EO|EP|EQ|ER|ES|ET|EU|EV|EW|EX|EY|EZ|FA|FB|FC|FD|FE|FF|FG|FH|FI|FJ|FK|FL|FM|FN|FO|FP|FQ|FR|FS|FT|FU|FV|FW|FX|FY|FZ|GA|GB|GC|GD|GE|GF|GG|GH|GI|GJ|GK|GL|GM|GN|GO|GP|GQ|GR|GS|GT|GU|GV|GW|GX|GY|GZ|HA|HB|HC|HD|HE|HF|HG|HH|HI|HJ|HK|HL|HM|HN|HO|HP|HQ|HR|HS|HT|HU|HV|HW|HX|HY|HZ|IA|IB|IC|ID|IE|IF|IG|IH|II|IJ|IK|IL|IM|IN|IO|IP|IQ|IR|IS|IT|IU|IV|IW|IX|IY|IZ|JA|JB|JC|JD|JE|JF|JG|JH|JI|JJ|JK|JL|JM|JN|JO|JP|JQ|JR|JS|JT|JU|JV|JW|JX|JY|JZ|KA|KB|KC|KD|KE|KF|KG|KH|KI|KJ|KK|KL|KM|KN|KO|KP|KQ|KR|KS|KT|KU|KV|KW|KX|KY|KZ|LA|LB|LC|LD|LE|LF|LG|LH|LI|LJ|LK|LL|LM|LN|LO|LP|LQ|LR|LS|LT|LU|LV|LW|LX|LY|LZ|MA|MB|MC|MD|ME|MF|MG|MH|MI|MJ|MK|ML|MM|MN|MO|MP|MQ|MR|MS|MT|MU|MV|MW|MX|MY|MZ|NA|NB|NC|ND|NE|NF|NG|NH|NI|NJ|NK|NL|NM|NN|NO|NP|NQ|NR|NS|NT|NU|NV|NW|NX|NY|NZ|OA|OB|OC|OD|OE|OF|OG|OH|OI|OJ|OK|OL|OM|ON|OO|OP|OQ|OR|OS|OT|OU|OV|OW|OX|OY|OZ|PA|PB|PC|PD|PE|PF|PG|PH|PI|PJ|PK|PL|PM|PN|PO|PP|PQ|PR|PS|PT|PU|PV|PW|PX|PY|PZ|QA|QB|QC|QD|QE|QF|QG|QH|QI|QJ|QK|QL|QM|QN|QO|QP|QQ|QR|QS|QT|QU|QV|QW|QX|QY|QZ|RA|RB|RC|RD|RE|RF|RG|RH|RI|RJ|RK|RL|RM|RN|RO|RP|RQ|RR|RS|RT|RU|RV|RW|RX|RY|RZ|SB|SC|SE|SF|SG|SH|SI|SJ|SK|SL|SM|SN|SO|SP|SQ|SR|ST|SU|SV|SW|SX|SY|SZ|TA|TB|TC|TD|TE|TF|TG|TH|TI|TJ|TK|TL|TM|TN|TO|TP|TQ|TR|TS|TT|TU|TV|TW|TX|TY|TZ|UA|UB|UC|UD|UE|UF|UG|UH|UI|UJ|UK|UL|UM|UN|UO|UP|UQ|UR|US|UT|UU|UV|UW|UX|UY|UZ|VA|VB|VC|VD|VE|VF|VG|VH|VI|VJ|VK|VL|VM|VN|VO|VP|VQ|VR|VS|VT|VU|VV|VW|VX|VY|VZ|WA|WB|WC|WD|WE|WF|WG|WH|WI|WJ|WK|WL|WM|WN|WO|WP|WQ|WR|WS|WT|WU|WV|WW|WX|WY|WZ|XA|XB|XC|XD|XE|XF|XG|XH|XI|XJ|XK|XL|XM|XN|XO|XP|XQ|XR|XS|XT|XU|XV|XW|XX|XY|XZ|YA|YB|YC|YD|YE|YF|YG|YH|YI|YJ|YK|YL|YM|YN|YO|YP|YQ|YR|YS|YT|YU|YV|YW|YX|YY|YZ|ZA|ZB|ZC|ZD|ZE|ZF|ZG|ZH|ZI|ZJ|ZK|ZL|ZM|ZN|ZO|ZP|ZQ|ZR|ZS|ZT|ZU|ZV|ZW|ZX|ZY|ZZ)/
+       state: ["Noord-Holland", "Zuid-Holland", "Utrecht", "Zeeland", "Overijssel", "Gelderland", "Drenthe", "Friesland", "Groningen", "Noord-Brabant", "Limburg"]
+       default_country: [Nederland]
++      default_country_code: ["NL"]
+ 
+     company:
+       suffix: [BV, V.O.F., Group, en Zonen]
+diff --git a/lib/locales/pl.yml b/lib/locales/pl.yml
+index 02730081..1a108b79 100644
+--- a/lib/locales/pl.yml
++++ b/lib/locales/pl.yml
+@@ -17,6 +17,7 @@ pl:
+       street_address:
+         - "#{street_name} #{building_number}"
+       default_country: [Polska]
++      default_country_code: ["PL"]
+ 
+     coin:
+       flip:
+diff --git a/lib/locales/pt-BR.yml b/lib/locales/pt-BR.yml
+index 083cd0f2..de217209 100644
+--- a/lib/locales/pt-BR.yml
++++ b/lib/locales/pt-BR.yml
+@@ -547,6 +547,7 @@ pt-BR:
+         SC: ['88###-###', '89###-###']
+         RS: '9####-###'
+       default_country: [Brasil]
++      default_country_code: ["BR"]
+ 
+     company:
+       suffix: ["S.A.", "LTDA", "e Associados", "Comércio", "EIRELI"]
+diff --git a/lib/locales/pt.yml b/lib/locales/pt.yml
+index 10f6e5e5..72e84470 100644
+--- a/lib/locales/pt.yml
++++ b/lib/locales/pt.yml
+@@ -33,6 +33,7 @@ pt:
+       postcode: ["####"]
+       state: ["Lisboa", "Leiria", "Santarém", "Setúbal", "Beja", "Faro", "Évora", "Portalegre", "Castelo Branco", "Guarda", "Coimbra", "Aveiro", "Viseu", "Bragança", "Vila Real", "Porto", "Braga", "Viana do Castelo"]
+       default_country: [Portugal]
++      default_country_code: ["PT"]
+ 
+     company:
+       suffix: ["S.A.", "LTDA", "e Associados", "Comércio", "EIRELI"]
+diff --git a/lib/locales/ru.yml b/lib/locales/ru.yml
+index 7ea4fdc9..8f6bf155 100644
+--- a/lib/locales/ru.yml
++++ b/lib/locales/ru.yml
+@@ -18,6 +18,7 @@ ru:
+       street_address:
+         - "#{street_name}, #{building_number}"
+       default_country: [Россия]
++      default_country_code: ["RU"]
+       full_address:
+         - "#{postcode} #{default_country}, #{city}, #{street_address}"
+         - "#{postcode} #{default_country}, #{city}, #{street_address} #{secondary_address}"
+diff --git a/lib/locales/sk.yml b/lib/locales/sk.yml
+index e171cad1..a7e0b943 100644
+--- a/lib/locales/sk.yml
++++ b/lib/locales/sk.yml
+@@ -19,6 +19,7 @@ sk:
+       street_address:
+         - "#{street_name} #{building_number}"
+       default_country: [Slovensko]
++      default_country_code: ["SK"]
+ 
+     company:
+       suffix: [s.r.o., a.s., v.o.s.]
+diff --git a/lib/locales/sv.yml b/lib/locales/sv.yml
+index ad18ff18..3dd7f6f0 100644
+--- a/lib/locales/sv.yml
++++ b/lib/locales/sv.yml
+@@ -25,6 +25,7 @@ sv:
+       street_address:
+         - "#{street_name} #{building_number}"
+       default_country: [Sverige]
++      default_country_code: ["SE"]
+ 
+     company:
+       suffix: ["Gruppen", "AB", "HB", "Group", "Investment", "Kommanditbolag", "Aktiebolag"]
+diff --git a/lib/locales/tr.yml b/lib/locales/tr.yml
+index 8f125b3c..55c0080d 100644
+--- a/lib/locales/tr.yml
++++ b/lib/locales/tr.yml
+@@ -32,6 +32,7 @@ tr:
+         - "#{city_name}"
+       country: [Afganistan, Amerika Birleşik Devletleri, Fransa, Hollanda, Belçika, Nepal, Hindistan, Kuala Lumpur, Rusya]
+       default_country: [Turkey]
++      default_country_code: ["TR"]
+ 
+     book:
+       title: ['Taht Oyunları', 'Maymunlar Gezegeni', 'Benim Adım Kırmızı', 'Uykuların Doğusu', 'Yılanların Öcü']
+diff --git a/lib/locales/uk.yml b/lib/locales/uk.yml
+index 3955677e..793427b7 100644
+--- a/lib/locales/uk.yml
++++ b/lib/locales/uk.yml
+@@ -28,6 +28,7 @@ uk:
+       full_address:
+         - "#{street_address}, #{city}, #{state}, #{postcode}"
+       default_country: [Україна]
++      default_country_code: ["UA"]
+ 
+     internet:
+       free_email: [ukr.net, ex.ua, e-mail.ua, i.ua, meta.ua, yandex.ua, gmail.com]
+diff --git a/lib/locales/vi.yml b/lib/locales/vi.yml
+index ad2ae6fe..d7ee62d1 100644
+--- a/lib/locales/vi.yml
++++ b/lib/locales/vi.yml
+@@ -24,6 +24,7 @@ vi:
+               "Staffordshire", "Strathclyde", "Suffolk", "Surrey", "Tayside", "Tyne and Wear", "Việt Nam", "Warwickshire",
+               "West Glamorgan", "West Midlands", "West Sussex", "West Yorkshire", "Wiltshire", "Worcestershire"]
+       default_country: ["Việt Nam"]
++      default_country_code: ["VN"]
+     internet:
+       domain_suffix: [com, net, info, vn, com.vn]
+     phone_number:
+diff --git a/lib/locales/zh-CN.yml b/lib/locales/zh-CN.yml
+index 6f0dd7fc..183cc03e 100644
+--- a/lib/locales/zh-CN.yml
++++ b/lib/locales/zh-CN.yml
+@@ -13,6 +13,7 @@ zh-CN:
+       street_address:
+         - "#{street_name}#{building_number}号"
+       default_country: [中国]
++      default_country_code: ["CN"]
+ 
+ 
+     name:
+diff --git a/lib/locales/zh-TW.yml b/lib/locales/zh-TW.yml
+index db347c34..05e579a2 100644
+--- a/lib/locales/zh-TW.yml
++++ b/lib/locales/zh-TW.yml
+@@ -16,6 +16,7 @@ zh-TW:
+       street_address:
+         - "#{street_name} #{building_number} 號"
+       default_country: [台灣]
++      default_country_code: ["TW"]
+ 
+     name:
+       last_name: [趙, 錢, 孫, 李, 周, 吳, 鄭, 王, 馮, 陳, 褚, 衛, 蔣, 沈, 韓, 楊, 朱, 秦, 尤, 許, 何, 呂, 施, 張, 孔, 曹, 嚴, 華, 金, 魏, 陶, 薑, 戚, 謝, 鄒, 喻, 柏, 水, 竇, 章, 雲, 蘇, 潘, 葛, 奚, 範, 彭, 郎, 魯, 韋, 昌, 馬, 苗, 鳳, 花, 方, 俞, 任, 袁, 柳, 酆, 鮑, 史, 唐, 費, 廉, 岑, 薛, 雷, 賀, 倪, 湯, 滕, 殷, 羅, 畢, 郝, 鄔, 安, 常, 樂, 於, 時, 傅, 皮, 卞, 齊, 康, 伍, 餘, 元, 蔔, 顧, 孟, 平, 黃, 和, 穆, 蕭, 尹, 姚, 邵, 湛, 汪, 祁, 毛, 禹, 狄, 米, 貝, 明, 臧, 計, 伏, 成, 戴, 談, 宋, 茅, 龐, 熊, 紀, 舒, 屈, 項, 祝, 董, 梁, 杜, 阮, 藍, 閔, 席, 季, 麻, 強, 賈, 路, 婁, 危, 江, 童, 顏, 郭, 梅, 盛, 林, 刁, 鍾, 徐, 邱, 駱, 高, 夏, 蔡, 田, 樊, 胡, 淩, 霍, 虞, 萬, 支, 柯, 昝, 管, 盧, 莫, 柯, 房, 裘, 繆, 幹, 解, 應, 宗, 丁, 宣, 賁, 鄧, 鬱, 單, 杭, 洪, 包, 諸, 左, 石, 崔, 吉, 鈕, 龔, 程, 嵇, 邢, 滑, 裴, 陸, 榮, 翁, 荀, 羊, 于, 惠, 甄, 曲, 家, 封, 芮, 羿, 儲, 靳, 汲, 邴, 糜, 松, 井, 段, 富, 巫, 烏, 焦, 巴, 弓, 牧, 隗, 山, 穀, 車, 侯, 宓, 蓬, 全, 郗, 班, 仰, 秋, 仲, 伊, 宮, 甯, 仇, 欒, 暴, 甘, 鈄, 曆, 戎, 祖, 武, 符, 劉, 景, 詹, 束, 龍, 葉, 幸, 司, 韶, 郜, 黎, 薊, 溥, 印, 宿, 白, 懷, 蒲, 邰, 從, 鄂, 索, 鹹, 籍, 賴, 卓, 藺, 屠, 蒙, 池, 喬, 陽, 鬱, 胥, 能, 蒼, 雙, 聞, 莘, 党, 翟, 譚, 貢, 勞, 逄, 姬, 申, 扶, 堵, 冉, 宰, 酈, 雍, 卻, 璩, 桑, 桂, 濮, 牛, 壽, 通, 邊, 扈, 燕, 冀, 浦, 尚, 農, 溫, 別, 莊, 晏, 柴, 瞿, 閻, 充, 慕, 連, 茹, 習, 宦, 艾, 魚, 容, 向, 古, 易, 慎, 戈, 廖, 庾, 終, 暨, 居, 衡, 步, 都, 耿, 滿, 弘, 匡, 國, 文, 寇, 廣, 祿, 闕, 東, 歐, 殳, 沃, 利, 蔚, 越, 夔, 隆, 師, 鞏, 厙, 聶, 晁, 勾, 敖, 融, 冷, 訾, 辛, 闞, 那, 簡, 饒, 空, 曾, 毋, 沙, 乜, 養, 鞠, 須, 豐, 巢, 關, 蒯, 相, 查, 後, 荊, 紅, 遊, 竺, 權, 逮, 盍, 益, 桓, 公, 萬俟, 司馬, 上官, 歐陽, 夏侯, 諸葛, 聞人, 東方, 赫連, 皇甫, 尉遲, 公羊, 澹台, 公冶, 宗政, 濮陽, 淳于, 單於, 太叔, 申屠, 公孫, 仲孫, 軒轅, 令狐, 徐離, 宇文, 長孫, 慕容, 司徒, 司空]
++ git -c core.fileMode=false diff 4d52bc1e148d5290da10cb2775e244e0023778b0
+diff --git a/lib/faker/default/internet.rb b/lib/faker/default/internet.rb
+index 275a1070..e3167976 100644
+--- a/lib/faker/default/internet.rb
++++ b/lib/faker/default/internet.rb
+@@ -174,6 +174,10 @@ module Faker
+         password << lower_chars[rand(lower_chars.count - 1)]
+         character_bag += lower_chars
+ 
++        digits = ('0'..'9').to_a
++        password << digits[rand(digits.count - 1)]
++        character_bag += digits
++
+         if character_types.include?(:mix_case)
+           upper_chars = ('A'..'Z').to_a
+           password << upper_chars[rand(upper_chars.count - 1)]
++ git checkout 4d52bc1e148d5290da10cb2775e244e0023778b0 test/faker/default/test_faker_internet.rb
+Updated 0 paths from 099a907e
++ git apply -v -
+Checking patch test/faker/default/test_faker_internet.rb...
+Applied patch test/faker/default/test_faker_internet.rb cleanly.
++ : '>>>>> Start Test Output'
++ bundle exec ruby test/faker/default/test_faker_internet.rb -v -n /password/
++ cat
+Calling `DidYouMean::SPELL_CHECKERS.merge!(error_name => spell_checker)' has been deprecated. Please call `DidYouMean.correct_error(error_name, spell_checker)' instead.
+Calling `DidYouMean::SPELL_CHECKERS.merge!(error_name => spell_checker)' has been deprecated. Please call `DidYouMean.correct_error(error_name, spell_checker)' instead.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+NOTE: Gem::Platform.match is deprecated; use Gem::Platform.match_spec? or match_gem? instead. It will be removed in Rubygems 4
+Gem::Platform.match called from /usr/local/bundle/gems/bundler-2.1.4/lib/bundler/index.rb:198.
+Loaded suite test/faker/default/test_faker_internet
+Started
+TestFakerInternet: 
+  test_deterministic_password_with_compatible_min_length_and_requirements:	.: (0.000401)
+  test_deterministic_password_with_special_chars_and_mixed_case:.: (0.000142)
+  test_password:					.: (0.000045)
+  test_password_could_achieve_max_length:		.: (0.000821)
+  test_password_max_with_integer_arg:			.: (0.000558)
+  test_password_with_compatible_min_length_and_requirements:	.: (0.000049)
+  test_password_with_integer_arg:			.: (0.000508)
+  test_password_with_invalid_min_length_for_mix_case_and_special_characters:	.: (0.000046)
+  test_password_with_max_length_less_than_min_length:	.: (0.000057)
+  test_password_with_min_length_and_max_length:		.: (0.000075)
+  test_password_with_min_length_eq_1_without_mix_case:	.: (0.000043)
+  test_password_with_mixed_case:			.: (0.000072)
+  test_password_with_special_chars:			.: (0.000049)
+  test_password_with_special_chars_and_mixed_case:	.: (0.000628)
+  test_password_with_special_chars_and_mixed_case_on_3chars_password:	.: (0.000451)
+  test_password_without_mixed_case:			.: (0.000034)
+  test_password_without_special_chars:			.: (0.000040)
+
+Finished in 0.00439282 seconds.
+-------------------------------------------------------------------------------
+17 tests, 222 assertions, 0 failures, 0 errors, 0 pendings, 0 omissions, 0 notifications
+100% passed
+-------------------------------------------------------------------------------
+3869.95 tests/s, 50537.01 assertions/s
+Run options: --seed 53104
+
+# Running:
+
+
+
+Finished in 0.000526s, 0.0000 runs/s, 0.0000 assertions/s.
+
+0 runs, 0 assertions, 0 failures, 0 errors, 0 skips
+JSON Coverage report generated for Unit Tests to /testbed/coverage.         2379 / 4560 LOC (52.17%) covered.
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout 4d52bc1e148d5290da10cb2775e244e0023778b0 test/faker/default/test_faker_internet.rb
+Updated 1 path from 099a907e

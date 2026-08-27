@@ -93,6 +93,16 @@ nesting — not per-task trajectories (stochastic agent).
 | `typing_ledger.tsv` | `local_agents/ML_typeid/` | one row per attempt — the study's product (tracked) |
 | per-episode data | `local_agents/ML_typeid/data/glm_swe_*/run_1/` | traj, 3 fence pollers, cmdlog, usage JSONL, summary (local-only) |
 
+**Addendum 2026-08-27 (resolution follow-up).** The census was graded by the official
+SWE-bench harness: **211/300 resolved, 25 fail tests, 64 no patch** — and the 36-pick set
+was revised to resolution-clean picks (4 replacements; Ruby×S converted to a majority-T
+top-up, having no resolvable candidate). Cause taxonomy, per-language tables, and the
+revised selection matrix: `docs/multi_full_stratification.md` (2026-08-27 sections);
+evidence `agentic/swe_agent/evals/res300/`; figure `iso36_selection_matrix.png` regenerated
+(deck republish pending on the P7). Headline for §3: non-resolution is dominated by episode
+viability (loop degeneracy 43 %, drain cap 19 %), not by wrong patches — consistent with
+insight 5's degeneracy-gating claim.
+
 ## 3. Key insights (most → least important)
 
 1. **The behavioural axis collapses at corpus scale.** Edit- and build-dominated episodes do

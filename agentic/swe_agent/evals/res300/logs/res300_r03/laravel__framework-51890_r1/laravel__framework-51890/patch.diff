@@ -1,0 +1,16 @@
+diff --git a/src/Illuminate/Validation/Concerns/FormatsMessages.php b/src/Illuminate/Validation/Concerns/FormatsMessages.php
+index c03e2636a5..d61c0f99c1 100644
+--- a/src/Illuminate/Validation/Concerns/FormatsMessages.php
++++ b/src/Illuminate/Validation/Concerns/FormatsMessages.php
+@@ -305,8 +305,10 @@ public function getDisplayableAttribute($attribute)
+      */
+     protected function getAttributeFromTranslations($name)
+     {
++        $attributes = $this->translator->get('validation.attributes');
++
+         return $this->getAttributeFromLocalArray(
+-            $name, Arr::dot((array) $this->translator->get('validation.attributes'))
++            $name, is_array($attributes) ? Arr::dot($attributes) : []
+         );
+     }
+ 

@@ -1,0 +1,37 @@
+{
+    "tokio-rs__tokio-6838": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "infra_failure": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "abstract_socket_name"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "epollhup",
+                    "accept_read_write",
+                    "shutdown",
+                    "poll_write_ready",
+                    "poll_read_ready",
+                    "try_read_write",
+                    "try_read_buf"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

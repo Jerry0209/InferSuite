@@ -1,0 +1,243 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/Fixer/PhpUnit/PhpUnitAttributesFixer.php
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit f0a95a77782538eafca6c4d2f2f2792be3dbbfcf
+Author: Dariusz Rumiński <dariusz.ruminski@gmail.com>
+Date:   Sun Jun 16 22:37:05 2024 +0200
+
+    chore: PHPStan 11 array rules (#8011)
+
+diff --git a/phpstan.dist.neon b/phpstan.dist.neon
+index 532c9dd21..37055a865 100644
+--- a/phpstan.dist.neon
++++ b/phpstan.dist.neon
+@@ -13,6 +13,8 @@ parameters:
+         - tests/Fixtures
+     polluteScopeWithLoopInitialAssignments: true # Do not enforce assignments outside of the loops
+     reportUnmatchedIgnoredErrors: true # Do not allow outdated errors in the baseline
++    reportPossiblyNonexistentGeneralArrayOffset: true # enabled, but huge exceptions count; example fix: https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/pull/8089
++    reportPossiblyNonexistentConstantArrayOffset: true
+     treatPhpDocTypesAsCertain: false
+     ignoreErrors:
+         - '/^Class [a-zA-Z\\]+ extends @final class PhpCsFixer\\(ConfigurationException\\InvalidConfigurationException|ConfigurationException\\InvalidFixerConfigurationException|Tokenizer\\Tokens|Console\\Command\\FixCommand)\.$/'
+@@ -52,5 +54,9 @@ parameters:
+             message: '#^Method PhpCsFixer\\Tests\\.+::provide.+Cases\(\) return type has no value type specified in iterable type iterable\.$#'
+             path: tests
+             count: 1013
++        -
++            identifier: offsetAccess.notFound
++            path: .
++            count: 559
+     tipsOfTheDay: false
+     tmpDir: dev-tools/phpstan/cache
+diff --git a/src/Fixer/Alias/NoAliasFunctionsFixer.php b/src/Fixer/Alias/NoAliasFunctionsFixer.php
+index eeed6433b..3575052ca 100644
+--- a/src/Fixer/Alias/NoAliasFunctionsFixer.php
++++ b/src/Fixer/Alias/NoAliasFunctionsFixer.php
+@@ -247,6 +247,10 @@ protected function configurePostNormalisation(): void
+                 break;
+             }
+ 
++            if (!isset(self::SETS[$set])) {
++                throw new \LogicException(sprintf('Set %s passed option validation, but not part of ::SETS.', $set));
++            }
++
+             $this->aliases = array_merge($this->aliases, self::SETS[$set]);
+         }
+     }
+diff --git a/src/Fixer/Alias/SetTypeToCastFixer.php b/src/Fixer/Alias/SetTypeToCastFixer.php
+index 2127e33dd..daf0e2652 100644
+--- a/src/Fixer/Alias/SetTypeToCastFixer.php
++++ b/src/Fixer/Alias/SetTypeToCastFixer.php
+@@ -149,6 +149,7 @@ protected function applyFix(\SplFileInfo $file, Tokens $tokens): void
+             if ('null' === $type) {
+                 $this->fixSettypeNullCall($tokens, $functionNameIndex, $argumentToken);
+             } else {
++                \assert(isset($map[$type]));
+                 $this->fixSettypeCall($tokens, $functionNameIndex, $argumentToken, new Token($map[$type]));
+             }
+         }
+diff --git a/src/Fixer/PhpUnit/PhpUnitExpectationFixer.php b/src/Fixer/PhpUnit/PhpUnitExpectationFixer.php
+index 2429288a9..3758ec587 100644
+--- a/src/Fixer/PhpUnit/PhpUnitExpectationFixer.php
++++ b/src/Fixer/PhpUnit/PhpUnitExpectationFixer.php
+@@ -230,6 +230,10 @@ private function applyPhpUnitClassFixWithObjectOperator(Tokens $tokens, int $sta
+                 $argStart = array_keys($arguments)[$cnt];
+                 $argBefore = $tokens->getPrevMeaningfulToken($argStart);
+ 
++                if (!isset($argumentsReplacements[$cnt])) {
++                    throw new \LogicException(sprintf('Unexpected index %d to find replacement method.', $cnt));
++                }
++
+                 if ('expectExceptionMessage' === $argumentsReplacements[$cnt]) {
+                     $paramIndicatorIndex = $tokens->getNextMeaningfulToken($argBefore);
+                     $afterParamIndicatorIndex = $tokens->getNextMeaningfulToken($paramIndicatorIndex);
+diff --git a/src/Tokenizer/Analyzer/AlternativeSyntaxAnalyzer.php b/src/Tokenizer/Analyzer/AlternativeSyntaxAnalyzer.php
+index 723d4c950..d0df192f6 100644
+--- a/src/Tokenizer/Analyzer/AlternativeSyntaxAnalyzer.php
++++ b/src/Tokenizer/Analyzer/AlternativeSyntaxAnalyzer.php
+@@ -74,6 +74,11 @@ public function findAlternativeSyntaxBlockEnd(Tokens $tokens, int $index): int
+         }
+ 
+         $startTokenKind = $tokens[$index]->getId();
++
++        if (!isset(self::ALTERNATIVE_SYNTAX_BLOCK_EDGES[$startTokenKind])) {
++            throw new \LogicException(sprintf('Unknown startTokenKind: %s', $tokens[$index]->toJson()));
++        }
++
+         $endTokenKinds = self::ALTERNATIVE_SYNTAX_BLOCK_EDGES[$startTokenKind];
+ 
+         $findKinds = [[$startTokenKind]];
+diff --git a/tests/Tokenizer/TokensAnalyzerTest.php b/tests/Tokenizer/TokensAnalyzerTest.php
+index 612992ce8..8d5ef374b 100644
+--- a/tests/Tokenizer/TokensAnalyzerTest.php
++++ b/tests/Tokenizer/TokensAnalyzerTest.php
+@@ -2491,10 +2491,12 @@ public function testIsWhilePartOfDoWhile(): void
+                 continue;
+             }
+ 
++            $isExpected = $expected[$index] ?? null;
++
+             self::assertSame(
+-                $expected[$index],
++                $isExpected,
+                 $tokensAnalyzer->isWhilePartOfDoWhile($index),
+-                sprintf('Expected token at index "%d" to be detected as %sa "do-while"-loop.', $index, true === $expected[$index] ? '' : 'not ')
++                sprintf('Expected token at index "%d" to be detected as %sa "do-while"-loop.', $index, true === $isExpected ? '' : 'not ')
+             );
+         }
+     }
++ git -c core.fileMode=false diff f0a95a77782538eafca6c4d2f2f2792be3dbbfcf
+diff --git a/src/Fixer/PhpUnit/PhpUnitAttributesFixer.php b/src/Fixer/PhpUnit/PhpUnitAttributesFixer.php
+index a6246afd7..619ebf83c 100644
+--- a/src/Fixer/PhpUnit/PhpUnitAttributesFixer.php
++++ b/src/Fixer/PhpUnit/PhpUnitAttributesFixer.php
+@@ -109,6 +109,7 @@ protected function applyPhpUnitClassFix(Tokens $tokens, int $startIndex, int $en
+ 
+             $docBlock = new DocBlock($tokens[$index]->getContent());
+ 
++            $presentAttributes = [];
+             foreach (array_reverse($docBlock->getAnnotations()) as $annotation) {
+                 $annotationName = $annotation->getTag()->getName();
+ 
+@@ -122,7 +123,11 @@ protected function applyPhpUnitClassFix(Tokens $tokens, int $startIndex, int $en
+                 /** @phpstan-ignore-next-line */
+                 $tokensToInsert = self::{$this->fixingMap[$annotationName]}($tokens, $index, $annotation);
+ 
+-                if (self::isAttributeAlreadyPresent($tokens, $index, $tokensToInsert)) {
++                if (!isset($presentAttributes[$annotationName])) {
++                    $presentAttributes[$annotationName] = self::isAttributeAlreadyPresent($tokens, $index, $tokensToInsert);
++                }
++
++                if ($presentAttributes[$annotationName]) {
+                     continue;
+                 }
+ 
++ git checkout f0a95a77782538eafca6c4d2f2f2792be3dbbfcf tests/Fixer/PhpUnit/PhpUnitAttributesFixerTest.php
+Updated 0 paths from 1e5494b97
++ git apply -v -
+Checking patch tests/Fixer/PhpUnit/PhpUnitAttributesFixerTest.php...
+Applied patch tests/Fixer/PhpUnit/PhpUnitAttributesFixerTest.php cleanly.
++ : '>>>>> Start Test Output'
++ vendor/bin/phpunit --testdox --colors=never tests/Fixer/PhpUnit/PhpUnitAttributesFixerTest.php
++ cat
+PHPUnit 11.5.55 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.3.16
+Configuration: /testbed/phpunit.xml.dist
+
+................................................................. 65 / 72 ( 90%)
+.......                                                           72 / 72 (100%)
+
+Time: 00:01.526, Memory: 14.00 MB
+
+Php Unit Attributes Fixer (PhpCsFixer\Tests\Fixer\PhpUnit\PhpUnitAttributesFixer)
+ ✔ Not defining constructor
+ ✔ Is risky
+ ✔ Fixer definitions
+ ✔ Fixers are final
+ ✔ Deprecated fixers have correct summary
+ ✔ Deprecated fixers do not have deprecated successor
+ ✔ Fixer use insert slices when only insertions are performed
+ ✔ Fixer configuration definitions
+ ✔ Proper method naming
+ ✔ Fix with data set "do not fix with wrong values"
+ ✔ Fix with data set "do not fix with wrong casing"
+ ✔ Fix with data set "do not fix when not supported by attributes"
+ ✔ Fix with data set "do not fix when there is already attribute of related class"
+ ✔ Fix with data set "do not duplicate attribute when used without leading slash"
+ ✔ Fix with data set "do not duplicate attribute when used with import"
+ ✔ Fix with data set "do not duplicate attribute when used with partial import"
+ ✔ Fix with data set "do not duplicate attribute when used with alias"
+ ✔ Fix with data set "do not duplicate attribute when used with partial alias"
+ ✔ Fix with data set "fix multiple annotations"
+ ✔ Fix with data set "fix with multiple spaces"
+ ✔ Fix with data set "fix with > in operator"
+ ✔ Fix with data set "fix with trailing spaces"
+ ✔ Fix with data set "fix with non-alphanumeric characters"
+ ✔ Fix with data set "handle After"
+ ✔ Fix with data set "handle AfterClass"
+ ✔ Fix with data set "handle BackupGlobals enabled"
+ ✔ Fix with data set "handle BackupGlobals disabled"
+ ✔ Fix with data set "handle BackupGlobals no"
+ ✔ Fix with data set "handle BackupStaticProperties enabled"
+ ✔ Fix with data set "handle BackupStaticProperties disabled"
+ ✔ Fix with data set "handle Before"
+ ✔ Fix with data set "handle BeforeClass"
+ ✔ Fix with data set "handle CoversClass"
+ ✔ Fix with data set "handle CoversFunction"
+ ✔ Fix with data set "handle CoversNothing"
+ ✔ Fix with data set "handle DataProvider"
+ ✔ Fix with data set "handle DataProviderExternal"
+ ✔ Fix with data set "handle Depends"
+ ✔ Fix with data set "handle DependsExternal"
+ ✔ Fix with data set "handle DependsExternalUsingDeepClone"
+ ✔ Fix with data set "handle DependsExternalUsingShallowClone"
+ ✔ Fix with data set "handle DependsOnClass"
+ ✔ Fix with data set "handle DependsOnClassUsingDeepClone"
+ ✔ Fix with data set "handle DependsOnClassUsingShallowClone"
+ ✔ Fix with data set "handle DependsUsingDeepClone"
+ ✔ Fix with data set "handle DependsUsingShallowClone"
+ ✔ Fix with data set "handle DoesNotPerformAssertions"
+ ✔ Fix with data set "handle Group"
+ ✔ Fix with data set "handle Large"
+ ✔ Fix with data set "handle Medium"
+ ✔ Fix with data set "handle PostCondition"
+ ✔ Fix with data set "handle PreCondition"
+ ✔ Fix with data set "handle PreserveGlobalState enabled"
+ ✔ Fix with data set "handle PreserveGlobalState disabled"
+ ✔ Fix with data set "handle RequiresFunction"
+ ✔ Fix with data set "handle RequiresMethod"
+ ✔ Fix with data set "handle RequiresOperatingSystem"
+ ✔ Fix with data set "handle RequiresOperatingSystemFamily"
+ ✔ Fix with data set "handle RequiresPhp"
+ ✔ Fix with data set "handle RequiresPhpExtension"
+ ✔ Fix with data set "handle RequiresPhpunit"
+ ✔ Fix with data set "handle RequiresSetting"
+ ✔ Fix with data set "handle RunInSeparateProcess"
+ ✔ Fix with data set "handle RunTestsInSeparateProcesses"
+ ✔ Fix with data set "handle Small"
+ ✔ Fix with data set "handle Test"
+ ✔ Fix with data set "handle TestDox"
+ ✔ Fix with data set "handle Ticket"
+ ✔ Fix with data set "handle UsesClass"
+ ✔ Fix with data set "handle UsesFunction"
+ ✔ Fix with data set "handle TestWith"
+ ✔ Fix with data set "handle multiple annotations of the same name"
+
+OK, but there were issues!
+Tests: 72, Assertions: 8985, PHPUnit Deprecations: 3.
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout f0a95a77782538eafca6c4d2f2f2792be3dbbfcf tests/Fixer/PhpUnit/PhpUnitAttributesFixerTest.php
+Updated 1 path from 1e5494b97

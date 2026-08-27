@@ -1,0 +1,101 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/uu/tr/src/tr.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit a4088475832957e070b8f904cd3a33a818d07d72
+Merge: ce4c37f46 d623b7931
+Author: Daniel Hofstetter <daniel.hofstetter@42dh.com>
+Date:   Wed Sep 25 07:20:59 2024 +0200
+
+    Merge pull request #6735 from uutils/renovate/terminal_size-0.x
+    
+    chore(deps): update rust crate terminal_size to 0.4.0
+
++ git -c core.fileMode=false diff a4088475832957e070b8f904cd3a33a818d07d72
+diff --git a/src/uu/tr/src/tr.rs b/src/uu/tr/src/tr.rs
+index 867d99755..c670aced0 100644
+--- a/src/uu/tr/src/tr.rs
++++ b/src/uu/tr/src/tr.rs
+@@ -100,22 +100,14 @@ pub fn uumain(args: impl uucore::Args) -> UResult<()> {
+     if let Some(first) = sets.first() {
+         let slice = os_str_as_bytes(first)?;
+ 
+-        let mut iter = slice.iter();
+-
+-        if let Some(b'\\') = iter.next_back() {
+-            match iter.next_back() {
+-                Some(b'\\') => {
+-                    // The trailing backslash has a backslash preceding it, so it is properly escaped
+-                }
+-                _ => {
+-                    // The trailing backslash has a non-backslash character before it OR is the only character in the
+-                    // string, so the warning applies
+-                    show!(USimpleError::new(
+-                        0,
+-                        "warning: an unescaped backslash at end of string is not portable"
+-                    ));
+-                }
+-            }
++        // Count the number of trailing backslashes. If that count is odd, then the
++        // final backslash is unescaped, which is not portable.
++        let trailing_backslashes = slice.iter().rev().take_while(|&&c| c == b'\\').count();
++        if trailing_backslashes % 2 == 1 {
++            show!(USimpleError::new(
++                0,
++                "warning: an unescaped backslash at end of string is not portable"
++            ));
+         }
+     }
+ 
++ git checkout a4088475832957e070b8f904cd3a33a818d07d72 tests/by-util/test_tr.rs
+Updated 0 paths from 2a05cb51a
++ git apply -v -
+Checking patch tests/by-util/test_tr.rs...
+Applied patch tests/by-util/test_tr.rs cleanly.
++ : '>>>>> Start Test Output'
++ cargo test backslash --no-fail-fast
++ cat
+   Compiling uu_tr v0.0.27 (/testbed/src/uu/tr)
+   Compiling coreutils v0.0.27 (/testbed)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.02s
+     Running unittests src/bin/coreutils.rs (target/debug/deps/coreutils-d4097ac90cb9cbd5)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/test_util_name.rs (target/debug/deps/test_util_name-a9c6f48e4a525f99)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 78 filtered out; finished in 0.00s
+
+     Running tests/tests.rs (target/debug/deps/tests-4ca65ddf13215667)
+
+running 10 tests
+test test_env::tests_split_iterator::split_trailing_backslash ... ok
+test test_tr::test_interpret_backslash_at_eol_literally ... ok
+test test_tr::test_interpret_backslash_escapes ... ok
+test test_echo::test_escape_backslash ... ok
+test test_tr::test_interpret_unrecognized_backslash_escape_as_character ... ok
+test test_paste::test_delimiter_list_ending_with_escaped_backslash ... ok
+test test_hashsum::test_check_no_backslash_no_space ... ok
+test test_tr::test_trailing_backslash ... ok
+test test_tr::test_unescaped_backslash_warning_false_positive ... ok
+test test_paste::test_delimiter_list_ending_with_unescaped_backslash ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 3127 filtered out; finished in 0.03s
+
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout a4088475832957e070b8f904cd3a33a818d07d72 tests/by-util/test_tr.rs
+>>>>> Test Exit Code: 0
+Updated 1 path from 2a05cb51a

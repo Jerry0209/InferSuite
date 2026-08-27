@@ -1,0 +1,611 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch v1.x
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/adapters/http.js
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit c30252f685e8f4326722de84923fcbc8cf557f06
+Author: Dmitriy Mozgovoy <robotshara@gmail.com>
+Date:   Fri May 20 09:04:36 2022 +0300
+
+    Added data URL support for node.js; (#4725)
+    
+    * Added data URL support for node.js;
+    Added missed data URL protocol for the browser environment;
+    Optimized JSON parsing in the default response transformer;
+    Refactored project structure;
+    Added `cause` prop for AxiosError instance that refers to the original error if it was wrapped with `AxiosError.from` method;
+    Added fromDataURI helper;
+    Added test for handling data:url as an `arraybuffer|text|stream`;
+    
+    * Added throwing of 405 HTTP error if the method is not GET;
+
+diff --git a/.eslintrc.js b/.eslintrc.js
+index 2710cbc..efbcf49 100644
+--- a/.eslintrc.js
++++ b/.eslintrc.js
+@@ -80,7 +80,7 @@ module.exports = {
+     'no-new-wrappers': 2,            // http://eslint.org/docs/rules/no-new-wrappers
+     'no-octal': 2,                   // http://eslint.org/docs/rules/no-octal
+     'no-octal-escape': 2,            // http://eslint.org/docs/rules/no-octal-escape
+-    'no-param-reassign': 2,          // http://eslint.org/docs/rules/no-param-reassign
++    'no-param-reassign': 0,          // http://eslint.org/docs/rules/no-param-reassign
+     'no-proto': 2,                   // http://eslint.org/docs/rules/no-proto
+     'no-redeclare': 2,               // http://eslint.org/docs/rules/no-redeclare
+     'no-return-assign': 2,           // http://eslint.org/docs/rules/no-return-assign
+diff --git a/index.d.ts b/index.d.ts
+index 67fdd68..f2127d4 100644
+--- a/index.d.ts
++++ b/index.d.ts
+@@ -194,6 +194,7 @@ export class AxiosError<T = unknown, D = any> extends Error {
+   isAxiosError: boolean;
+   status?: number;
+   toJSON: () => object;
++  cause?: Error;
+   static readonly ERR_FR_TOO_MANY_REDIRECTS = "ERR_FR_TOO_MANY_REDIRECTS";
+   static readonly ERR_BAD_OPTION_VALUE = "ERR_BAD_OPTION_VALUE";
+   static readonly ERR_BAD_OPTION = "ERR_BAD_OPTION";
+@@ -201,6 +202,8 @@ export class AxiosError<T = unknown, D = any> extends Error {
+   static readonly ERR_DEPRECATED = "ERR_DEPRECATED";
+   static readonly ERR_BAD_RESPONSE = "ERR_BAD_RESPONSE";
+   static readonly ERR_BAD_REQUEST = "ERR_BAD_REQUEST";
++  static readonly ERR_NOT_SUPPORT = "ERR_NOT_SUPPORT";
++  static readonly ERR_INVALID_URL = "ERR_INVALID_URL";
+   static readonly ERR_CANCELED = "ERR_CANCELED";
+   static readonly ECONNABORTED = "ECONNABORTED";
+   static readonly ETIMEDOUT = "ETIMEDOUT";
+diff --git a/lib/adapters/http.js b/lib/adapters/http.js
+index 31e81bc..b75f6e6 100755
+--- a/lib/adapters/http.js
++++ b/lib/adapters/http.js
+@@ -15,10 +15,15 @@ var VERSION = require('./../env/data').version;
+ var transitionalDefaults = require('../defaults/transitional');
+ var AxiosError = require('../core/AxiosError');
+ var CanceledError = require('../cancel/CanceledError');
++var platform = require('../platform');
++var fromDataURI = require('../helpers/fromDataURI');
++var stream = require('stream');
+ 
+ var isHttps = /https:?/;
+ 
+-var supportedProtocols = [ 'http:', 'https:', 'file:' ];
++var supportedProtocols = platform.protocols.map(function(protocol) {
++  return protocol + ':';
++});
+ 
+ function dispatchBeforeRedirect(options) {
+   if (options.beforeRedirects.proxy) {
+@@ -99,6 +104,62 @@ module.exports = function httpAdapter(config) {
+       rejectPromise(value);
+     };
+     var data = config.data;
++    var responseType = config.responseType;
++    var responseEncoding = config.responseEncoding;
++    var method = config.method.toUpperCase();
++
++    // Parse url
++    var fullPath = buildFullPath(config.baseURL, config.url);
++    var parsed = url.parse(fullPath);
++    var protocol = parsed.protocol || supportedProtocols[0];
++
++    if (protocol === 'data:') {
++      var convertedData;
++
++      if (method !== 'GET') {
++        return settle(resolve, reject, {
++          status: 405,
++          statusText: 'method not allowed',
++          headers: {},
++          config: config
++        });
++      }
++
++      try {
++        convertedData = fromDataURI(config.url, responseType === 'blob', {
++          Blob: config.env && config.env.Blob
++        });
++      } catch (err) {
++        throw AxiosError.from(err, AxiosError.ERR_BAD_REQUEST, config);
++      }
++
++      if (responseType === 'text') {
++        convertedData = convertedData.toString(responseEncoding);
++
++        if (!responseEncoding || responseEncoding === 'utf8') {
++          data = utils.stripBOM(convertedData);
++        }
++      } else if (responseType === 'stream') {
++        convertedData = stream.Readable.from(convertedData);
++      }
++
++      return settle(resolve, reject, {
++        data: convertedData,
++        status: 200,
++        statusText: 'OK',
++        headers: {},
++        config: config
++      });
++    }
++
++    if (supportedProtocols.indexOf(protocol) === -1) {
++      return reject(new AxiosError(
++        'Unsupported protocol ' + protocol,
++        AxiosError.ERR_BAD_REQUEST,
++        config
++      ));
++    }
++
+     var headers = config.headers;
+     var headerNames = {};
+ 
+@@ -159,19 +220,6 @@ module.exports = function httpAdapter(config) {
+       auth = username + ':' + password;
+     }
+ 
+-    // Parse url
+-    var fullPath = buildFullPath(config.baseURL, config.url);
+-    var parsed = url.parse(fullPath);
+-    var protocol = parsed.protocol || supportedProtocols[0];
+-
+-    if (supportedProtocols.indexOf(protocol) === -1) {
+-      return reject(new AxiosError(
+-        'Unsupported protocol ' + protocol,
+-        AxiosError.ERR_BAD_REQUEST,
+-        config
+-      ));
+-    }
+-
+     if (!auth && parsed.auth) {
+       var urlAuth = parsed.auth.split(':');
+       var urlUsername = urlAuth[0] || '';
+@@ -195,7 +243,7 @@ module.exports = function httpAdapter(config) {
+ 
+     var options = {
+       path: buildURL(parsed.path, config.params, config.paramsSerializer).replace(/^\?/, ''),
+-      method: config.method.toUpperCase(),
++      method: method,
+       headers: headers,
+       agents: { http: config.httpAgent, https: config.httpsAgent },
+       auth: auth,
+@@ -242,7 +290,7 @@ module.exports = function httpAdapter(config) {
+       if (req.aborted) return;
+ 
+       // uncompress the response body transparently if required
+-      var stream = res;
++      var responseStream = res;
+ 
+       // return the last request in case of redirects
+       var lastRequest = res.req || req;
+@@ -261,7 +309,7 @@ module.exports = function httpAdapter(config) {
+         case 'compress':
+         case 'deflate':
+           // add the unzipper to the body stream processing pipeline
+-          stream = stream.pipe(zlib.createUnzip());
++          responseStream = responseStream.pipe(zlib.createUnzip());
+ 
+           // remove the content-encoding in order to not confuse downstream operations
+           delete res.headers['content-encoding'];
+@@ -277,13 +325,13 @@ module.exports = function httpAdapter(config) {
+         request: lastRequest
+       };
+ 
+-      if (config.responseType === 'stream') {
+-        response.data = stream;
++      if (responseType === 'stream') {
++        response.data = responseStream;
+         settle(resolve, reject, response);
+       } else {
+         var responseBuffer = [];
+         var totalResponseBytes = 0;
+-        stream.on('data', function handleStreamData(chunk) {
++        responseStream.on('data', function handleStreamData(chunk) {
+           responseBuffer.push(chunk);
+           totalResponseBytes += chunk.length;
+ 
+@@ -291,17 +339,17 @@ module.exports = function httpAdapter(config) {
+           if (config.maxContentLength > -1 && totalResponseBytes > config.maxContentLength) {
+             // stream.destroy() emit aborted event before calling reject() on Node.js v16
+             rejected = true;
+-            stream.destroy();
++            responseStream.destroy();
+             reject(new AxiosError('maxContentLength size of ' + config.maxContentLength + ' exceeded',
+               AxiosError.ERR_BAD_RESPONSE, config, lastRequest));
+           }
+         });
+ 
+-        stream.on('aborted', function handlerStreamAborted() {
++        responseStream.on('aborted', function handlerStreamAborted() {
+           if (rejected) {
+             return;
+           }
+-          stream.destroy();
++          responseStream.destroy();
+           reject(new AxiosError(
+             'maxContentLength size of ' + config.maxContentLength + ' exceeded',
+             AxiosError.ERR_BAD_RESPONSE,
+@@ -310,17 +358,17 @@ module.exports = function httpAdapter(config) {
+           ));
+         });
+ 
+-        stream.on('error', function handleStreamError(err) {
++        responseStream.on('error', function handleStreamError(err) {
+           if (req.aborted) return;
+           reject(AxiosError.from(err, null, config, lastRequest));
+         });
+ 
+-        stream.on('end', function handleStreamEnd() {
++        responseStream.on('end', function handleStreamEnd() {
+           try {
+             var responseData = responseBuffer.length === 1 ? responseBuffer[0] : Buffer.concat(responseBuffer);
+-            if (config.responseType !== 'arraybuffer') {
+-              responseData = responseData.toString(config.responseEncoding);
+-              if (!config.responseEncoding || config.responseEncoding === 'utf8') {
++            if (responseType !== 'arraybuffer') {
++              responseData = responseData.toString(responseEncoding);
++              if (!responseEncoding || responseEncoding === 'utf8') {
+                 responseData = utils.stripBOM(responseData);
+               }
+             }
+diff --git a/lib/adapters/xhr.js b/lib/adapters/xhr.js
+index c22783f..8612a77 100644
+--- a/lib/adapters/xhr.js
++++ b/lib/adapters/xhr.js
+@@ -11,6 +11,7 @@ var transitionalDefaults = require('../defaults/transitional');
+ var AxiosError = require('../core/AxiosError');
+ var CanceledError = require('../cancel/CanceledError');
+ var parseProtocol = require('../helpers/parseProtocol');
++var platform = require('../platform');
+ 
+ module.exports = function xhrAdapter(config) {
+   return new Promise(function dispatchXhrRequest(resolve, reject) {
+@@ -210,7 +211,7 @@ module.exports = function xhrAdapter(config) {
+ 
+     var protocol = parseProtocol(fullPath);
+ 
+-    if (protocol && [ 'http', 'https', 'file', 'blob' ].indexOf(protocol) === -1) {
++    if (protocol && platform.protocols.indexOf(protocol) === -1) {
+       reject(new AxiosError('Unsupported protocol ' + protocol + ':', AxiosError.ERR_BAD_REQUEST, config));
+       return;
+     }
+diff --git a/lib/core/AxiosError.js b/lib/core/AxiosError.js
+index b90d27a..291dc33 100644
+--- a/lib/core/AxiosError.js
++++ b/lib/core/AxiosError.js
+@@ -64,7 +64,9 @@ var descriptors = {};
+   'ERR_DEPRECATED',
+   'ERR_BAD_RESPONSE',
+   'ERR_BAD_REQUEST',
+-  'ERR_CANCELED'
++  'ERR_CANCELED',
++  'ERR_NOT_SUPPORT',
++  'ERR_INVALID_URL'
+ // eslint-disable-next-line func-names
+ ].forEach(function(code) {
+   descriptors[code] = {value: code};
+@@ -83,6 +85,8 @@ AxiosError.from = function(error, code, config, request, response, customProps)
+ 
+   AxiosError.call(axiosError, error.message, code, config, request, response);
+ 
++  axiosError.cause = error;
++
+   axiosError.name = error.name;
+ 
+   customProps && Object.assign(axiosError, customProps);
+diff --git a/lib/defaults/index.js b/lib/defaults/index.js
+index 7027057..9f1564a 100644
+--- a/lib/defaults/index.js
++++ b/lib/defaults/index.js
+@@ -6,6 +6,7 @@ var AxiosError = require('../core/AxiosError');
+ var transitionalDefaults = require('./transitional');
+ var toFormData = require('../helpers/toFormData');
+ var toURLEncodedForm = require('../helpers/toURLEncodedForm');
++var platform = require('../platform');
+ 
+ var DEFAULT_CONTENT_TYPE = {
+   'Content-Type': 'application/x-www-form-urlencoded'
+@@ -101,11 +102,13 @@ var defaults = {
+ 
+   transformResponse: [function transformResponse(data) {
+     var transitional = this.transitional || defaults.transitional;
+-    var silentJSONParsing = transitional && transitional.silentJSONParsing;
+     var forcedJSONParsing = transitional && transitional.forcedJSONParsing;
+-    var strictJSONParsing = !silentJSONParsing && this.responseType === 'json';
++    var JSONRequested = this.responseType === 'json';
++
++    if (data && utils.isString(data) && ((forcedJSONParsing && !this.responseType) || JSONRequested)) {
++      var silentJSONParsing = transitional && transitional.silentJSONParsing;
++      var strictJSONParsing = !silentJSONParsing && JSONRequested;
+ 
+-    if (strictJSONParsing || (forcedJSONParsing && utils.isString(data) && data.length)) {
+       try {
+         return JSON.parse(data);
+       } catch (e) {
+@@ -134,7 +137,8 @@ var defaults = {
+   maxBodyLength: -1,
+ 
+   env: {
+-    FormData: require('./env/FormData')
++    FormData: platform.classes.FormData,
++    Blob: platform.classes.Blob
+   },
+ 
+   validateStatus: function validateStatus(status) {
+diff --git a/lib/defaults/env/FormData.js b/lib/env/classes/FormData.js
+similarity index 100%
+rename from lib/defaults/env/FormData.js
+rename to lib/env/classes/FormData.js
+diff --git a/lib/helpers/fromDataURI.js b/lib/helpers/fromDataURI.js
+new file mode 100644
+index 0000000..4f57c7c
+--- /dev/null
++++ b/lib/helpers/fromDataURI.js
+@@ -0,0 +1,51 @@
++'use strict';
++
++var AxiosError = require('../core/AxiosError');
++var parseProtocol = require('./parseProtocol');
++var platform = require('../platform');
++
++var DATA_URL_PATTERN = /^(?:([^;]+);)?(?:[^;]+;)?(base64|),([\s\S]*)$/;
++
++/**
++ * Parse data uri to a Buffer or Blob
++ * @param {String} uri
++ * @param {?Boolean} asBlob
++ * @param {?Object} options
++ * @param {?Function} options.Blob
++ * @returns {Buffer|Blob}
++ */
++module.exports = function fromDataURI(uri, asBlob, options) {
++  var _Blob = options && options.Blob || platform.classes.Blob;
++  var protocol = parseProtocol(uri);
++
++  if (asBlob === undefined && _Blob) {
++    asBlob = true;
++  }
++
++  if (protocol === 'data') {
++    uri = uri.slice(protocol.length);
++
++    var match = DATA_URL_PATTERN.exec(uri);
++
++    if (!match) {
++      throw new AxiosError('Invalid URL', AxiosError.ERR_INVALID_URL);
++    }
++
++    var mime = match[1];
++    var isBase64 = match[2];
++    var body = match[3];
++    var buffer = Buffer.from(decodeURIComponent(body), isBase64 ? 'base64' : 'utf8');
++
++    if (asBlob) {
++      if (!_Blob) {
++        throw new AxiosError('Blob is not supported', AxiosError.ERR_NOT_SUPPORT);
++      }
++
++      return new _Blob([buffer], {type: mime});
++    }
++
++    return buffer;
++  }
++
++  throw new AxiosError('Unsupported protocol ' + protocol, AxiosError.ERR_NOT_SUPPORT);
++};
+diff --git a/lib/helpers/toFormData.js b/lib/helpers/toFormData.js
+index 071b0c9..c8668b2 100644
+--- a/lib/helpers/toFormData.js
++++ b/lib/helpers/toFormData.js
+@@ -1,7 +1,7 @@
+ 'use strict';
+ 
+ var utils = require('../utils');
+-var envFormData = require('../defaults/env/FormData');
++var envFormData = require('../env/classes/FormData');
+ 
+ function isVisitable(thing) {
+   return utils.isPlainObject(thing) || utils.isArray(thing);
+diff --git a/lib/platform/browser/classes/FormData.js b/lib/platform/browser/classes/FormData.js
+new file mode 100644
+index 0000000..6af83c9
+--- /dev/null
++++ b/lib/platform/browser/classes/FormData.js
+@@ -0,0 +1,3 @@
++'use strict';
++
++module.exports = FormData;
+diff --git a/lib/platform/browser/index.js b/lib/platform/browser/index.js
+index dea2b3f..c254a1e 100644
+--- a/lib/platform/browser/index.js
++++ b/lib/platform/browser/index.js
+@@ -3,6 +3,9 @@
+ module.exports = {
+   isBrowser: true,
+   classes: {
+-    URLSearchParams: require('./classes/URLSearchParams')
+-  }
++    URLSearchParams: require('./classes/URLSearchParams'),
++    FormData: require('./classes/FormData'),
++    Blob: Blob
++  },
++  protocols: ['http', 'https', 'file', 'blob', 'url']
+ };
+diff --git a/lib/platform/node/classes/FormData.js b/lib/platform/node/classes/FormData.js
+new file mode 100644
+index 0000000..a186bc0
+--- /dev/null
++++ b/lib/platform/node/classes/FormData.js
+@@ -0,0 +1,3 @@
++'use strict';
++
++module.exports = require('form-data');
+diff --git a/lib/platform/node/index.js b/lib/platform/node/index.js
+index d9699ae..b41ff36 100644
+--- a/lib/platform/node/index.js
++++ b/lib/platform/node/index.js
+@@ -3,6 +3,9 @@
+ module.exports = {
+   isNode: true,
+   classes: {
+-    URLSearchParams: require('./classes/URLSearchParams')
+-  }
++    URLSearchParams: require('./classes/URLSearchParams'),
++    FormData: require('./classes/FormData'),
++    Blob: typeof Blob !== 'undefined' && Blob || null
++  },
++  protocols: [ 'http', 'https', 'file', 'data' ]
+ };
+diff --git a/lib/utils.js b/lib/utils.js
+index 1ecd51e..0303f00 100644
+--- a/lib/utils.js
++++ b/lib/utils.js
+@@ -229,15 +229,16 @@ function trim(str) {
+  *  navigator.product -> 'NativeScript' or 'NS'
+  */
+ function isStandardBrowserEnv() {
+-  if (typeof navigator !== 'undefined' && (navigator.product === 'ReactNative' ||
+-                                           navigator.product === 'NativeScript' ||
+-                                           navigator.product === 'NS')) {
++  var product;
++  if (typeof navigator !== 'undefined' && (
++    (product = navigator.product) === 'ReactNative' ||
++    product === 'NativeScript' ||
++    product === 'NS')
++  ) {
+     return false;
+   }
+-  return (
+-    typeof window !== 'undefined' &&
+-    typeof document !== 'undefined'
+-  );
++
++  return typeof window !== 'undefined' && typeof document !== 'undefined';
+ }
+ 
+ /**
+diff --git a/package.json b/package.json
+index 7b5feb6..fe01da1 100644
+--- a/package.json
++++ b/package.json
+@@ -80,7 +80,6 @@
+   },
+   "browser": {
+     "./lib/adapters/http.js": "./lib/adapters/xhr.js",
+-    "./lib/defaults/env/FormData.js": "./lib/helpers/null.js",
+     "./lib/platform/node/index.js": "./lib/platform/browser/index.js"
+   },
+   "jsdelivr": "dist/axios.min.js",
+diff --git a/test/unit/adapters/http.js b/test/unit/adapters/http.js
+index b5b7a86..43754d8 100644
+--- a/test/unit/adapters/http.js
++++ b/test/unit/adapters/http.js
+@@ -1442,4 +1442,47 @@ describe('supports http with nodejs', function () {
+         }).catch(done);
+     });
+   });
++
++  describe('Data URL', function () {
++    it('should support requesting data URL as a Buffer', function (done) {
++      const buffer = Buffer.from('123');
++
++      const dataURI = 'data:application/octet-stream;base64,' + buffer.toString('base64');
++
++      axios.get(dataURI).then(({data})=> {
++        assert.deepStrictEqual(data, buffer);
++        done();
++      }).catch(done);
++    });
++
++    it('should support requesting data URL as a String (text)', function (done) {
++      const buffer = Buffer.from('123', 'utf-8');
++
++      const dataURI = 'data:application/octet-stream;base64,' + buffer.toString('base64');
++
++      axios.get(dataURI, {responseType: "text"}).then(({data})=> {
++        assert.deepStrictEqual(data, '123');
++        done();
++      }).catch(done);
++    });
++
++    it('should support requesting data URL as a Stream', function (done) {
++      const buffer = Buffer.from('123', 'utf-8');
++
++      const dataURI = 'data:application/octet-stream;base64,' + buffer.toString('base64');
++
++      axios.get(dataURI, {responseType: "stream"}).then(({data})=> {
++        var str = '';
++
++        data.on('data', function(response){
++          str += response.toString();
++        });
++
++        data.on('end', function(){
++          assert.strictEqual(str, '123');
++          done();
++        });
++      }).catch(done);
++    });
++  });
+ });
+diff --git a/test/unit/helpers/fromDataURI.js b/test/unit/helpers/fromDataURI.js
+new file mode 100644
+index 0000000..e4f6754
+--- /dev/null
++++ b/test/unit/helpers/fromDataURI.js
+@@ -0,0 +1,12 @@
++var assert = require('assert');
++var fromDataURI = require('../../../lib/helpers/fromDataURI');
++
++describe('helpers::fromDataURI', function () {
++  it('should return buffer from data uri', function () {
++    const buffer= Buffer.from('123');
++
++    const dataURI = 'data:application/octet-stream;base64,' + buffer.toString('base64');
++
++    assert.deepStrictEqual(fromDataURI(dataURI), buffer);
++  });
++});
++ git -c core.fileMode=false diff c30252f685e8f4326722de84923fcbc8cf557f06
+diff --git a/lib/adapters/http.js b/lib/adapters/http.js
+index b75f6e6..8d3588b 100755
+--- a/lib/adapters/http.js
++++ b/lib/adapters/http.js
+@@ -279,6 +279,9 @@ module.exports = function httpAdapter(config) {
+ 
+     if (config.maxBodyLength > -1) {
+       options.maxBodyLength = config.maxBodyLength;
++    } else {
++      // follow-redirects does not skip comparison, so it should always succeed for axios -1 unlimited
++      options.maxBodyLength = Infinity;
+     }
+ 
+     if (config.insecureHTTPParser) {
++ git checkout c30252f685e8f4326722de84923fcbc8cf557f06 test/unit/adapters/http.js
+Updated 0 paths from 6218dcb
++ git apply -v -
+Checking patch test/unit/adapters/http.js...
+Applied patch test/unit/adapters/http.js cleanly.
++ : '>>>>> Start Test Output'
++ npx mocha -R tap test/unit/adapters/http.js -g 'body length'
++ cat
+ok 1 supports http with nodejs should support max body length
+ok 2 supports http with nodejs should properly support default max body length (follow-redirects as well)
+# tests 2
+# pass 2
+# fail 0
+1..2
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 12.0.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+npm notice To update run: npm install -g npm@12.0.2
+npm notice
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout c30252f685e8f4326722de84923fcbc8cf557f06 test/unit/adapters/http.js
+>>>>> Test Exit Code: 0
+Updated 1 path from 6218dcb

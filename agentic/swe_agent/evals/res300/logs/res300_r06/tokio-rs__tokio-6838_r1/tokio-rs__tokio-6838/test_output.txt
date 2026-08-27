@@ -1,0 +1,101 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   tokio/src/net/unix/listener.rs
+	modified:   tokio/src/net/unix/stream.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit d6213594ca3767f182e8981fde7a119575e94c65
+Author: Nam Se Hyun <3580430+namse@users.noreply.github.com>
+Date:   Wed Sep 11 21:55:07 2024 +0900
+
+    fs: make available to wasm under tokio_unstable (#6822)
+
+diff --git a/tokio/src/fs/open_options.rs b/tokio/src/fs/open_options.rs
+index 12615393..e70e6aa0 100644
+--- a/tokio/src/fs/open_options.rs
++++ b/tokio/src/fs/open_options.rs
+@@ -394,6 +394,7 @@ impl OpenOptions {
+     }
+ 
+     /// Returns a mutable reference to the underlying `std::fs::OpenOptions`
++    #[cfg(any(windows, unix))]
+     pub(super) fn as_inner_mut(&mut self) -> &mut StdOpenOptions {
+         &mut self.0
+     }
+diff --git a/tokio/src/macros/cfg.rs b/tokio/src/macros/cfg.rs
+index 8a72476f..3242d3ce 100644
+--- a/tokio/src/macros/cfg.rs
++++ b/tokio/src/macros/cfg.rs
+@@ -97,7 +97,6 @@ macro_rules! cfg_fs {
+     ($($item:item)*) => {
+         $(
+             #[cfg(feature = "fs")]
+-            #[cfg(not(target_os = "wasi"))]
+             #[cfg_attr(docsrs, doc(cfg(feature = "fs")))]
+             $item
+         )*
++ git -c core.fileMode=false diff d6213594ca3767f182e8981fde7a119575e94c65
+diff --git a/tokio/src/net/unix/listener.rs b/tokio/src/net/unix/listener.rs
+index ddd9669f..9977020a 100644
+--- a/tokio/src/net/unix/listener.rs
++++ b/tokio/src/net/unix/listener.rs
+@@ -81,7 +81,7 @@ impl UnixListener {
+         let addr = {
+             let os_str_bytes = path.as_ref().as_os_str().as_bytes();
+             if os_str_bytes.starts_with(b"\0") {
+-                StdSocketAddr::from_abstract_name(os_str_bytes)?
++                StdSocketAddr::from_abstract_name(&os_str_bytes[1..])?
+             } else {
+                 StdSocketAddr::from_pathname(path)?
+             }
+diff --git a/tokio/src/net/unix/stream.rs b/tokio/src/net/unix/stream.rs
+index 466ed21c..4c93c646 100644
+--- a/tokio/src/net/unix/stream.rs
++++ b/tokio/src/net/unix/stream.rs
+@@ -77,7 +77,7 @@ impl UnixStream {
+         let addr = {
+             let os_str_bytes = path.as_ref().as_os_str().as_bytes();
+             if os_str_bytes.starts_with(b"\0") {
+-                StdSocketAddr::from_abstract_name(os_str_bytes)?
++                StdSocketAddr::from_abstract_name(&os_str_bytes[1..])?
+             } else {
+                 StdSocketAddr::from_pathname(path)?
+             }
++ git checkout d6213594ca3767f182e8981fde7a119575e94c65 tokio/tests/uds_stream.rs
+Updated 0 paths from 9d2b641d
++ git apply -v -
+Checking patch tokio/tests/uds_stream.rs...
+Applied patch tokio/tests/uds_stream.rs cleanly.
++ : '>>>>> Start Test Output'
++ cargo test --test uds_stream --no-fail-fast
++ cat
+   Compiling tokio v1.40.0 (/testbed/tokio)
+   Compiling tokio-stream v0.1.16 (/testbed/tokio-stream)
+   Compiling tokio-test v0.4.4 (/testbed/tokio-test)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.38s
+     Running tests/uds_stream.rs (target/debug/deps/uds_stream-8824782e26def79e)
+
+running 8 tests
+test abstract_socket_name ... ok
+test epollhup ... ok
+test accept_read_write ... ok
+test poll_read_ready ... ok
+test try_read_buf ... ok
+test shutdown ... ok
+test poll_write_ready ... ok
+test try_read_write ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout d6213594ca3767f182e8981fde7a119575e94c65 tokio/tests/uds_stream.rs
+Updated 1 path from 9d2b641d

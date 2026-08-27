@@ -1,0 +1,438 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/uu/cksum/src/cksum.rs
+	modified:   src/uucore/src/lib/features/checksum.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit bc0b4880e000b881a1cabc733b2d261f3526d15e
+Author: Krysztal Huang <krysztal.huang@outlook.com>
+Date:   Tue Jul 30 04:09:12 2024 +0800
+
+    uucore: add `getsid` for `process.rs` (#6600)
+    
+    * uucore: Add `getsid` for `process.rs`
+    
+    * uucore: Changing the return type of the `getsid` function to `Result`
+    
+    From the manpage of `getsid` we can find that the syscall may failed and set errno, so we have to process those case.
+    
+    * uucore: Drop support of `getsid` for RedoxOS
+    
+    * uucore: Add `getpid` for get pid of calling process.
+    
+    * uucore: Add tests for `getsid` and `getpid`
+    
+    * uucore: Fix tests failure for `test_getsid`
+    
+    uucore: Fix tests failure for `test_getsid`
+    
+    uucore: Fix tests failure for `test_getsid`
+    
+    * uucore: Fix tests failure on FreeBSD
+    
+    * uucore: Apply suggestions for `process.rs::tests::test_getsid`
+    
+    Suggestions from @BenWiederhake , very thanks!
+
+diff --git a/src/uucore/src/lib/features/process.rs b/src/uucore/src/lib/features/process.rs
+index d0dcd1255..723ba68b8 100644
+--- a/src/uucore/src/lib/features/process.rs
++++ b/src/uucore/src/lib/features/process.rs
+@@ -3,11 +3,12 @@
+ // For the full copyright and license information, please view the LICENSE
+ // file that was distributed with this source code.
+ 
+-// spell-checker:ignore (vars) cvar exitstatus cmdline kworker
+-// spell-checker:ignore (sys/unix) WIFSIGNALED
++// spell-checker:ignore (vars) cvar exitstatus cmdline kworker getsid getpid
++// spell-checker:ignore (sys/unix) WIFSIGNALED ESRCH
+ // spell-checker:ignore pgrep pwait snice
+ 
+ use libc::{gid_t, pid_t, uid_t};
++use nix::errno::Errno;
+ use std::io;
+ use std::process::Child;
+ use std::process::ExitStatus;
+@@ -36,6 +37,37 @@ pub fn getuid() -> uid_t {
+     unsafe { libc::getuid() }
+ }
+ 
++/// `getpid()` returns the pid of the calling process.
++pub fn getpid() -> pid_t {
++    unsafe { libc::getpid() }
++}
++
++/// `getsid()` returns the session ID of the process with process ID pid.
++///
++/// If pid is 0, getsid() returns the session ID of the calling process.
++///
++/// # Error
++///
++/// - [Errno::EPERM] A process with process ID pid exists, but it is not in the same session as the calling process, and the implementation considers this an error.
++/// - [Errno::ESRCH] No process with process ID pid was found.
++///
++///
++/// # Platform
++///
++/// This function only support standard POSIX implementation platform,
++/// so some system such as redox doesn't supported.
++#[cfg(not(target_os = "redox"))]
++pub fn getsid(pid: i32) -> Result<pid_t, Errno> {
++    unsafe {
++        let result = libc::getsid(pid);
++        if Errno::last() == Errno::UnknownErrno {
++            Ok(result)
++        } else {
++            Err(Errno::last())
++        }
++    }
++}
++
+ /// Missing methods for Child objects
+ pub trait ChildExt {
+     /// Send a signal to a Child process.
+@@ -99,3 +131,25 @@ impl ChildExt for Child {
+         Ok(None)
+     }
+ }
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    #[cfg(not(target_os = "redox"))]
++    fn test_getsid() {
++        assert_eq!(
++            getsid(getpid()).expect("getsid(getpid)"),
++            // zero is a special value for SID.
++            // https://pubs.opengroup.org/onlinepubs/9699919799/functions/getsid.html
++            getsid(0).expect("getsid(0)")
++        );
++
++        // SID never be 0.
++        assert!(getsid(getpid()).expect("getsid(getpid)") > 0);
++
++        // This might caused tests failure but the probability is low.
++        assert!(getsid(999999).is_err());
++    }
++}
++ git -c core.fileMode=false diff bc0b4880e000b881a1cabc733b2d261f3526d15e
+diff --git a/src/uu/cksum/src/cksum.rs b/src/uu/cksum/src/cksum.rs
+index 0c807c8c4..57a7091c4 100644
+--- a/src/uu/cksum/src/cksum.rs
++++ b/src/uu/cksum/src/cksum.rs
+@@ -4,8 +4,9 @@
+ // file that was distributed with this source code.
+ 
+ // spell-checker:ignore (ToDO) fname, algo
++use clap::builder::ValueParser;
+ use clap::{crate_version, value_parser, Arg, ArgAction, Command};
+-use std::ffi::OsStr;
++use std::ffi::{OsStr, OsString};
+ use std::fs::File;
+ use std::io::{self, stdin, stdout, BufReader, Read, Write};
+ use std::iter;
+@@ -209,11 +210,15 @@ fn prompt_asterisk(tag: bool, binary: bool, had_reset: bool) -> bool {
+  * Don't do it with clap because if it struggling with the --overrides_with
+  * marking the value as set even if not present
+  */
+-fn had_reset(args: &[String]) -> bool {
++fn had_reset(args: &[impl AsRef<OsStr>]) -> bool {
+     // Indices where "--binary" or "-b", "--tag", and "--untagged" are found
+-    let binary_index = args.iter().position(|x| x == "--binary" || x == "-b");
+-    let tag_index = args.iter().position(|x| x == "--tag");
+-    let untagged_index = args.iter().position(|x| x == "--untagged");
++    let binary_index = args
++        .iter()
++        .position(|x| x.as_ref() == OsStr::new("--binary") || x.as_ref() == OsStr::new("-b"));
++    let tag_index = args.iter().position(|x| x.as_ref() == OsStr::new("--tag"));
++    let untagged_index = args
++        .iter()
++        .position(|x| x.as_ref() == OsStr::new("--untagged"));
+ 
+     // Check if all arguments are present and in the correct order
+     match (binary_index, tag_index, untagged_index) {
+@@ -234,7 +239,7 @@ fn handle_tag_text_binary_flags(matches: &clap::ArgMatches) -> UResult<(bool, bo
+ 
+     let binary_flag: bool = matches.get_flag(options::BINARY);
+ 
+-    let args: Vec<String> = std::env::args().collect();
++    let args: Vec<OsString> = std::env::args_os().collect();
+     let had_reset = had_reset(&args);
+ 
+     let asterisk: bool = prompt_asterisk(tag, binary_flag, had_reset);
+@@ -298,7 +303,7 @@ pub fn uumain(args: impl uucore::Args) -> UResult<()> {
+ 
+         // Execute the checksum validation based on the presence of files or the use of stdin
+ 
+-        let files = matches.get_many::<String>(options::FILE).map_or_else(
++        let files = matches.get_many::<OsString>(options::FILE).map_or_else(
+             || iter::once(OsStr::new("-")).collect::<Vec<_>>(),
+             |files| files.map(OsStr::new).collect::<Vec<_>>(),
+         );
+@@ -337,8 +342,8 @@ pub fn uumain(args: impl uucore::Args) -> UResult<()> {
+         asterisk,
+     };
+ 
+-    match matches.get_many::<String>(options::FILE) {
+-        Some(files) => cksum(opts, files.map(OsStr::new))?,
++    match matches.get_many::<OsString>(options::FILE) {
++        Some(files) => cksum(opts, files.map(|f| f.as_os_str()))?,
+         None => cksum(opts, iter::once(OsStr::new("-")))?,
+     };
+ 
+@@ -356,6 +361,7 @@ pub fn uu_app() -> Command {
+             Arg::new(options::FILE)
+                 .hide(true)
+                 .action(clap::ArgAction::Append)
++                .value_parser(ValueParser::os_string())
+                 .value_hint(clap::ValueHint::FilePath),
+         )
+         .arg(
+diff --git a/src/uucore/src/lib/features/checksum.rs b/src/uucore/src/lib/features/checksum.rs
+index c5366e181..fa44041fc 100644
+--- a/src/uucore/src/lib/features/checksum.rs
++++ b/src/uucore/src/lib/features/checksum.rs
+@@ -290,9 +290,9 @@ const SINGLE_SPACE_REGEX: &str = r"^(?P<checksum>[a-fA-F0-9]+)\s(?P<filename>\*?
+ 
+ fn get_filename_for_output(filename: &OsStr, input_is_stdin: bool) -> String {
+     if input_is_stdin {
+-        "standard input"
++        "standard input".to_string()
+     } else {
+-        filename.to_str().unwrap()
++        filename.to_string_lossy().into_owned()
+     }
+     .maybe_quote()
+     .to_string()
++ git checkout bc0b4880e000b881a1cabc733b2d261f3526d15e tests/by-util/test_cksum.rs
+Updated 0 paths from 601ad671f
++ git apply -v -
+Checking patch tests/by-util/test_cksum.rs...
+Applied patch tests/by-util/test_cksum.rs cleanly.
++ : '>>>>> Start Test Output'
++ cargo test cksum --no-fail-fast
++ cat
+   Compiling uucore v0.0.27 (/testbed/src/uucore)
+   Compiling coreutils v0.0.27 (/testbed)
+   Compiling uu_ls v0.0.27 (/testbed/src/uu/ls)
+   Compiling uu_base32 v0.0.27 (/testbed/src/uu/base32)
+   Compiling uu_true v0.0.27 (/testbed/src/uu/true)
+   Compiling uu_cp v0.0.27 (/testbed/src/uu/cp)
+   Compiling uu_readlink v0.0.27 (/testbed/src/uu/readlink)
+   Compiling uu_dircolors v0.0.27 (/testbed/src/uu/dircolors)
+   Compiling uu_nl v0.0.27 (/testbed/src/uu/nl)
+   Compiling uu_date v0.0.27 (/testbed/src/uu/date)
+   Compiling uu_rmdir v0.0.27 (/testbed/src/uu/rmdir)
+   Compiling uu_truncate v0.0.27 (/testbed/src/uu/truncate)
+   Compiling uu_dd v0.0.27 (/testbed/src/uu/dd)
+   Compiling uu_yes v0.0.27 (/testbed/src/uu/yes)
+   Compiling uu_cut v0.0.27 (/testbed/src/uu/cut)
+   Compiling uu_pwd v0.0.27 (/testbed/src/uu/pwd)
+   Compiling uu_test v0.0.27 (/testbed/src/uu/test)
+   Compiling uu_env v0.0.27 (/testbed/src/uu/env)
+   Compiling uu_link v0.0.27 (/testbed/src/uu/link)
+   Compiling uu_basename v0.0.27 (/testbed/src/uu/basename)
+   Compiling uu_od v0.0.27 (/testbed/src/uu/od)
+   Compiling uu_split v0.0.27 (/testbed/src/uu/split)
+   Compiling uu_realpath v0.0.27 (/testbed/src/uu/realpath)
+   Compiling uu_unlink v0.0.27 (/testbed/src/uu/unlink)
+   Compiling uu_unexpand v0.0.27 (/testbed/src/uu/unexpand)
+   Compiling uu_mkdir v0.0.27 (/testbed/src/uu/mkdir)
+   Compiling uu_mv v0.0.27 (/testbed/src/uu/mv)
+   Compiling uu_mktemp v0.0.27 (/testbed/src/uu/mktemp)
+   Compiling uu_join v0.0.27 (/testbed/src/uu/join)
+   Compiling uu_tr v0.0.27 (/testbed/src/uu/tr)
+   Compiling uu_ptx v0.0.27 (/testbed/src/uu/ptx)
+   Compiling uu_numfmt v0.0.27 (/testbed/src/uu/numfmt)
+   Compiling uu_touch v0.0.27 (/testbed/src/uu/touch)
+   Compiling uu_df v0.0.27 (/testbed/src/uu/df)
+   Compiling uu_head v0.0.27 (/testbed/src/uu/head)
+   Compiling uu_dirname v0.0.27 (/testbed/src/uu/dirname)
+   Compiling uu_tac v0.0.27 (/testbed/src/uu/tac)
+   Compiling uu_paste v0.0.27 (/testbed/src/uu/paste)
+   Compiling uu_uniq v0.0.27 (/testbed/src/uu/uniq)
+   Compiling uu_expr v0.0.27 (/testbed/src/uu/expr)
+   Compiling uu_more v0.0.27 (/testbed/src/uu/more)
+   Compiling uu_tail v0.0.27 (/testbed/src/uu/tail)
+   Compiling uu_base64 v0.0.27 (/testbed/src/uu/base64)
+   Compiling uu_basenc v0.0.27 (/testbed/src/uu/basenc)
+   Compiling uu_wc v0.0.27 (/testbed/src/uu/wc)
+   Compiling uu_fmt v0.0.27 (/testbed/src/uu/fmt)
+   Compiling uu_du v0.0.27 (/testbed/src/uu/du)
+   Compiling uu_ln v0.0.27 (/testbed/src/uu/ln)
+   Compiling uu_expand v0.0.27 (/testbed/src/uu/expand)
+   Compiling uu_pr v0.0.27 (/testbed/src/uu/pr)
+   Compiling uu_printf v0.0.27 (/testbed/src/uu/printf)
+   Compiling uu_csplit v0.0.27 (/testbed/src/uu/csplit)
+   Compiling uu_echo v0.0.27 (/testbed/src/uu/echo)
+   Compiling uu_factor v0.0.27 (/testbed/src/uu/factor)
+   Compiling uu_seq v0.0.27 (/testbed/src/uu/seq)
+   Compiling uu_sleep v0.0.27 (/testbed/src/uu/sleep)
+   Compiling uu_sort v0.0.27 (/testbed/src/uu/sort)
+   Compiling uu_tee v0.0.27 (/testbed/src/uu/tee)
+   Compiling uu_tsort v0.0.27 (/testbed/src/uu/tsort)
+   Compiling uu_sum v0.0.27 (/testbed/src/uu/sum)
+   Compiling uu_shuf v0.0.27 (/testbed/src/uu/shuf)
+   Compiling uu_comm v0.0.27 (/testbed/src/uu/comm)
+   Compiling uu_false v0.0.27 (/testbed/src/uu/false)
+   Compiling uu_hashsum v0.0.27 (/testbed/src/uu/hashsum)
+   Compiling uu_fold v0.0.27 (/testbed/src/uu/fold)
+   Compiling uu_cat v0.0.27 (/testbed/src/uu/cat)
+   Compiling uu_cksum v0.0.27 (/testbed/src/uu/cksum)
+   Compiling uu_shred v0.0.27 (/testbed/src/uu/shred)
+   Compiling uu_rm v0.0.27 (/testbed/src/uu/rm)
+   Compiling uu_printenv v0.0.27 (/testbed/src/uu/printenv)
+   Compiling uu_dir v0.0.27 (/testbed/src/uu/dir)
+   Compiling uu_vdir v0.0.27 (/testbed/src/uu/vdir)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.64s
+     Running unittests src/bin/coreutils.rs (target/debug/deps/coreutils-9ca8878fa42a24e4)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/test_util_name.rs (target/debug/deps/test_util_name-106b55f8ff8ccd48)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 78 filtered out; finished in 0.00s
+
+     Running tests/tests.rs (target/debug/deps/tests-d8087fe0eec9dc48)
+
+running 68 tests
+test test_cksum::test_blake2d_tested_with_sha1 ... ignored, Different output
+test test_cksum::test_base64_multiple_files ... ok
+test test_cksum::test_arg_overrides_stdin ... ok
+test test_cksum::test_base64_raw_conflicts ... ok
+test test_cksum::test_cksum_check_leading_info ... ok
+test test_cksum::test_blake2b_bits ... ok
+test test_cksum::test_crc_for_bigger_than_32_bytes ... ok
+test test_cksum::test_cksum_check_space ... ok
+test test_cksum::test_check_pipe ... ok
+test test_cksum::test_check_algo_err ... ok
+test test_cksum::test_cksum_check_case ... ok
+test test_cksum::test_conflicting_options ... ok
+test test_cksum::test_cksum_check_empty_line ... ok
+test test_cksum::test_dev_null ... ok
+test test_cksum::test_empty_file ... ok
+test test_cksum::test_md5_bits ... ignored, Should fail on bits
+test test_cksum::test_fail_on_folder ... ok
+test test_cksum::test_invalid_arg ... ok
+test test_cksum::test_folder_and_file ... ok
+test test_cksum::test_length ... ok
+test test_cksum::test_bsd_case ... ok
+test test_cksum::test_length_not_supported ... ok
+test test_cksum::test_length_is_zero ... ok
+test test_cksum::test_length_greater_than_512 ... ok
+test test_cksum::test_blake2b_512 ... ok
+test test_cksum::test_reset_binary_but_set ... ignored, issue #6375
+test test_cksum::test_length_repeated ... ok
+test test_cksum::test_multiple_files ... ok
+test test_cksum::test_check_md5_format ... ok
+test test_cksum::test_nonexisting_file ... ok
+test test_cksum::test_non_utf8_filename ... FAILED
+test test_cksum::test_cksum_check_invalid ... ok
+test test_cksum::test_one_nonexisting_file ... ok
+test test_cksum::test_raw_multiple_files ... ok
+test test_cksum::test_reset_binary ... ok
+test test_cksum::test_repeated_flags ... ok
+test test_cksum::test_single_file ... ok
+test test_cksum::test_stdin ... ok
+test test_cksum::test_length_with_wrong_algorithm ... ok
+test test_cksum::test_stdin_larger_than_128_bytes ... ok
+test test_cksum::test_nonexisting_file_out ... ok
+test test_cksum::test_check_error_incorrect_format ... ok
+test test_cksum::test_tag_after_untagged ... ok
+test test_cksum::test_cksum_check_failed ... ok
+test test_cksum::test_text_tag ... ok
+test test_cksum::test_check_base64_hashes ... ok
+test test_cksum::test_check_directory_error ... ok
+test test_cksum::test_cksum_check ... ok
+test test_cksum::test_untagged_stdin ... ok
+test test_cksum::test_untagged_algorithm_after_tag ... ok
+test test_cksum::test_tag_short ... ok
+test test_cksum::test_untagged_multiple_files ... ok
+test test_cksum::test_untagged_single_file ... ok
+test test_cksum::test_cksum_garbage ... ok
+test test_cksum::test_cksum_mixed ... ok
+test test_cksum::test_binary_file ... ok
+test test_cksum::test_several_files_error_mgmt ... ok
+test test_cksum::test_check_algo ... ok
+test test_cksum::test_all_algorithms_fail_on_folder ... ok
+test test_cksum::test_unknown_sha ... ok
+test test_cksum::test_base64_single_file ... ok
+test test_cksum::test_untagged_algorithm_single_file ... ok
+test test_cksum::test_untagged_algorithm_stdin ... ok
+test test_cksum::test_raw_single_file ... ok
+test test_cksum::test_untagged_algorithm_multiple_files ... ok
+test test_cksum::test_algorithm_single_file ... ok
+test test_cksum::test_algorithm_multiple_files ... ok
+test test_cksum::test_algorithm_stdin ... ok
+
+failures:
+
+---- test_cksum::test_non_utf8_filename stdout ----
+touch: /tmp/.tmpW6aE65/funky�name
+run: /testbed/target/debug/coreutils cksum funky�name
+thread 'test_cksum::test_non_utf8_filename' panicked at tests/by-util/test_cksum.rs:1270:10:
+assertion failed: `(left == right)`: stdout as bytes wasn't equal to expected bytes. Result as strings:
+stdout  ='Ok("4294967295 0 funky�name\n")'
+expected='Err(Utf8Error { valid_up_to: 18, error_len: Some(1) })'
+
+[1mDiff[0m [31m< left[0m / [32mright >[0m :
+ [
+     52,
+     50,
+     57,
+     52,
+     57,
+     54,
+     55,
+     50,
+     57,
+     53,
+     32,
+     48,
+     32,
+     102,
+     117,
+     110,
+     107,
+     121,
+[31m<    239,[0m
+[31m<    191,[0m
+[31m<    189,[0m
+[32m>    255,[0m
+     110,
+     97,
+     109,
+     101,
+     10,
+ ]
+
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    test_cksum::test_non_utf8_filename
+
+test result: FAILED. 64 passed; 1 failed; 3 ignored; 0 measured; 3052 filtered out; finished in 0.15s
+
+error: test failed, to rerun pass `--test tests`
+error: 1 target failed:
+    `--test tests`
++ SWEBENCH_TEST_EXIT_CODE=101
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 101'
+>>>>> Test Exit Code: 101
++ git checkout bc0b4880e000b881a1cabc733b2d261f3526d15e tests/by-util/test_cksum.rs
+Updated 1 path from 601ad671f

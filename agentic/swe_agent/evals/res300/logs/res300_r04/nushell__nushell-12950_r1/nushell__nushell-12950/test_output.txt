@@ -1,0 +1,234 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   crates/nu-command/src/system/run_external.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 0c5a67f4e5bf17a2fffbe3cbb54792a6464b3237
+Author: Darren Schroeder <343840+fdncred@users.noreply.github.com>
+Date:   Sat May 25 09:10:01 2024 -0500
+
+    make polars plugin use mimalloc (#12967)
+    
+    # Description
+    @maxim-uvarov did a ton of research and work with the dply-rs author and
+    ritchie from polars and found out that the allocator matters on macos
+    and it seems to be what was messing up the performance of polars plugin.
+    ritchie suggested to use jemalloc but i switched it to mimalloc to match
+    nushell and it seems to run better.
+    
+    ## Before (default allocator)
+    note - using 1..10 vs 1..100 since it takes so long. also notice how
+    high the `max` timings are compared to mimalloc below.
+    ```nushell
+    ❯ 1..10 | each {timeit {polars open Data7602DescendingYearOrder.csv | polars group-by year | polars agg (polars col geo_count | polars sum) | polars collect | null}} |   | {mean: ($in | math avg), min: ($in | math min), max: ($in | math max), stddev: ($in | into int | into float | math stddev | into int | $'($in)ns' | into duration)}
+    ╭────────┬─────────────────────────╮
+    │ mean   │ 4sec 999ms 605µs 995ns  │
+    │ min    │ 983ms 627µs 42ns        │
+    │ max    │ 13sec 398ms 135µs 791ns │
+    │ stddev │ 3sec 476ms 479µs 939ns  │
+    ╰────────┴─────────────────────────╯
+    ❯ use std bench
+    ❯ bench { polars open Data7602DescendingYearOrder.csv | polars group-by year | polars agg (polars col geo_count | polars sum) | polars collect | null } -n 10
+    ╭───────┬────────────────────────╮
+    │ mean  │ 6sec 220ms 783µs 983ns │
+    │ min   │ 1sec 184ms 997µs 708ns │
+    │ max   │ 18sec 882ms 81µs 708ns │
+    │ std   │ 5sec 350ms 375µs 697ns │
+    │ times │ [list 10 items]        │
+    ╰───────┴────────────────────────╯
+    ```
+    
+    ## After (using mimalloc)
+    ```nushell
+    ❯ 1..100 | each {timeit {polars open Data7602DescendingYearOrder.csv | polars group-by year | polars agg (polars col geo_count | polars sum) | polars collect | null}} |   | {mean: ($in | math avg), min: ($in | math min), max: ($in | math max), stddev: ($in | into int | into float | math stddev | into int | $'($in)ns' | into duration)}
+    ╭────────┬───────────────────╮
+    │ mean   │ 103ms 728µs 902ns │
+    │ min    │ 97ms 107µs 42ns   │
+    │ max    │ 149ms 430µs 84ns  │
+    │ stddev │ 5ms 690µs 664ns   │
+    ╰────────┴───────────────────╯
+    ❯ use std bench
+    ❯ bench { polars open Data7602DescendingYearOrder.csv | polars group-by year | polars agg (polars col geo_count | polars sum) | polars collect | null } -n 100
+    ╭───────┬───────────────────╮
+    │ mean  │ 103ms 620µs 195ns │
+    │ min   │ 97ms 541µs 166ns  │
+    │ max   │ 130ms 262µs 166ns │
+    │ std   │ 4ms 948µs 654ns   │
+    │ times │ [list 100 items]  │
+    ╰───────┴───────────────────╯
+    ```
+    
+    ## After (using jemalloc - just for comparison)
+    ```nushell
+    ❯ 1..100 | each {timeit {polars open Data7602DescendingYearOrder.csv | polars group-by year | polars agg (polars col geo_count | polars sum) | polars collect | null}} |   | {mean: ($in | math avg), min: ($in | math min), max: ($in | math max), stddev: ($in | into int | into float | math stddev | into int | $'($in)ns' | into duration)}
+    
+    ╭────────┬───────────────────╮
+    │ mean   │ 113ms 939µs 777ns │
+    │ min    │ 108ms 337µs 333ns │
+    │ max    │ 166ms 467µs 458ns │
+    │ stddev │ 6ms 175µs 618ns   │
+    ╰────────┴───────────────────╯
+    ❯ use std bench
+    ❯ bench { polars open Data7602DescendingYearOrder.csv | polars group-by year | polars agg (polars col geo_count | polars sum) | polars collect | null } -n 100
+    ╭───────┬───────────────────╮
+    │ mean  │ 114ms 363µs 530ns │
+    │ min   │ 108ms 804µs 833ns │
+    │ max   │ 143ms 521µs 459ns │
+    │ std   │ 5ms 88µs 56ns     │
+    │ times │ [list 100 items]  │
+    ╰───────┴───────────────────╯
+    ```
+    
+    ## After (using parquet + mimalloc)
+    ```nushell
+    ❯ 1..100 | each {timeit {polars open data.parquet | polars group-by year | polars agg (polars col geo_count | polars sum) | polars collect | null}} |   | {mean: ($in | math avg), min: ($in | math min), max: ($in | math max), stddev: ($in | into int | into float | math stddev | into int | $'($in)ns' | into duration)}
+    ╭────────┬──────────────────╮
+    │ mean   │ 34ms 255µs 492ns │
+    │ min    │ 31ms 787µs 250ns │
+    │ max    │ 76ms 408µs 416ns │
+    │ stddev │ 4ms 472µs 916ns  │
+    ╰────────┴──────────────────╯
+    ❯ use std bench
+    ❯ bench { polars open data.parquet | polars group-by year | polars agg (polars col geo_count | polars sum) | polars collect | null } -n 100
+    ╭───────┬──────────────────╮
+    │ mean  │ 34ms 897µs 562ns │
+    │ min   │ 31ms 518µs 542ns │
+    │ max   │ 65ms 943µs 625ns │
+    │ std   │ 3ms 450µs 741ns  │
+    │ times │ [list 100 items] │
+    ╰───────┴──────────────────╯
+    ```
+    
+    # User-Facing Changes
+    <!-- List of all changes that impact the user experience here. This
+    helps us keep track of breaking changes. -->
+    
+    # Tests + Formatting
+    <!--
+    Don't forget to add tests that cover your changes.
+    
+    Make sure you've run and fixed any issues with these commands:
+    
+    - `cargo fmt --all -- --check` to check standard code formatting (`cargo
+    fmt --all` applies these changes)
+    - `cargo clippy --workspace -- -D warnings -D clippy::unwrap_used` to
+    check that you're using the standard code style
+    - `cargo test --workspace` to check that all tests pass (on Windows make
+    sure to [enable developer
+    mode](https://learn.microsoft.com/en-us/windows/apps/get-started/developer-mode-features-and-debugging))
+    - `cargo run -- -c "use toolkit.nu; toolkit test stdlib"` to run the
+    tests for the standard library
+    
+    > **Note**
+    > from `nushell` you can also use the `toolkit` as follows
+    > ```bash
+    > use toolkit.nu # or use an `env_change` hook to activate it
+    automatically
+    > toolkit check pr
+    > ```
+    -->
+    
+    # After Submitting
+    <!-- If your PR had any user-facing changes, update [the
+    documentation](https://github.com/nushell/nushell.github.io) after the
+    PR is merged, if necessary. This will help us keep the docs up to date.
+    -->
+
+diff --git a/Cargo.lock b/Cargo.lock
+index 2ee4c6fc2..6e9216d44 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3387,6 +3387,7 @@ dependencies = [
+  "chrono-tz 0.9.0",
+  "fancy-regex",
+  "indexmap",
++ "mimalloc",
+  "nu-cmd-lang",
+  "nu-command",
+  "nu-engine",
+diff --git a/crates/nu_plugin_polars/Cargo.toml b/crates/nu_plugin_polars/Cargo.toml
+index 6a2a98038..03d050638 100644
+--- a/crates/nu_plugin_polars/Cargo.toml
++++ b/crates/nu_plugin_polars/Cargo.toml
+@@ -26,6 +26,7 @@ chrono = { workspace = true, features = ["std", "unstable-locales"], default-fea
+ chrono-tz = "0.9"
+ fancy-regex = { workspace = true }
+ indexmap = { version = "2.2" }
++mimalloc = { version = "0.1.42" }
+ num = {version = "0.4"}
+ serde = { version = "1.0", features = ["derive"] }
+ sqlparser = { version = "0.45"}
+diff --git a/crates/nu_plugin_polars/src/main.rs b/crates/nu_plugin_polars/src/main.rs
+index e060d7cd6..4a757701a 100644
+--- a/crates/nu_plugin_polars/src/main.rs
++++ b/crates/nu_plugin_polars/src/main.rs
+@@ -1,6 +1,9 @@
+ use nu_plugin::{serve_plugin, MsgPackSerializer};
+ use nu_plugin_polars::PolarsPlugin;
+ 
++#[global_allocator]
++static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
++
+ fn main() {
+     serve_plugin(&PolarsPlugin::default(), MsgPackSerializer {})
+ }
++ git -c core.fileMode=false diff 0c5a67f4e5bf17a2fffbe3cbb54792a6464b3237
+diff --git a/crates/nu-command/src/system/run_external.rs b/crates/nu-command/src/system/run_external.rs
+index 15bf6ebfd..5fbbb5d26 100644
+--- a/crates/nu-command/src/system/run_external.rs
++++ b/crates/nu-command/src/system/run_external.rs
+@@ -312,7 +312,16 @@ fn expand_glob(arg: &str, cwd: &Path, span: Span) -> Result<Vec<String>, ShellEr
+             span,
+         })?;
+         // Strip PWD from the resulting paths if possible.
+-        let path_stripped = path.strip_prefix(cwd).unwrap_or(&path);
++        let path_stripped = if let Ok(remainder) = path.strip_prefix(cwd) {
++            // If stripping PWD results in an empty path, return `.` instead.
++            if remainder.components().next().is_none() {
++                Path::new(".")
++            } else {
++                remainder
++            }
++        } else {
++            &path
++        };
+         let path_string = path_stripped.to_string_lossy().to_string();
+         result.push(path_string);
+     }
++ git checkout 0c5a67f4e5bf17a2fffbe3cbb54792a6464b3237 tests/shell/pipeline/commands/external.rs
+Updated 0 paths from f628bb3c3
++ git apply -v -
+Checking patch tests/shell/pipeline/commands/external.rs...
+Applied patch tests/shell/pipeline/commands/external.rs cleanly.
++ : '>>>>> Start Test Output'
++ cargo test external_arguments --no-fail-fast
++ cat
+   Compiling nu v0.93.1 (/testbed)
+   Compiling nu-command v0.93.1 (/testbed/crates/nu-command)
+    Finished test [unoptimized + debuginfo] target(s) in 12.25s
+     Running unittests src/main.rs (target/debug/deps/nu-6cd25ee615e8e783)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/main.rs (target/debug/deps/main-45ea421ad5f13a28)
+
+running 2 tests
+test shell::pipeline::commands::external::pass_dot_as_external_arguments ... ok
+test shell::pipeline::commands::external::correctly_escape_external_arguments ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 1256 filtered out; finished in 0.09s
+
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 0c5a67f4e5bf17a2fffbe3cbb54792a6464b3237 tests/shell/pipeline/commands/external.rs
+Updated 1 path from f628bb3c3

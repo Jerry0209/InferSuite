@@ -1,0 +1,877 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   config/default.yml
+	modified:   docs/modules/ROOT/pages/cops_style.adoc
+	modified:   lib/rubocop/cop/style/access_modifier_declarations.rb
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	changelog/new_add_allowmodifiersonaliasmethod_option_to_styleaccessmodifierdeclarations.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 34beb4adc7d00bf828031783d860441c1aed659a
+Author: Daniel Vandersluis <daniel.vandersluis@gmail.com>
+Date:   Thu Jan 9 11:52:21 2025 -0500
+
+    Add support for safe navigation to `Style/SendWithLiteralMethodName`
+
+diff --git a/changelog/change_add_support_for_safe_navigation_to_style_send_with_literal.md b/changelog/change_add_support_for_safe_navigation_to_style_send_with_literal.md
+new file mode 100644
+index 000000000..fdadaeabf
+--- /dev/null
++++ b/changelog/change_add_support_for_safe_navigation_to_style_send_with_literal.md
+@@ -0,0 +1 @@
++* [#13662](https://github.com/rubocop/rubocop/pull/13662): Add support for safe navigation to `Style/SendWithLiteralMethodName`. ([@dvandersluis][])
+diff --git a/lib/rubocop/cop/style/send_with_literal_method_name.rb b/lib/rubocop/cop/style/send_with_literal_method_name.rb
+index fece0c2ca..e44047ee0 100644
+--- a/lib/rubocop/cop/style/send_with_literal_method_name.rb
++++ b/lib/rubocop/cop/style/send_with_literal_method_name.rb
+@@ -68,7 +68,7 @@ module RuboCop
+         def on_send(node)
+           return if allow_send? && !node.method?(:public_send)
+           return unless (first_argument = node.first_argument)
+-          return unless STATIC_METHOD_NAME_NODE_TYPES.include?(first_argument.type)
++          return unless first_argument.type?(*STATIC_METHOD_NAME_NODE_TYPES)
+ 
+           offense_range = offense_range(node)
+           method_name = first_argument.value
+@@ -83,6 +83,7 @@ module RuboCop
+             end
+           end
+         end
++        alias on_csend on_send
+         # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+ 
+         private
+diff --git a/spec/rubocop/cop/style/send_with_literal_method_name_spec.rb b/spec/rubocop/cop/style/send_with_literal_method_name_spec.rb
+index f02687492..86a01b5fe 100644
+--- a/spec/rubocop/cop/style/send_with_literal_method_name_spec.rb
++++ b/spec/rubocop/cop/style/send_with_literal_method_name_spec.rb
+@@ -1,179 +1,418 @@
+ # frozen_string_literal: true
+ 
+ RSpec.describe RuboCop::Cop::Style::SendWithLiteralMethodName, :config do
+-  it 'registers an offense when using `public_send` with symbol literal argument' do
+-    expect_offense(<<~RUBY)
+-      obj.public_send(:foo)
+-          ^^^^^^^^^^^^^^^^^ Use `foo` method call directly instead.
+-    RUBY
++  context 'when calling `public_send` with a symbol literal argument' do
++    it 'registers an offense' do
++      expect_offense(<<~RUBY)
++        obj.public_send(:foo)
++            ^^^^^^^^^^^^^^^^^ Use `foo` method call directly instead.
++      RUBY
+ 
+-    expect_correction(<<~RUBY)
+-      obj.foo
+-    RUBY
+-  end
++      expect_correction(<<~RUBY)
++        obj.foo
++      RUBY
++    end
+ 
+-  it 'registers an offense when using `public_send` with symbol literal argument and some arguments with parentheses' do
+-    expect_offense(<<~RUBY)
+-      obj.public_send(:foo, bar, 42)
+-          ^^^^^^^^^^^^^^^^^^^^^^^^^^ Use `foo` method call directly instead.
+-    RUBY
++    context 'with safe navigation' do
++      it 'registers an offense' do
++        expect_offense(<<~RUBY)
++          obj&.public_send(:foo)
++               ^^^^^^^^^^^^^^^^^ Use `foo` method call directly instead.
++        RUBY
+ 
+-    expect_correction(<<~RUBY)
+-      obj.foo(bar, 42)
+-    RUBY
++        expect_correction(<<~RUBY)
++          obj&.foo
++        RUBY
++      end
++    end
+   end
+ 
+-  it 'registers an offense when using `public_send` with symbol literal argument and some arguments without parentheses' do
+-    expect_offense(<<~RUBY)
+-      obj.public_send :foo, bar, 42
+-          ^^^^^^^^^^^^^^^^^^^^^^^^^ Use `foo` method call directly instead.
+-    RUBY
++  context 'when calling `public_send` with a symbol literal argument and some arguments with parentheses' do
++    it 'registers an offense' do
++      expect_offense(<<~RUBY)
++        obj.public_send(:foo, bar, 42)
++            ^^^^^^^^^^^^^^^^^^^^^^^^^^ Use `foo` method call directly instead.
++      RUBY
+ 
+-    expect_correction(<<~RUBY)
+-      obj.foo bar, 42
+-    RUBY
+-  end
++      expect_correction(<<~RUBY)
++        obj.foo(bar, 42)
++      RUBY
++    end
+ 
+-  it 'registers an offense when using `public_send` with symbol literal argument without receiver' do
+-    expect_offense(<<~RUBY)
+-      public_send(:foo)
+-      ^^^^^^^^^^^^^^^^^ Use `foo` method call directly instead.
+-    RUBY
++    context 'with safe navigation' do
++      it 'registers an offense' do
++        expect_offense(<<~RUBY)
++          obj&.public_send(:foo, bar, 42)
++               ^^^^^^^^^^^^^^^^^^^^^^^^^^ Use `foo` method call directly instead.
++        RUBY
+ 
+-    expect_correction(<<~RUBY)
+-      foo
+-    RUBY
++        expect_correction(<<~RUBY)
++          obj&.foo(bar, 42)
++        RUBY
++      end
++    end
+   end
+ 
+-  it 'registers an offense when using `public_send` with string literal argument' do
+-    expect_offense(<<~RUBY)
+-      obj.public_send('foo')
+-          ^^^^^^^^^^^^^^^^^^ Use `foo` method call directly instead.
+-    RUBY
++  context 'when calling `public_send` with a symbol literal argument and some arguments without parentheses' do
++    it 'registers an offense' do
++      expect_offense(<<~RUBY)
++        obj.public_send :foo, bar, 42
++            ^^^^^^^^^^^^^^^^^^^^^^^^^ Use `foo` method call directly instead.
++      RUBY
+ 
+-    expect_correction(<<~RUBY)
+-      obj.foo
+-    RUBY
+-  end
++      expect_correction(<<~RUBY)
++        obj.foo bar, 42
++      RUBY
++    end
+ 
+-  it 'registers an offense when using `public_send` with method name with underscore' do
+-    expect_offense(<<~RUBY)
+-      obj.public_send("name_with_underscore")
+-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Use `name_with_underscore` method call directly instead.
+-    RUBY
++    context 'with safe navigation' do
++      it 'registers an offense' do
++        expect_offense(<<~RUBY)
++          obj&.public_send :foo, bar, 42
++               ^^^^^^^^^^^^^^^^^^^^^^^^^ Use `foo` method call directly instead.
++        RUBY
+ 
+-    expect_correction(<<~RUBY)
+-      obj.name_with_underscore
+-    RUBY
++        expect_correction(<<~RUBY)
++          obj&.foo bar, 42
++        RUBY
++      end
++    end
+   end
+ 
+-  it 'does not register an offense when using `public_send` with variable argument' do
+-    expect_no_offenses(<<~RUBY)
+-      obj.public_send(variable)
+-    RUBY
++  context 'when calling `public_send` with a symbol literal argument without a receiver' do
++    it 'registers an offense' do
++      expect_offense(<<~RUBY)
++        public_send(:foo)
++        ^^^^^^^^^^^^^^^^^ Use `foo` method call directly instead.
++      RUBY
++
++      expect_correction(<<~RUBY)
++        foo
++      RUBY
++    end
+   end
+ 
+-  it 'does not register an offense when using `public_send` with interpolated string argument' do
+-    expect_no_offenses(<<~'RUBY')
+-      obj.public_send("#{interpolated}string")
+-    RUBY
++  context 'when calling `public_send` with a string literal argument' do
++    it 'registers an offense' do
++      expect_offense(<<~RUBY)
++        obj.public_send('foo')
++            ^^^^^^^^^^^^^^^^^^ Use `foo` method call directly instead.
++      RUBY
++
++      expect_correction(<<~RUBY)
++        obj.foo
++      RUBY
++    end
++
++    context 'with safe navigation' do
++      it 'registers an offense' do
++        expect_offense(<<~RUBY)
++          obj&.public_send('foo')
++               ^^^^^^^^^^^^^^^^^^ Use `foo` method call directly instead.
++        RUBY
++
++        expect_correction(<<~RUBY)
++          obj&.foo
++        RUBY
++      end
++    end
+   end
+ 
+-  it 'does not register an offense when using `public_send` with method name with space' do
+-    expect_no_offenses(<<~RUBY)
+-      obj.public_send("name with space")
+-    RUBY
++  context 'when calling `public_send` with a method name with underscore' do
++    it 'registers an offense' do
++      expect_offense(<<~RUBY)
++        obj.public_send("name_with_underscore")
++            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Use `name_with_underscore` method call directly instead.
++      RUBY
++
++      expect_correction(<<~RUBY)
++        obj.name_with_underscore
++      RUBY
++    end
++
++    context 'with safe navigation' do
++      it 'registers an offense' do
++        expect_offense(<<~RUBY)
++          obj&.public_send("name_with_underscore")
++               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Use `name_with_underscore` method call directly instead.
++        RUBY
++
++        expect_correction(<<~RUBY)
++          obj&.name_with_underscore
++        RUBY
++      end
++    end
+   end
+ 
+-  it 'does not register an offense when using `public_send` with method name with hyphen' do
+-    expect_no_offenses(<<~RUBY)
+-      obj.public_send("name-with-hyphen")
+-    RUBY
++  context 'when calling `public_send` with a method name with a variable argument' do
++    it 'does not register an offense' do
++      expect_no_offenses(<<~RUBY)
++        obj.public_send(variable)
++      RUBY
++    end
++
++    context 'with safe navigation' do
++      it 'does not register an offense' do
++        expect_no_offenses(<<~RUBY)
++          obj&.public_send(variable)
++        RUBY
++      end
++    end
+   end
+ 
+-  it 'does not register an offense when using `public_send` with writer method name' do
+-    expect_no_offenses(<<~RUBY)
+-      obj.public_send("name=")
+-    RUBY
++  context 'when calling `public_send` with a method name with an interpolated string argument' do
++    it 'does not register an offense' do
++      expect_no_offenses(<<~'RUBY')
++        obj.public_send("#{interpolated}string")
++      RUBY
++    end
++
++    context 'with safe navigation' do
++      it 'does not register an offense' do
++        expect_no_offenses(<<~'RUBY')
++          obj&.public_send("#{interpolated}string")
++        RUBY
++      end
++    end
+   end
+ 
+-  it 'does not register an offense when using `public_send` with method name with brackets' do
+-    expect_no_offenses(<<~RUBY)
+-      obj.public_send("{brackets}")
+-    RUBY
++  context 'when calling `public_send` with a method name with a space' do
++    it 'does not register an offense' do
++      expect_no_offenses(<<~RUBY)
++        obj.public_send("name with space")
++      RUBY
++    end
++
++    context 'with safe navigation' do
++      it 'does not register an offense' do
++        expect_no_offenses(<<~RUBY)
++          obj&.public_send("name with space")
++        RUBY
++      end
++    end
+   end
+ 
+-  it 'does not register an offense when using `public_send` with method name with square brackets' do
+-    expect_no_offenses(<<~RUBY)
+-      obj.public_send("[square_brackets]")
+-    RUBY
++  context 'when calling `public_send` with a method name with a hyphen' do
++    it 'does not register an offense' do
++      expect_no_offenses(<<~RUBY)
++        obj.public_send("name-with-hyphen")
++      RUBY
++    end
++
++    context 'with safe navigation' do
++      it 'does not register an offense' do
++        expect_no_offenses(<<~RUBY)
++          obj&.public_send("name-with-hyphen")
++        RUBY
++      end
++    end
+   end
+ 
+-  it 'does not register an offense when using `public_send` with reserved word argument' do
+-    described_class::RESERVED_WORDS.each do |reserved_word|
++  context 'when calling `public_send` with a writer method name' do
++    it 'does not register an offense' do
+       expect_no_offenses(<<~RUBY)
+-        obj.public_send(:#{reserved_word})
++        obj.public_send("name=")
+       RUBY
+     end
++
++    context 'with safe navigation' do
++      it 'does not register an offense' do
++        expect_no_offenses(<<~RUBY)
++          obj&.public_send("name=")
++        RUBY
++      end
++    end
+   end
+ 
+-  it 'does not register an offense when using `public_send` with integer literal argument' do
+-    expect_no_offenses(<<~RUBY)
+-      obj.public_send(42)
+-    RUBY
++  context 'when calling `public_send` with a method name with braces' do
++    it 'does not register an offense' do
++      expect_no_offenses(<<~RUBY)
++        obj.public_send("{brackets}")
++      RUBY
++    end
++
++    context 'with safe navigation' do
++      it 'does not register an offense' do
++        expect_no_offenses(<<~RUBY)
++          obj&.public_send("{brackets}")
++        RUBY
++      end
++    end
+   end
+ 
+-  it 'does not register an offense when using `public_send` with no arguments' do
+-    expect_no_offenses(<<~RUBY)
+-      obj.public_send
+-    RUBY
++  context 'when calling `public_send` with a method name with square brackets' do
++    it 'does not register an offense' do
++      expect_no_offenses(<<~RUBY)
++        obj.public_send("[square_brackets]")
++      RUBY
++    end
++
++    context 'with safe navigation' do
++      it 'does not register an offense' do
++        expect_no_offenses(<<~RUBY)
++          obj&.public_send("[square_brackets]")
++        RUBY
++      end
++    end
+   end
+ 
+-  it 'does not register an offense when using method call without `public_send`' do
+-    expect_no_offenses(<<~RUBY)
+-      obj.foo
+-    RUBY
++  context 'when calling `public_send` with a reserved word' do
++    it 'does not register an offense' do
++      described_class::RESERVED_WORDS.each do |reserved_word|
++        expect_no_offenses(<<~RUBY)
++          obj.public_send(:#{reserved_word})
++        RUBY
++      end
++    end
++
++    context 'with safe navigation' do
++      it 'does not register an offense' do
++        described_class::RESERVED_WORDS.each do |reserved_word|
++          expect_no_offenses(<<~RUBY)
++            obj&.public_send(:#{reserved_word})
++          RUBY
++        end
++      end
++    end
+   end
+ 
+-  context 'when `AllowSend: true`' do
+-    let(:cop_config) { { 'AllowSend' => true } }
++  context 'when calling `public_send` with a integer literal argument' do
++    it 'does not register an offense' do
++      expect_no_offenses(<<~RUBY)
++        obj.public_send(42)
++      RUBY
++    end
+ 
+-    it 'does not register an offense when using `send` with symbol literal argumen' do
++    context 'with safe navigation' do
++      it 'does not register an offense' do
++        expect_no_offenses(<<~RUBY)
++          obj&.public_send(42)
++        RUBY
++      end
++    end
++  end
++
++  context 'when calling `public_send` without arguments' do
++    it 'does not register an offense' do
+       expect_no_offenses(<<~RUBY)
+-        obj.send(:foo)
++        obj.public_send
+       RUBY
+     end
+ 
+-    it 'does not register an offense when using `__send__` with symbol literal argument' do
++    context 'with safe navigation' do
++      it 'does not register an offense' do
++        expect_no_offenses(<<~RUBY)
++          obj&.public_send
++        RUBY
++      end
++    end
++  end
++
++  context 'when calling another method other than `public_send`' do
++    it 'does not register an offense' do
+       expect_no_offenses(<<~RUBY)
+-        obj.__send__(:foo)
++        obj.foo
+       RUBY
+     end
++
++    context 'with safe navigation' do
++      it 'does not register an offense' do
++        expect_no_offenses(<<~RUBY)
++          obj&.foo
++        RUBY
++      end
++    end
++  end
++
++  context 'when `AllowSend: true`' do
++    let(:cop_config) { { 'AllowSend' => true } }
++
++    context 'when calling `send` with a symbol literal argument' do
++      it 'does not register an offense' do
++        expect_no_offenses(<<~RUBY)
++          obj.send(:foo)
++        RUBY
++      end
++
++      context 'with safe navigation' do
++        it 'does not register an offense' do
++          expect_no_offenses(<<~RUBY)
++            obj&.send(:foo)
++          RUBY
++        end
++      end
++    end
++
++    context 'when calling `__send__` with a symbol literal argument' do
++      it 'does not register an offense' do
++        expect_no_offenses(<<~RUBY)
++          obj.__send__(:foo)
++        RUBY
++      end
++
++      context 'with safe navigation' do
++        it 'does not register an offense' do
++          expect_no_offenses(<<~RUBY)
++            obj&.__send__(:foo)
++          RUBY
++        end
++      end
++    end
+   end
+ 
+   context 'when `AllowSend: false`' do
+     let(:cop_config) { { 'AllowSend' => false } }
+ 
+-    it 'registers an offense when using `send` with symbol literal argument' do
+-      expect_offense(<<~RUBY)
+-        obj.send(:foo)
+-            ^^^^^^^^^^ Use `foo` method call directly instead.
+-      RUBY
++    context 'when calling `send` with a symbol literal argument' do
++      it 'registers an offense' do
++        expect_offense(<<~RUBY)
++          obj.send(:foo)
++              ^^^^^^^^^^ Use `foo` method call directly instead.
++        RUBY
+ 
+-      expect_correction(<<~RUBY)
+-        obj.foo
+-      RUBY
++        expect_correction(<<~RUBY)
++          obj.foo
++        RUBY
++      end
++
++      context 'with safe navigation' do
++        it 'registers an offense' do
++          expect_offense(<<~RUBY)
++            obj&.send(:foo)
++                 ^^^^^^^^^^ Use `foo` method call directly instead.
++          RUBY
++
++          expect_correction(<<~RUBY)
++            obj&.foo
++          RUBY
++        end
++      end
+     end
+ 
+-    it 'registers an offense when using `__send__` with symbol literal argument' do
+-      expect_offense(<<~RUBY)
+-        obj.__send__(:foo)
+-            ^^^^^^^^^^^^^^ Use `foo` method call directly instead.
+-      RUBY
++    context 'when calling `__send__` with a symbol literal argument' do
++      it 'registers an offense' do
++        expect_offense(<<~RUBY)
++          obj.__send__(:foo)
++              ^^^^^^^^^^^^^^ Use `foo` method call directly instead.
++        RUBY
+ 
+-      expect_correction(<<~RUBY)
+-        obj.foo
+-      RUBY
++        expect_correction(<<~RUBY)
++          obj.foo
++        RUBY
++      end
++
++      context 'with safe navigation' do
++        it 'registers an offense' do
++          expect_offense(<<~RUBY)
++            obj&.__send__(:foo)
++                 ^^^^^^^^^^^^^^ Use `foo` method call directly instead.
++          RUBY
++
++          expect_correction(<<~RUBY)
++            obj&.foo
++          RUBY
++        end
++      end
+     end
+   end
+ end
++ git -c core.fileMode=false diff 34beb4adc7d00bf828031783d860441c1aed659a
+diff --git a/config/default.yml b/config/default.yml
+index 761cbb933..1db036518 100644
+--- a/config/default.yml
++++ b/config/default.yml
+@@ -3142,13 +3142,14 @@ Style/AccessModifierDeclarations:
+   Description: 'Checks style of how access modifiers are used.'
+   Enabled: true
+   VersionAdded: '0.57'
+-  VersionChanged: '0.81'
++  VersionChanged: '1.70'
+   EnforcedStyle: group
+   SupportedStyles:
+     - inline
+     - group
+   AllowModifiersOnSymbols: true
+   AllowModifiersOnAttrs: true
++  AllowModifiersOnAliasMethod: false
+   SafeAutoCorrect: false
+ 
+ Style/AccessorGrouping:
+diff --git a/docs/modules/ROOT/pages/cops_style.adoc b/docs/modules/ROOT/pages/cops_style.adoc
+index 8c2006a1a..c7158b3b5 100644
+--- a/docs/modules/ROOT/pages/cops_style.adoc
++++ b/docs/modules/ROOT/pages/cops_style.adoc
+@@ -16,7 +16,7 @@
+ | Yes
+ | Always (Unsafe)
+ | 0.57
+-| 0.81
++| 1.70
+ |===
+ 
+ Access modifiers should be declared to apply to a group of methods
+@@ -26,6 +26,8 @@ Applications of visibility methods to symbols can be controlled
+ using AllowModifiersOnSymbols config.
+ Also, the visibility of `attr*` methods can be controlled using
+ AllowModifiersOnAttrs config.
++The visibility of `alias_method` can be controlled using
++AllowModifiersOnAliasMethod config.
+ 
+ In Ruby 3.0, `attr*` methods now return an array of defined method names
+ as symbols. So we can write the modifier and `attr*` in inline style.
+@@ -164,6 +166,32 @@ class Foo
+ end
+ ----
+ 
++[#allowmodifiersonaliasmethod_-true-styleaccessmodifierdeclarations]
++==== AllowModifiersOnAliasMethod: true
++
++[source,ruby]
++----
++# good
++class Foo
++
++  private alias_method :bar, :baz
++
++end
++----
++
++[#allowmodifiersonaliasmethod_-false-_default_-styleaccessmodifierdeclarations]
++==== AllowModifiersOnAliasMethod: false (default)
++
++[source,ruby]
++----
++# bad
++class Foo
++
++  private alias_method :bar, :baz
++
++end
++----
++
+ [#configurable-attributes-styleaccessmodifierdeclarations]
+ === Configurable attributes
+ 
+@@ -181,6 +209,10 @@ end
+ | AllowModifiersOnAttrs
+ | `true`
+ | Boolean
++
++| AllowModifiersOnAliasMethod
++| `false`
++| Boolean
+ |===
+ 
+ [#styleaccessorgrouping]
+diff --git a/lib/rubocop/cop/style/access_modifier_declarations.rb b/lib/rubocop/cop/style/access_modifier_declarations.rb
+index 37fc146f5..370db8c28 100644
+--- a/lib/rubocop/cop/style/access_modifier_declarations.rb
++++ b/lib/rubocop/cop/style/access_modifier_declarations.rb
+@@ -10,6 +10,8 @@ module RuboCop
+       # using AllowModifiersOnSymbols config.
+       # Also, the visibility of `attr*` methods can be controlled using
+       # AllowModifiersOnAttrs config.
++      # The visibility of `alias_method` can be controlled using
++      # AllowModifiersOnAliasMethod config.
+       #
+       # In Ruby 3.0, `attr*` methods now return an array of defined method names
+       # as symbols. So we can write the modifier and `attr*` in inline style.
+@@ -112,6 +114,22 @@ module RuboCop
+       #     private attr :quux
+       #
+       #   end
++      #
++      # @example AllowModifiersOnAliasMethod: true
++      #   # good
++      #   class Foo
++      #
++      #     private alias_method :bar, :baz
++      #
++      #   end
++      #
++      # @example AllowModifiersOnAliasMethod: false (default)
++      #   # bad
++      #   class Foo
++      #
++      #     private alias_method :bar, :baz
++      #
++      #   end
+       class AccessModifierDeclarations < Base
+         extend AutoCorrector
+ 
+@@ -145,6 +163,12 @@ module RuboCop
+             (send nil? {:attr :attr_reader :attr_writer :attr_accessor} _+))
+         PATTERN
+ 
++        # @!method access_modifier_with_alias_method?(node)
++        def_node_matcher :access_modifier_with_alias_method?, <<~PATTERN
++          (send nil? {:private :protected :public :module_function}
++            (send nil? :alias_method _ _))
++        PATTERN
++
+         def on_send(node)
+           return if allowed?(node)
+ 
+@@ -164,7 +188,8 @@ module RuboCop
+           !node.access_modifier? ||
+             ALLOWED_NODE_TYPES.include?(node.parent&.type) ||
+             allow_modifiers_on_symbols?(node) ||
+-            allow_modifiers_on_attrs?(node)
++            allow_modifiers_on_attrs?(node) ||
++            allow_modifiers_on_alias_method?(node)
+         end
+ 
+         def autocorrect(corrector, node)
+@@ -194,6 +219,10 @@ module RuboCop
+           cop_config['AllowModifiersOnAttrs'] && access_modifier_with_attr?(node)
+         end
+ 
++        def allow_modifiers_on_alias_method?(node)
++          cop_config['AllowModifiersOnAliasMethod'] && access_modifier_with_alias_method?(node)
++        end
++
+         def offense?(node)
+           (group_style? && access_modifier_is_inlined?(node) &&
+             !node.parent&.if_type? && !right_siblings_same_inline_method?(node)) ||
++ git checkout 34beb4adc7d00bf828031783d860441c1aed659a spec/rubocop/cop/style/access_modifier_declarations_spec.rb
+Updated 0 paths from 83e8f0c0a
++ git apply -v -
+Checking patch spec/rubocop/cop/style/access_modifier_declarations_spec.rb...
+Applied patch spec/rubocop/cop/style/access_modifier_declarations_spec.rb cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ bundle exec rspec spec/rubocop/cop/style/access_modifier_declarations_spec.rb --no-color --format json
++ sed -n '/^{/,$p'
++ jq -r '.examples | group_by(.description) | .[] |
+    if any(select(.status == "failed")) then
+      (.[0] | "\(.description) - failed")
+    else
+      (.[0] | "\(.description) - \(.status)")
+    end'
+accepts multiple arguments on attrs - passed
+accepts when argument to module_function is a splat with a method call - passed
+accepts when argument to module_function is a symbol - passed
+accepts when argument to module_function is an alias_method - passed
+accepts when argument to module_function is an attr_* - passed
+accepts when argument to module_function is multiple symbols - passed
+accepts when argument to module_function is splat with a `%i` array literal - passed
+accepts when argument to module_function is splat with a constant - passed
+accepts when argument to private is a splat with a method call - passed
+accepts when argument to private is a symbol - passed
+accepts when argument to private is an alias_method - passed
+accepts when argument to private is an attr_* - passed
+accepts when argument to private is multiple symbols - passed
+accepts when argument to private is splat with a `%i` array literal - passed
+accepts when argument to private is splat with a constant - passed
+accepts when argument to protected is a splat with a method call - passed
+accepts when argument to protected is a symbol - passed
+accepts when argument to protected is an alias_method - passed
+accepts when argument to protected is an attr_* - passed
+accepts when argument to protected is multiple symbols - passed
+accepts when argument to protected is splat with a `%i` array literal - passed
+accepts when argument to protected is splat with a constant - passed
+accepts when argument to public is a splat with a method call - passed
+accepts when argument to public is a symbol - passed
+accepts when argument to public is an alias_method - passed
+accepts when argument to public is an attr_* - passed
+accepts when argument to public is multiple symbols - passed
+accepts when argument to public is splat with a `%i` array literal - passed
+accepts when argument to public is splat with a constant - passed
+accepts when module_function is a hash literal value - passed
+accepts when private is a hash literal value - passed
+accepts when protected is a hash literal value - passed
+accepts when public is a hash literal value - passed
+accepts when using only module_function - passed
+accepts when using only private - passed
+accepts when using only protected - passed
+accepts when using only public - passed
+does not offend when module_function does not have right sibling node - passed
+does not offend when module_function is inlined with a method - passed
+does not offend when module_function is inlined with a symbol - passed
+does not offend when module_function is not inlined - passed
+does not offend when module_function is not inlined and has a comment - passed
+does not offend when private does not have right sibling node - passed
+does not offend when private is inlined with a method - passed
+does not offend when private is inlined with a symbol - passed
+does not offend when private is not inlined - passed
+does not offend when private is not inlined and has a comment - passed
+does not offend when protected does not have right sibling node - passed
+does not offend when protected is inlined with a method - passed
+does not offend when protected is inlined with a symbol - passed
+does not offend when protected is not inlined - passed
+does not offend when protected is not inlined and has a comment - passed
+does not offend when public does not have right sibling node - passed
+does not offend when public is inlined with a method - passed
+does not offend when public is inlined with a symbol - passed
+does not offend when public is not inlined - passed
+does not offend when public is not inlined and has a comment - passed
+does not register an offense when using module_function in a block - passed
+does not register an offense when using private in a block - passed
+does not register an offense when using protected in a block - passed
+does not register an offense when using public in a block - passed
+offends when module_function is inlined with a method - passed
+offends when module_function is inlined with a method on the top level - passed
+offends when module_function is not inlined - passed
+offends when module_function is not inlined and has a comment - passed
+offends when multiple groupable access modifiers are defined - passed
+offends when private is inlined with a method - passed
+offends when private is inlined with a method on the top level - passed
+offends when private is not inlined - passed
+offends when private is not inlined and has a comment - passed
+offends when protected is inlined with a method - passed
+offends when protected is inlined with a method on the top level - passed
+offends when protected is not inlined - passed
+offends when protected is not inlined and has a comment - passed
+offends when public is inlined with a method - passed
+offends when public is inlined with a method on the top level - passed
+offends when public is not inlined - passed
+offends when public is not inlined and has a comment - passed
+registers an offense and autocorrects when methods are all defined in class - passed
+registers an offense and autocorrects when methods are all defined in class and there is a comment - passed
+registers an offense and autocorrects when methods are all defined in class and there is already a bare access modifier - passed
+registers an offense and autocorrects when not all methods are defined in class - passed
+registers an offense and does not autocorrect when methods are not defined - passed
+registers an offense but does not autocorrect it - passed
+registers an offense for a single symbol - passed
+registers an offense for correct + multiple opposite styles of module_function usage - passed
+registers an offense for correct + multiple opposite styles of private usage - passed
+registers an offense for correct + multiple opposite styles of protected usage - passed
+registers an offense for correct + multiple opposite styles of public usage - passed
+registers an offense for multiple symbols - passed
+registers an offense when argument to module_function is a symbol - passed
+registers an offense when argument to module_function is an alias_method - passed
+registers an offense when argument to module_function is splat with a `%i` array literal - passed
+registers an offense when argument to module_function is splat with a constant - passed
+registers an offense when argument to private is a symbol - passed
+registers an offense when argument to private is an alias_method - passed
+registers an offense when argument to private is splat with a `%i` array literal - passed
+registers an offense when argument to private is splat with a constant - passed
+registers an offense when argument to protected is a symbol - passed
+registers an offense when argument to protected is an alias_method - passed
+registers an offense when argument to protected is splat with a `%i` array literal - passed
+registers an offense when argument to protected is splat with a constant - passed
+registers an offense when argument to public is a symbol - passed
+registers an offense when argument to public is an alias_method - passed
+registers an offense when argument to public is splat with a `%i` array literal - passed
+registers an offense when argument to public is splat with a constant - passed
+registers and autocorrects an offense - passed
+registers and autocorrects offense if conditional modifier is followed by a normal one - passed
+registers and autocorrects offense if conditional modifiers wrap a normal one - passed
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout 34beb4adc7d00bf828031783d860441c1aed659a spec/rubocop/cop/style/access_modifier_declarations_spec.rb
+Updated 1 path from 83e8f0c0a

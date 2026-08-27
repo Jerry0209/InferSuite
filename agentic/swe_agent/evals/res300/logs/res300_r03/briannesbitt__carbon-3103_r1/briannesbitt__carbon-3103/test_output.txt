@@ -1,0 +1,108 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/Carbon/Traits/Date.php
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit d481d8d69a94dc00e5c1b147ec1f7e7492626b12
+Merge: 10ac0aa8 8d7a00d0
+Author: Kyle <kylekatarnls@users.noreply.github.com>
+Date:   Mon Nov 4 15:04:08 2024 +0100
+
+    Merge pull request #3100 from briannesbitt/job/update-sponsors
+    
+    Update sponsors
+
++ git -c core.fileMode=false diff d481d8d69a94dc00e5c1b147ec1f7e7492626b12
+diff --git a/src/Carbon/Traits/Date.php b/src/Carbon/Traits/Date.php
+index 8a2860af..8ac81ea7 100644
+--- a/src/Carbon/Traits/Date.php
++++ b/src/Carbon/Traits/Date.php
+@@ -2965,7 +2965,7 @@ trait Date
+     private function mutateIfMutable(CarbonInterface $date): CarbonInterface
+     {
+         return $this instanceof DateTimeImmutable
+-            ? $this
++            ? $date
+             : $this->modify('@'.$date->rawFormat('U.u'))->setTimezone($date->getTimezone());
+     }
+ }
++ git checkout d481d8d69a94dc00e5c1b147ec1f7e7492626b12 tests/Carbon/SettersTest.php tests/CarbonImmutable/SettersTest.php
+Updated 0 paths from 060c58bc
++ git apply -v -
+Checking patch tests/Carbon/SettersTest.php...
+Checking patch tests/CarbonImmutable/SettersTest.php...
+Applied patch tests/Carbon/SettersTest.php cleanly.
+Applied patch tests/CarbonImmutable/SettersTest.php cleanly.
++ : '>>>>> Start Test Output'
++ vendor/bin/phpunit --testdox --colors=never tests/CarbonImmutable/SettersTest.php
++ cat
+PHPUnit 10.5.63 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.3.16
+Configuration: /testbed/phpunit.xml.dist
+
+..............................................                    46 / 46 (100%)
+
+Time: 00:00.022, Memory: 14.00 MB
+
+Setters (Tests\CarbonImmutable\Setters)
+ ✔ Year setter
+ ✔ Month setter
+ ✔ Month enum on wrong unit
+ ✔ Month enum
+ ✔ Month float fail with decimal part
+ ✔ Month float pass with zero decimal part
+ ✔ Month setter with wrap
+ ✔ Day setter
+ ✔ Day setter with wrap
+ ✔ Hour setter
+ ✔ Hour setter with wrap
+ ✔ Minute setter
+ ✔ Minute setter with wrap
+ ✔ Second setter
+ ✔ Time setter
+ ✔ Time setter with chaining
+ ✔ Time setter with zero
+ ✔ Date time setter
+ ✔ Date time setter with zero
+ ✔ Date time setter with chaining
+ ✔ Set date after string creation
+ ✔ Second setter with wrap
+ ✔ Timestamp setter
+ ✔ Set timezone with invalid timezone
+ ✔ Timezone with invalid timezone
+ ✔ Timezone with invalid timezone setter
+ ✔ Tz with invalid timezone
+ ✔ Tz with invalid timezone setter
+ ✔ Set timezone using string
+ ✔ Shift timezone
+ ✔ Timezone using string
+ ✔ Tz using string
+ ✔ Set timezone using date time zone
+ ✔ Timezone using date time zone
+ ✔ Tz using date time zone
+ ✔ Invalid setter
+ ✔ Set time from time string with data set #0
+ ✔ Set time from time string with data set #1
+ ✔ Set time from time string with data set #2
+ ✔ Set time from time string with data set #3
+ ✔ Set time from time string with data set #4
+ ✔ Set time from time string with data set #5
+ ✔ Weekend days setter
+ ✔ Mid day at setter
+ ✔ Setter
+ ✔ Set unit no overflow february
+
+OK (46 tests, 110 assertions)
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout d481d8d69a94dc00e5c1b147ec1f7e7492626b12 tests/Carbon/SettersTest.php tests/CarbonImmutable/SettersTest.php
+>>>>> Test Exit Code: 0
+Updated 2 paths from 060c58bc

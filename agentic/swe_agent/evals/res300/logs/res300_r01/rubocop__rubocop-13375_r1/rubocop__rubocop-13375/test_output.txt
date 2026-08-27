@@ -1,0 +1,160 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/rubocop/runner.rb
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	changelog/fix_incorrect_exit_status_with_display_only_correctable.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 75160946ac3620005874d5188101dab77d585be2
+Merge: 7b6fdc6f2 5c04cff74
+Author: Koichi ITO <koic.ito@gmail.com>
+Date:   Wed Oct 23 23:18:56 2024 +0900
+
+    Merge pull request #13379 from Earlopain/ruby-3.4-stringio
+    
+    Fix an error when running with Ruby 3.4-dev
+
++ git -c core.fileMode=false diff 75160946ac3620005874d5188101dab77d585be2
+diff --git a/lib/rubocop/runner.rb b/lib/rubocop/runner.rb
+index 51f18dca0..875ed8a55 100644
+--- a/lib/rubocop/runner.rb
++++ b/lib/rubocop/runner.rb
+@@ -139,7 +139,7 @@ module RuboCop
+         offenses = process_file(file)
+         yield file
+ 
+-        if offenses.any? { |o| considered_failure?(o) }
++        if offenses_to_report(offenses).any? { |o| considered_failure?(o) }
+           break false if @options[:fail_fast]
+ 
+           next false
++ git checkout 75160946ac3620005874d5188101dab77d585be2 spec/rubocop/cli_spec.rb
+Updated 0 paths from 0fde0822f
++ git apply -v -
+Checking patch spec/rubocop/cli_spec.rb...
+Applied patch spec/rubocop/cli_spec.rb cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ bundle exec rspec spec/rubocop/cli_spec.rb --no-color --format json
++ sed -n '/^{/,$p'
++ jq -r '.examples | group_by(.description) | .[] |
+    if any(select(.status == "failed")) then
+      (.[0] | "\(.description) - failed")
+    else
+      (.[0] | "\(.description) - \(.status)")
+    end'
+`Lint/Syntax` must be enabled when `DisabledByDefault: true` - passed
+`Lint/Syntax` must be enabled when `Lint` is given `Enabled: false` - passed
+`Lint/Syntax` must be enabled when disabled by directive all comment - passed
+`Lint/Syntax` must be enabled when disabled by directive comment - passed
+`Lint/Syntax` must be enabled when disabled by directive department comment - passed
+`Lint/Syntax` severity `fatal` cannot be changed by configuration - passed
+`Naming/FileName` must be be disabled for global offenses - passed
+`Naming/FileName` must be be enabled if directive comment is on unrelated line - passed
+accepts indented_internal_methods style indentation - passed
+acts as if the key/value pair was removed - passed
+allows the default configuration file as the -c argument - passed
+can be configured to merge a parameter that is a hash - passed
+can be configured to override a parameter that is a hash in a special case - passed
+can be configured with option to disable a certain error - passed
+can be configured with project config to disable a certain error - passed
+can disable all cops in a code section - passed
+can disable all cops on a single line - passed
+can disable parser-derived offenses with warning severity - passed
+can disable selected cops in a code section - passed
+can disable selected cops on a single line - passed
+can disable selected cops on a single line but prints a warning - passed
+can exclude a typical vendor directory - passed
+can exclude a vendor directory indirectly - passed
+can exclude a vendor directory with an erroneous config file - passed
+can exclude directories relative to .rubocop.yml - passed
+can have different config files in different directories - passed
+can process a file with an invalid UTF-8 byte sequence - passed
+can use an alternative max line length from a config file - passed
+cannot disable Syntax offenses - passed
+causes an offense to be reported - passed
+checks a Rakefile but Style/FileName does not report - passed
+checks a given file with faults and returns 1 - passed
+creates cpu profile file - passed
+creates memory profile file - passed
+displays a warning - passed
+displays an error message to stderr - passed
+displays cop names if DisplayCopNames is false - passed
+displays style guide URLs if DisplayStyleGuide is true - passed
+does not consider Include parameters in subdirectories - passed
+does not crash - passed
+does not crash and reports an offense - passed
+does not create profile files by default - passed
+does not read files in excluded list - passed
+does not register an offense for `Lint/RedundantCopDisableDirective` - passed
+does not register any offenses for an empty file - passed
+does not report RedundantCopDisableDirective offenses - passed
+does not suggest `1 offense autocorrectable` for `Style/StringLiterals` - passed
+does not trigger RedundantCopDisableDirective due to lines moving around - passed
+does not use parallel inspection - passed
+excludes the vendor directory by default - passed
+exits with 2 - passed
+exits with error code - passed
+fails when a configuration file has invalid YAML syntax - passed
+fails when a configuration file specifies an invalid Severity - passed
+fails with an error message - passed
+finds a file with no .rb extension but has a shebang line - passed
+finds files included through inheritance - passed
+finds included files - passed
+generate a .rubocop.yml file - passed
+handles relative excludes correctly when run from project root - passed
+ignores config file - passed
+ignores excluded files - passed
+inherits relative excludes correctly - passed
+is an invalid configuration - passed
+matches included/excluded files correctly when . argument is given - passed
+only reads configuration in explicitly included hidden directories - passed
+overrides configuration of AllCops/StyleGuideCopsOnly - passed
+prefers a config file in ancestor directory to another in home - passed
+prints a warning for an unrecognized configuration parameter - passed
+prints an error for an unrecognized cop name in .rubocop.yml - passed
+prints an error message for an unrecognized EnforcedStyle - passed
+prints the error and exists with code 2 - passed
+registers an offense for Parser warnings - passed
+registers an offense for a syntax error - passed
+registers offense for normal indentation in class - passed
+registers offense for normal indentation in module - passed
+reports an offense - passed
+reports an offense when explicitly enabled on part of a file - passed
+returns 0 - passed
+returns 0 if there are no offenses shown - passed
+returns 130 - passed
+returns a 0 code - passed
+returns a 0 code but does not list offenses - passed
+returns a 1 code - passed
+runs all cops that are enabled in default configuration - passed
+runs cops for rules regardless of any link to the style guide - passed
+runs cops for rules that link to a style guide - passed
+runs only the cop configured in .rubocop.yml - passed
+runs without errors for an unrecognized cop name in .rubocop.yml and `--ignore-unrecognized-cops` option is given - passed
+shows an error if the input file cannot be found - passed
+skips cops that have no link to a style guide - passed
+still returns 0 - passed
+uses parallel inspection - passed
+uses parallel inspection when correcting the file - passed
+uses the DefaultFormatter if another formatter is not specified - passed
+works when `AllCops:Exclude` is empty - passed
+works when a configuration file passed by -c specifies Exclude with regexp - passed
+works when a configuration file passed by -c specifies Exclude with strings - passed
+works when a configuration file specifies Severity for Metrics/ParameterLists and Layout - passed
+works when a configuration file specifies Severity for Metrics/ParameterLists and Layout/LineLength - passed
+works when a cop that others depend on is disabled - passed
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 75160946ac3620005874d5188101dab77d585be2 spec/rubocop/cli_spec.rb
+>>>>> Test Exit Code: 0
+Updated 1 path from 0fde0822f

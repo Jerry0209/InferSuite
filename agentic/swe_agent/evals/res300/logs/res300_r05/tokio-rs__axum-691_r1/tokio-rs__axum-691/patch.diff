@@ -1,0 +1,38 @@
+diff --git a/axum/CHANGELOG.md b/axum/CHANGELOG.md
+index a59cc72a..0e814d7a 100644
+--- a/axum/CHANGELOG.md
++++ b/axum/CHANGELOG.md
+@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ 
+ # Unreleased
+ 
+-- None.
++- **fixed:** Fix nesting a `Router` at `/` (`nest("/", router)`). Previously the
++  routes of the nested router were mounted with a double slash (e.g. `//foo`
++  instead of `/foo`), meaning they didn't match the expected paths.
+ 
+ # 0.4.3 (21. December, 2021)
+ 
+diff --git a/axum/src/routing/mod.rs b/axum/src/routing/mod.rs
+index 788d0c1f..02eb90f3 100644
+--- a/axum/src/routing/mod.rs
++++ b/axum/src/routing/mod.rs
+@@ -201,7 +201,17 @@ where
+ 
+                 for (id, nested_path) in node.route_id_to_path {
+                     let route = routes.remove(&id).unwrap();
+-                    let full_path = if &*nested_path == "/" {
++                    // `nested_path` always starts with `/`. We have to be careful when
++                    // joining `path` and `nested_path` to avoid producing a path with a
++                    // double slash (e.g. `//foo` when nesting at `/`) or a trailing slash
++                    // (e.g. `/api/` when the nested router has a `/` route).
++                    let full_path = if path == "/" {
++                        // nesting at `/` means the prefix is empty, so just use the
++                        // nested path directly
++                        nested_path.to_string()
++                    } else if &*nested_path == "/" {
++                        // the nested router has a route at `/`, so the full path is just
++                        // the prefix
+                         path.to_owned()
+                     } else {
+                         format!("{}{}", path, nested_path)

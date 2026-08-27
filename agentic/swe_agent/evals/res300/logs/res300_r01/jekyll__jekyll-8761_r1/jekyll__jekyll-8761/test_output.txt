@@ -1,0 +1,112 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   History.markdown
+	modified:   lib/jekyll/drops/document_drop.rb
+	modified:   lib/jekyll/drops/excerpt_drop.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 310459370ad8bb9c0b574735dcca4868a5f05803
+Author: jekyllbot <jekyllbot@jekyllrb.com>
+Date:   Mon Mar 28 20:46:22 2022 -0700
+
+    Update history to reflect merge of #8993 [ci skip]
+
+diff --git a/History.markdown b/History.markdown
+index 05a25a01..e77d8daa 100644
+--- a/History.markdown
++++ b/History.markdown
+@@ -62,6 +62,7 @@
+   * Update README.markdown re IRC Pointer (#9005)
+   * Remove Aerobatic (#9007)
+   * Add Jekyll 3.9.2 release post to &#39;master&#39; branch (#9013)
++  * Simplify macOS installation docs (#8993)
+ 
+ ### Bug Fixes
+ 
++ git -c core.fileMode=false diff 310459370ad8bb9c0b574735dcca4868a5f05803
+diff --git a/History.markdown b/History.markdown
+index e77d8daa..de9a19ac 100644
+--- a/History.markdown
++++ b/History.markdown
+@@ -78,6 +78,7 @@
+   * Fix deprecation message for missing doc method (#8960)
+   * Fix response header for content served via `jekyll serve` (#8965)
+   * Trigger livereload in sites without pages (#8337)
++  * Expose `basename` from `document.rb` as `name` to Liquid templates (#8761)
+ 
+ ### Development Fixes
+ 
+diff --git a/lib/jekyll/drops/document_drop.rb b/lib/jekyll/drops/document_drop.rb
+index fef5920b..6b1f9795 100644
+--- a/lib/jekyll/drops/document_drop.rb
++++ b/lib/jekyll/drops/document_drop.rb
+@@ -25,6 +25,15 @@ module Jekyll
+         fallback_data["excerpt"].to_s
+       end
+ 
++      # `basename` of the underlying document exposed as `name` to Liquid templates.
++      # If the document's front matter defines a `name` attribute, that takes
++      # precedence over the basename of the source file.
++      #
++      # Returns the name of the document as a String.
++      def name
++        fallback_data["name"] || @obj.basename
++      end
++
+       def <=>(other)
+         return nil unless other.is_a? DocumentDrop
+ 
+diff --git a/lib/jekyll/drops/excerpt_drop.rb b/lib/jekyll/drops/excerpt_drop.rb
+index 425133fa..35a51062 100644
+--- a/lib/jekyll/drops/excerpt_drop.rb
++++ b/lib/jekyll/drops/excerpt_drop.rb
+@@ -14,6 +14,15 @@ module Jekyll
+       def excerpt
+         nil
+       end
++
++      # `basename` of the document the excerpt belongs to, exposed as `name` to
++      # Liquid templates. If the document's front matter defines a `name`
++      # attribute, that takes precedence over the basename of the source file.
++      #
++      # Returns the name of the excerpt's document as a String.
++      def name
++        @obj.doc.data["name"] || @obj.doc.basename
++      end
+     end
+   end
+ end
++ git checkout 310459370ad8bb9c0b574735dcca4868a5f05803 test/test_filters.rb
+Updated 0 paths from 1699825a
++ git apply -v -
+Checking patch test/test_filters.rb...
+Applied patch test/test_filters.rb cleanly.
++ : '>>>>> Start Test Output'
++ bundle exec cucumber --publish-quiet --format progress --no-color features/post_data.feature:6 features/post_data.feature:30
++ cat
+/testbed/features/support/helpers.rb:3: warning: csv was loaded from the standard library, but will no longer be part of the default gems starting from Ruby 3.4.0.
+You can add csv to your Gemfile or gemspec to silence this warning.
+
+features/post_data.feature:6  Scenario: Use post.title variable ........ (0.274420016s)
+features/post_data.feature:30  Scenario: Use post.date variable ........ (0.276271933s)
+Worst offenders:
+  0.276271933s for "Use post.date variable" (features/post_data.feature:30)
+  0.274420016s for "Use post.title variable" (features/post_data.feature:6)
+
+
+
+2 scenarios (2 passed)
+16 steps (16 passed)
+0m0.551s
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout 310459370ad8bb9c0b574735dcca4868a5f05803 test/test_filters.rb
+Updated 1 path from 1699825a

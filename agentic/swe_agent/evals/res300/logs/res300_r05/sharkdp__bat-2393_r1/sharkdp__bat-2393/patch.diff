@@ -1,0 +1,66 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index e0829b01..6fdcb1ae 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -7,6 +7,8 @@
+ 
+ ## Bugfixes
+ 
++- Fix `bat cache --clear` not clearing the `--target` dir if specified. See #2393 (@miles170)
++
+ ## Other
+ 
+ - Various bash completion improvements, see #2310 (@scop)
+diff --git a/src/bin/bat/assets.rs b/src/bin/bat/assets.rs
+index 951a574b..2f9cf847 100644
+--- a/src/bin/bat/assets.rs
++++ b/src/bin/bat/assets.rs
+@@ -1,6 +1,7 @@
+ use std::borrow::Cow;
+ use std::fs;
+ use std::io;
++use std::path::Path;
+ 
+ use clap::crate_version;
+ 
+@@ -18,10 +19,11 @@ pub fn cache_dir() -> Cow<'static, str> {
+     PROJECT_DIRS.cache_dir().to_string_lossy()
+ }
+ 
+-pub fn clear_assets() {
+-    clear_asset("themes.bin", "theme set cache");
+-    clear_asset("syntaxes.bin", "syntax set cache");
+-    clear_asset("metadata.yaml", "metadata file");
++pub fn clear_assets(target_dir: Option<&Path>) {
++    let target_dir = target_dir.unwrap_or_else(|| PROJECT_DIRS.cache_dir());
++    clear_asset(target_dir, "themes.bin", "theme set cache");
++    clear_asset(target_dir, "syntaxes.bin", "syntax set cache");
++    clear_asset(target_dir, "metadata.yaml", "metadata file");
+ }
+ 
+ pub fn assets_from_cache_or_binary(use_custom_assets: bool) -> Result<HighlightingAssets> {
+@@ -50,9 +52,9 @@ pub fn assets_from_cache_or_binary(use_custom_assets: bool) -> Result<Highlighti
+     Ok(custom_assets.unwrap_or_else(HighlightingAssets::from_binary))
+ }
+ 
+-fn clear_asset(filename: &str, description: &str) {
++fn clear_asset(target_dir: &Path, filename: &str, description: &str) {
+     print!("Clearing {} ... ", description);
+-    let path = PROJECT_DIRS.cache_dir().join(filename);
++    let path = target_dir.join(filename);
+     match fs::remove_file(&path) {
+         Err(err) if err.kind() == io::ErrorKind::NotFound => {
+             println!("skipped (not present)");
+diff --git a/src/bin/bat/main.rs b/src/bin/bat/main.rs
+index b4e5d9b7..cd5f0eda 100644
+--- a/src/bin/bat/main.rs
++++ b/src/bin/bat/main.rs
+@@ -67,7 +67,7 @@ fn run_cache_subcommand(matches: &clap::ArgMatches) -> Result<()> {
+         #[cfg(not(feature = "build-assets"))]
+         println!("bat has been built without the 'build-assets' feature. The 'cache --build' option is not available.");
+     } else if matches.get_flag("clear") {
+-        clear_assets();
++        clear_assets(matches.get_one::<String>("target").map(Path::new));
+     }
+ 
+     Ok(())

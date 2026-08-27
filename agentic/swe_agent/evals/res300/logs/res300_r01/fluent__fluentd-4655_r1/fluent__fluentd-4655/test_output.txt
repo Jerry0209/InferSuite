@@ -1,0 +1,117 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/fluent/plugin/in_http.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 6f5ea8971d1c9aa5cad29bf6aaf24789e868f842
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Wed Oct 2 15:28:03 2024 +0900
+
+    build(deps): bump ruby/setup-ruby from 1.193.0 to 1.194.0 (#4652)
+    
+    Bumps [ruby/setup-ruby](https://github.com/ruby/setup-ruby) from 1.193.0 to 1.194.0.
+    - [Release notes](https://github.com/ruby/setup-ruby/releases)
+    - [Changelog](https://github.com/ruby/setup-ruby/blob/master/release.rb)
+    - [Commits](https://github.com/ruby/setup-ruby/compare/f321cf5a4d1533575411f8752cf25b86478b0442...c04af2bb7258bb6a03df1d3c1865998ac9390972)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: ruby/setup-ruby
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+    Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+diff --git a/.github/workflows/test-ruby-head.yml b/.github/workflows/test-ruby-head.yml
+index 7c9df81d..c994b2ae 100644
+--- a/.github/workflows/test-ruby-head.yml
++++ b/.github/workflows/test-ruby-head.yml
+@@ -21,7 +21,7 @@ jobs:
+     steps:
+       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+       - name: Set up Ruby
+-        uses: ruby/setup-ruby@f321cf5a4d1533575411f8752cf25b86478b0442 # v1.193.0
++        uses: ruby/setup-ruby@c04af2bb7258bb6a03df1d3c1865998ac9390972 # v1.194.0
+         with:
+           ruby-version: ${{ matrix.ruby-version }}
+       - name: Install addons
+diff --git a/.github/workflows/test.yml b/.github/workflows/test.yml
+index 09f9b7d5..6051d3f3 100644
+--- a/.github/workflows/test.yml
++++ b/.github/workflows/test.yml
+@@ -28,7 +28,7 @@ jobs:
+     steps:
+       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+       - name: Set up Ruby
+-        uses: ruby/setup-ruby@f321cf5a4d1533575411f8752cf25b86478b0442 # v1.193.0
++        uses: ruby/setup-ruby@c04af2bb7258bb6a03df1d3c1865998ac9390972 # v1.194.0
+         with:
+           ruby-version: ${{ matrix.ruby-version }}
+       - name: Install addons
++ git -c core.fileMode=false diff 6f5ea8971d1c9aa5cad29bf6aaf24789e868f842
+diff --git a/lib/fluent/plugin/in_http.rb b/lib/fluent/plugin/in_http.rb
+index 1fe8f998..77876eae 100644
+--- a/lib/fluent/plugin/in_http.rb
++++ b/lib/fluent/plugin/in_http.rb
+@@ -85,6 +85,9 @@ module Fluent::Plugin
+     desc 'Add QUERY_ prefix query params to record'
+     config_param :add_query_params, :bool, default: false
+ 
++    desc "Add prefix to incoming tag"
++    config_param :add_tag_prefix, :string, default: nil
++
+     config_section :parse do
+       config_set_default :@type, 'in_http'
+     end
+@@ -120,6 +123,8 @@ module Fluent::Plugin
+         end
+       end
+ 
++      raise Fluent::ConfigError, "'add_tag_prefix' parameter must not be empty" if @add_tag_prefix && @add_tag_prefix.empty?
++
+       m = if @parser_configs.first['@type'] == 'in_http'
+             @parser_msgpack = parser_create(usage: 'parser_in_http_msgpack', type: 'msgpack')
+             @parser_msgpack.time_key = nil
+@@ -203,6 +208,7 @@ module Fluent::Plugin
+       begin
+         path = path_info[1..-1]  # remove /
+         tag = path.split('/').join('.')
++        tag = "#{@add_tag_prefix}.#{tag}" if @add_tag_prefix
+ 
+         mes = Fluent::MultiEventStream.new
+         parse_params(params) do |record_time, record|
++ git checkout 6f5ea8971d1c9aa5cad29bf6aaf24789e868f842 test/plugin/test_in_http.rb
+Updated 0 paths from 209d2b12
++ git apply -v -
+Checking patch test/plugin/test_in_http.rb...
+Applied patch test/plugin/test_in_http.rb cleanly.
++ : '>>>>> Start Test Output'
++ bundle exec ruby test/plugin/test_in_http.rb -v -n /test_add/
++ cat
+Loaded suite test/plugin/test_in_http
+Started
+HttpInputTest: 
+  test_add_query_params:				.: (0.604676)
+  test_add_remote_addr_given_multi_x_forwarded_for:	.: (0.602650)
+  test_add_tag_prefix:					.: (0.602870)
+
+Finished in 1.810786249 seconds.
+-------------------------------------------------------------------------------
+3 tests, 10 assertions, 0 failures, 0 errors, 0 pendings, 0 omissions, 0 notifications
+100% passed
+-------------------------------------------------------------------------------
+1.66 tests/s, 5.52 assertions/s
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 6f5ea8971d1c9aa5cad29bf6aaf24789e868f842 test/plugin/test_in_http.rb
+>>>>> Test Exit Code: 0
+Updated 1 path from 209d2b12

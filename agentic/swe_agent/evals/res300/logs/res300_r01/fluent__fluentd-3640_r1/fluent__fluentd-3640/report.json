@@ -1,0 +1,36 @@
+{
+    "fluent__fluentd-3640": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "infra_failure": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "exponential backoff retries with secondary and max_steps"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "exponential backoff forever without randomization",
+                    "exponential backoff retries with secondary",
+                    "exponential backoff retries with secondary and specified threshold",
+                    "exponential backoff with max_interval",
+                    "exponential backoff with max_steps",
+                    "exponential backoff with shorter timeout"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

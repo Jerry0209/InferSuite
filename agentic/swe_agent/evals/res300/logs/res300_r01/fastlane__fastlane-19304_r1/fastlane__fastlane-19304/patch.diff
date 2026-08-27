@@ -1,0 +1,30 @@
+diff --git a/fastlane/lib/fastlane/actions/zip.rb b/fastlane/lib/fastlane/actions/zip.rb
+index 32ba76068..2710aff2a 100644
+--- a/fastlane/lib/fastlane/actions/zip.rb
++++ b/fastlane/lib/fastlane/actions/zip.rb
+@@ -10,8 +10,8 @@ module Fastlane
+           @verbose = params[:verbose]
+           @password = params[:password]
+           @symlinks = params[:symlinks]
+-          @include = params[:include]
+-          @exclude = params[:exclude]
++          @include = params[:include] || []
++          @exclude = params[:exclude] || []
+ 
+           @output_path += ".zip" unless @output_path.end_with?(".zip")
+         end
+@@ -55,12 +55,12 @@ module Fastlane
+           command << output_path
+           command << basename
+ 
+-          unless include.empty?
++          if include && !include.empty?
+             command << "-i"
+             command += include.map { |path| File.join(basename, path) }
+           end
+ 
+-          unless exclude.empty?
++          if exclude && !exclude.empty?
+             command << "-x"
+             command += exclude.map { |path| File.join(basename, path) }
+           end

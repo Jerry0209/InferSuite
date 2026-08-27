@@ -1,0 +1,141 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/rubocop/cop/style/guard_clause.rb
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	changelog/fix_false_positives_for_style_guard_clause.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 8454d9332297e82b50239fcaaae74cc2e7c4a399
+Merge: 8d66aad91 23c0f8ce0
+Author: Koichi ITO <koic.ito@gmail.com>
+Date:   Sun Oct 27 00:12:24 2024 +0900
+
+    Merge pull request #13325 from kotaro0522/fix_the_autocorrect_of_non_atomic_file_operation
+    
+    Fix the autocorrect of non_atomic_file_operation
+
++ git -c core.fileMode=false diff 8454d9332297e82b50239fcaaae74cc2e7c4a399
+diff --git a/lib/rubocop/cop/style/guard_clause.rb b/lib/rubocop/cop/style/guard_clause.rb
+index 85e1d8223..740e33753 100644
+--- a/lib/rubocop/cop/style/guard_clause.rb
++++ b/lib/rubocop/cop/style/guard_clause.rb
+@@ -283,7 +283,8 @@ module RuboCop
+         end
+ 
+         def accepted_if?(node, ending)
+-          return true if node.modifier_form? || node.ternary? || node.elsif_conditional?
++          return true if node.modifier_form? || node.ternary? || node.elsif_conditional? ||
++                         assigned_lvar_used_in_if_branch?(node)
+ 
+           if ending
+             node.else?
+@@ -292,6 +293,18 @@ module RuboCop
+           end
+         end
+ 
++        def assigned_lvar_used_in_if_branch?(node)
++          return false unless (if_branch = node.if_branch)
++
++          assigned_lvars_in_condition = node.condition.each_descendant(:lvasgn).map do |lvasgn|
++            lvar_name, = *lvasgn
++            lvar_name.to_s
++          end
++          used_lvars_in_branch = if_branch.each_descendant(:lvar).map(&:source) || []
++
++          (assigned_lvars_in_condition & used_lvars_in_branch).any?
++        end
++
+         def remove_whole_lines(corrector, range)
+           corrector.remove(range_by_whole_lines(range, include_final_newline: true))
+         end
++ git checkout 8454d9332297e82b50239fcaaae74cc2e7c4a399 spec/rubocop/cop/style/guard_clause_spec.rb
+Updated 0 paths from a253f9810
++ git apply -v -
+Checking patch spec/rubocop/cop/style/guard_clause_spec.rb...
+Applied patch spec/rubocop/cop/style/guard_clause_spec.rb cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ bundle exec rspec spec/rubocop/cop/style/guard_clause_spec.rb --no-color --format json
++ sed -n '/^{/,$p'
++ jq -r '.examples | group_by(.description) | .[] |
+    if any(select(.status == "failed")) then
+      (.[0] | "\(.description) - failed")
+    else
+      (.[0] | "\(.description) - \(.status)")
+    end'
+accepts a method which body does not end with if / unless - passed
+accepts a method which body is if / unless with else - passed
+accepts a method whose body has 3 lines - passed
+accepts a method whose body is a modifier if / unless - passed
+accepts a method with empty parentheses as its body - passed
+accepts an offense if block body ends with if / unless without else - passed
+does not register an offense - passed
+does not register an offense when allowed same depth multiple if statement andpreceding expression is not a conditional at the same depth - passed
+does not register an offense when assigning the result of a guard condition with `else` - passed
+does not register an offense when using a local variable assigned in a conditional expression in a branch - passed
+does not register an offense when using local variables assigned in multiple conditional expressions in a branch - passed
+does not report an offense if block body is if..elsif..end - passed
+does not report an offense if body is if..elsif..end - passed
+does not report an offense if break is inside elsif - passed
+does not report an offense if break is inside if..elsif..else..end - passed
+does not report an offense if break is inside then body of if..elsif..end - passed
+does not report an offense if next is inside elsif - passed
+does not report an offense if next is inside if..elsif..else..end - passed
+does not report an offense if next is inside then body of if..elsif..end - passed
+does not report an offense if raise "error" is inside elsif - passed
+does not report an offense if raise "error" is inside if..elsif..else..end - passed
+does not report an offense if raise "error" is inside then body of if..elsif..end - passed
+does not report an offense if return is inside elsif - passed
+does not report an offense if return is inside if..elsif..else..end - passed
+does not report an offense if return is inside then body of if..elsif..end - passed
+does registers an offense - passed
+doesn't register an error if condition has multiple lines - passed
+doesn't register an error if control flow expr has multiple lines - passed
+doesn't report an offense if condition has multiple lines - passed
+fails with an error - passed
+registers an error if non-control-flow branch has multiple lines - passed
+registers an error with break in the else branch - passed
+registers an error with break in the if branch - passed
+registers an error with next in the else branch - passed
+registers an error with next in the if branch - passed
+registers an error with raise "error" in the else branch - passed
+registers an error with raise "error" in the if branch - passed
+registers an error with return in the else branch - passed
+registers an error with return in the if branch - passed
+registers an offense - passed
+registers an offense for instance method - passed
+registers an offense for singleton methods - passed
+registers an offense when not using a local variable assigned in a conditional expression in a branch - passed
+registers an offense when using `and return` in `else` branch - passed
+registers an offense when using `and return` in `then` branch - passed
+registers an offense when using `raise` in `else` branch in a one-liner with `then` - passed
+registers an offense when using `|| raise` in `else` branch - passed
+registers an offense when using `|| raise` in `then` branch - passed
+registers an offense when using heredoc as an argument of raise in `else` branch - passed
+registers an offense when using heredoc as an argument of raise in `then` branch - passed
+registers an offense when using heredoc as an argument of raise in `then` branch and it does not have `else` branch - passed
+registers an offense when using lvar as an argument of raise in `else` branch - passed
+registers an offense when using xstr heredoc as an argument of raise in `else` branch - passed
+registers an offense with modifier example code regardless of length - passed
+reports an offense for if whose body has 1 line - passed
+reports an offense if `define_method` block body is if / unless without else - passed
+reports an offense if `define_method` numblock body is if / unless without else - passed
+reports an offense if `define_singleton_method` block body is if / unless without else - passed
+reports an offense if method body ends with if / unless without else - passed
+reports an offense if method body is if / unless without else - passed
+reports an offense when allowed same depth multiple if statement andpreceding expression is not a conditional at the same depth - passed
+reports an offense when not allowed same depth multiple if statement andpreceding expression is a conditional at the same depth - passed
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
+>>>>> Test Exit Code: 0
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 8454d9332297e82b50239fcaaae74cc2e7c4a399 spec/rubocop/cop/style/guard_clause_spec.rb
+Updated 1 path from a253f9810

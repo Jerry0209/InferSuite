@@ -1,0 +1,1013 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   gradle/testing/defaults-tests.gradle
+	modified:   lucene/queries/src/java/org/apache/lucene/queries/intervals/IntervalBuilder.java
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 0ea8035612344e861bbdeaffca2255e5e1480a6a
+Author: Mayya Sharipova <mayya.sharipova@elastic.co>
+Date:   Thu Sep 8 16:54:29 2022 -0400
+
+    LUCENE-10592 Better estimate memory for HNSW graph (#11743)
+    
+    Better estimate memory used for OnHeapHnswGraph,
+    as well as add tests.
+    
+    Also don't overallocate arrays in NeighborArray
+    
+    Relates to #992
+
+diff --git a/lucene/core/src/java/org/apache/lucene/codecs/lucene94/Lucene94HnswVectorsWriter.java b/lucene/core/src/java/org/apache/lucene/codecs/lucene94/Lucene94HnswVectorsWriter.java
+index d57f3fc68a..e54661552a 100644
+--- a/lucene/core/src/java/org/apache/lucene/codecs/lucene94/Lucene94HnswVectorsWriter.java
++++ b/lucene/core/src/java/org/apache/lucene/codecs/lucene94/Lucene94HnswVectorsWriter.java
+@@ -173,7 +173,6 @@ public final class Lucene94HnswVectorsWriter extends KnnVectorsWriter {
+       case BYTE -> writeByteVectors(fieldData);
+       case FLOAT32 -> writeFloat32Vectors(fieldData);
+     }
+-    ;
+     long vectorDataLength = vectorData.getFilePointer() - vectorDataOffset;
+ 
+     // write graph
+diff --git a/lucene/core/src/java/org/apache/lucene/util/hnsw/NeighborArray.java b/lucene/core/src/java/org/apache/lucene/util/hnsw/NeighborArray.java
+index 78224ed235..ec1b5ec3e8 100644
+--- a/lucene/core/src/java/org/apache/lucene/util/hnsw/NeighborArray.java
++++ b/lucene/core/src/java/org/apache/lucene/util/hnsw/NeighborArray.java
+@@ -46,8 +46,8 @@ public class NeighborArray {
+    * nodes.
+    */
+   public void add(int newNode, float newScore) {
+-    if (size == node.length - 1) {
+-      node = ArrayUtil.grow(node, (size + 1) * 3 / 2);
++    if (size == node.length) {
++      node = ArrayUtil.grow(node);
+       score = ArrayUtil.growExact(score, node.length);
+     }
+     if (size > 0) {
+@@ -63,8 +63,8 @@ public class NeighborArray {
+ 
+   /** Add a new node to the NeighborArray into a correct sort position according to its score. */
+   public void insertSorted(int newNode, float newScore) {
+-    if (size == node.length - 1) {
+-      node = ArrayUtil.grow(node, (size + 1) * 3 / 2);
++    if (size == node.length) {
++      node = ArrayUtil.grow(node);
+       score = ArrayUtil.growExact(score, node.length);
+     }
+     int insertionPoint =
+@@ -104,8 +104,8 @@ public class NeighborArray {
+   }
+ 
+   public void removeIndex(int idx) {
+-    System.arraycopy(node, idx + 1, node, idx, size - idx);
+-    System.arraycopy(score, idx + 1, score, idx, size - idx);
++    System.arraycopy(node, idx + 1, node, idx, size - idx - 1);
++    System.arraycopy(score, idx + 1, score, idx, size - idx - 1);
+     size--;
+   }
+ 
+diff --git a/lucene/core/src/java/org/apache/lucene/util/hnsw/OnHeapHnswGraph.java b/lucene/core/src/java/org/apache/lucene/util/hnsw/OnHeapHnswGraph.java
+index 8cf6b54654..78137c2a63 100644
+--- a/lucene/core/src/java/org/apache/lucene/util/hnsw/OnHeapHnswGraph.java
++++ b/lucene/core/src/java/org/apache/lucene/util/hnsw/OnHeapHnswGraph.java
+@@ -175,20 +175,28 @@ public final class OnHeapHnswGraph extends HnswGraph implements Accountable {
+     long neighborArrayBytes0 =
+         nsize0 * (Integer.BYTES + Float.BYTES)
+             + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER * 2
+-            + RamUsageEstimator.NUM_BYTES_OBJECT_REF;
++            + RamUsageEstimator.NUM_BYTES_OBJECT_REF
++            + Integer.BYTES * 2;
+     long neighborArrayBytes =
+         nsize * (Integer.BYTES + Float.BYTES)
+             + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER * 2
+-            + RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+-
++            + RamUsageEstimator.NUM_BYTES_OBJECT_REF
++            + Integer.BYTES * 2;
+     long total = 0;
+     for (int l = 0; l < numLevels; l++) {
+       int numNodesOnLevel = graph.get(l).size();
+       if (l == 0) {
+-        total += numNodesOnLevel * neighborArrayBytes0; // for graph;
++        total +=
++            numNodesOnLevel * neighborArrayBytes0
++                + RamUsageEstimator.NUM_BYTES_OBJECT_REF; // for graph;
+       } else {
+-        total += numNodesOnLevel * Integer.BYTES; // for nodesByLevel
+-        total += numNodesOnLevel * neighborArrayBytes; // for graph;
++        total +=
++            nodesByLevel.get(l).length * Integer.BYTES
++                + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER
++                + RamUsageEstimator.NUM_BYTES_OBJECT_REF; // for nodesByLevel
++        total +=
++            numNodesOnLevel * neighborArrayBytes
++                + RamUsageEstimator.NUM_BYTES_OBJECT_REF; // for graph;
+       }
+     }
+     return total;
+diff --git a/lucene/core/src/test/org/apache/lucene/util/hnsw/TestHnswGraph.java b/lucene/core/src/test/org/apache/lucene/util/hnsw/TestHnswGraph.java
+index 1816de726e..7852e70615 100644
+--- a/lucene/core/src/test/org/apache/lucene/util/hnsw/TestHnswGraph.java
++++ b/lucene/core/src/test/org/apache/lucene/util/hnsw/TestHnswGraph.java
+@@ -17,9 +17,12 @@
+ 
+ package org.apache.lucene.util.hnsw;
+ 
++import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
+ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
++import static org.apache.lucene.tests.util.RamUsageTester.ramUsed;
+ import static org.apache.lucene.util.VectorUtil.toBytesRef;
+ 
++import com.carrotsearch.randomizedtesting.RandomizedTest;
+ import java.io.IOException;
+ import java.util.ArrayList;
+ import java.util.Arrays;
+@@ -59,6 +62,7 @@ import org.apache.lucene.util.BitSet;
+ import org.apache.lucene.util.Bits;
+ import org.apache.lucene.util.BytesRef;
+ import org.apache.lucene.util.FixedBitSet;
++import org.apache.lucene.util.RamUsageEstimator;
+ import org.apache.lucene.util.VectorUtil;
+ import org.apache.lucene.util.hnsw.HnswGraph.NodesIterator;
+ import org.junit.Before;
+@@ -71,15 +75,8 @@ public class TestHnswGraph extends LuceneTestCase {
+ 
+   @Before
+   public void setup() {
+-    similarityFunction =
+-        VectorSimilarityFunction.values()[
+-            random().nextInt(VectorSimilarityFunction.values().length - 1) + 1];
+-    if (similarityFunction == VectorSimilarityFunction.DOT_PRODUCT) {
+-      vectorEncoding =
+-          VectorEncoding.values()[random().nextInt(VectorEncoding.values().length - 1) + 1];
+-    } else {
+-      vectorEncoding = VectorEncoding.FLOAT32;
+-    }
++    similarityFunction = RandomizedTest.randomFrom(VectorSimilarityFunction.values());
++    vectorEncoding = RandomizedTest.randomFrom(VectorEncoding.values());
+   }
+ 
+   // test writing out and reading in a graph gives the expected graph
+@@ -158,8 +155,7 @@ public class TestHnswGraph extends LuceneTestCase {
+     int M = random().nextInt(10) + 5;
+     int beamWidth = random().nextInt(10) + 5;
+     VectorSimilarityFunction similarityFunction =
+-        VectorSimilarityFunction.values()[
+-            random().nextInt(VectorSimilarityFunction.values().length - 1) + 1];
++        RandomizedTest.randomFrom(VectorSimilarityFunction.values());
+     long seed = random().nextLong();
+     HnswGraphBuilder.randSeed = seed;
+     IndexWriterConfig iwc =
+@@ -475,6 +471,27 @@ public class TestHnswGraph extends LuceneTestCase {
+                 0));
+   }
+ 
++  public void testRamUsageEstimate() throws IOException {
++    int size = atLeast(2000);
++    int dim = randomIntBetween(100, 1024);
++    int M = randomIntBetween(4, 96);
++
++    VectorSimilarityFunction similarityFunction =
++        RandomizedTest.randomFrom(VectorSimilarityFunction.values());
++    VectorEncoding vectorEncoding = RandomizedTest.randomFrom(VectorEncoding.values());
++    TestHnswGraph.RandomVectorValues vectors =
++        new TestHnswGraph.RandomVectorValues(size, dim, vectorEncoding, random());
++
++    HnswGraphBuilder<?> builder =
++        HnswGraphBuilder.create(
++            vectors, vectorEncoding, similarityFunction, M, M * 2, random().nextLong());
++    OnHeapHnswGraph hnsw = builder.build(vectors.copy());
++    long estimated = RamUsageEstimator.sizeOfObject(hnsw);
++    long actual = ramUsed(hnsw);
++
++    assertEquals((double) actual, (double) estimated, (double) actual * 0.3);
++  }
++
+   @SuppressWarnings("unchecked")
+   public void testDiversity() throws IOException {
+     vectorEncoding = randomVectorEncoding();
++ git -c core.fileMode=false diff 0ea8035612344e861bbdeaffca2255e5e1480a6a
+diff --git a/gradle/testing/defaults-tests.gradle b/gradle/testing/defaults-tests.gradle
+index a7cf879ddd..a099b57f6e 100644
+--- a/gradle/testing/defaults-tests.gradle
++++ b/gradle/testing/defaults-tests.gradle
+@@ -155,15 +155,40 @@ allprojects {
+       reports.html.required = false
+ 
+       // Set up logging.
+-      testLogging {
+-        events TestLogEvent.FAILED
+-        exceptionFormat TestExceptionFormat.FULL
+-        showExceptions true
+-        showCauses true
+-        showStackTraces true
+-        stackTraceFilters.clear()
+-        showStandardStreams false
++testLogging {
++  showStandardStreams = true
++  // set options for log level LIFECYCLE
++  events TestLogEvent.FAILED,
++         TestLogEvent.PASSED,
++         TestLogEvent.SKIPPED,
++         TestLogEvent.STANDARD_OUT
++  exceptionFormat TestExceptionFormat.FULL
++  showExceptions true
++  showCauses true
++  showStackTraces true
++
++  // set options for log level DEBUG and INFO
++  debug {
++      events TestLogEvent.STARTED,
++             TestLogEvent.FAILED,
++             TestLogEvent.PASSED,
++             TestLogEvent.SKIPPED,
++             TestLogEvent.STANDARD_ERROR,
++             TestLogEvent.STANDARD_OUT
++      exceptionFormat TestExceptionFormat.FULL
++  }
++  info.events = debug.events
++  info.exceptionFormat = debug.exceptionFormat
++
++  afterSuite { desc, result ->
++      if (!desc.parent) { // will match the outermost suite
++          def output = "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
++          def startItem = '|  ', endItem = '  |'
++          def repeatLength = startItem.length() + output.length() + endItem.length()
++          println('\n' + ('-' * repeatLength) + '\n' + startItem + output + endItem + '\n' + ('-' * repeatLength))
+       }
++  }
++}
+ 
+       // Disable automatic test class detection, rely on class names only. This is needed for testing
+       // against JDKs where the bytecode is unparseable by Gradle, for example.
+diff --git a/lucene/queries/src/java/org/apache/lucene/queries/intervals/IntervalBuilder.java b/lucene/queries/src/java/org/apache/lucene/queries/intervals/IntervalBuilder.java
+index b6e1727616..e76be6f9e6 100644
+--- a/lucene/queries/src/java/org/apache/lucene/queries/intervals/IntervalBuilder.java
++++ b/lucene/queries/src/java/org/apache/lucene/queries/intervals/IntervalBuilder.java
+@@ -242,6 +242,8 @@ final class IntervalBuilder {
+         @Override
+         public IntervalIterator intervals(String field, LeafReaderContext ctx) {
+           return new IntervalIterator() {
++            boolean exhausted = false;
++
+             @Override
+             public int start() {
+               return NO_MORE_INTERVALS;
+@@ -269,16 +271,18 @@ final class IntervalBuilder {
+ 
+             @Override
+             public int docID() {
+-              return NO_MORE_DOCS;
++              return exhausted ? NO_MORE_DOCS : -1;
+             }
+ 
+             @Override
+             public int nextDoc() {
++              exhausted = true;
+               return NO_MORE_DOCS;
+             }
+ 
+             @Override
+             public int advance(int target) {
++              exhausted = true;
+               return NO_MORE_DOCS;
+             }
+ 
++ git checkout 0ea8035612344e861bbdeaffca2255e5e1480a6a lucene/queries/src/test/org/apache/lucene/queries/intervals/TestIntervalBuilder.java
+Updated 0 paths from 45efcbdcb4
++ git apply -v -
+Checking patch lucene/queries/src/test/org/apache/lucene/queries/intervals/TestIntervalBuilder.java...
+Applied patch lucene/queries/src/test/org/apache/lucene/queries/intervals/TestIntervalBuilder.java cleanly.
++ : '>>>>> Start Test Output'
++ ./gradlew test --tests org.apache.lucene.queries.intervals.TestIntervalBuilder
++ cat
+Downloading gradle-wrapper.jar from https://github.com/gradle/gradle/raw/v7.3.3/gradle/wrapper/gradle-wrapper.jar
+Downloading https://services.gradle.org/distributions/gradle-7.3.3-all.zip
+...............10%...............20%...............30%...............40%...............50%...............60%................70%...............80%...............90%...............100%
+
+Welcome to Gradle 7.3.3!
+
+Here are the highlights of this release:
+ - Easily declare new test suites in Java projects
+ - Support for Java 17
+ - Support for Scala 3
+
+For more details see https://docs.gradle.org/7.3.3/release-notes.html
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. See https://docs.gradle.org/7.3.3/userguide/gradle_daemon.html#sec:disabling_the_daemon.
+Daemon will be stopped at the end of the build 
+> Task :buildSrc:compileJava
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:processResources NO-SOURCE
+> Task :buildSrc:classes
+> Task :buildSrc:jar
+> Task :buildSrc:assemble
+> Task :buildSrc:compileTestJava NO-SOURCE
+> Task :buildSrc:compileTestGroovy NO-SOURCE
+> Task :buildSrc:processTestResources NO-SOURCE
+> Task :buildSrc:testClasses UP-TO-DATE
+> Task :buildSrc:test NO-SOURCE
+> Task :buildSrc:check UP-TO-DATE
+> Task :buildSrc:build
+
+> Task :localSettings
+
+IMPORTANT. This is the first time you ran the build. I wrote some sane defaults (for this machine) to 'gradle.properties', they will be picked up on consecutive gradle invocations (not this one).
+
+Run gradlew :helpLocalSettings for more information.
+
+> Task :randomizationInfo
+Running tests with randomization seed: tests.seed=D44B56119F3DC29E
+
+> Task :errorProneSkipped
+WARNING: errorprone disabled (skipped on builds not running inside CI environments, pass -Pvalidation.errorprone=true to enable)
+
+> Task :gitStatus
+
+Note: Some input files use or override a deprecated API.
+> Task :lucene:core:compileJava
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:core:processResources
+> Task :lucene:core:classes
+> Task :lucene:core:jar
+> Task :lucene:codecs:compileJava
+> Task :lucene:codecs:processResources
+> Task :lucene:codecs:classes
+> Task :lucene:codecs:jar
+> Task :lucene:test-framework:compileJava
+> Task :lucene:test-framework:processResources
+> Task :lucene:test-framework:classes
+> Task :lucene:test-framework:jar
+
+> Task :lucene:analysis:common:compileJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:analysis:common:processResources
+> Task :lucene:analysis:common:classes
+> Task :lucene:analysis:common:jar
+> Task :lucene:analysis:icu:compileJava
+> Task :lucene:analysis:icu:processResources
+> Task :lucene:analysis:icu:classes
+> Task :lucene:analysis:icu:jar
+> Task :lucene:analysis:kuromoji:compileJava
+> Task :lucene:analysis:kuromoji:processResources
+> Task :lucene:analysis:kuromoji:classes
+> Task :lucene:analysis:kuromoji:jar
+> Task :lucene:analysis:morfologik:compileJava
+> Task :lucene:analysis:morfologik:processResources
+> Task :lucene:analysis:morfologik:classes
+> Task :lucene:analysis:morfologik:jar
+> Task :lucene:analysis:nori:compileJava
+> Task :lucene:analysis:nori:processResources
+> Task :lucene:analysis:nori:classes
+> Task :lucene:analysis:nori:jar
+> Task :lucene:analysis:opennlp:compileJava
+> Task :lucene:analysis:opennlp:processResources
+> Task :lucene:analysis:opennlp:classes
+> Task :lucene:analysis:opennlp:jar
+> Task :lucene:analysis:phonetic:compileJava
+> Task :lucene:analysis:phonetic:processResources
+> Task :lucene:analysis:phonetic:classes
+> Task :lucene:analysis:phonetic:jar
+> Task :lucene:analysis:smartcn:compileJava
+> Task :lucene:analysis:smartcn:processResources
+> Task :lucene:analysis:smartcn:classes
+> Task :lucene:analysis:smartcn:jar
+> Task :lucene:analysis:stempel:compileJava
+> Task :lucene:analysis:stempel:processResources
+> Task :lucene:analysis:stempel:classes
+> Task :lucene:analysis:stempel:jar
+> Task :lucene:analysis.tests:compileTestJava
+> Task :lucene:analysis.tests:copyTestResources
+> Task :lucene:analysis.tests:processTestResources NO-SOURCE
+> Task :lucene:analysis.tests:testClasses
+> Task :lucene:analysis.tests:testJar
+
+> Task :lucene:analysis.tests:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis.tests:wipeTaskTemp
+> Task :lucene:backward-codecs:compileJava
+> Task :lucene:backward-codecs:processResources
+> Task :lucene:backward-codecs:classes
+> Task :lucene:backward-codecs:compileTestJava
+> Task :lucene:backward-codecs:copyTestResources
+> Task :lucene:backward-codecs:processTestResources NO-SOURCE
+> Task :lucene:backward-codecs:testClasses
+
+> Task :lucene:backward-codecs:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:backward-codecs:wipeTaskTemp
+
+> Task :lucene:facet:compileJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:facet:processResources NO-SOURCE
+> Task :lucene:facet:classes
+> Task :lucene:facet:jar
+> Task :lucene:memory:compileJava
+> Task :lucene:memory:processResources NO-SOURCE
+> Task :lucene:memory:classes
+> Task :lucene:memory:jar
+
+> Task :lucene:queries:compileJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:queries:processResources NO-SOURCE
+> Task :lucene:queries:classes
+> Task :lucene:queries:jar
+> Task :lucene:highlighter:compileJava
+> Task :lucene:highlighter:processResources NO-SOURCE
+> Task :lucene:highlighter:classes
+> Task :lucene:highlighter:jar
+
+> Task :lucene:sandbox:compileJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:sandbox:processResources
+> Task :lucene:sandbox:classes
+> Task :lucene:sandbox:jar
+> Task :lucene:queryparser:compileJava
+> Task :lucene:queryparser:processResources
+> Task :lucene:queryparser:classes
+> Task :lucene:queryparser:jar
+> Task :lucene:spatial3d:compileJava
+> Task :lucene:spatial3d:processResources NO-SOURCE
+> Task :lucene:spatial3d:classes
+> Task :lucene:spatial3d:jar
+> Task :lucene:spatial-extras:compileJava
+> Task :lucene:spatial-extras:processResources NO-SOURCE
+> Task :lucene:spatial-extras:classes
+> Task :lucene:spatial-extras:jar
+> Task :lucene:benchmark:compileJava
+> Task :lucene:benchmark:processResources NO-SOURCE
+> Task :lucene:benchmark:classes
+> Task :lucene:benchmark:compileTestJava
+> Task :lucene:benchmark:copyTestResources
+> Task :lucene:benchmark:processTestResources
+> Task :lucene:benchmark:testClasses
+
+> Task :lucene:benchmark:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:benchmark:wipeTaskTemp
+> Task :lucene:grouping:compileJava
+> Task :lucene:grouping:processResources NO-SOURCE
+> Task :lucene:grouping:classes
+> Task :lucene:grouping:jar
+> Task :lucene:classification:compileJava
+> Task :lucene:classification:processResources NO-SOURCE
+> Task :lucene:classification:classes
+> Task :lucene:classification:compileTestJava
+> Task :lucene:classification:copyTestResources NO-SOURCE
+> Task :lucene:classification:processTestResources NO-SOURCE
+> Task :lucene:classification:testClasses
+
+> Task :lucene:classification:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:classification:wipeTaskTemp
+> Task :lucene:codecs:compileTestJava
+> Task :lucene:codecs:copyTestResources NO-SOURCE
+> Task :lucene:codecs:processTestResources NO-SOURCE
+> Task :lucene:codecs:testClasses
+
+> Task :lucene:codecs:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:codecs:wipeTaskTemp
+
+> Task :lucene:core:compileTestJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:core:copyTestResources
+> Task :lucene:core:processTestResources NO-SOURCE
+> Task :lucene:core:testClasses
+
+> Task :lucene:core:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:core:wipeTaskTemp
+> Task :lucene:core.tests:compileJava
+> Task :lucene:core.tests:processResources NO-SOURCE
+> Task :lucene:core.tests:classes
+> Task :lucene:core.tests:jar
+> Task :lucene:core.tests:compileTestJava
+> Task :lucene:core.tests:copyTestResources
+> Task :lucene:core.tests:processTestResources NO-SOURCE
+> Task :lucene:core.tests:testClasses
+> Task :lucene:core.tests:testJar
+
+> Task :lucene:core.tests:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:core.tests:wipeTaskTemp
+> Task :lucene:expressions:compileJava
+> Task :lucene:expressions:processResources
+> Task :lucene:expressions:classes
+> Task :lucene:expressions:jar
+> Task :lucene:demo:compileJava
+> Task :lucene:demo:processResources NO-SOURCE
+> Task :lucene:demo:classes
+> Task :lucene:demo:compileTestJava
+> Task :lucene:demo:copyTestResources
+> Task :lucene:demo:processTestResources NO-SOURCE
+> Task :lucene:demo:testClasses
+
+> Task :lucene:demo:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:demo:wipeTaskTemp
+> Task :lucene:backward-codecs:jar
+> Task :lucene:benchmark:jar
+> Task :lucene:classification:jar
+> Task :lucene:demo:jar
+> Task :lucene:join:compileJava
+> Task :lucene:join:processResources NO-SOURCE
+> Task :lucene:join:classes
+> Task :lucene:join:jar
+> Task :lucene:misc:compileJava
+> Task :lucene:misc:processResources NO-SOURCE
+> Task :lucene:misc:classes
+> Task :lucene:misc:jar
+> Task :lucene:suggest:compileJava
+> Task :lucene:suggest:processResources
+> Task :lucene:suggest:classes
+> Task :lucene:suggest:jar
+> Task :lucene:luke:compileJava
+> Task :lucene:luke:processResources
+> Task :lucene:luke:classes
+> Task :lucene:luke:jar
+> Task :lucene:monitor:compileJava
+> Task :lucene:monitor:processResources NO-SOURCE
+> Task :lucene:monitor:classes
+> Task :lucene:monitor:jar
+> Task :lucene:replicator:compileJava
+> Task :lucene:replicator:processResources NO-SOURCE
+> Task :lucene:replicator:classes
+> Task :lucene:replicator:jar
+> Task :lucene:distribution:assembleBinaryDirForTests
+> Task :lucene:distribution.tests:compileJava NO-SOURCE
+> Task :lucene:distribution.tests:processResources NO-SOURCE
+> Task :lucene:distribution.tests:classes
+> Task :lucene:distribution.tests:compileTestJava
+> Task :lucene:distribution.tests:copyTestResources NO-SOURCE
+> Task :lucene:distribution.tests:processTestResources NO-SOURCE
+> Task :lucene:distribution.tests:testClasses
+
+> Task :lucene:distribution.tests:test
+Testing binary distribution at: /testbed/lucene/distribution/build/packages/lucene-10.0.0-SNAPSHOT-itests
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:distribution.tests:wipeTaskTemp
+> Task :lucene:expressions:compileTestJava
+> Task :lucene:expressions:copyTestResources NO-SOURCE
+> Task :lucene:expressions:processTestResources NO-SOURCE
+> Task :lucene:expressions:testClasses
+
+> Task :lucene:expressions:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:expressions:wipeTaskTemp
+
+> Task :lucene:facet:compileTestJava
+Note: /testbed/lucene/facet/src/test/org/apache/lucene/facet/taxonomy/TestTaxonomyFacetAssociations.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:facet:copyTestResources NO-SOURCE
+> Task :lucene:facet:processTestResources NO-SOURCE
+> Task :lucene:facet:testClasses
+
+> Task :lucene:facet:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:facet:wipeTaskTemp
+> Task :lucene:grouping:compileTestJava
+> Task :lucene:grouping:copyTestResources NO-SOURCE
+> Task :lucene:grouping:processTestResources NO-SOURCE
+> Task :lucene:grouping:testClasses
+
+> Task :lucene:grouping:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:grouping:wipeTaskTemp
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:highlighter:compileTestJava
+
+> Task :lucene:highlighter:copyTestResources
+> Task :lucene:highlighter:processTestResources NO-SOURCE
+> Task :lucene:highlighter:testClasses
+
+> Task :lucene:highlighter:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:highlighter:wipeTaskTemp
+> Task :lucene:join:compileTestJava
+> Task :lucene:join:copyTestResources NO-SOURCE
+> Task :lucene:join:processTestResources NO-SOURCE
+> Task :lucene:join:testClasses
+
+> Task :lucene:join:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:join:wipeTaskTemp
+> Task :lucene:luke:compileTestJava
+> Task :lucene:luke:copyTestResources NO-SOURCE
+> Task :lucene:luke:processTestResources NO-SOURCE
+> Task :lucene:luke:testClasses
+
+> Task :lucene:luke:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:luke:wipeTaskTemp
+
+> Task :lucene:memory:compileTestJava
+
+> Task :lucene:memory:copyTestResources
+> Task :lucene:memory:processTestResources NO-SOURCE
+> Task :lucene:memory:testClasses
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:memory:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:memory:wipeTaskTemp
+> Task :lucene:misc:compileTestJava
+> Task :lucene:misc:copyTestResources NO-SOURCE
+> Task :lucene:misc:processTestResources NO-SOURCE
+> Task :lucene:misc:testClasses
+
+> Task :lucene:misc:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:misc:wipeTaskTemp
+
+> Task :lucene:monitor:compileTestJava
+
+> Task :lucene:monitor:copyTestResources NO-SOURCE
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+> Task :lucene:monitor:processTestResources NO-SOURCE
+> Task :lucene:monitor:testClasses
+
+> Task :lucene:monitor:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:monitor:wipeTaskTemp
+
+> Task :lucene:queries:compileTestJava
+
+> Task :lucene:queries:copyTestResources NO-SOURCE
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+> Task :lucene:queries:processTestResources NO-SOURCE
+> Task :lucene:queries:testClasses
+WARNING: A command line option has enabled the Security Manager
+WARNING: The Security Manager is deprecated and will be removed in a future release
+
+> Task :lucene:queries:test
+
+org.apache.lucene.queries.intervals.TestIntervalBuilder > testUnordered PASSED
+
+org.apache.lucene.queries.intervals.TestIntervalBuilder > testGraphSynonyms PASSED
+
+org.apache.lucene.queries.intervals.TestIntervalBuilder > testGraphTerminatesOnGap PASSED
+
+org.apache.lucene.queries.intervals.TestIntervalBuilder > testOrdered PASSED
+
+org.apache.lucene.queries.intervals.TestIntervalBuilder > testEmptyIntervals PASSED
+
+org.apache.lucene.queries.intervals.TestIntervalBuilder > testPhraseWithStopword PASSED
+
+org.apache.lucene.queries.intervals.TestIntervalBuilder > testEmptyTokenStream PASSED
+
+org.apache.lucene.queries.intervals.TestIntervalBuilder > testGraphSynonymsWithGaps PASSED
+
+org.apache.lucene.queries.intervals.TestIntervalBuilder > testPhrase PASSED
+
+org.apache.lucene.queries.intervals.TestIntervalBuilder > testSimpleTerm PASSED
+
+org.apache.lucene.queries.intervals.TestIntervalBuilder > testSimpleSynonyms PASSED
+
+org.apache.lucene.queries.intervals.TestIntervalBuilder > testSimpleSynonymsWithGap PASSED
+:lucene:queries:test (SUCCESS): 12 test(s)
+
+-----------------------------------------------------------------
+|  Results: SUCCESS (12 tests, 12 passed, 0 failed, 0 skipped)  |
+-----------------------------------------------------------------
+
+> Task :lucene:queries:wipeTaskTemp
+> Task :lucene:queryparser:compileTestJava
+> Task :lucene:queryparser:copyTestResources
+> Task :lucene:queryparser:processTestResources NO-SOURCE
+> Task :lucene:queryparser:testClasses
+
+> Task :lucene:queryparser:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:queryparser:wipeTaskTemp
+
+> Task :lucene:replicator:compileTestJava
+
+> Task :lucene:replicator:copyTestResources NO-SOURCE
+> Task :lucene:replicator:processTestResources NO-SOURCE
+> Task :lucene:replicator:testClasses
+
+> Task :lucene:replicator:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+Note: /testbed/lucene/replicator/src/test/org/apache/lucene/replicator/nrt/SimpleTransLog.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+> Task :lucene:replicator:wipeTaskTemp
+Note: /testbed/lucene/sandbox/src/test/org/apache/lucene/sandbox/search/TestIndexSortSortedNumericDocValuesRangeQuery.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:sandbox:compileTestJava
+
+> Task :lucene:sandbox:copyTestResources NO-SOURCE
+> Task :lucene:sandbox:processTestResources NO-SOURCE
+> Task :lucene:sandbox:testClasses
+
+> Task :lucene:sandbox:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:sandbox:wipeTaskTemp
+> Task :lucene:spatial-test-fixtures:compileJava
+> Task :lucene:spatial-test-fixtures:processResources NO-SOURCE
+> Task :lucene:spatial-test-fixtures:classes
+> Task :lucene:spatial-test-fixtures:jar
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:spatial-extras:compileTestJava
+
+> Task :lucene:spatial-extras:copyTestResources NO-SOURCE
+> Task :lucene:spatial-extras:processTestResources
+> Task :lucene:spatial-extras:testClasses
+
+> Task :lucene:spatial-extras:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:spatial-extras:wipeTaskTemp
+> Task :lucene:spatial-test-fixtures:compileTestJava NO-SOURCE
+> Task :lucene:spatial-test-fixtures:copyTestResources NO-SOURCE
+> Task :lucene:spatial-test-fixtures:processTestResources NO-SOURCE
+> Task :lucene:spatial-test-fixtures:testClasses
+> Task :lucene:spatial-test-fixtures:test NO-SOURCE
+> Task :lucene:spatial-test-fixtures:wipeTaskTemp
+> Task :lucene:spatial3d:compileTestJava
+> Task :lucene:spatial3d:copyTestResources NO-SOURCE
+> Task :lucene:spatial3d:processTestResources NO-SOURCE
+> Task :lucene:spatial3d:testClasses
+
+> Task :lucene:spatial3d:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:spatial3d:wipeTaskTemp
+
+> Task :lucene:suggest:compileTestJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:suggest:copyTestResources
+> Task :lucene:suggest:processTestResources NO-SOURCE
+> Task :lucene:suggest:testClasses
+
+> Task :lucene:suggest:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:suggest:wipeTaskTemp
+Note: /testbed/lucene/test-framework/src/test/org/apache/lucene/tests/util/TestReproduceMessage.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:test-framework:compileTestJava
+
+> Task :lucene:test-framework:copyTestResources NO-SOURCE
+> Task :lucene:test-framework:processTestResources NO-SOURCE
+> Task :lucene:test-framework:testClasses
+
+> Task :lucene:test-framework:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:test-framework:wipeTaskTemp
+> Task :lucene:analysis:common:compileTestJava
+> Task :lucene:analysis:common:copyTestResources
+> Task :lucene:analysis:common:processTestResources NO-SOURCE
+> Task :lucene:analysis:common:testClasses
+
+> Task :lucene:analysis:common:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:common:wipeTaskTemp
+> Task :lucene:analysis:icu:compileTestJava
+> Task :lucene:analysis:icu:copyTestResources
+> Task :lucene:analysis:icu:processTestResources NO-SOURCE
+> Task :lucene:analysis:icu:testClasses
+
+> Task :lucene:analysis:icu:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:icu:wipeTaskTemp
+> Task :lucene:analysis:kuromoji:compileTestJava
+> Task :lucene:analysis:kuromoji:copyTestResources
+> Task :lucene:analysis:kuromoji:processTestResources NO-SOURCE
+> Task :lucene:analysis:kuromoji:testClasses
+
+> Task :lucene:analysis:kuromoji:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:kuromoji:wipeTaskTemp
+> Task :lucene:analysis:morfologik:compileTestJava
+> Task :lucene:analysis:morfologik:copyTestResources NO-SOURCE
+> Task :lucene:analysis:morfologik:processTestResources
+> Task :lucene:analysis:morfologik:testClasses
+
+> Task :lucene:analysis:morfologik:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:morfologik:wipeTaskTemp
+> Task :lucene:analysis:morfologik.tests:compileTestJava
+> Task :lucene:analysis:morfologik.tests:copyTestResources NO-SOURCE
+> Task :lucene:analysis:morfologik.tests:processTestResources NO-SOURCE
+> Task :lucene:analysis:morfologik.tests:testClasses
+> Task :lucene:analysis:morfologik.tests:testJar
+
+> Task :lucene:analysis:morfologik.tests:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:morfologik.tests:wipeTaskTemp
+> Task :lucene:analysis:nori:compileTestJava
+> Task :lucene:analysis:nori:copyTestResources
+> Task :lucene:analysis:nori:processTestResources NO-SOURCE
+> Task :lucene:analysis:nori:testClasses
+
+> Task :lucene:analysis:nori:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:nori:wipeTaskTemp
+> Task :lucene:analysis:opennlp:compileTestJava
+> Task :lucene:analysis:opennlp:copyTestResources NO-SOURCE
+> Task :lucene:analysis:opennlp:processTestResources
+> Task :lucene:analysis:opennlp:testClasses
+
+> Task :lucene:analysis:opennlp:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:opennlp:wipeTaskTemp
+> Task :lucene:analysis:phonetic:compileTestJava
+> Task :lucene:analysis:phonetic:copyTestResources NO-SOURCE
+> Task :lucene:analysis:phonetic:processTestResources NO-SOURCE
+> Task :lucene:analysis:phonetic:testClasses
+
+> Task :lucene:analysis:phonetic:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:phonetic:wipeTaskTemp
+> Task :lucene:analysis:smartcn:compileTestJava
+> Task :lucene:analysis:smartcn:copyTestResources NO-SOURCE
+> Task :lucene:analysis:smartcn:processTestResources NO-SOURCE
+> Task :lucene:analysis:smartcn:testClasses
+
+> Task :lucene:analysis:smartcn:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:smartcn:wipeTaskTemp
+> Task :lucene:analysis:stempel:compileTestJava
+> Task :lucene:analysis:stempel:copyTestResources
+> Task :lucene:analysis:stempel:processTestResources NO-SOURCE
+> Task :lucene:analysis:stempel:testClasses
+
+> Task :lucene:analysis:stempel:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:stempel:wipeTaskTemp
+
+BUILD SUCCESSFUL in 2m 20s
+224 actionable tasks: 224 executed
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 0ea8035612344e861bbdeaffca2255e5e1480a6a lucene/queries/src/test/org/apache/lucene/queries/intervals/TestIntervalBuilder.java
+Updated 1 path from 45efcbdcb4

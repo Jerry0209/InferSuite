@@ -1,0 +1,32 @@
+{
+    "google__gson-2479": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "infra_failure": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "com.google.gson.GsonBuilderTest#testRegisterTypeAdapterForObjectAndJsonElements",
+                    "com.google.gson.GsonBuilderTest#testRegisterTypeHierarchyAdapterJsonElements"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "com.google.gson.GsonBuilderTest#testModificationAfterCreate"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

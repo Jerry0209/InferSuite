@@ -1,0 +1,114 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   internal/builtin/provisioners/remote-exec/resource_provisioner.go
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 310331bdc6b747b68b2e2dd6be257dfc78677973
+Author: Martin Atkins <mart@degeneration.co.uk>
+Date:   Mon Mar 11 09:30:58 2024 -0700
+
+    backend/consul: go.mod updates from a merge conflict
+    
+    Two changes landed concurrently and caused these dependencies to get out
+    of sync.
+
+diff --git a/internal/backend/remote-state/consul/go.mod b/internal/backend/remote-state/consul/go.mod
+index a800b4c0a0..2b5b8f80f2 100644
+--- a/internal/backend/remote-state/consul/go.mod
++++ b/internal/backend/remote-state/consul/go.mod
+@@ -6,7 +6,7 @@ require (
+ 	github.com/hashicorp/consul/api v1.13.0
+ 	github.com/hashicorp/consul/sdk v0.8.0
+ 	github.com/hashicorp/terraform v0.0.0-00010101000000-000000000000
+-	github.com/hashicorp/terraform/internal/legacy v0.0.0-00010101000000-000000000000
++	github.com/zclconf/go-cty v1.14.3
+ )
+ 
+ require (
+@@ -90,7 +90,6 @@ require (
+ 	github.com/ulikunitz/xz v0.5.10 // indirect
+ 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
+ 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
+-	github.com/zclconf/go-cty v1.14.3 // indirect
+ 	github.com/zclconf/go-cty-yaml v1.0.3 // indirect
+ 	go.opencensus.io v0.24.0 // indirect
+ 	golang.org/x/crypto v0.19.0 // indirect
++ git -c core.fileMode=false diff 310331bdc6b747b68b2e2dd6be257dfc78677973
+diff --git a/internal/builtin/provisioners/remote-exec/resource_provisioner.go b/internal/builtin/provisioners/remote-exec/resource_provisioner.go
+index 858730a54a..35184f2e5a 100644
+--- a/internal/builtin/provisioners/remote-exec/resource_provisioner.go
++++ b/internal/builtin/provisioners/remote-exec/resource_provisioner.go
+@@ -241,9 +241,16 @@ func runScripts(ctx context.Context, o provisioners.UIOutput, comm communicator.
+ 		return err
+ 	}
+ 
++	// The provisioner node may hang around a bit longer before it's cleaned up
++	// in the graph, but we can disconnect the communicator after we run the
++	// commands. We do still want to drop the connection if we're canceled early
++	// for some reason, so build a new context from the original.
++	cmdCtx, cancel := context.WithCancel(ctx)
++	defer cancel()
++
+ 	// Wait for the context to end and then disconnect
+ 	go func() {
+-		<-ctx.Done()
++		<-cmdCtx.Done()
+ 		comm.Disconnect()
+ 	}()
+ 
++ git checkout 310331bdc6b747b68b2e2dd6be257dfc78677973 internal/builtin/provisioners/remote-exec/resource_provisioner_test.go
+Updated 0 paths from 1aaa4ea45a
++ git apply -v -
+Checking patch internal/builtin/provisioners/remote-exec/resource_provisioner_test.go...
+Applied patch internal/builtin/provisioners/remote-exec/resource_provisioner_test.go cleanly.
++ : '>>>>> Start Test Output'
++ go test -v ./internal/builtin/provisioners/remote-exec
++ cat
+=== RUN   TestResourceProvider_Validate_good
+--- PASS: TestResourceProvider_Validate_good (0.00s)
+=== RUN   TestResourceProvider_Validate_bad
+--- PASS: TestResourceProvider_Validate_bad (0.00s)
+=== RUN   TestResourceProvider_generateScript
+--- PASS: TestResourceProvider_generateScript (0.00s)
+=== RUN   TestResourceProvider_generateScriptEmptyInline
+--- PASS: TestResourceProvider_generateScriptEmptyInline (0.00s)
+=== RUN   TestResourceProvider_CollectScripts_inline
+--- PASS: TestResourceProvider_CollectScripts_inline (0.00s)
+=== RUN   TestResourceProvider_CollectScripts_script
+--- PASS: TestResourceProvider_CollectScripts_script (0.00s)
+=== RUN   TestResourceProvider_CollectScripts_scripts
+--- PASS: TestResourceProvider_CollectScripts_scripts (0.00s)
+=== RUN   TestResourceProvider_CollectScripts_scriptsEmpty
+--- PASS: TestResourceProvider_CollectScripts_scriptsEmpty (0.00s)
+=== RUN   TestProvisionerTimeout
+--- PASS: TestProvisionerTimeout (2.00s)
+=== RUN   TestResourceProvisioner_StopClose
+--- PASS: TestResourceProvisioner_StopClose (0.00s)
+=== RUN   TestResourceProvisioner_connectionRequired
+--- PASS: TestResourceProvisioner_connectionRequired (0.00s)
+=== RUN   TestResourceProvisioner_nullsInOptionals
+=== RUN   TestResourceProvisioner_nullsInOptionals/0
+=== RUN   TestResourceProvisioner_nullsInOptionals/1
+=== RUN   TestResourceProvisioner_nullsInOptionals/2
+=== RUN   TestResourceProvisioner_nullsInOptionals/3
+=== RUN   TestResourceProvisioner_nullsInOptionals/4
+--- PASS: TestResourceProvisioner_nullsInOptionals (0.00s)
+    --- PASS: TestResourceProvisioner_nullsInOptionals/0 (0.00s)
+    --- PASS: TestResourceProvisioner_nullsInOptionals/1 (0.00s)
+    --- PASS: TestResourceProvisioner_nullsInOptionals/2 (0.00s)
+    --- PASS: TestResourceProvisioner_nullsInOptionals/3 (0.00s)
+    --- PASS: TestResourceProvisioner_nullsInOptionals/4 (0.00s)
+PASS
+ok  	github.com/hashicorp/terraform/internal/builtin/provisioners/remote-exec	2.005s
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 310331bdc6b747b68b2e2dd6be257dfc78677973 internal/builtin/provisioners/remote-exec/resource_provisioner_test.go
+>>>>> Test Exit Code: 0
+Updated 1 path from 1aaa4ea45a

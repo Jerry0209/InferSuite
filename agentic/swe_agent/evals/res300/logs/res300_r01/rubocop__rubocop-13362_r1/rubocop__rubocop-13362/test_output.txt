@@ -1,0 +1,234 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/rubocop/cop/mixin/frozen_string_literal.rb
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	changelog/fix_false_positive_for_style_redundant_freeze_with_variable_interpolation.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 7e82e44afdf65d585603a2b615e497eefa5b02a9
+Author: Takeshi KOMIYA <i.tkomiya@gmail.com>
+Date:   Sat Oct 19 01:19:00 2024 +0900
+
+    Add AllowSteepAnnotation option to Layout/LeadingCommentSpace
+    
+    [Steep](https://github.com/soutaro/steep) is a type checker for Ruby.
+    
+    The new option; `AllowSteepAnnotation` for `Layout/LeadingCommentSpace`
+    allows to use Steep's annotation comments in the Ruby code.
+    
+    refs: https://github.com/soutaro/steep/wiki/Release-Note-1.3#add-type-assertion-and-type-application-syntax
+
+diff --git a/changelog/new_allow_steep_annotation_option.md b/changelog/new_allow_steep_annotation_option.md
+new file mode 100644
+index 000000000..8574d0c1d
+--- /dev/null
++++ b/changelog/new_allow_steep_annotation_option.md
+@@ -0,0 +1 @@
++* [#13360](https://github.com/rubocop/rubocop/pull/13360): Add `AllowSteepAnnotation` config option to `Layout/LeadingCommentSpace`. ([@tk0miya][])
+diff --git a/config/default.yml b/config/default.yml
+index 3f76299b5..324011e9e 100644
+--- a/config/default.yml
++++ b/config/default.yml
+@@ -1038,6 +1038,7 @@ Layout/LeadingCommentSpace:
+   AllowDoxygenCommentStyle: false
+   AllowGemfileRubyComment: false
+   AllowRBSInlineAnnotation: false
++  AllowSteepAnnotation: false
+ 
+ Layout/LeadingEmptyLines:
+   Description: Check for unnecessary blank lines at the beginning of a file.
+diff --git a/lib/rubocop/cop/layout/leading_comment_space.rb b/lib/rubocop/cop/layout/leading_comment_space.rb
+index 23d3b5d71..068fd869f 100644
+--- a/lib/rubocop/cop/layout/leading_comment_space.rb
++++ b/lib/rubocop/cop/layout/leading_comment_space.rb
+@@ -67,19 +67,39 @@ module RuboCop
+       #   attr_reader :name #: String
+       #   attr_reader :age  #: Integer?
+       #
++      # @example AllowSteepAnnotation: false (default)
++      #
++      #   # bad
++      #   [1, 2, 3].each_with_object([]) do |n, list| #$ Array[Integer]
++      #     list << n
++      #   end
++      #
++      #   name = 'John'      #: String
++      #
++      # @example AllowSteepAnnotation: true
++      #
++      #   # good
++      #
++      #   [1, 2, 3].each_with_object([]) do |n, list| #$ Array[Integer]
++      #     list << n
++      #   end
++      #
++      #   name = 'John'      #: String
++      #
+       class LeadingCommentSpace < Base
+         include RangeHelp
+         extend AutoCorrector
+ 
+         MSG = 'Missing space after `#`.'
+ 
+-        def on_new_investigation # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity
++        def on_new_investigation # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+           processed_source.comments.each do |comment|
+             next unless /\A(?!#\+\+|#--)(#+[^#\s=])/.match?(comment.text)
+             next if comment.loc.line == 1 && allowed_on_first_line?(comment)
+             next if doxygen_comment_style?(comment)
+             next if gemfile_ruby_comment?(comment)
+             next if rbs_inline_annotation?(comment)
++            next if steep_annotation?(comment)
+ 
+             add_offense(comment) do |corrector|
+               expr = comment.source_range
+@@ -142,6 +162,14 @@ module RuboCop
+         def rbs_inline_annotation?(comment)
+           allow_rbs_inline_annotation? && comment.text.start_with?(/#:|#\[.+\]/)
+         end
++
++        def allow_steep_annotation?
++          cop_config['AllowSteepAnnotation']
++        end
++
++        def steep_annotation?(comment)
++          allow_steep_annotation? && comment.text.start_with?(/#[$:]/)
++        end
+       end
+     end
+   end
+diff --git a/spec/rubocop/cop/layout/leading_comment_space_spec.rb b/spec/rubocop/cop/layout/leading_comment_space_spec.rb
+index 0e32ba0b9..7aedc0c0e 100644
+--- a/spec/rubocop/cop/layout/leading_comment_space_spec.rb
++++ b/spec/rubocop/cop/layout/leading_comment_space_spec.rb
+@@ -259,4 +259,44 @@ RSpec.describe RuboCop::Cop::Layout::LeadingCommentSpace, :config do
+       end
+     end
+   end
++
++  describe 'Steep annotation' do
++    context 'when config option is disabled' do
++      let(:cop_config) { { 'AllowSteepAnnotation' => false } }
++
++      it 'registers an offense and corrects using Steep annotation' do
++        expect_offense(<<~RUBY)
++          [1, 2, 3].each_with_object([]) do |n, list| #$ Array[Integer]
++                                                      ^^^^^^^^^^^^^^^^^ Missing space after `#`.
++            list << n
++          end
++
++          name = 'John'      #: String
++                             ^^^^^^^^^ Missing space after `#`.
++        RUBY
++
++        expect_correction(<<~RUBY)
++          [1, 2, 3].each_with_object([]) do |n, list| # $ Array[Integer]
++            list << n
++          end
++
++          name = 'John'      # : String
++        RUBY
++      end
++    end
++
++    context 'when config option is enabled' do
++      let(:cop_config) { { 'AllowSteepAnnotation' => true } }
++
++      it 'does not register an offense when using Steep annotation' do
++        expect_no_offenses(<<~RUBY)
++          [1, 2, 3].each_with_object([]) do |n, list| #$ Array[Integer]
++            list << n
++          end
++
++          name = 'John'      #: String
++        RUBY
++      end
++    end
++  end
+ end
++ git -c core.fileMode=false diff 7e82e44afdf65d585603a2b615e497eefa5b02a9
+diff --git a/lib/rubocop/cop/mixin/frozen_string_literal.rb b/lib/rubocop/cop/mixin/frozen_string_literal.rb
+index 315880708..cb86c9a28 100644
+--- a/lib/rubocop/cop/mixin/frozen_string_literal.rb
++++ b/lib/rubocop/cop/mixin/frozen_string_literal.rb
+@@ -29,7 +29,8 @@ module RuboCop
+       end
+ 
+       def uninterpolated_string?(node)
+-        node.str_type? || (node.dstr_type? && node.each_descendant(:begin).none?)
++        node.str_type? ||
++          (node.dstr_type? && node.each_descendant(:begin, :ivar, :cvar, :gvar).none?)
+       end
+ 
+       def uninterpolated_heredoc?(node)
++ git checkout 7e82e44afdf65d585603a2b615e497eefa5b02a9 spec/rubocop/cop/style/redundant_freeze_spec.rb spec/rubocop/cop/style/redundant_interpolation_unfreeze_spec.rb
+Updated 0 paths from ec030aec1
++ git apply -v -
+Checking patch spec/rubocop/cop/style/redundant_freeze_spec.rb...
+Checking patch spec/rubocop/cop/style/redundant_interpolation_unfreeze_spec.rb...
+Applied patch spec/rubocop/cop/style/redundant_freeze_spec.rb cleanly.
+Applied patch spec/rubocop/cop/style/redundant_interpolation_unfreeze_spec.rb cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ bundle exec rspec spec/rubocop/cop/style/redundant_freeze_spec.rb --no-color --format json
++ sed -n '/^{/,$p'
++ jq -r '.examples | group_by(.description) | .[] |
+    if any(select(.status == "failed")) then
+      (.[0] | "\(.description) - failed")
+    else
+      (.[0] | "\(.description) - \(.status)")
+    end'
+allows "" with freeze - passed
+allows "#$a" with freeze - passed
+allows "#@@a" with freeze - passed
+allows "#@a" with freeze - passed
+allows "#{a}" with freeze - passed
+allows "top#$foo" with freeze - passed
+allows "top#@@foo" with freeze - passed
+allows "top#@foo" with freeze - passed
+allows "top#{1 + 2}" with freeze - passed
+allows 'str' with freeze - passed
+allows ('a' * 20) with freeze - passed
+allows ('a' + 'b') with freeze - passed
+allows (1...5) with freeze - passed
+allows (1..5) with freeze - passed
+allows ([42] * 42) with freeze - passed
+allows (a + b) with freeze - passed
+allows .freeze on method call - passed
+allows /./ with freeze - passed
+allows ::ENV['foo'] with freeze - passed
+allows ENV['foo'] with freeze - passed
+allows [1, 2, 3] with freeze - passed
+allows { a: 1, b: 2 } with freeze - passed
+registers an offense for frozen "" - passed
+registers an offense for frozen "#$a" - passed
+registers an offense for frozen "#@@a" - passed
+registers an offense for frozen "#@a" - passed
+registers an offense for frozen "#{a}" - passed
+registers an offense for frozen 'foo'.count - passed
+registers an offense for frozen ('a' > 'b') - passed
+registers an offense for frozen (1 + 2) - passed
+registers an offense for frozen (1...5) - passed
+registers an offense for frozen (1..5) - passed
+registers an offense for frozen (2 > 1) - passed
+registers an offense for frozen (a > b) - passed
+registers an offense for frozen /./ - passed
+registers an offense for frozen 1 - passed
+registers an offense for frozen 1.5 - passed
+registers an offense for frozen :"" - passed
+registers an offense for frozen :sym - passed
+registers an offense for frozen [1, 2, 3].size - passed
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 7e82e44afdf65d585603a2b615e497eefa5b02a9 spec/rubocop/cop/style/redundant_freeze_spec.rb spec/rubocop/cop/style/redundant_interpolation_unfreeze_spec.rb
+>>>>> Test Exit Code: 0
+Updated 2 paths from ec030aec1

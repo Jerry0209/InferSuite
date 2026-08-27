@@ -1,0 +1,46 @@
+diff --git a/src/core/lombok/eclipse/handlers/HandleSuperBuilder.java b/src/core/lombok/eclipse/handlers/HandleSuperBuilder.java
+index 0d327d5f..91646691 100644
+--- a/src/core/lombok/eclipse/handlers/HandleSuperBuilder.java
++++ b/src/core/lombok/eclipse/handlers/HandleSuperBuilder.java
+@@ -1106,6 +1106,16 @@ public class HandleSuperBuilder extends EclipseAnnotationHandler<SuperBuilder> {
+ 			}
+ 		}
+ 		
++		// 4. Add the superclass name, because the builder's type parameters could otherwise
++		// clash with it (the type parameters shadow the superclass name within the builder).
++		// For instance, when "class A extends B", the builder generic "B" would shadow the superclass "B".
++		TypeReference superclass = td.superclass;
++		if (superclass != null) {
++			char[][] typeName = superclass.getTypeName();
++			if (typeName != null && typeName.length >= 1) // Add the last token, because only that can collide.
++				usedNames.add(String.valueOf(typeName[typeName.length - 1]));
++		}
++		
+ 		return usedNames;
+ 	}
+ 	
+diff --git a/src/core/lombok/javac/handlers/HandleSuperBuilder.java b/src/core/lombok/javac/handlers/HandleSuperBuilder.java
+index 7418ac87..9c57ef54 100644
+--- a/src/core/lombok/javac/handlers/HandleSuperBuilder.java
++++ b/src/core/lombok/javac/handlers/HandleSuperBuilder.java
+@@ -1051,6 +1051,20 @@ public class HandleSuperBuilder extends JavacAnnotationHandler<SuperBuilder> {
+ 			}
+ 		}
+ 		
++		// 4. Add the superclass name, because the builder's type parameters could otherwise
++		// clash with it (the type parameters shadow the superclass name within the builder).
++		// For instance, when "class A extends B", the builder generic "B" would shadow the superclass "B".
++		JCTree extendsClause = Javac.getExtendsClause(td);
++		if (extendsClause instanceof JCTypeApply) {
++			// A class name with a generics type, e.g., "Superclass<A>".
++			extendsClause = ((JCTypeApply) extendsClause).getType();
++		}
++		if (extendsClause instanceof JCFieldAccess) {
++			usedNames.add(((JCFieldAccess) extendsClause).getIdentifier().toString());
++		} else if (extendsClause instanceof JCIdent) {
++			usedNames.add(((JCIdent) extendsClause).getName().toString());
++		}
++		
+ 		return usedNames;
+ 	}
+ 	

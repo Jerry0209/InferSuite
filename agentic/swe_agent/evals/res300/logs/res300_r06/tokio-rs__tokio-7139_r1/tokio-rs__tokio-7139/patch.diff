@@ -1,0 +1,19 @@
+diff --git a/tokio/src/fs/file.rs b/tokio/src/fs/file.rs
+index 78470664..5aa2119f 100644
+--- a/tokio/src/fs/file.rs
++++ b/tokio/src/fs/file.rs
+@@ -601,6 +601,14 @@ impl AsyncRead for File {
+                         return Poll::Ready(Ok(()));
+                     }
+ 
++                    // When given an empty buffer, return immediately without
++                    // scheduling a background read. A zero-length read would
++                    // otherwise be reported as EOF on the next poll.
++                    if dst.remaining() == 0 {
++                        *buf_cell = Some(buf);
++                        return Poll::Ready(Ok(()));
++                    }
++
+                     let std = me.std.clone();
+ 
+                     let max_buf_size = cmp::min(dst.remaining(), me.max_buf_size);

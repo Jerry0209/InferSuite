@@ -1,0 +1,135 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   CHANGELOG.md
+	modified:   src/syntax_mapping.rs
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	tests/examples/test.demo.foo.suffix
+	tests/examples/test.demo.suffix
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit c14ce4f7caa36fe524975c51f7aae3d5a852d1f9
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Sun Aug 14 21:10:05 2022 +0200
+
+    Bump assets/syntaxes/02_Extra/Julia from `1e55f32` to `4fde0fd` (#2230)
+    
+    * Bump assets/syntaxes/02_Extra/Julia from `1e55f32` to `4fde0fd`
+    
+    Bumps [assets/syntaxes/02_Extra/Julia](https://github.com/JuliaEditorSupport/Julia-sublime) from `1e55f32` to `4fde0fd`.
+    - [Release notes](https://github.com/JuliaEditorSupport/Julia-sublime/releases)
+    - [Commits](https://github.com/JuliaEditorSupport/Julia-sublime/compare/1e55f3211b282ffd555d54b1798668bf5097df6a...4fde0fdeddb3ca8486d3f490a2f051cba39a0a48)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: assets/syntaxes/02_Extra/Julia
+      dependency-type: direct:production
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+    
+    * Update CHANGELOG.md
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+    Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+    Co-authored-by: Martin Nordholts <enselic@gmail.com>
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 3bbaceb..0b787bc 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -18,6 +18,7 @@
+ - NSE (Nmap Scripting Engine) is mapped to Lua, see #2151 (@Cre3per)
+ - Correctly color `fstab` dump and pass fields, see #2246 (@yuvalmo)
+ - Update `Command Help` syntax, see #2255
++- `Julia`: Fix syntax highlighting for function name starting with `struct`, see #2230
+ 
+ ## Themes
+ 
+diff --git a/assets/syntaxes/02_Extra/Julia b/assets/syntaxes/02_Extra/Julia
+index 1e55f32..4fde0fd 160000
+--- a/assets/syntaxes/02_Extra/Julia
++++ b/assets/syntaxes/02_Extra/Julia
+@@ -1 +1 @@
+-Subproject commit 1e55f3211b282ffd555d54b1798668bf5097df6a
++Subproject commit 4fde0fdeddb3ca8486d3f490a2f051cba39a0a48
++ git -c core.fileMode=false diff c14ce4f7caa36fe524975c51f7aae3d5a852d1f9
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 0b787bc..6fd1e34 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -8,6 +8,7 @@
+ 
+ - Prevent fork nightmare with `PAGER=batcat`. See #2235 (@johnmatthiggins)
+ - Make `--no-paging`/`-P` override `--paging=...` if passed as a later arg, see #2201 (@themkat)
++- `--map-syntax` and `--ignored-suffix` now works together, see #2093 (@czzrr)
+ 
+ ## Other
+ 
+diff --git a/src/syntax_mapping.rs b/src/syntax_mapping.rs
+index dc5df83..9c9a702 100644
+--- a/src/syntax_mapping.rs
++++ b/src/syntax_mapping.rs
+@@ -191,6 +191,7 @@ impl<'a> SyntaxMapping<'a> {
+     }
+ 
+     pub(crate) fn get_syntax_for(&self, path: impl AsRef<Path>) -> Option<MappingTarget<'a>> {
++        // Try matching on the file name as-is.
+         let candidate = Candidate::new(&path);
+         let candidate_filename = path.as_ref().file_name().map(Candidate::new);
+         for (ref glob, ref syntax) in self.mappings.iter().rev() {
+@@ -202,7 +203,13 @@ impl<'a> SyntaxMapping<'a> {
+                 return Some(*syntax);
+             }
+         }
+-        None
++        // Try matching on the file name after removing an ignored suffix.
++        let file_name = path.as_ref().file_name()?;
++        self.ignored_suffixes
++            .try_with_stripped_suffix(file_name, |stripped_file_name| {
++                Ok(self.get_syntax_for(stripped_file_name))
++            })
++            .ok()?
+     }
+ 
+     pub fn insert_ignored_suffix(&mut self, suffix: &'a str) {
++ git checkout c14ce4f7caa36fe524975c51f7aae3d5a852d1f9 tests/integration_tests.rs
+Updated 0 paths from 8ccec66
++ rm -f tests/examples/test.demo.foo.suffix tests/examples/test.demo.suffix
++ git apply -v -
+Checking patch tests/examples/test.demo.foo.suffix...
+Checking patch tests/examples/test.demo.suffix...
+Checking patch tests/integration_tests.rs...
+Applied patch tests/examples/test.demo.foo.suffix cleanly.
+Applied patch tests/examples/test.demo.suffix cleanly.
+Applied patch tests/integration_tests.rs cleanly.
++ : '>>>>> Start Test Output'
++ RUSTFLAGS=-Awarnings
++ cargo test --package bat --test integration_tests syntax
++ cat
+   Compiling bat v0.21.0 (/testbed)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.58s
+     Running tests/integration_tests.rs (target/debug/deps/integration_tests-459fc11e9631cff0)
+
+running 4 tests
+test no_first_line_fallback_when_mapping_to_invalid_syntax ... ok
+test map_syntax_and_ignored_suffix_work_together ... ok
+test do_not_detect_different_syntax_for_stdin_and_files ... ok
+test all_global_git_config_locations_syntax_mapping_work ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 91 filtered out; finished in 0.19s
+
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout c14ce4f7caa36fe524975c51f7aae3d5a852d1f9 tests/integration_tests.rs
+>>>>> Test Exit Code: 0
+Updated 1 path from 8ccec66
++ rm -f tests/examples/test.demo.foo.suffix tests/examples/test.demo.suffix

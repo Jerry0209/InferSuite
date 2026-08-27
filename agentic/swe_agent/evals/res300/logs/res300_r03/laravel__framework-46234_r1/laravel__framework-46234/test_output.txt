@@ -1,0 +1,130 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch 13.x
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   composer.json
+	modified:   src/Illuminate/Routing/UrlGenerator.php
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 3799f7f3118d57dc5d3dfaabde69a912fff65a7e
+Author: Taylor Otwell <taylor@laravel.com>
+Date:   Thu Mar 2 08:55:50 2023 -0600
+
+    version
+
+diff --git a/src/Illuminate/Foundation/Application.php b/src/Illuminate/Foundation/Application.php
+index 217173aac5..7f33704a14 100755
+--- a/src/Illuminate/Foundation/Application.php
++++ b/src/Illuminate/Foundation/Application.php
+@@ -38,7 +38,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
+      *
+      * @var string
+      */
+-    const VERSION = '10.1.5';
++    const VERSION = '10.2.0';
+ 
+     /**
+      * The base path for the Laravel installation.
++ git -c core.fileMode=false diff 3799f7f3118d57dc5d3dfaabde69a912fff65a7e
+diff --git a/composer.json b/composer.json
+index 865614fd93..22d153dac2 100644
+--- a/composer.json
++++ b/composer.json
+@@ -30,6 +30,7 @@
+         "egulias/email-validator": "^3.2.1|^4.0",
+         "fruitcake/php-cors": "^1.2",
+         "guzzlehttp/uri-template": "^1.0",
++        "laravel/prompts": "^0.3.13",
+         "laravel/serializable-closure": "^1.3",
+         "league/commonmark": "^2.2.1",
+         "league/flysystem": "^3.8.0",
+diff --git a/src/Illuminate/Routing/UrlGenerator.php b/src/Illuminate/Routing/UrlGenerator.php
+index 105d17b658..78c95844ce 100755
+--- a/src/Illuminate/Routing/UrlGenerator.php
++++ b/src/Illuminate/Routing/UrlGenerator.php
+@@ -158,7 +158,7 @@ public function previous($fallback = false)
+ 
+         $url = $referrer ? $this->to($referrer) : $this->getPreviousUrlFromSession();
+ 
+-        if ($url) {
++        if ($url && rtrim($url, '/') !== $this->request->fullUrl()) {
+             return $url;
+         } elseif ($fallback) {
+             return $this->to($fallback);
++ git checkout 3799f7f3118d57dc5d3dfaabde69a912fff65a7e tests/Routing/RoutingUrlGeneratorTest.php
+Updated 0 paths from c00641afac
++ git apply -v -
+Checking patch tests/Routing/RoutingUrlGeneratorTest.php...
+Applied patch tests/Routing/RoutingUrlGeneratorTest.php cleanly.
++ : '>>>>> Start Test Output'
++ vendor/bin/phpunit --testdox --colors=never tests/Routing/RoutingUrlGeneratorTest.php
++ cat
+PHPUnit 10.5.63 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.3.16
+Configuration: /testbed/phpunit.xml.dist
+
+...............S..............................                    46 / 46 (100%)
+
+Time: 00:00.025, Memory: 12.00 MB
+
+Routing Url Generator (Illuminate\Tests\Routing\RoutingUrlGenerator)
+ ✔ Basic generation
+ ✔ Asset generation
+ ✔ Basic generation with host formatting
+ ✔ Basic generation with request base url with subfolder
+ ✔ Basic generation with request base url with subfolder and file suffix
+ ✔ Basic generation with request base url with file suffix
+ ✔ Basic generation with path formatting
+ ✔ Url formatters should receive target route
+ ✔ Basic route generation
+ ✔ Fluent route name definitions
+ ✔ Controller routes with a default namespace
+ ✔ Controller routes outside of default namespace
+ ✔ Routable interface routing
+ ✔ Routable interface routing with custom binding field
+ ✔ Routable interface routing as query string
+ ↩ Routable interface routing with separate binding field only for second parameter
+ ✔ Routable interface routing with single parameter
+ ✔ Routes maintain request scheme
+ ✔ Http only routes
+ ✔ Routes with domains
+ ✔ Routes with domains and ports
+ ✔ Routes with domains strips protocols
+ ✔ Https routes with domains
+ ✔ Routes with domains through proxy
+ ✔ Url generation for controllers requires passing of required parameters with data set #0
+ ✔ Url generation for controllers requires passing of required parameters with data set #1
+ ✔ Url generation for controllers requires passing of required parameters with data set #2
+ ✔ Url generation throws exception for missing parameters with meaningful message with data set "Missing parameters "one", "two" and "three""
+ ✔ Url generation throws exception for missing parameters with meaningful message with data set "Missing parameters "two" and "three""
+ ✔ Url generation throws exception for missing parameters with meaningful message with data set "Missing parameters "one" and "three""
+ ✔ Url generation throws exception for missing parameters with meaningful message with data set "Missing parameters "one" and "two""
+ ✔ Url generation throws exception for missing parameters with meaningful message with data set "Missing parameter "three""
+ ✔ Url generation throws exception for missing parameters with meaningful message with data set "Missing parameter "two""
+ ✔ Url generation throws exception for missing parameters with meaningful message with data set "Missing parameter "one""
+ ✔ Force root url
+ ✔ Previous
+ ✔ Previous path
+ ✔ When previous is equal to current
+ ✔ Route not defined exception
+ ✔ Signed url
+ ✔ Signed url implicit model binding
+ ✔ Signed relative url
+ ✔ Signed url parameter cannot be named signature
+ ✔ Signed url parameter cannot be named expires
+ ✔ Route generation with backed enums
+ ✔ Signed url with key resolver
+
+OK, but some tests were skipped!
+Tests: 46, Assertions: 133, Skipped: 1.
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout 3799f7f3118d57dc5d3dfaabde69a912fff65a7e tests/Routing/RoutingUrlGeneratorTest.php
+Updated 1 path from c00641afac

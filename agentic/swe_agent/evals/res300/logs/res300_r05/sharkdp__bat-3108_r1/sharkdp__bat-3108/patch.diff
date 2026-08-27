@@ -1,0 +1,161 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 165cf2c2..684252e3 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -13,6 +13,7 @@
+ 
+ ## Bugfixes
+ 
++- Fix `--paging=never` (or `--paging=always`) being overridden by a single `--plain`/`-p`, see #2820
+ - Fix long file name wrapping in header, see #2835 (@FilipRazek)
+ - Fix `NO_COLOR` support, see #2767 (@acuteenvy)
+ - Fix handling of inputs with OSC ANSI escape sequences, see #2541 and #2544 (@eth-p)
+diff --git a/src/bin/bat/app.rs b/src/bin/bat/app.rs
+index 4d52c73d..f35c5e6f 100644
+--- a/src/bin/bat/app.rs
++++ b/src/bin/bat/app.rs
+@@ -11,7 +11,7 @@ use crate::{
+ use bat::style::StyleComponentList;
+ use bat::BinaryBehavior;
+ use bat::StripAnsiMode;
+-use clap::ArgMatches;
++use clap::{parser::ValueSource, ArgMatches};
+ 
+ use console::Term;
+ 
+@@ -98,31 +98,7 @@ impl App {
+     pub fn config(&self, inputs: &[Input]) -> Result<Config> {
+         let style_components = self.style_components()?;
+ 
+-        let paging_mode = match self.matches.get_one::<String>("paging").map(|s| s.as_str()) {
+-            Some("always") => PagingMode::Always,
+-            Some("never") => PagingMode::Never,
+-            Some("auto") | None => {
+-                // If we have -pp as an option when in auto mode, the pager should be disabled.
+-                let extra_plain = self.matches.get_count("plain") > 1;
+-                if extra_plain || self.matches.get_flag("no-paging") {
+-                    PagingMode::Never
+-                } else if inputs.iter().any(Input::is_stdin) {
+-                    // If we are reading from stdin, only enable paging if we write to an
+-                    // interactive terminal and if we do not *read* from an interactive
+-                    // terminal.
+-                    if self.interactive_output && !std::io::stdin().is_terminal() {
+-                        PagingMode::QuitIfOneScreen
+-                    } else {
+-                        PagingMode::Never
+-                    }
+-                } else if self.interactive_output {
+-                    PagingMode::QuitIfOneScreen
+-                } else {
+-                    PagingMode::Never
+-                }
+-            }
+-            _ => unreachable!("other values for --paging are not allowed"),
+-        };
++        let paging_mode = self.paging_mode(inputs);
+ 
+         let mut syntax_mapping = SyntaxMapping::new();
+         // start building glob matchers for builtin mappings immediately
+@@ -371,6 +347,82 @@ impl App {
+         Ok(file_input)
+     }
+ 
++    fn paging_mode(&self, inputs: &[Input]) -> PagingMode {
++        // The paging behavior can be controlled via three (mutually overridable) sources:
++        //   * `--paging=...` (`auto`, `never` or `always`)
++        //   * `-pp` (an alias for `--paging=never`)
++        //   * `-P` / `--no-paging` (an alias for `--paging=never`)
++        //
++        // When several of these are specified, the one given *last* on the command line
++        // takes precedence (POSIX-style "last wins"). We determine the winner by comparing
++        // the positions (indices) at which the arguments occurred.
++        //
++        // Note that a single `-p`/`--plain` only affects the *style* and must not influence
++        // paging, so `-p`/`--plain` is only treated as a paging argument when it has been
++        // specified at least twice (`-pp`).
++
++        // The index of `--paging=...`, but only if it was explicitly provided on the command
++        // line (i.e. not just the default value).
++        let paging_index = (self.matches.value_source("paging") == Some(ValueSource::CommandLine))
++            .then(|| self.matches.index_of("paging"))
++            .flatten();
++
++        // The index of `-pp` (only relevant when `--plain` has been specified at least twice).
++        let extra_plain_index = (self.matches.get_count("plain") > 1)
++            .then(|| self.matches.index_of("plain"))
++            .flatten();
++
++        // The index of `-P` / `--no-paging`.
++        let no_paging_index = self
++            .matches
++            .get_flag("no-paging")
++            .then(|| self.matches.index_of("no-paging"))
++            .flatten();
++
++        // Whichever paging-related argument was specified last "wins".
++        let paging_arg = [
++            paging_index.map(|index| (index, "paging")),
++            extra_plain_index.map(|index| (index, "extra-plain")),
++            no_paging_index.map(|index| (index, "no-paging")),
++        ]
++        .into_iter()
++        .flatten()
++        .max_by_key(|(index, _)| *index)
++        .map(|(_, arg)| arg);
++
++        match paging_arg {
++            // `--paging=...` was specified last (or is the only source). Use its value.
++            Some("paging") => match self.matches.get_one::<String>("paging").map(|s| s.as_str()) {
++                Some("always") => PagingMode::Always,
++                Some("never") => PagingMode::Never,
++                Some("auto") | None => self.paging_mode_auto(inputs),
++                _ => unreachable!("other values for --paging are not allowed"),
++            },
++            // `-pp` or `-P` was specified last: paging is disabled.
++            Some("extra-plain") | Some("no-paging") => PagingMode::Never,
++            // None of the paging-related arguments was specified: use the automatic behavior.
++            None => self.paging_mode_auto(inputs),
++            _ => unreachable!("other values for paging argument are not allowed"),
++        }
++    }
++
++    fn paging_mode_auto(&self, inputs: &[Input]) -> PagingMode {
++        if inputs.iter().any(Input::is_stdin) {
++            // If we are reading from stdin, only enable paging if we write to an
++            // interactive terminal and if we do not *read* from an interactive
++            // terminal.
++            if self.interactive_output && !std::io::stdin().is_terminal() {
++                PagingMode::QuitIfOneScreen
++            } else {
++                PagingMode::Never
++            }
++        } else if self.interactive_output {
++            PagingMode::QuitIfOneScreen
++        } else {
++            PagingMode::Never
++        }
++    }
++
+     fn forced_style_components(&self) -> Option<StyleComponents> {
+         // No components if `--decorations=never``.
+         if self
+diff --git a/src/bin/bat/clap_app.rs b/src/bin/bat/clap_app.rs
+index 4327fa15..ac1f4007 100644
+--- a/src/bin/bat/clap_app.rs
++++ b/src/bin/bat/clap_app.rs
+@@ -97,7 +97,6 @@ pub fn build_app(interactive_output: bool) -> Command {
+             Arg::new("plain")
+                 .overrides_with("plain")
+                 .overrides_with("number")
+-                .overrides_with("paging")
+                 .short('p')
+                 .long("plain")
+                 .action(ArgAction::Count)
+@@ -322,7 +321,6 @@ pub fn build_app(interactive_output: bool) -> Command {
+                 .long("paging")
+                 .overrides_with("paging")
+                 .overrides_with("no-paging")
+-                .overrides_with("plain")
+                 .value_name("when")
+                 .value_parser(["auto", "never", "always"])
+                 .default_value("auto")

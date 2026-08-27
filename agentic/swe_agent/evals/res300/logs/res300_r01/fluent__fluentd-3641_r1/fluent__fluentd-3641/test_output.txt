@@ -1,0 +1,150 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/fluent/rpc.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 296f02180749bee4c22605474cd95194b04012d8
+Author: Eduardo Silva <edsiper@gmail.com>
+Date:   Fri Feb 18 09:14:55 2022 -0600
+
+    MAINTAINERS: change company name for Eduardo
+    
+    Signed-off-by: Eduardo Silva <edsiper@gmail.com>
+
+diff --git a/MAINTAINERS.md b/MAINTAINERS.md
+index 0232b8f3..9f901f24 100644
+--- a/MAINTAINERS.md
++++ b/MAINTAINERS.md
+@@ -2,10 +2,10 @@
+ 
+ - [Naotoshi Seo](https://github.com/sonots), [ZOZO Technologies](https://tech.zozo.com/en/)
+ - [Okkez](https://github.com/okkez)
+-- [Hiroshi Hatake](https://github.com/cosmo0920), [Calyptia](https://www.calyptia.com/)
++- [Hiroshi Hatake](https://github.com/cosmo0920), [Calyptia](https://calyptia.com/)
+ - [Masahiro Nakagawa](https://github.com/repeatedly), [Treasure Data](https://www.treasuredata.com/)
+ - [Satoshi Tagomori](https://github.com/tagomoris), [Treasure Data](https://www.treasuredata.com/)
+-- [Eduardo Silva](https://github.com/edsiper), [Arm Treasure Data](https://www.treasuredata.com/)
++- [Eduardo Silva](https://github.com/edsiper), [Calyptia](https://calyptia/)
+ - [Fujimoto Seiji](https://github.com/fujimots), [ClearCode](https://www.clear-code.com/)
+ - [Takuro Ashie](https://github.com/ashie), [ClearCode](https://www.clear-code.com/)
+ - [Kentaro Hayashi](https://github.com/kenhys), [ClearCode](https://www.clear-code.com/)
++ git -c core.fileMode=false diff 296f02180749bee4c22605474cd95194b04012d8
+diff --git a/lib/fluent/rpc.rb b/lib/fluent/rpc.rb
+index 53b899ad..38b06ddf 100644
+--- a/lib/fluent/rpc.rb
++++ b/lib/fluent/rpc.rb
+@@ -15,14 +15,16 @@
+ #
+ 
+ require 'webrick'
++require 'fluent/config/error'
+ 
+ module Fluent
+   module RPC
+     class Server
+       def initialize(endpoint, log)
+-        bind, port = endpoint.split(':')
+-        @bind = bind
+-        @port = port
++        m = endpoint.match(/^\[?(?<host>[0-9a-zA-Z:\-\.]+)\]?:(?<port>[0-9]+)$/)
++        raise Fluent::ConfigError, "Invalid rpc_endpoint: #{endpoint}" unless m
++        @bind = m[:host]
++        @port = m[:port]
+         @log = log
+ 
+         @server = WEBrick::HTTPServer.new(
++ git checkout 296f02180749bee4c22605474cd95194b04012d8 test/test_supervisor.rb
+Updated 0 paths from 19ffbe68
++ git apply -v -
+Checking patch test/test_supervisor.rb...
+Applied patch test/test_supervisor.rb cleanly.
++ : '>>>>> Start Test Output'
++ bundle exec ruby test/test_supervisor.rb -v
++ cat
+/testbed/lib/fluent/compat/parser.rb:28: warning: csv was loaded from the standard library, but will no longer be part of the default gems starting from Ruby 3.4.0.
+You can add csv to your Gemfile or gemspec to silence this warning.
+Loaded suite test/test_supervisor
+Started
+SupervisorTest: 
+  test_disable_shared_socket:				.: (0.000296)
+  test_enable_shared_socket:				.: (0.000496)
+  test_inline_config:					O
+===============================================================================
+Omission: this feature is deprecated. see https://github.com/fluent/fluentd/issues/2711 [test_inline_config(SupervisorTest)]
+test/test_supervisor.rb:563:in `test_inline_config'
+===============================================================================
+: (0.000338)
+  test_invalid_rpc_endpoint[no_port]:			.: (0.000504)
+  test_invalid_rpc_endpoint[invalid_addr]:		.: (0.000281)
+  test_load_config:					.: (0.000435)
+  test_load_config_for_daemonize:			.: (0.003400)
+  test_load_config_for_logger:				.: (0.000211)
+  test_log_level_affects:				.: (0.000643)
+  test_logger:						.: (0.000110)
+  test_logger_with_rotate_age_and_rotate_size[daily_age]:	.: (0.000162)
+  test_logger_with_rotate_age_and_rotate_size[weekly_age]:	.: (0.000145)
+  test_logger_with_rotate_age_and_rotate_size[monthly_age]:	.: (0.000125)
+  test_logger_with_rotate_age_and_rotate_size[integer_age]:	.: (0.000104)
+  test_main_process_command_handlers:			O
+===============================================================================
+Omission: Only for Windows, alternative to UNIX signals [test_main_process_command_handlers(SupervisorTest)]
+test/test_supervisor.rb:116:in `test_main_process_command_handlers'
+===============================================================================
+: (0.000250)
+  test_main_process_signal_handlers:			.: (1.007145)
+  test_rpc_server[ipv4]:				.: (0.003497)
+  test_rpc_server[ipv6]:				.: (0.002898)
+  test_rpc_server[localhost_ipv4]:			.: (0.003330)
+  test_rpc_server_windows[ipv4]:			O
+===============================================================================
+Omission: Only for windows platform [test_rpc_server_windows[ipv4](SupervisorTest)]
+test/test_supervisor.rb:286:in `test_rpc_server_windows'
+===============================================================================
+: (0.000422)
+  test_rpc_server_windows[ipv6]:			O
+===============================================================================
+Omission: Only for windows platform [test_rpc_server_windows[ipv6](SupervisorTest)]
+test/test_supervisor.rb:286:in `test_rpc_server_windows'
+===============================================================================
+: (0.000378)
+  test_rpc_server_windows[localhost_ipv4]:		O
+===============================================================================
+Omission: Only for windows platform [test_rpc_server_windows[localhost_ipv4](SupervisorTest)]
+test/test_supervisor.rb:286:in `test_rpc_server_windows'
+===============================================================================
+: (0.002158)
+  test_supervisor_event_handler:			O
+===============================================================================
+Omission: Only for Windows, alternative to UNIX signals [test_supervisor_event_handler(SupervisorTest)]
+test/test_supervisor.rb:191:in `test_supervisor_event_handler'
+===============================================================================
+: (0.000368)
+  test_supervisor_signal_handler:			.: (1.002872)
+  test_system_config:					.: (0.001054)
+  test_windows_shutdown_event:				O
+===============================================================================
+Omission: Only for Windows platform [test_windows_shutdown_event(SupervisorTest)]
+test/test_supervisor.rb:163:in `test_windows_shutdown_event'
+===============================================================================
+: (0.000446)
+  system log rotation: 
+    test_override_default_log_rotate:			.: (0.000864)
+
+Finished in 2.033939757 seconds.
+-------------------------------------------------------------------------------
+27 tests, 85 assertions, 0 failures, 0 errors, 0 pendings, 7 omissions, 0 notifications
+100% passed
+-------------------------------------------------------------------------------
+13.27 tests/s, 41.79 assertions/s
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 296f02180749bee4c22605474cd95194b04012d8 test/test_supervisor.rb
+Updated 1 path from 19ffbe68

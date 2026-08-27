@@ -1,0 +1,105 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/rubocop/cop/layout/leading_comment_space.rb
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	changelog/fix_false_positive_for_layout_leading_comment_space.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 04dd02e71a444fb36019d892fde6948a88aac637
+Merge: e751b382a 2e5535929
+Author: Koichi ITO <koic.ito@gmail.com>
+Date:   Fri Nov 22 13:39:32 2024 +0900
+
+    Merge pull request #13476 from dak2/rbs-inline/generics-type-in-commented-keyword
+    
+    Allow to write generics type of rbs-inline annotation after subclass definition in `Style/CommentedKeyword`
+
++ git -c core.fileMode=false diff 04dd02e71a444fb36019d892fde6948a88aac637
+diff --git a/lib/rubocop/cop/layout/leading_comment_space.rb b/lib/rubocop/cop/layout/leading_comment_space.rb
+index 068fd869f..7bf7f6de9 100644
+--- a/lib/rubocop/cop/layout/leading_comment_space.rb
++++ b/lib/rubocop/cop/layout/leading_comment_space.rb
+@@ -96,6 +96,7 @@ module RuboCop
+           processed_source.comments.each do |comment|
+             next unless /\A(?!#\+\+|#--)(#+[^#\s=])/.match?(comment.text)
+             next if comment.loc.line == 1 && allowed_on_first_line?(comment)
++            next if shebang_continuation?(comment)
+             next if doxygen_comment_style?(comment)
+             next if gemfile_ruby_comment?(comment)
+             next if rbs_inline_annotation?(comment)
+@@ -123,6 +124,20 @@ module RuboCop
+           comment.text.start_with?('#!')
+         end
+ 
++        def shebang_continuation?(comment)
++          return false unless shebang?(comment)
++          return true if comment.loc.line == 1
++
++          previous_line_comment = processed_source.comment_at_line(comment.loc.line - 1)
++          return false unless previous_line_comment
++
++          # If the comment is a shebang but not on the first line, check if the previous
++          # line has a shebang comment that wasn't marked as an offense; if so, this comment
++          # continues the shebang and is acceptable.
++          shebang?(previous_line_comment) &&
++            !current_offense_locations.include?(previous_line_comment.source_range)
++        end
++
+         def rackup_options?(comment)
+           comment.text.start_with?('#\\')
+         end
++ git checkout 04dd02e71a444fb36019d892fde6948a88aac637 spec/rubocop/cop/layout/leading_comment_space_spec.rb
+Updated 0 paths from 9b1167fcc
++ git apply -v -
+Checking patch spec/rubocop/cop/layout/leading_comment_space_spec.rb...
+Applied patch spec/rubocop/cop/layout/leading_comment_space_spec.rb cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ bundle exec rspec spec/rubocop/cop/layout/leading_comment_space_spec.rb --no-color --format json
++ sed -n '/^{/,$p'
++ jq -r '.examples | group_by(.description) | .[] |
+    if any(select(.status == "failed")) then
+      (.[0] | "\(.description) - failed")
+    else
+      (.[0] | "\(.description) - \(.status)")
+    end'
+accepts =begin/=end comments - passed
+accepts sprockets directives - passed
+does not register an offense for # followed by no text - passed
+does not register an offense for #! on first line - passed
+does not register an offense for #\ on first line - passed
+does not register an offense for a multiline shebang starting on the first line - passed
+does not register an offense for more than one # - passed
+does not register an offense for more than one space - passed
+does not register an offense for only #s - passed
+does not register an offense when using RBS::Inline annotation - passed
+does not register an offense when using Steep annotation - passed
+does not register an offense when using `#++` or `#--` - passed
+does not register an offense when using ruby config as comment - passed
+does not register offense when using Doxygen style - passed
+registers an offense and corrects #! after the first line - passed
+registers an offense and corrects #\ after the first line - passed
+registers an offense and corrects #\ on first line - passed
+registers an offense and corrects comment without leading space - passed
+registers an offense and corrects for #\ after the first line - passed
+registers an offense and corrects for a multiline shebang starting after the first line - passed
+registers an offense and corrects using Doxygen style - passed
+registers an offense and corrects using RBS::Inline annotation - passed
+registers an offense and corrects using Steep annotation - passed
+registers an offense when starting `:` - passed
+registers an offense when using `#+` or `#-` as they are not RDoc comments - passed
+registers an offense when using ruby config as comment - passed
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 04dd02e71a444fb36019d892fde6948a88aac637 spec/rubocop/cop/layout/leading_comment_space_spec.rb
+Updated 1 path from 9b1167fcc

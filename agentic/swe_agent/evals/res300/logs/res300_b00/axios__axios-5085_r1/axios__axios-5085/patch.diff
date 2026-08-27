@@ -1,0 +1,30 @@
+diff --git a/lib/core/AxiosHeaders.js b/lib/core/AxiosHeaders.js
+index 9d56538..3981596 100644
+--- a/lib/core/AxiosHeaders.js
++++ b/lib/core/AxiosHeaders.js
+@@ -15,6 +15,10 @@ function normalizeValue(value) {
+     return value;
+   }
+ 
++  if (utils.isArray(value)) {
++    return value.map(normalizeValue);
++  }
++
+   return String(value);
+ }
+ 
+@@ -102,13 +106,7 @@ Object.assign(AxiosHeaders.prototype, {
+         return;
+       }
+ 
+-      if (utils.isArray(_value)) {
+-        _value = _value.map(normalizeValue);
+-      } else {
+-        _value = normalizeValue(_value);
+-      }
+-
+-      self[key || _header] = _value;
++      self[key || _header] = normalizeValue(_value);
+     }
+ 
+     if (utils.isPlainObject(header)) {

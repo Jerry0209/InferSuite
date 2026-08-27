@@ -1,0 +1,140 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   CHANGELOG.md
+	modified:   src/syntax_mapping.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit e2bf85e749d87459e3fced697af5cd9cc96eeb8c
+Author: J-Kappes <87168492+J-Kappes@users.noreply.github.com>
+Date:   Thu Sep 14 03:45:46 2023 +0000
+
+    Make -pp override --paging and vice versa when passed as a later argument. (#2660)
+
+diff --git a/src/bin/bat/clap_app.rs b/src/bin/bat/clap_app.rs
+index 01f9d75..8ffeb5b 100644
+--- a/src/bin/bat/clap_app.rs
++++ b/src/bin/bat/clap_app.rs
+@@ -79,6 +79,7 @@ pub fn build_app(interactive_output: bool) -> Command {
+             Arg::new("plain")
+                 .overrides_with("plain")
+                 .overrides_with("number")
++                .overrides_with("paging")
+                 .short('p')
+                 .long("plain")
+                 .action(ArgAction::Count)
+@@ -303,6 +304,7 @@ pub fn build_app(interactive_output: bool) -> Command {
+                 .long("paging")
+                 .overrides_with("paging")
+                 .overrides_with("no-paging")
++                .overrides_with("plain")
+                 .value_name("when")
+                 .value_parser(["auto", "never", "always"])
+                 .default_value("auto")
+diff --git a/tests/integration_tests.rs b/tests/integration_tests.rs
+index b118c38..aa5ca84 100644
+--- a/tests/integration_tests.rs
++++ b/tests/integration_tests.rs
+@@ -873,6 +873,42 @@ fn disable_pager_if_disable_paging_flag_comes_after_paging() {
+         .stdout(predicate::eq("hello world\n").normalize());
+ }
+ 
++#[test]
++fn disable_pager_if_pp_flag_comes_after_paging() {
++    bat()
++        .env("PAGER", "echo pager-output")
++        .arg("--paging=always")
++        .arg("-pp")
++        .arg("test.txt")
++        .assert()
++        .success()
++        .stdout(predicate::eq("hello world\n").normalize());
++}
++
++#[test]
++fn enable_pager_if_disable_paging_flag_comes_before_paging() {
++    bat()
++        .env("PAGER", "echo pager-output")
++        .arg("-P")
++        .arg("--paging=always")
++        .arg("test.txt")
++        .assert()
++        .success()
++        .stdout(predicate::eq("pager-output\n").normalize());
++}
++
++#[test]
++fn enable_pager_if_pp_flag_comes_before_paging() {
++    bat()
++        .env("PAGER", "echo pager-output")
++        .arg("-pp")
++        .arg("--paging=always")
++        .arg("test.txt")
++        .assert()
++        .success()
++        .stdout(predicate::eq("pager-output\n").normalize());
++}
++
+ #[test]
+ fn pager_failed_to_parse() {
+     bat()
++ git -c core.fileMode=false diff e2bf85e749d87459e3fced697af5cd9cc96eeb8c
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index f00211a..3374d50 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -8,6 +8,7 @@
+ ## Bugfixes
+ 
+ - Fix `more` not being found on Windows when provided via `BAT_PAGER`, see #2570, #2580, and #2651 (@mataha)
++- Fix syntax mappings (e.g. via `--map-syntax`) not matching file names in a case-insensitive manner, see #2664 (@sharkdp)
+ 
+ ## Other
+ 
+diff --git a/src/syntax_mapping.rs b/src/syntax_mapping.rs
+index 93b1dc8..d4331bb 100644
+--- a/src/syntax_mapping.rs
++++ b/src/syntax_mapping.rs
+@@ -211,7 +211,7 @@ impl<'a> SyntaxMapping<'a> {
+ 
+     pub fn insert(&mut self, from: &str, to: MappingTarget<'a>) -> Result<()> {
+         let glob = GlobBuilder::new(from)
+-            .case_insensitive(false)
++            .case_insensitive(true)
+             .literal_separator(true)
+             .build()?;
+         self.mappings.push((glob.compile_matcher(), to));
++ git checkout e2bf85e749d87459e3fced697af5cd9cc96eeb8c tests/integration_tests.rs
+Updated 0 paths from ef933d8
++ rm -f tests/examples/map-syntax_case.Config
++ git apply -v -
+Checking patch tests/examples/map-syntax_case.Config...
+Checking patch tests/integration_tests.rs...
+Applied patch tests/examples/map-syntax_case.Config cleanly.
+Applied patch tests/integration_tests.rs cleanly.
++ : '>>>>> Start Test Output'
++ RUSTFLAGS=-Awarnings
++ cargo test --package bat --test integration_tests map_syntax
++ cat
+   Compiling bat v0.23.0 (/testbed)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.79s
+     Running tests/integration_tests.rs (target/debug/deps/integration_tests-af35dbbc30575ff6)
+
+running 2 tests
+test map_syntax_and_ignored_suffix_work_together ... ok
+test highlighting_independant_from_map_syntax_case ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 123 filtered out; finished in 0.12s
+
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout e2bf85e749d87459e3fced697af5cd9cc96eeb8c tests/integration_tests.rs
+Updated 1 path from ef933d8
++ rm -f tests/examples/map-syntax_case.Config

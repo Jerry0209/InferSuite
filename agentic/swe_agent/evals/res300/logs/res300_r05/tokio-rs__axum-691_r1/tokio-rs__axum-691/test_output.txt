@@ -1,0 +1,145 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   axum/CHANGELOG.md
+	modified:   axum/src/routing/mod.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit d6ce99190b2d53e5858678264027e656197f0efa
+Author: David Pedersen <david.pdrsn@gmail.com>
+Date:   Thu Jan 6 11:35:11 2022 +0100
+
+    Document extracting `OriginalUri` directly via request extensions (#688)
+    
+    * Document extracting `OriginalUri` directly via request extensions
+    
+    Fixes https://github.com/tokio-rs/axum/issues/684
+    
+    * fix example
+    
+    * Update axum/src/extract/request_parts.rs
+    
+    Co-authored-by: Jonas Platte <jplatte@users.noreply.github.com>
+    
+    Co-authored-by: Jonas Platte <jplatte@users.noreply.github.com>
+
+diff --git a/axum/src/extract/request_parts.rs b/axum/src/extract/request_parts.rs
+index 66e63d2..6764bdc 100644
+--- a/axum/src/extract/request_parts.rs
++++ b/axum/src/extract/request_parts.rs
+@@ -43,6 +43,43 @@ use sync_wrapper::SyncWrapper;
+ /// # axum::Server::bind(&"".parse().unwrap()).serve(app.into_make_service()).await.unwrap();
+ /// # };
+ /// ```
++///
++/// # Extracting via request extensions
++///
++/// `OriginalUri` can also be accessed from middleware via request extensions.
++/// This is useful for example with [`Trace`](tower_http::trace::Trace) to
++/// create a span that contains the full path, if your service might be nested:
++///
++/// ```
++/// use axum::{
++///     Router,
++///     extract::OriginalUri,
++///     http::Request,
++///     routing::get,
++/// };
++/// use tower_http::trace::TraceLayer;
++///
++/// let api_routes = Router::new()
++///     .route("/users/:id", get(|| async { /* ... */ }))
++///     .layer(
++///         TraceLayer::new_for_http().make_span_with(|req: &Request<_>| {
++///             let path = if let Some(path) = req.extensions().get::<OriginalUri>() {
++///                 // This will include `/api`
++///                 path.0.path().to_owned()
++///             } else {
++///                 // The `OriginalUri` extension will always be present if using
++///                 // `Router` unless another extractor or middleware has removed it
++///                 req.uri().path().to_owned()
++///             };
++///             tracing::info_span!("http-request", %path)
++///         }),
++///     );
++///
++/// let app = Router::new().nest("/api", api_routes);
++/// # async {
++/// # axum::Server::bind(&"".parse().unwrap()).serve(app.into_make_service()).await.unwrap();
++/// # };
++/// ```
+ #[derive(Debug, Clone)]
+ pub struct OriginalUri(pub Uri);
+ 
++ git -c core.fileMode=false diff d6ce99190b2d53e5858678264027e656197f0efa
+diff --git a/axum/CHANGELOG.md b/axum/CHANGELOG.md
+index a59cc72..0e814d7 100644
+--- a/axum/CHANGELOG.md
++++ b/axum/CHANGELOG.md
+@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ 
+ # Unreleased
+ 
+-- None.
++- **fixed:** Fix nesting a `Router` at `/` (`nest("/", router)`). Previously the
++  routes of the nested router were mounted with a double slash (e.g. `//foo`
++  instead of `/foo`), meaning they didn't match the expected paths.
+ 
+ # 0.4.3 (21. December, 2021)
+ 
+diff --git a/axum/src/routing/mod.rs b/axum/src/routing/mod.rs
+index 788d0c1..02eb90f 100644
+--- a/axum/src/routing/mod.rs
++++ b/axum/src/routing/mod.rs
+@@ -201,7 +201,17 @@ where
+ 
+                 for (id, nested_path) in node.route_id_to_path {
+                     let route = routes.remove(&id).unwrap();
+-                    let full_path = if &*nested_path == "/" {
++                    // `nested_path` always starts with `/`. We have to be careful when
++                    // joining `path` and `nested_path` to avoid producing a path with a
++                    // double slash (e.g. `//foo` when nesting at `/`) or a trailing slash
++                    // (e.g. `/api/` when the nested router has a `/` route).
++                    let full_path = if path == "/" {
++                        // nesting at `/` means the prefix is empty, so just use the
++                        // nested path directly
++                        nested_path.to_string()
++                    } else if &*nested_path == "/" {
++                        // the nested router has a route at `/`, so the full path is just
++                        // the prefix
+                         path.to_owned()
+                     } else {
+                         format!("{}{}", path, nested_path)
++ git checkout d6ce99190b2d53e5858678264027e656197f0efa axum/src/routing/tests/mod.rs axum/src/routing/tests/nest.rs
+Updated 0 paths from 6c49279
++ git apply -v -
+Checking patch axum/src/routing/tests/mod.rs...
+Checking patch axum/src/routing/tests/nest.rs...
+Applied patch axum/src/routing/tests/mod.rs cleanly.
+Applied patch axum/src/routing/tests/nest.rs cleanly.
++ : '>>>>> Start Test Output'
++ RUSTFLAGS=-Awarnings
++ cargo test --package axum --lib -- routing::tests::nest::nesting_router_at_root --exact
++ cat
+warning: /testbed/axum-extra/Cargo.toml: `default_features` is deprecated in favor of `default-features` and will not work in the 2024 edition
+(in the `tower` dependency)
+   Compiling axum v0.4.3 (/testbed/axum)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.59s
+     Running unittests src/lib.rs (target/debug/deps/axum-f7e1547e7cd11f96)
+
+running 1 test
+test routing::tests::nest::nesting_router_at_root ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 124 filtered out; finished in 0.00s
+
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout d6ce99190b2d53e5858678264027e656197f0efa axum/src/routing/tests/mod.rs axum/src/routing/tests/nest.rs
+>>>>> Test Exit Code: 0
+Updated 2 paths from 6c49279

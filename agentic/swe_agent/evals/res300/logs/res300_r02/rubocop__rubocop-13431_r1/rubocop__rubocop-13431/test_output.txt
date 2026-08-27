@@ -1,0 +1,77 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/rubocop/cop/layout/empty_lines_around_method_body.rb
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	changelog/fix_false_negative_for_layout_empty_lines_around_method_body.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 33b9f51cc0bdad7585a855018625c155493664ec
+Merge: 60365bff5 c14ce840b
+Author: Koichi ITO <koic.ito@gmail.com>
+Date:   Fri Nov 8 01:27:54 2024 +0900
+
+    Merge pull request #13428 from Earlopain/circular-arguments-useless
+
++ git -c core.fileMode=false diff 33b9f51cc0bdad7585a855018625c155493664ec
+diff --git a/lib/rubocop/cop/layout/empty_lines_around_method_body.rb b/lib/rubocop/cop/layout/empty_lines_around_method_body.rb
+index b00156373..6c8851822 100644
+--- a/lib/rubocop/cop/layout/empty_lines_around_method_body.rb
++++ b/lib/rubocop/cop/layout/empty_lines_around_method_body.rb
+@@ -27,12 +27,19 @@ module RuboCop
+         KIND = 'method'
+ 
+         def on_def(node)
+-          check(node, node.body)
++          check(node, node.body, adjusted_first_line: first_line(node))
+         end
+         alias on_defs on_def
+ 
+         private
+ 
++        def first_line(node)
++          args = node.arguments
++          return node.first_line unless args.source_range
++
++          args.last_line > node.first_line ? args.last_line : node.first_line
++        end
++
+         def style
+           :no_empty_lines
+         end
++ git checkout 33b9f51cc0bdad7585a855018625c155493664ec spec/rubocop/cop/layout/empty_lines_around_method_body_spec.rb
+Updated 0 paths from 8e8dd059a
++ git apply -v -
+Checking patch spec/rubocop/cop/layout/empty_lines_around_method_body_spec.rb...
+Applied patch spec/rubocop/cop/layout/empty_lines_around_method_body_spec.rb cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ bundle exec rspec spec/rubocop/cop/layout/empty_lines_around_method_body_spec.rb --no-color --format json
++ sed -n '/^{/,$p'
++ jq -r '.examples | group_by(.description) | .[] |
+    if any(select(.status == "failed")) then
+      (.[0] | "\(.description) - failed")
+    else
+      (.[0] | "\(.description) - \(.status)")
+    end'
+accepts method body starting with a line with spaces - passed
+is not fooled by single line methods - passed
+registers an offense for class method body ending with a blank - passed
+registers an offense for class method body starting with a blank - passed
+registers an offense for method body ending with a blank - passed
+registers an offense for method body starting with a blank - passed
+registers an offense for methods with empty lines and arguments spanning multiple lines - passed
+registers an offense for methods with empty lines, empty arguments spanning multiple lines - passed
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 33b9f51cc0bdad7585a855018625c155493664ec spec/rubocop/cop/layout/empty_lines_around_method_body_spec.rb
+>>>>> Test Exit Code: 0
+Updated 1 path from 8e8dd059a

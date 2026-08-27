@@ -1,7 +1,7 @@
 #	instance	short	lang	mech	leaf B/T/S	label	n_leaf	fence	cov%	cls%	why	runner-up
 1	redis__redis-12272	redis-t12272	C	B	47/36/17	B	514	50	100	98	cell C×B (n=1, median fence 50)	-
 2	micropython__micropython-13039	micropython-t13039	C	B	19/69/12	T	1961	17	99	91	cell C×T (n=8, 3 excl, median fence 38)	jqlang-t2839
-3	valkey-io__valkey-1499	valkey-io-t1499	C	B	1/47/52	M	229	5	98	52	cell C×M (n=5, median fence 16)	redis-t10764
+3	redis__redis-10068	redis-t10068	C	B	36/21/43	M	1123	38	100	97	cell C×M resolution-replacement 2026-08-27: valkey-1499 unresolved (no patch); rank over resolved-eligible (median 27)	redis-t10764
 4	jqlang__jq-2598	jqlang-t2598	C	B	9/13/77	S	7233	54	98	94	cell C×S (n=13, 2 excl, median fence 54)	jqlang-t2728
 5	nlohmann__json-4237	nlohmann-t4237	C++	B	70/20/10	B	1366	624	100	100	cell C++×B (n=12, 1 excl, median fence 188)	fmtlib-t3901
 6	fmtlib__fmt-3750	fmtlib-t3750	C++	B	57/29/14	B	585	174	100	99	top-up C++×B (majority; empty: T(n=0),S(n=0),M(n=0))	fmtlib-t3901
@@ -24,15 +24,15 @@
 23	php-cs-fixer__php-cs-fixer-8064	php-cs-fixer-t8064	PHP	I	0/97/3	T	4292	42	97	92	cell PHP×T (n=11, 4 excl, median fence 42)	php-cs-fixer-t7875
 24	briannesbitt__carbon-2752	briannesbitt-t2752	PHP	I	0/28/72	S	139	10	101	84	cell PHP×S (n=15, 2 excl, median fence 10)	briannesbitt-t3073
 25	jordansissel__fpm-1829	jordansissel-t1829	Ruby	I	68/22/10	B	441	5	103	81	cell Ruby×B (n=1, median fence 5)	-
-26	rubocop__rubocop-13396	rubocop-t13396	Ruby	I	0/22/78	S	1023	43	98	24	cell Ruby×S (n=2, 1 excl, median fence 43)	-
+26	fluent__fluentd-3328	fluent-t3328	Ruby	I	0/66/33	T	431	20	100	89	Ruby×S slot CONVERTED to majority-T top-up 2026-08-27: rubocop-13396 unresolved (no patch) and the cell's only other member is E7-excluded — no resolvable S candidate; rank over 29 resolved-eligible (median 21.2)	jekyll-8167
 27	rubocop__rubocop-13560	rubocop-t13560	Ruby	I	0/53/47	M	540	37	100	75	cell Ruby×M (n=2, 1 excl, median fence 37)	-
 28	fastlane__fastlane-20958	fastlane-t20958	Ruby	I	0/92/8	T	441	22	100	92	cell Ruby×T (n=39, 2 excl, median fence 24)	fluent-t3466
 29	preactjs__preact-3763	preactjs-t3763	JavaScript	N	40/50/10	M	1115	50	98	96	cell JavaScript×M (n=2, median fence 60)	preactjs-t4182
 30	babel__babel-15649	babel-t15649	JavaScript	N	0/83/17	T	617	42	100	92	cell JavaScript×T (n=28, 2 excl, median fence 36)	axios-t6539
-31	axios__axios-6539	axios-t6539	JavaScript	N	0/86/14	T	1001	19	100	89	top-up JavaScript×T (majority; empty: B(n=0),S(n=1))	mrdoob-t26589
+31	axios__axios-5892	axios-t5892	JavaScript	N	0/93/7	T	906	16	100	92	top-up JS×T resolution-replacement 2026-08-27: axios-6539 patch fails FAIL_TO_PASS; fresh-repo rank over resolved-eligible (median 64.2)	axios-t4731
 32	mrdoob__three.js-26589	mrdoob-t26589	JavaScript	N	0/85/15	T	575	18	100	78	top-up JavaScript×T (majority; empty: B(n=0),S(n=1))	mrdoob-t27395
-33	vuejs__core-11589	vuejs-t11589	TypeScript	N	5/6/88	S	9680	213	99	98	cell TypeScript×S (n=5, 1 excl, median fence 175)	vuejs-t11870
+33	vuejs__core-11870	vuejs-t11870	TypeScript	N	5/7/88	S	5887	138	99	98	cell TS×S resolution-replacement 2026-08-27: core-11589 unresolved (no patch); rank over resolved-eligible (median 137.6)	vuejs-t11899
 34	facebook__docusaurus-9897	facebook-t9897	TypeScript	N	0/90/10	T	1055	33	84	79	cell TypeScript×T (n=7, median fence 33)	facebook-t10130
 35	immutable-js__immutable-js-2006	immutable-js-t2006	TypeScript	N	0/97/3	T	3782	655	92	91	top-up TypeScript×T (majority; empty: B(n=0),M(n=0))	immutable-js-t2005
 36	facebook__docusaurus-10130	facebook-t10130	TypeScript	N	0/97/3	T	2156	23	100	93	top-up TypeScript×T (majority; empty: B(n=0),M(n=0))	facebook-t10309
-	36 picks; cells covered: 27; repos: 31; languages: 9; total fence 4797 core-s
+	36 picks; cells covered: 26; repos: 31; languages: 9; total fence 4728 core-s (resolution-clean revision 2026-08-27)

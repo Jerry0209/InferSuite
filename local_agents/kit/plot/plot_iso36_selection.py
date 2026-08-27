@@ -17,7 +17,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-REPO = os.path.expanduser("~/InferSuite")
+# repo root from __file__, not a hardcoded home path — this ran on the P7 (~/InferSuite)
+# and now also on the type-id machine (~/InferSuite-Jerry) for the resolution-clean revision
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 ML = f"{REPO}/local_agents/ML_typeid"
 OUT = f"{REPO}/local_agents/ML_iso36/plots"
 
@@ -46,7 +48,7 @@ sel = [r for r in csv.DictReader(open(f"{ML}/selection_36_count.tsv"), delimiter
        if "__" in r.get("instance", "")]
 picks = collections.defaultdict(list)
 for r in sel:
-    picks[(r["lang"], r["label"])].append((r["short"], r["why"].startswith("top-up"), r["fence"]))
+    picks[(r["lang"], r["label"])].append((r["short"], "top-up" in r["why"], r["fence"]))
 
 fig, ax = plt.subplots(figsize=(12.6, 9.2))
 vmax = max(tot.values())
@@ -88,6 +90,8 @@ ax.set_title("ML_iso36 selection — 36 picks on the count-view type matrix", fo
 fig.text(0.5, 0.015,
          "cell shade = count-view population (300 tasks) · bold = picked task · '+' = majority top-up "
          "(its home cell was empty or had no profilable candidate)\n"
+         "resolution-clean revision 2026-08-27: every pick is officially RESOLVED (SWE-bench harness); "
+         "Ruby×S and the 3 other affected slots were re-picked or converted — see multi_full_stratification.md\n"
          "profilable = not replay-invalid, no E7 loop flags, banked trajectory exists · "
          "4 picks per language, one per profilable cell, extras to the majority category",
          ha="center", fontsize=8, color="#666666")

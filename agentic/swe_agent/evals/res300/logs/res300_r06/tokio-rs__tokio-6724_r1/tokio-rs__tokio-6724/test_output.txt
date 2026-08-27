@@ -1,0 +1,206 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   tokio/src/io/util/write_all_buf.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 0cbf1a5adae81e8ff86ca6d040aeee67cf888262
+Author: Hayden Stainsby <hds@caffeineconcepts.com>
+Date:   Mon Jul 29 12:06:13 2024 +0200
+
+    time,sync: make Sleep and BatchSemaphore instrumentation explicit roots (#6727)
+    
+    When instrumenting resources in Tokio, a span is created for each
+    resource. Previously, all resources inherited the currently active span
+    as their parent (tracing default). However, this would keep that parent
+    span alive until the resource (and its span) were dropped. This is often
+    not correct, as a resource may be created in a task and then sent
+    elsewhere, while the originating task ends.
+    
+    This artificial extension of the parent span's lifetime would make it
+    look like that task was still alive (but idle) in any system reading the
+    tracing instrumentation in Tokio, for example Tokio Console as reported
+    in tokio-rs/console#345.
+    
+    In #6107, most of the existing resource spans were updated to
+    make them explicit roots, so they have no contextual parent. However,
+    2. were missed:
+    - `Sleep`
+    - `BatchSemaphore`
+    
+    This change alters the resource spans for those 2 resources to also make
+    them explicit roots.
+
+diff --git a/tokio/src/sync/batch_semaphore.rs b/tokio/src/sync/batch_semaphore.rs
+index a241f792..84f88fb3 100644
+--- a/tokio/src/sync/batch_semaphore.rs
++++ b/tokio/src/sync/batch_semaphore.rs
+@@ -147,6 +147,7 @@ impl Semaphore {
+         #[cfg(all(tokio_unstable, feature = "tracing"))]
+         let resource_span = {
+             let resource_span = tracing::trace_span!(
++                parent: None,
+                 "runtime.resource",
+                 concrete_type = "Semaphore",
+                 kind = "Sync",
+diff --git a/tokio/src/time/sleep.rs b/tokio/src/time/sleep.rs
+index 9223396f..d5a68f09 100644
+--- a/tokio/src/time/sleep.rs
++++ b/tokio/src/time/sleep.rs
+@@ -267,6 +267,7 @@ impl Sleep {
+ 
+             let location = location.expect("should have location if tracing");
+             let resource_span = tracing::trace_span!(
++                parent: None,
+                 "runtime.resource",
+                 concrete_type = "Sleep",
+                 kind = "timer",
+diff --git a/tokio/tests/tracing-instrumentation/tests/sync.rs b/tokio/tests/tracing-instrumentation/tests/sync.rs
+index 37d07046..110928dd 100644
+--- a/tokio/tests/tracing-instrumentation/tests/sync.rs
++++ b/tokio/tests/tracing-instrumentation/tests/sync.rs
+@@ -60,7 +60,7 @@ async fn test_mutex_creates_span() {
+         .new_span(mutex_span.clone().with_explicit_parent(None))
+         .enter(mutex_span.clone())
+         .event(locked_event)
+-        .new_span(batch_semaphore_span.clone())
++        .new_span(batch_semaphore_span.clone().with_explicit_parent(None))
+         .enter(batch_semaphore_span.clone())
+         .event(batch_semaphore_permits_event)
+         .exit(batch_semaphore_span.clone())
+diff --git a/tokio/tests/tracing-instrumentation/tests/time.rs b/tokio/tests/tracing-instrumentation/tests/time.rs
+new file mode 100644
+index 00000000..4d570159
+--- /dev/null
++++ b/tokio/tests/tracing-instrumentation/tests/time.rs
+@@ -0,0 +1,61 @@
++//! Tests for time resource instrumentation.
++//!
++//! These tests ensure that the instrumentation for tokio
++//! synchronization primitives is correct.
++use std::time::Duration;
++
++use tracing_mock::{expect, subscriber};
++
++#[tokio::test]
++async fn test_sleep_creates_span() {
++    let sleep_span = expect::span()
++        .named("runtime.resource")
++        .with_target("tokio::time::sleep");
++
++    let state_update = expect::event()
++        .with_target("runtime::resource::state_update")
++        .with_fields(
++            expect::field("duration")
++                .with_value(&(7_u64 + 1))
++                .and(expect::field("duration.op").with_value(&"override")),
++        );
++
++    let async_op_span = expect::span()
++        .named("runtime.resource.async_op")
++        .with_target("tokio::time::sleep");
++
++    let async_op_poll_span = expect::span()
++        .named("runtime.resource.async_op.poll")
++        .with_target("tokio::time::sleep");
++
++    let (subscriber, handle) = subscriber::mock()
++        .new_span(sleep_span.clone().with_explicit_parent(None))
++        .enter(sleep_span.clone())
++        .event(state_update)
++        .new_span(
++            async_op_span
++                .clone()
++                .with_contextual_parent(Some("runtime.resource"))
++                .with_field(expect::field("source").with_value(&"Sleep::new_timeout")),
++        )
++        .exit(sleep_span.clone())
++        .enter(async_op_span.clone())
++        .new_span(
++            async_op_poll_span
++                .clone()
++                .with_contextual_parent(Some("runtime.resource.async_op")),
++        )
++        .exit(async_op_span.clone())
++        .drop_span(async_op_span)
++        .drop_span(async_op_poll_span)
++        .drop_span(sleep_span)
++        .run_with_handle();
++
++    {
++        let _guard = tracing::subscriber::set_default(subscriber);
++
++        _ = tokio::time::sleep(Duration::from_millis(7));
++    }
++
++    handle.assert_finished();
++}
++ git -c core.fileMode=false diff 0cbf1a5adae81e8ff86ca6d040aeee67cf888262
+diff --git a/tokio/src/io/util/write_all_buf.rs b/tokio/src/io/util/write_all_buf.rs
+index 05af7fe9..fec0655d 100644
+--- a/tokio/src/io/util/write_all_buf.rs
++++ b/tokio/src/io/util/write_all_buf.rs
+@@ -44,7 +44,13 @@ where
+     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+         let me = self.project();
+         while me.buf.has_remaining() {
+-            let n = ready!(Pin::new(&mut *me.writer).poll_write(cx, me.buf.chunk())?);
++            let mut bufs = [io::IoSlice::new(me.buf.chunk())];
++            let n = if me.writer.is_write_vectored() {
++                let cnt = me.buf.chunks_vectored(&mut bufs);
++                ready!(Pin::new(&mut *me.writer).poll_write_vectored(cx, &bufs[..cnt]))?
++            } else {
++                ready!(Pin::new(&mut *me.writer).poll_write(cx, me.buf.chunk()))?
++            };
+             me.buf.advance(n);
+             if n == 0 {
+                 return Poll::Ready(Err(io::ErrorKind::WriteZero.into()));
++ git checkout 0cbf1a5adae81e8ff86ca6d040aeee67cf888262 tokio/tests/io_write_all_buf.rs
+Updated 0 paths from 4d16aab7
++ git apply -v -
+Checking patch tokio/tests/io_write_all_buf.rs...
+Applied patch tokio/tests/io_write_all_buf.rs cleanly.
++ : '>>>>> Start Test Output'
++ cargo test --test io_write_all_buf --no-fail-fast
++ cat
+   Compiling tokio v1.39.2 (/testbed/tokio)
+   Compiling tokio-stream v0.1.15 (/testbed/tokio-stream)
+   Compiling tokio-test v0.4.4 (/testbed/tokio-test)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.05s
+     Running tests/io_write_all_buf.rs (target/debug/deps/io_write_all_buf-f6970eceabebe98f)
+
+running 3 tests
+test write_buf_err ... ok
+test write_all_buf ... ok
+test write_all_buf_vectored ... FAILED
+
+failures:
+
+---- write_all_buf_vectored stdout ----
+
+thread 'write_all_buf_vectored' panicked at tokio/tests/io_write_all_buf.rs:144:5:
+assertion `left == right` failed
+  left: [104, 101, 108, 108, 111, 32]
+ right: [104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    write_all_buf_vectored
+
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p tokio --test io_write_all_buf`
+error: 1 target failed:
+    `-p tokio --test io_write_all_buf`
++ SWEBENCH_TEST_EXIT_CODE=101
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 101'
++ git checkout 0cbf1a5adae81e8ff86ca6d040aeee67cf888262 tokio/tests/io_write_all_buf.rs
+>>>>> Test Exit Code: 101
+Updated 1 path from 4d16aab7

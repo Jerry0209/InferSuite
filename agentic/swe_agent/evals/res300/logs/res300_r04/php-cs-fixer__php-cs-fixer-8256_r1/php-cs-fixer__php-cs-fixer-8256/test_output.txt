@@ -1,0 +1,111 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/Fixer/PhpTag/BlankLineAfterOpeningTagFixer.php
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 27dde9afa3d4db851f8aaffc820f697a5dbe747f
+Author: Dariusz Rumiński <dariusz.ruminski@gmail.com>
+Date:   Tue Nov 12 19:45:28 2024 +0100
+
+    chore: add todo for PHP v8 (#8274)
+
+diff --git a/tests/AutoReview/ProjectCodeTest.php b/tests/AutoReview/ProjectCodeTest.php
+index 6b7d959f6..2b65a6593 100644
+--- a/tests/AutoReview/ProjectCodeTest.php
++++ b/tests/AutoReview/ProjectCodeTest.php
+@@ -169,7 +169,7 @@ public function testThatSrcClassesNotExposeProperties(string $className): void
+             AbstractPhpdocTypesFixer::class => ['tags'],
+             AbstractProxyFixer::class => ['proxyFixers'],
+             ConfigurableFixerTrait::class => ['configuration'],
+-            FixCommand::class => ['defaultDescription', 'defaultName'],
++            FixCommand::class => ['defaultDescription', 'defaultName'], // TODO: PHP 8.0+, remove properties and test when PHP 8+ is required
+         ];
+ 
+         $extraProps = array_diff(
++ git -c core.fileMode=false diff 27dde9afa3d4db851f8aaffc820f697a5dbe747f
+diff --git a/src/Fixer/PhpTag/BlankLineAfterOpeningTagFixer.php b/src/Fixer/PhpTag/BlankLineAfterOpeningTagFixer.php
+index d4af8196e..04b99c9a2 100644
+--- a/src/Fixer/PhpTag/BlankLineAfterOpeningTagFixer.php
++++ b/src/Fixer/PhpTag/BlankLineAfterOpeningTagFixer.php
+@@ -77,12 +77,10 @@ protected function applyFix(\SplFileInfo $file, Tokens $tokens): void
+         }
+ 
+         $newLineIndex = $openTagIndex + 1;
+-        if (isset($tokens[$newLineIndex]) && !str_contains($tokens[$newLineIndex]->getContent(), "\n")) {
+-            if ($tokens[$newLineIndex]->isWhitespace()) {
+-                $tokens[$newLineIndex] = new Token([T_WHITESPACE, $lineEnding.$tokens[$newLineIndex]->getContent()]);
+-            } else {
+-                $tokens->insertAt($newLineIndex, new Token([T_WHITESPACE, $lineEnding]));
+-            }
++        if (isset($tokens[$newLineIndex]) && !$tokens[$newLineIndex]->isWhitespace()) {
++            $tokens->insertAt($newLineIndex, new Token([T_WHITESPACE, $lineEnding]));
++        } elseif (isset($tokens[$newLineIndex]) && !str_contains($tokens[$newLineIndex]->getContent(), "\n")) {
++            $tokens[$newLineIndex] = new Token([T_WHITESPACE, $lineEnding.$tokens[$newLineIndex]->getContent()]);
+         }
+     }
+ }
++ git checkout 27dde9afa3d4db851f8aaffc820f697a5dbe747f tests/Fixer/PhpTag/BlankLineAfterOpeningTagFixerTest.php
+Updated 0 paths from eb6dd58cb
++ git apply -v -
+Checking patch tests/Fixer/PhpTag/BlankLineAfterOpeningTagFixerTest.php...
+Applied patch tests/Fixer/PhpTag/BlankLineAfterOpeningTagFixerTest.php cleanly.
++ : '>>>>> Start Test Output'
++ vendor/bin/phpunit --testdox --colors=never tests/Fixer/PhpTag/BlankLineAfterOpeningTagFixerTest.php
++ cat
+PHPUnit 11.5.55 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.3.16
+Configuration: /testbed/phpunit.xml.dist
+
+........................I..                                       27 / 27 (100%)
+
+Time: 00:00.356, Memory: 12.00 MB
+
+Blank Line After Opening Tag Fixer (PhpCsFixer\Tests\Fixer\PhpTag\BlankLineAfterOpeningTagFixer)
+ ✔ Not defining constructor
+ ✔ Is risky
+ ✔ Fixer definitions
+ ✔ Fixers are final
+ ✔ Deprecated fixers have correct summary
+ ✔ Deprecated fixers do not have deprecated successor
+ ∅ Fixer use insert slices when only insertions are performed
+   │
+   │ Fixer "blank_line_after_opening_tag" may be optimized to use `Tokens::insertSlices` instead of `insertAt`, please help and optimize it.
+   │
+   │ /testbed/tests/Test/AbstractFixerTestCase.php:420
+   │
+ ✔ Fixer configuration definitions
+ ✔ Proper method naming
+ ✔ Fix with data set #0
+ ✔ Fix with data set #1
+ ✔ Fix with data set #2
+ ✔ Fix with data set #3
+ ✔ Fix with data set #4
+ ✔ Fix with data set #5
+ ✔ Fix with data set #6
+ ✔ Fix with data set #7
+ ✔ Fix with data set #8
+ ✔ Fix with data set #9
+ ✔ Fix with data set #10
+ ✔ Fix with data set #11
+ ✔ Fix with data set "empty file with open tag without new line"
+ ✔ Fix with data set "empty file with open tag with new line"
+ ✔ Fix with data set "file with shebang"
+ ✔ Fix with data set "file starting with multi-line comment"
+ ✔ With whitespaces config with data set #0
+ ✔ With whitespaces config with data set #1
+
+OK, but there were issues!
+Tests: 27, Assertions: 321, PHPUnit Deprecations: 4, Incomplete: 1.
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout 27dde9afa3d4db851f8aaffc820f697a5dbe747f tests/Fixer/PhpTag/BlankLineAfterOpeningTagFixerTest.php
+Updated 1 path from eb6dd58cb

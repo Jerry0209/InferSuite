@@ -1,0 +1,284 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/clap_app.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 2b9d25df052e50c60531b1000703b79bf9b6065a
+Author: Ethan P <eth-p+git@hidden.email>
+Date:   Fri May 10 14:15:47 2019 -0700
+
+    Replace iterator with string starts_with and ends_with
+
+diff --git a/src/printer.rs b/src/printer.rs
+index 1ba86b6..880a8b4 100644
+--- a/src/printer.rs
++++ b/src/printer.rs
+@@ -367,10 +367,9 @@ impl<'a> Printer for InteractivePrinter<'a> {
+                     match chunk {
+                         // ANSI escape passthrough.
+                         (text, true) => {
+-                            let is_ansi_csi =
+-                                text.chars().skip(1).nth(0).map_or(false, |c| c == '[');
++                            let is_ansi_csi = text.starts_with("\x1B[");
+ 
+-                            if is_ansi_csi && text.chars().last().map_or(false, |c| c == 'm') {
++                            if is_ansi_csi && text.ends_with('m') {
+                                 // It's an ANSI SGR sequence.
+                                 // We should be mostly safe to just append these together.
+                                 ansi_prefix.push_str(text);
++ git -c core.fileMode=false diff 2b9d25df052e50c60531b1000703b79bf9b6065a
+diff --git a/src/clap_app.rs b/src/clap_app.rs
+index adce2b1..16c36d2 100644
+--- a/src/clap_app.rs
++++ b/src/clap_app.rs
+@@ -18,7 +18,6 @@ pub fn build_app(interactive_output: bool) -> ClapApp<'static, 'static> {
+         .global_setting(AppSettings::DeriveDisplayOrder)
+         .global_setting(AppSettings::UnifiedHelpMessage)
+         .global_setting(AppSettings::HidePossibleValuesInHelp)
+-        .setting(AppSettings::InferSubcommands)
+         .setting(AppSettings::ArgsNegateSubcommands)
+         .setting(AppSettings::DisableHelpSubcommand)
+         .setting(AppSettings::VersionlessSubcommands)
++ git checkout 2b9d25df052e50c60531b1000703b79bf9b6065a tests/integration_tests.rs
+Updated 0 paths from 3dc4afa
++ rm -f tests/examples/cache
++ git apply -v -
+Checking patch tests/examples/cache...
+Checking patch tests/integration_tests.rs...
+Applied patch tests/examples/cache cleanly.
+Applied patch tests/integration_tests.rs cleanly.
++ : '>>>>> Start Test Output'
++ RUSTFLAGS=-Awarnings
++ cargo test --package bat --test integration_tests cache
++ cat
+    Updating crates.io index
+ Downloading crates ...
+  Downloaded bitflags v1.0.4
+  Downloaded bincode v1.0.1
+  Downloaded atty v0.2.11
+  Downloaded ansi_colours v1.0.1
+  Downloaded wild v2.0.1
+  Downloaded pkg-config v0.3.14
+  Downloaded ansi_term v0.11.0
+  Downloaded assert_cmd v0.11.1
+  Downloaded base64 v0.10.1
+  Downloaded aho-corasick v0.6.9
+  Downloaded onig v4.2.1
+  Downloaded predicates-core v1.0.0
+  Downloaded version_check v0.1.5
+  Downloaded predicates v1.0.0
+  Downloaded xml-rs v0.8.0
+  Downloaded rand v0.4.3
+  Downloaded yaml-rust v0.4.2
+  Downloaded unreachable v1.0.0
+  Downloaded smallvec v0.6.5
+  Downloaded treeline v0.1.0
+  Downloaded quick-error v1.2.2
+  Downloaded term_size v0.3.1
+  Downloaded serde_json v1.0.33
+  Downloaded quote v0.6.10
+  Downloaded predicates-tree v1.0.0
+  Downloaded encoding_index_tests v0.1.4
+  Downloaded dirs v1.0.5
+  Downloaded cfg-if v0.1.6
+  Downloaded thread_local v0.3.6
+  Downloaded walkdir v2.2.6
+  Downloaded utf8-ranges v1.0.2
+  Downloaded ucd-util v0.1.2
+  Downloaded stable_deref_trait v1.1.1
+  Downloaded proc-macro2 v0.4.21
+  Downloaded percent-encoding v1.0.1
+  Downloaded parking_lot_core v0.3.1
+  Downloaded shell-words v0.1.0
+  Downloaded fnv v1.0.6
+  Downloaded semver-parser v0.7.0
+  Downloaded semver v0.9.0
+  Downloaded remove_dir_all v0.5.1
+  Downloaded scopeguard v0.3.3
+  Downloaded escargot v0.5.0
+  Downloaded escargot v0.4.0
+  Downloaded rand_core v0.2.2
+  Downloaded lazycell v1.2.0
+  Downloaded line-wrap v0.1.1
+  Downloaded clicolors-control v1.0.0
+  Downloaded void v1.0.2
+  Downloaded strsim v0.8.0
+  Downloaded same-file v1.0.4
+  Downloaded termios v0.3.1
+  Downloaded safemem v0.3.0
+  Downloaded matches v0.1.8
+  Downloaded tempdir v0.3.7
+  Downloaded rustc_version v0.2.3
+  Downloaded lazy_static v1.3.0
+  Downloaded itoa v0.4.3
+  Downloaded encoding-index-singlebyte v1.20141219.5
+  Downloaded owning_ref v0.3.3
+  Downloaded content_inspector v0.2.4
+  Downloaded console v0.7.5
+  Downloaded vec_map v0.8.1
+  Downloaded textwrap v0.11.0
+  Downloaded linked-hash-map v0.5.1
+  Downloaded error-chain v0.12.0
+  Downloaded cc v1.0.25
+  Downloaded byteorder v1.2.7
+  Downloaded unicode-width v0.1.5
+  Downloaded unicode-bidi v0.3.4
+  Downloaded rand_core v0.3.0
+  Downloaded log v0.4.6
+  Downloaded unicode-xid v0.1.0
+  Downloaded humantime v1.1.1
+  Downloaded memchr v2.1.1
+  Downloaded lock_api v0.1.4
+  Downloaded parking_lot v0.6.4
+  Downloaded plist v0.4.1
+  Downloaded serde_derive v1.0.80
+  Downloaded ryu v0.2.7
+  Downloaded url v1.7.2
+  Downloaded encoding v0.2.33
+  Downloaded flate2 v1.0.4
+  Downloaded miniz-sys v0.1.11
+  Downloaded serde v1.0.80
+  Downloaded encoding-index-japanese v1.20141219.5
+  Downloaded encoding-index-korean v1.20141219.5
+  Downloaded encoding-index-simpchinese v1.20141219.5
+  Downloaded syn v0.15.19
+  Downloaded encoding-index-tradchinese v1.20141219.5
+  Downloaded rand v0.5.5
+  Downloaded difference v2.0.0
+  Downloaded git2 v0.8.0
+  Downloaded clap v2.33.0
+  Downloaded libc v0.2.43
+  Downloaded regex v1.0.6
+  Downloaded idna v0.1.5
+  Downloaded regex-syntax v0.6.3
+  Downloaded unicode-normalization v0.1.7
+  Downloaded onig_sys v69.0.0
+  Downloaded libz-sys v1.0.25
+  Downloaded syntect v3.2.0
+  Downloaded libgit2-sys v0.7.11
+   Compiling libc v0.2.43
+   Compiling cc v1.0.25
+   Compiling proc-macro2 v0.4.21
+   Compiling pkg-config v0.3.14
+   Compiling unicode-xid v0.1.0
+   Compiling cfg-if v0.1.6
+   Compiling serde v1.0.80
+   Compiling lazy_static v1.3.0
+   Compiling semver-parser v0.7.0
+   Compiling version_check v0.1.5
+   Compiling ryu v0.2.7
+   Compiling bitflags v1.0.4
+   Compiling encoding_index_tests v0.1.4
+   Compiling itoa v0.4.3
+   Compiling void v1.0.2
+   Compiling rand_core v0.3.0
+   Compiling unicode-width v0.1.5
+   Compiling stable_deref_trait v1.1.1
+   Compiling matches v0.1.8
+   Compiling ucd-util v0.1.2
+   Compiling byteorder v1.2.7
+   Compiling vec_map v0.8.1
+   Compiling scopeguard v0.3.3
+   Compiling quick-error v1.2.2
+   Compiling strsim v0.8.0
+   Compiling safemem v0.3.0
+   Compiling ansi_term v0.11.0
+   Compiling unicode-normalization v0.1.7
+   Compiling log v0.4.6
+   Compiling unicode-bidi v0.3.4
+   Compiling owning_ref v0.3.3
+   Compiling unreachable v1.0.0
+   Compiling regex v1.0.6
+   Compiling thread_local v0.3.6
+   Compiling xml-rs v0.8.0
+   Compiling line-wrap v0.1.1
+   Compiling smallvec v0.6.5
+   Compiling humantime v1.1.1
+   Compiling predicates-core v1.0.0
+   Compiling linked-hash-map v0.5.1
+   Compiling same-file v1.0.4
+   Compiling regex-syntax v0.6.3
+   Compiling percent-encoding v1.0.1
+   Compiling semver v0.9.0
+   Compiling rand_core v0.2.2
+   Compiling base64 v0.10.1
+   Compiling lock_api v0.1.4
+   Compiling utf8-ranges v1.0.2
+   Compiling escargot v0.4.0
+   Compiling walkdir v2.2.6
+   Compiling encoding-index-simpchinese v1.20141219.5
+   Compiling yaml-rust v0.4.2
+   Compiling encoding-index-korean v1.20141219.5
+   Compiling encoding-index-tradchinese v1.20141219.5
+   Compiling encoding-index-japanese v1.20141219.5
+   Compiling memchr v2.1.1
+   Compiling encoding-index-singlebyte v1.20141219.5
+   Compiling lazycell v1.2.0
+   Compiling rustc_version v0.2.3
+   Compiling fnv v1.0.6
+   Compiling difference v2.0.0
+   Compiling treeline v0.1.0
+   Compiling atty v0.2.11
+   Compiling term_size v0.3.1
+   Compiling rand v0.5.5
+   Compiling termios v0.3.1
+   Compiling clicolors-control v1.0.0
+   Compiling escargot v0.5.0
+   Compiling predicates-tree v1.0.0
+   Compiling dirs v1.0.5
+   Compiling predicates v1.0.0
+   Compiling rand v0.4.3
+   Compiling textwrap v0.11.0
+   Compiling remove_dir_all v0.5.1
+   Compiling error-chain v0.12.0
+   Compiling wild v2.0.1
+   Compiling shell-words v0.1.0
+   Compiling parking_lot_core v0.3.1
+   Compiling encoding v0.2.33
+   Compiling clap v2.33.0
+   Compiling libz-sys v1.0.25
+   Compiling onig_sys v69.0.0
+   Compiling miniz-sys v0.1.11
+   Compiling libgit2-sys v0.7.11
+   Compiling ansi_colours v1.0.1
+   Compiling aho-corasick v0.6.9
+   Compiling content_inspector v0.2.4
+   Compiling quote v0.6.10
+   Compiling syn v0.15.19
+   Compiling tempdir v0.3.7
+   Compiling flate2 v1.0.4
+   Compiling idna v0.1.5
+   Compiling parking_lot v0.6.4
+   Compiling url v1.7.2
+   Compiling console v0.7.5
+   Compiling serde_derive v1.0.80
+   Compiling bat v0.10.0 (/testbed)
+   Compiling onig v4.2.1
+   Compiling serde_json v1.0.33
+   Compiling bincode v1.0.1
+   Compiling plist v0.4.1
+   Compiling syntect v3.2.0
+   Compiling assert_cmd v0.11.1
+   Compiling git2 v0.8.0
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 25.26s
+     Running tests/integration_tests.rs (target/debug/deps/integration_tests-f6012612deca9bc0)
+
+running 2 tests
+test does_not_print_unwanted_file_named_cache ... ok
+test can_print_file_named_cache ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 32 filtered out; finished in 0.15s
+
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 2b9d25df052e50c60531b1000703b79bf9b6065a tests/integration_tests.rs
+>>>>> Test Exit Code: 0
+Updated 1 path from 3dc4afa
++ rm -f tests/examples/cache

@@ -1,0 +1,67 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/fluent/plugin_helper/retry_state.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 8ced42ce86edf5a5c73e009cfd093e6c3fcc7e2d
+Merge: 1fd21874 81d35f62
+Author: Takuro Ashie <ashie@clear-code.com>
+Date:   Fri Feb 25 11:39:29 2022 +0900
+
+    Merge pull request #3644 from daipom/enable-server-plugins-to-specify-so_linger
+    
+    Enable server plugins to specify socket-option `SO_LINGER`
+
++ git -c core.fileMode=false diff 8ced42ce86edf5a5c73e009cfd093e6c3fcc7e2d
+diff --git a/lib/fluent/plugin_helper/retry_state.rb b/lib/fluent/plugin_helper/retry_state.rb
+index 687e8052..7851fd61 100644
+--- a/lib/fluent/plugin_helper/retry_state.rb
++++ b/lib/fluent/plugin_helper/retry_state.rb
+@@ -159,7 +159,7 @@ module Fluent
+         def calc_max_retry_timeout(max_steps)
+           result = 0
+           max_steps.times { |i|
+-            result += calc_interval(i)
++            result += calc_interval(i + 1)
+           }
+           result
+         end
++ git checkout 8ced42ce86edf5a5c73e009cfd093e6c3fcc7e2d test/plugin_helper/test_retry_state.rb
+Updated 0 paths from 6817a4c6
++ git apply -v -
+Checking patch test/plugin_helper/test_retry_state.rb...
+Applied patch test/plugin_helper/test_retry_state.rb cleanly.
++ : '>>>>> Start Test Output'
++ bundle exec ruby test/plugin_helper/test_retry_state.rb -v -n '/exponential backoff/'
++ cat
+/testbed/lib/fluent/compat/parser.rb:28: warning: csv was loaded from the standard library, but will no longer be part of the default gems starting from Ruby 3.4.0.
+You can add csv to your Gemfile or gemspec to silence this warning.
+Loaded suite test/plugin_helper/test_retry_state
+Started
+RetryStateHelperTest: 
+  test: exponential backoff forever without randomization:	.: (0.004482)
+  test: exponential backoff retries with secondary:	.: (0.000242)
+  test: exponential backoff retries with secondary and max_steps:	.: (0.000059)
+  test: exponential backoff retries with secondary and specified threshold:	.: (0.000045)
+  test: exponential backoff with max_interval:		.: (0.000174)
+  test: exponential backoff with max_steps:		.: (0.000096)
+  test: exponential backoff with shorter timeout:	.: (0.000075)
+
+Finished in 0.005758279 seconds.
+-------------------------------------------------------------------------------
+7 tests, 1026 assertions, 0 failures, 0 errors, 0 pendings, 0 omissions, 0 notifications
+100% passed
+-------------------------------------------------------------------------------
+1215.64 tests/s, 178178.24 assertions/s
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout 8ced42ce86edf5a5c73e009cfd093e6c3fcc7e2d test/plugin_helper/test_retry_state.rb
+Updated 1 path from 6817a4c6

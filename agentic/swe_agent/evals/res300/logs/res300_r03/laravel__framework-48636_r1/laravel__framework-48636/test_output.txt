@@ -1,0 +1,374 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch 13.x
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   composer.json
+	modified:   src/Illuminate/Database/Eloquent/Model.php
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 4a9ae49f3969c4648b5ee000e6692a449e34c2a8
+Author: bchalier <bastien@chalier.io>
+Date:   Thu Oct 5 17:45:35 2023 +0200
+
+    throw TransportException instead of Exception in SES and SES v2 mail driver (#48645)
+
+diff --git a/src/Illuminate/Mail/Transport/SesTransport.php b/src/Illuminate/Mail/Transport/SesTransport.php
+index 9db7734c62..443ad934e0 100644
+--- a/src/Illuminate/Mail/Transport/SesTransport.php
++++ b/src/Illuminate/Mail/Transport/SesTransport.php
+@@ -4,7 +4,7 @@
+ 
+ use Aws\Exception\AwsException;
+ use Aws\Ses\SesClient;
+-use Exception;
++use Symfony\Component\Mailer\Exception\TransportException;
+ use Symfony\Component\Mailer\Header\MetadataHeader;
+ use Symfony\Component\Mailer\SentMessage;
+ use Symfony\Component\Mailer\Transport\AbstractTransport;
+@@ -75,7 +75,7 @@ protected function doSend(SentMessage $message): void
+         } catch (AwsException $e) {
+             $reason = $e->getAwsErrorMessage() ?? $e->getMessage();
+ 
+-            throw new Exception(
++            throw new TransportException(
+                 sprintf('Request to AWS SES API failed. Reason: %s.', $reason),
+                 is_int($e->getCode()) ? $e->getCode() : 0,
+                 $e
+diff --git a/src/Illuminate/Mail/Transport/SesV2Transport.php b/src/Illuminate/Mail/Transport/SesV2Transport.php
+index 5cc3936d85..876630b9e1 100644
+--- a/src/Illuminate/Mail/Transport/SesV2Transport.php
++++ b/src/Illuminate/Mail/Transport/SesV2Transport.php
+@@ -4,7 +4,7 @@
+ 
+ use Aws\Exception\AwsException;
+ use Aws\SesV2\SesV2Client;
+-use Exception;
++use Symfony\Component\Mailer\Exception\TransportException;
+ use Symfony\Component\Mailer\Header\MetadataHeader;
+ use Symfony\Component\Mailer\SentMessage;
+ use Symfony\Component\Mailer\Transport\AbstractTransport;
+@@ -79,7 +79,7 @@ protected function doSend(SentMessage $message): void
+         } catch (AwsException $e) {
+             $reason = $e->getAwsErrorMessage() ?? $e->getMessage();
+ 
+-            throw new Exception(
++            throw new TransportException(
+                 sprintf('Request to AWS SES V2 API failed. Reason: %s.', $reason),
+                 is_int($e->getCode()) ? $e->getCode() : 0,
+                 $e
+diff --git a/tests/Mail/MailSesTransportTest.php b/tests/Mail/MailSesTransportTest.php
+index f21b725647..8d3fd4c6b8 100755
+--- a/tests/Mail/MailSesTransportTest.php
++++ b/tests/Mail/MailSesTransportTest.php
+@@ -2,6 +2,8 @@
+ 
+ namespace Illuminate\Tests\Mail;
+ 
++use Aws\Command;
++use Aws\Exception\AwsException;
+ use Aws\Ses\SesClient;
+ use Illuminate\Config\Repository;
+ use Illuminate\Container\Container;
+@@ -10,6 +12,7 @@
+ use Illuminate\View\Factory;
+ use Mockery as m;
+ use PHPUnit\Framework\TestCase;
++use Symfony\Component\Mailer\Exception\TransportException;
+ use Symfony\Component\Mailer\Header\MetadataHeader;
+ use Symfony\Component\Mime\Address;
+ use Symfony\Component\Mime\Email;
+@@ -78,6 +81,23 @@ public function testSend()
+         (new SesTransport($client))->send($message);
+     }
+ 
++    public function testSendError()
++    {
++        $message = new Email();
++        $message->subject('Foo subject');
++        $message->text('Bar body');
++        $message->sender('myself@example.com');
++        $message->to('me@example.com');
++
++        $client = m::mock(SesClient::class);
++        $client->shouldReceive('sendRawEmail')->once()
++            ->andThrow(new AwsException('Email address is not verified.', new Command('sendRawEmail')));
++
++        $this->expectException(TransportException::class);
++
++        (new SesTransport($client))->send($message);
++    }
++
+     public function testSesLocalConfiguration()
+     {
+         $container = new Container;
+diff --git a/tests/Mail/MailSesV2TransportTest.php b/tests/Mail/MailSesV2TransportTest.php
+index c95a01440e..7b7821558a 100755
+--- a/tests/Mail/MailSesV2TransportTest.php
++++ b/tests/Mail/MailSesV2TransportTest.php
+@@ -2,6 +2,8 @@
+ 
+ namespace Illuminate\Tests\Mail;
+ 
++use Aws\Command;
++use Aws\Exception\AwsException;
+ use Aws\SesV2\SesV2Client;
+ use Illuminate\Config\Repository;
+ use Illuminate\Container\Container;
+@@ -10,6 +12,7 @@
+ use Illuminate\View\Factory;
+ use Mockery as m;
+ use PHPUnit\Framework\TestCase;
++use Symfony\Component\Mailer\Exception\TransportException;
+ use Symfony\Component\Mailer\Header\MetadataHeader;
+ use Symfony\Component\Mime\Address;
+ use Symfony\Component\Mime\Email;
+@@ -78,6 +81,23 @@ public function testSend()
+         (new SesV2Transport($client))->send($message);
+     }
+ 
++    public function testSendError()
++    {
++        $message = new Email();
++        $message->subject('Foo subject');
++        $message->text('Bar body');
++        $message->sender('myself@example.com');
++        $message->to('me@example.com');
++
++        $client = m::mock(SesV2Client::class);
++        $client->shouldReceive('sendEmail')->once()
++            ->andThrow(new AwsException('Email address is not verified.', new Command('sendRawEmail')));
++
++        $this->expectException(TransportException::class);
++
++        (new SesV2Transport($client))->send($message);
++    }
++
+     public function testSesV2LocalConfiguration()
+     {
+         $container = new Container;
++ git -c core.fileMode=false diff 4a9ae49f3969c4648b5ee000e6692a449e34c2a8
+diff --git a/composer.json b/composer.json
+index 3e3ee66921..f5631fc40c 100644
+--- a/composer.json
++++ b/composer.json
+@@ -30,7 +30,7 @@
+         "egulias/email-validator": "^3.2.1|^4.0",
+         "fruitcake/php-cors": "^1.2",
+         "guzzlehttp/uri-template": "^1.0",
+-        "laravel/prompts": "^0.1.9",
++        "laravel/prompts": "^0.3.13",
+         "laravel/serializable-closure": "^1.3",
+         "league/commonmark": "^2.2.1",
+         "league/flysystem": "^3.8.0",
+diff --git a/src/Illuminate/Database/Eloquent/Model.php b/src/Illuminate/Database/Eloquent/Model.php
+index 393e49a515..c10fac5b9e 100644
+--- a/src/Illuminate/Database/Eloquent/Model.php
++++ b/src/Illuminate/Database/Eloquent/Model.php
+@@ -1723,6 +1723,7 @@ public function replicate(array $except = null)
+             $this->getKeyName(),
+             $this->getCreatedAtColumn(),
+             $this->getUpdatedAtColumn(),
++            ...$this->uniqueIds(),
+         ]));
+ 
+         $attributes = Arr::except(
++ git checkout 4a9ae49f3969c4648b5ee000e6692a449e34c2a8 tests/Database/DatabaseEloquentModelTest.php
+Updated 0 paths from 3cc3ddcae6
++ git apply -v -
+Checking patch tests/Database/DatabaseEloquentModelTest.php...
+Applied patch tests/Database/DatabaseEloquentModelTest.php cleanly.
++ : '>>>>> Start Test Output'
++ vendor/bin/phpunit --testdox --colors=never tests/Database/DatabaseEloquentModelTest.php
++ cat
+PHPUnit 10.5.63 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.3.16
+Configuration: /testbed/phpunit.xml.dist
+
+...............................................................  63 / 168 ( 37%)
+............................................................... 126 / 168 ( 75%)
+..........................................                      168 / 168 (100%)
+
+Time: 00:00.097, Memory: 24.00 MB
+
+Database Eloquent Model (Illuminate\Tests\Database\DatabaseEloquentModel)
+ ✔ Attribute manipulation
+ ✔ Set attribute with numeric key
+ ✔ Dirty attributes
+ ✔ Int and null comparison when dirty
+ ✔ Float and null comparison when dirty
+ ✔ Dirty on cast or date attributes
+ ✔ Dirty on casted objects
+ ✔ Dirty on casted array object
+ ✔ Dirty on casted collection
+ ✔ Dirty on casted custom collection
+ ✔ Dirty on casted stringable
+ ✔ Dirty on casted encrypted collection
+ ✔ Dirty on casted encrypted custom collection
+ ✔ Dirty on casted encrypted array object
+ ✔ Dirty on enum collection object
+ ✔ Dirty on enum array object
+ ✔ Has casts on enum attribute
+ ✔ Clean attributes
+ ✔ Clean when float update attribute
+ ✔ Calculated attributes
+ ✔ Array access to attributes
+ ✔ Only
+ ✔ New instance returns new instance with attributes set
+ ✔ New instance returns new instance with table set
+ ✔ New instance returns new instance with merged casts
+ ✔ Create method saves new model
+ ✔ Make method does not save new model
+ ✔ Force create method saves new model with guarded attributes
+ ✔ Find method use write pdo
+ ✔ Destroy method calls query builder correctly
+ ✔ Destroy method calls query builder correctly with collection
+ ✔ Destroy method calls query builder correctly with eloquent collection
+ ✔ Destroy method calls query builder correctly with multiple args
+ ✔ Destroy method calls query builder correctly with empty ids
+ ✔ With method calls query builder correctly
+ ✔ Without method removes eager loaded relationship correctly
+ ✔ With only method loads relationship correctly
+ ✔ Eager loading with columns
+ ✔ With where has with specific columns
+ ✔ With method calls query builder correctly with array
+ ✔ Update process
+ ✔ Update process doesnt override timestamps
+ ✔ Save is canceled if saving event returns false
+ ✔ Update is canceled if updating event returns false
+ ✔ Events can be fired with custom event objects
+ ✔ Update process without timestamps
+ ✔ Update uses old primary key
+ ✔ Timestamps are returned as objects
+ ✔ Timestamps are returned as objects from plain dates and timestamps
+ ✔ Timestamps are returned as objects on create
+ ✔ Date time attributes return null if set to null
+ ✔ Timestamps are created from strings and integers
+ ✔ From date time
+ ✔ From date time milliseconds
+ ✔ Insert process
+ ✔ Insert is canceled if creating event returns false
+ ✔ Delete properly deletes model
+ ✔ Push no relations
+ ✔ Push empty one relation
+ ✔ Push one relation
+ ✔ Push empty many relation
+ ✔ Push many relation
+ ✔ New query returns eloquent query builder
+ ✔ Get and set table operations
+ ✔ Get key returns value of primary key
+ ✔ Connection management
+ ✔ To array
+ ✔ Visible creates array whitelist
+ ✔ Hidden can also exclude relationships
+ ✔ Get arrayable relations function exclude hidden relationships
+ ✔ To array snake attributes
+ ✔ To array uses mutators
+ ✔ Hidden
+ ✔ Visible
+ ✔ Dynamic hidden
+ ✔ With hidden
+ ✔ Make hidden
+ ✔ Dynamic visible
+ ✔ Make visible if
+ ✔ Make hidden if
+ ✔ Fillable
+ ✔ Qualify column
+ ✔ Force fill method fills guarded attributes
+ ✔ Filling j s o n attributes
+ ✔ Unguard allows anything to be set
+ ✔ Underscore properties are not filled
+ ✔ Guarded
+ ✔ Uses overridden handler when discarding attributes
+ ✔ Fillable overrides guarded
+ ✔ Global guarded
+ ✔ Unguarded runs callback while being unguarded
+ ✔ Unguarded call does not change unguarded state
+ ✔ Unguarded call does not change unguarded state on exception
+ ✔ Has one creates proper relation
+ ✔ Morph one creates proper relation
+ ✔ Correct morph class is returned
+ ✔ Has many creates proper relation
+ ✔ Morph many creates proper relation
+ ✔ Belongs to creates proper relation
+ ✔ Morph to creates proper relation
+ ✔ Belongs to many creates proper relation
+ ✔ Relations with varied connections
+ ✔ Models assume their name
+ ✔ The mutator cache is populated
+ ✔ Route key is primary key
+ ✔ Route name is primary key name
+ ✔ Clone model makes a fresh copy of the model
+ ✔ Clone model makes a fresh copy of the model when model has uuid primary key
+ ✔ Clone model makes a fresh copy of the model when model has uuid
+ ✔ Clone model makes a fresh copy of the model when model has ulid primary key
+ ✔ Clone model makes a fresh copy of the model when model has ulid
+ ✔ Model observers can be attached to models
+ ✔ Model observers can be attached to models with string
+ ✔ Model observers can be attached to models through an array
+ ✔ Throw exception on attaching not exists model observer with string
+ ✔ Throw exception on attaching not exists model observers through an array
+ ✔ Model observers can be attached to models through calling observe method only once
+ ✔ Without event dispatcher
+ ✔ Set observable events
+ ✔ Add observable event
+ ✔ Add multiple observeable events
+ ✔ Remove observable event
+ ✔ Remove multiple observable events
+ ✔ Get model attribute method throws exception if not relation
+ ✔ Model is booted on unserialize
+ ✔ Models trait is initialized
+ ✔ Appending of attributes
+ ✔ Get mutated attributes
+ ✔ Replicate creates a new model instance with same attribute values
+ ✔ Replicating event is fired when replicating model
+ ✔ Replicate quietly creates a new model instance with same attribute values and is quiet
+ ✔ Increment on existing model calls query and sets attribute
+ ✔ Increment quietly on existing model calls query and sets attribute and is quiet
+ ✔ Decrement quietly on existing model calls query and sets attribute and is quiet
+ ✔ Relationship touch owners is propagated
+ ✔ Relationship touch owners is not propagated if no relationship result
+ ✔ Model attributes are casted when present in casts array
+ ✔ Model date attribute casting resets time
+ ✔ Model attribute casting preserves null
+ ✔ Model attribute casting fails on unencodable data
+ ✔ Model attribute casting with special float values
+ ✔ Merge casts merges casts
+ ✔ Updating non existent model fails
+ ✔ Isset behaves correctly with attributes and relationships
+ ✔ Non existing attribute with internal method name doesnt call method
+ ✔ Int key type preserved
+ ✔ String key type preserved
+ ✔ Scopes method
+ ✔ Scopes method with string
+ ✔ Is with null
+ ✔ Is with the same model instance
+ ✔ Is with another model instance
+ ✔ Is with another table
+ ✔ Is with another connection
+ ✔ Without touching callback
+ ✔ Without touching on callback
+ ✔ Throws when accessing missing attributes
+ ✔ Uses overridden handler when accessing missing attributes
+ ✔ Doesnt throw when accessing missing attributes on model that is not saved
+ ✔ Doesnt throw when accessing missing attributes on model that was recently created
+ ✔ Doesnt throw when assigning missing attributes
+ ✔ Doesnt throw when testing missing attributes
+ ✔ Touching model with timestamps
+ ✔ Not touching model with updated at null
+ ✔ Not touching model without timestamps
+ ✔ Get original casts attributes
+ ✔ Unsaved model
+ ✔ Discard changes
+
+OK (168 tests, 590 assertions)
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 4a9ae49f3969c4648b5ee000e6692a449e34c2a8 tests/Database/DatabaseEloquentModelTest.php
+>>>>> Test Exit Code: 0
+Updated 1 path from 3cc3ddcae6

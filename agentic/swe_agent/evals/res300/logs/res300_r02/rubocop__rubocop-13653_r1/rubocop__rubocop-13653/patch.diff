@@ -1,0 +1,163 @@
+diff --git a/changelog/new_add_allowmodifiersonaliasmethod_option_to_styleaccessmodifierdeclarations.md b/changelog/new_add_allowmodifiersonaliasmethod_option_to_styleaccessmodifierdeclarations.md
+new file mode 100644
+index 000000000..e90ae87a4
+--- /dev/null
++++ b/changelog/new_add_allowmodifiersonaliasmethod_option_to_styleaccessmodifierdeclarations.md
+@@ -0,0 +1 @@
++* [#13667](https://github.com/rubocop/rubocop/pull/13667): Add `AllowModifiersOnAliasMethod` option to `Style/AccessModifierDeclarations` cop to allow the use of access modifiers before `alias_method`.
+diff --git a/config/default.yml b/config/default.yml
+index 761cbb933..1db036518 100644
+--- a/config/default.yml
++++ b/config/default.yml
+@@ -3142,13 +3142,14 @@ Style/AccessModifierDeclarations:
+   Description: 'Checks style of how access modifiers are used.'
+   Enabled: true
+   VersionAdded: '0.57'
+-  VersionChanged: '0.81'
++  VersionChanged: '1.70'
+   EnforcedStyle: group
+   SupportedStyles:
+     - inline
+     - group
+   AllowModifiersOnSymbols: true
+   AllowModifiersOnAttrs: true
++  AllowModifiersOnAliasMethod: false
+   SafeAutoCorrect: false
+ 
+ Style/AccessorGrouping:
+diff --git a/docs/modules/ROOT/pages/cops_style.adoc b/docs/modules/ROOT/pages/cops_style.adoc
+index 8c2006a1a..c7158b3b5 100644
+--- a/docs/modules/ROOT/pages/cops_style.adoc
++++ b/docs/modules/ROOT/pages/cops_style.adoc
+@@ -16,7 +16,7 @@
+ | Yes
+ | Always (Unsafe)
+ | 0.57
+-| 0.81
++| 1.70
+ |===
+ 
+ Access modifiers should be declared to apply to a group of methods
+@@ -26,6 +26,8 @@ Applications of visibility methods to symbols can be controlled
+ using AllowModifiersOnSymbols config.
+ Also, the visibility of `attr*` methods can be controlled using
+ AllowModifiersOnAttrs config.
++The visibility of `alias_method` can be controlled using
++AllowModifiersOnAliasMethod config.
+ 
+ In Ruby 3.0, `attr*` methods now return an array of defined method names
+ as symbols. So we can write the modifier and `attr*` in inline style.
+@@ -164,6 +166,32 @@ class Foo
+ end
+ ----
+ 
++[#allowmodifiersonaliasmethod_-true-styleaccessmodifierdeclarations]
++==== AllowModifiersOnAliasMethod: true
++
++[source,ruby]
++----
++# good
++class Foo
++
++  private alias_method :bar, :baz
++
++end
++----
++
++[#allowmodifiersonaliasmethod_-false-_default_-styleaccessmodifierdeclarations]
++==== AllowModifiersOnAliasMethod: false (default)
++
++[source,ruby]
++----
++# bad
++class Foo
++
++  private alias_method :bar, :baz
++
++end
++----
++
+ [#configurable-attributes-styleaccessmodifierdeclarations]
+ === Configurable attributes
+ 
+@@ -181,6 +209,10 @@ end
+ | AllowModifiersOnAttrs
+ | `true`
+ | Boolean
++
++| AllowModifiersOnAliasMethod
++| `false`
++| Boolean
+ |===
+ 
+ [#styleaccessorgrouping]
+diff --git a/lib/rubocop/cop/style/access_modifier_declarations.rb b/lib/rubocop/cop/style/access_modifier_declarations.rb
+index 37fc146f5..370db8c28 100644
+--- a/lib/rubocop/cop/style/access_modifier_declarations.rb
++++ b/lib/rubocop/cop/style/access_modifier_declarations.rb
+@@ -10,6 +10,8 @@ module RuboCop
+       # using AllowModifiersOnSymbols config.
+       # Also, the visibility of `attr*` methods can be controlled using
+       # AllowModifiersOnAttrs config.
++      # The visibility of `alias_method` can be controlled using
++      # AllowModifiersOnAliasMethod config.
+       #
+       # In Ruby 3.0, `attr*` methods now return an array of defined method names
+       # as symbols. So we can write the modifier and `attr*` in inline style.
+@@ -112,6 +114,22 @@ module RuboCop
+       #     private attr :quux
+       #
+       #   end
++      #
++      # @example AllowModifiersOnAliasMethod: true
++      #   # good
++      #   class Foo
++      #
++      #     private alias_method :bar, :baz
++      #
++      #   end
++      #
++      # @example AllowModifiersOnAliasMethod: false (default)
++      #   # bad
++      #   class Foo
++      #
++      #     private alias_method :bar, :baz
++      #
++      #   end
+       class AccessModifierDeclarations < Base
+         extend AutoCorrector
+ 
+@@ -145,6 +163,12 @@ module RuboCop
+             (send nil? {:attr :attr_reader :attr_writer :attr_accessor} _+))
+         PATTERN
+ 
++        # @!method access_modifier_with_alias_method?(node)
++        def_node_matcher :access_modifier_with_alias_method?, <<~PATTERN
++          (send nil? {:private :protected :public :module_function}
++            (send nil? :alias_method _ _))
++        PATTERN
++
+         def on_send(node)
+           return if allowed?(node)
+ 
+@@ -164,7 +188,8 @@ module RuboCop
+           !node.access_modifier? ||
+             ALLOWED_NODE_TYPES.include?(node.parent&.type) ||
+             allow_modifiers_on_symbols?(node) ||
+-            allow_modifiers_on_attrs?(node)
++            allow_modifiers_on_attrs?(node) ||
++            allow_modifiers_on_alias_method?(node)
+         end
+ 
+         def autocorrect(corrector, node)
+@@ -194,6 +219,10 @@ module RuboCop
+           cop_config['AllowModifiersOnAttrs'] && access_modifier_with_attr?(node)
+         end
+ 
++        def allow_modifiers_on_alias_method?(node)
++          cop_config['AllowModifiersOnAliasMethod'] && access_modifier_with_alias_method?(node)
++        end
++
+         def offense?(node)
+           (group_style? && access_modifier_is_inlined?(node) &&
+             !node.parent&.if_type? && !right_siblings_same_inline_method?(node)) ||

@@ -1,0 +1,32 @@
+{
+    "tokio-rs__axum-734": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "infra_failure": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "routing::tests::head_content_length_through_hyper_server"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "routing::method_routing::tests::head_takes_precedence_over_get",
+                    "routing::tests::head_content_length_through_hyper_server_that_hits_fallback"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

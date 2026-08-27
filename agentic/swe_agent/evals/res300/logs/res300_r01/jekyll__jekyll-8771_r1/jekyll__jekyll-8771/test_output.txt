@@ -1,0 +1,170 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/jekyll.rb
+	modified:   lib/jekyll/drops/site_drop.rb
+	modified:   lib/jekyll/readers/data_reader.rb
+	modified:   lib/jekyll/utils.rb
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	lib/jekyll/data_entry.rb
+	lib/jekyll/data_hash.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit d45fb9647761c8c208865f71cedb9f2f0dc26f1d
+Author: jekyllbot <jekyllbot@jekyllrb.com>
+Date:   Thu Sep 29 03:37:44 2022 -0700
+
+    Update history to reflect merge of #9136 [ci skip]
+
+diff --git a/History.markdown b/History.markdown
+index cd15f820..8b974b31 100644
+--- a/History.markdown
++++ b/History.markdown
+@@ -115,6 +115,7 @@
+   * Bump rubocop to 1.32 (#9093)
+   * Bump RuboCop to `1.36.x` (#9125)
+   * Use check-spelling/check-spelling@v0.0.20 (#9111)
++  * Disable pending cops when running rubocop (#9136)
+ 
+ ### Minor Enhancements
+ 
++ git -c core.fileMode=false diff d45fb9647761c8c208865f71cedb9f2f0dc26f1d
+diff --git a/lib/jekyll.rb b/lib/jekyll.rb
+index 231f8fd8..49b71e70 100644
+--- a/lib/jekyll.rb
++++ b/lib/jekyll.rb
+@@ -45,6 +45,8 @@ module Jekyll
+   autoload :Collection,          "jekyll/collection"
+   autoload :Configuration,       "jekyll/configuration"
+   autoload :Convertible,         "jekyll/convertible"
++  autoload :DataEntry,           "jekyll/data_entry"
++  autoload :DataHash,            "jekyll/data_hash"
+   autoload :Deprecator,          "jekyll/deprecator"
+   autoload :Document,            "jekyll/document"
+   autoload :EntryFilter,         "jekyll/entry_filter"
+diff --git a/lib/jekyll/drops/site_drop.rb b/lib/jekyll/drops/site_drop.rb
+index cc3c60fb..13c5757b 100644
+--- a/lib/jekyll/drops/site_drop.rb
++++ b/lib/jekyll/drops/site_drop.rb
+@@ -7,7 +7,6 @@ module Jekyll
+ 
+       mutable false
+ 
+-      delegate_method_as :site_data, :data
+       delegate_methods :time, :pages, :static_files, :tags, :categories
+ 
+       private delegate_method_as :config, :fallback_data
+@@ -24,6 +23,12 @@ module Jekyll
+         (key != "posts" && @obj.collections.key?(key)) || super
+       end
+ 
++      def data
++        @obj.site_data.tap do |value|
++          value.context = @context if value.respond_to?(:context=)
++        end
++      end
++
+       def posts
+         @site_posts ||= @obj.posts.docs.sort { |a, b| b <=> a }
+       end
+diff --git a/lib/jekyll/readers/data_reader.rb b/lib/jekyll/readers/data_reader.rb
+index 80b57bd6..f95556da 100644
+--- a/lib/jekyll/readers/data_reader.rb
++++ b/lib/jekyll/readers/data_reader.rb
+@@ -6,7 +6,7 @@ module Jekyll
+ 
+     def initialize(site, in_source_dir: nil)
+       @site = site
+-      @content = {}
++      @content = DataHash.new
+       @entry_filter = EntryFilter.new(site)
+       @in_source_dir = in_source_dir || @site.method(:in_source_dir)
+       @source_dir = @in_source_dir.call("/")
+@@ -24,6 +24,8 @@ module Jekyll
+       @content
+     end
+ 
++    # rubocop:disable Metrics/AbcSize
++
+     # Read and parse all .yaml, .yml, .json, .csv and .tsv
+     # files under <dir> and add them to the <data> variable.
+     #
+@@ -43,13 +45,14 @@ module Jekyll
+         next if @entry_filter.symlink?(path)
+ 
+         if File.directory?(path)
+-          read_data_to(path, data[sanitize_filename(entry)] = {})
++          read_data_to(path, data[sanitize_filename(entry)] = DataHash.new)
+         else
+           key = sanitize_filename(File.basename(entry, ".*"))
+-          data[key] = read_data_file(path)
++          data[key] = DataEntry.new(site, path, read_data_file(path))
+         end
+       end
+     end
++    # rubocop:enable Metrics/AbcSize
+ 
+     # Determines how to read a data file.
+     #
+diff --git a/lib/jekyll/utils.rb b/lib/jekyll/utils.rb
+index 2a965270..8eb807d7 100644
+--- a/lib/jekyll/utils.rb
++++ b/lib/jekyll/utils.rb
+@@ -47,7 +47,14 @@ module Jekyll
+     end
+ 
+     def mergable?(value)
+-      value.is_a?(Hash) || value.is_a?(Drops::Drop)
++      case value
++      when Hash, Drops::Drop, DataHash
++        true
++      when DataEntry
++        mergable?(value.data)
++      else
++        false
++      end
+     end
+ 
+     def duplicable?(obj)
++ rm -f test/source/_data/boolean.yml test/source/_data/languages_plus.yml test/test_data_entry.rb test/test_data_hash.rb
++ git apply -v -
+<stdin>:7: trailing whitespace.
+true
+Checking patch test/source/_data/boolean.yml...
+Checking patch test/source/_data/languages_plus.yml...
+Checking patch test/test_data_entry.rb...
+Checking patch test/test_data_hash.rb...
+Applied patch test/source/_data/boolean.yml cleanly.
+Applied patch test/source/_data/languages_plus.yml cleanly.
+Applied patch test/test_data_entry.rb cleanly.
+Applied patch test/test_data_hash.rb cleanly.
+warning: 1 line adds whitespace errors.
++ : '>>>>> Start Test Output'
++ bundle exec cucumber --publish-quiet --format progress --no-color features/incremental_rebuild.feature:27 features/incremental_rebuild.feature:70
++ cat
+/testbed/features/support/helpers.rb:3: warning: csv was loaded from the standard library, but will no longer be part of the default gems starting from Ruby 3.4.0.
+You can add csv to your Gemfile or gemspec to silence this warning.
+
+features/incremental_rebuild.feature:27  Scenario: Rebuild when content is changed ........... (1.558923533s)
+features/incremental_rebuild.feature:70  Scenario: Rebuild when a dependency of document in custom collection_dir is changed ............... (1.526873272s)
+Worst offenders:
+  1.558923533s for "Rebuild when content is changed" (features/incremental_rebuild.feature:27)
+  1.526873272s for "Rebuild when a dependency of document in custom collection_dir is changed" (features/incremental_rebuild.feature:70)
+
+
+
+2 scenarios (2 passed)
+26 steps (26 passed)
+0m3.086s
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ rm -f test/source/_data/boolean.yml test/source/_data/languages_plus.yml test/test_data_entry.rb test/test_data_hash.rb

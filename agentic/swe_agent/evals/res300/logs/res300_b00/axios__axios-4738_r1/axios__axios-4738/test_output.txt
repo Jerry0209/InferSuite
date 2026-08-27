@@ -1,0 +1,75 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch v1.x
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/adapters/http.js
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 9bb016f95e6de871a44f3276fd06562704a0abb0
+Author: Jay <jasonsaayman@gmail.com>
+Date:   Sat May 28 11:37:01 2022 +0200
+
+    chore: updated actions to run on new version based branches
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index eadc5ef..f81e012 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -2,9 +2,9 @@ name: ci
+ 
+ on:
+   push:
+-    branches: [master, 'release/*', dev]
++    branches: [master, 'v1.x/*', 'v2.x/*']
+   pull_request:
+-    branches: [master, 'release/*', dev]
++    branches: [master, 'v1.x/*', 'v2.x/*']
+ 
+ jobs:
+   build:
++ git -c core.fileMode=false diff 9bb016f95e6de871a44f3276fd06562704a0abb0
+diff --git a/lib/adapters/http.js b/lib/adapters/http.js
+index 8d3588b..fc87251 100755
+--- a/lib/adapters/http.js
++++ b/lib/adapters/http.js
+@@ -420,9 +420,13 @@ module.exports = function httpAdapter(config) {
+       // ClientRequest.setTimeout will be fired on the specify milliseconds, and can make sure that abort() will be fired after connect.
+       req.setTimeout(timeout, function handleRequestTimeout() {
+         req.abort();
++        var timeoutErrorMessage = config.timeout ? 'timeout of ' + config.timeout + 'ms exceeded' : 'timeout exceeded';
+         var transitional = config.transitional || transitionalDefaults;
++        if (config.timeoutErrorMessage) {
++          timeoutErrorMessage = config.timeoutErrorMessage;
++        }
+         reject(new AxiosError(
+-          'timeout of ' + timeout + 'ms exceeded',
++          timeoutErrorMessage,
+           transitional.clarifyTimeoutError ? AxiosError.ETIMEDOUT : AxiosError.ECONNABORTED,
+           config,
+           req
++ git checkout 9bb016f95e6de871a44f3276fd06562704a0abb0 test/unit/adapters/http.js
+Updated 0 paths from 5757ef5
++ git apply -v -
+Checking patch test/unit/adapters/http.js...
+Applied patch test/unit/adapters/http.js cleanly.
++ : '>>>>> Start Test Output'
++ timeout 10s npx mocha -R tap test/unit/adapters/http.js -g timeout
++ cat
+ok 1 supports http with nodejs should throw an error if the timeout property is not parsable as a number
+ok 2 supports http with nodejs should parse the timeout property
+ok 3 supports http with nodejs should respect the timeout property
+ok 4 supports http with nodejs should respect the timeoutErrorMessage property
+# tests 4
+# pass 4
+# fail 0
+1..4
++ SWEBENCH_TEST_EXIT_CODE=124
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 124'
++ git checkout 9bb016f95e6de871a44f3276fd06562704a0abb0 test/unit/adapters/http.js
+>>>>> Test Exit Code: 124
+Updated 1 path from 5757ef5

@@ -1,0 +1,31 @@
+{
+    "jekyll__jekyll-8771": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "infra_failure": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "features/incremental_rebuild.feature:70  Scenario: Rebuild when a data file is changed"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "features/incremental_rebuild.feature:27  Scenario: Rebuild when content is changed"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

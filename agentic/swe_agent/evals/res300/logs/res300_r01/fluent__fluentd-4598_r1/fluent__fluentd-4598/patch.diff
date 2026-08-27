@@ -1,0 +1,15 @@
+diff --git a/lib/fluent/plugin_helper/http_server/server.rb b/lib/fluent/plugin_helper/http_server/server.rb
+index 549db76c..9e807958 100644
+--- a/lib/fluent/plugin_helper/http_server/server.rb
++++ b/lib/fluent/plugin_helper/http_server/server.rb
+@@ -77,9 +77,7 @@ module Fluent
+ 
+         HttpServer::Methods::ALL.map { |e| e.downcase.to_sym }.each do |name|
+           define_method(name) do |path, app = nil, &block|
+-            unless path.end_with?('/')
+-              path << '/'
+-            end
++            path += '/' unless path.end_with?('/')
+ 
+             if (block && app) || (!block && !app)
+               raise 'You must specify either app or block in the same time'

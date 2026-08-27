@@ -1,0 +1,132 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch v1.x
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   dist/node/axios.cjs
+	modified:   lib/adapters/http.js
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit ae003913a39f3bdf9bbbd8f71a1ed681fd044d8b
+Author: David Dallas <110460234+DavidJDallas@users.noreply.github.com>
+Date:   Thu Sep 7 15:59:17 2023 +0100
+
+    docs(paramsSerializer config within request config): update documentation for paramsSerializer
+    
+    Co-authored-by: David Dallas <Davidcobb606@gmail.com>
+    Co-authored-by: Jay <jasonsaayman@gmail.com>
+
+diff --git a/README.md b/README.md
+index 5c7a23e..2227252 100644
+--- a/README.md
++++ b/README.md
+@@ -384,12 +384,18 @@ These are the available config options for making requests. Only the `url` is re
+   params: {
+     ID: 12345
+   },
+-
+-  // `paramsSerializer` is an optional config in charge of serializing `params`
++  
++  // `paramsSerializer` is an optional config that allows you to customize serializing `params`. 
+   paramsSerializer: {
+-    encode?: (param: string): string => { /* Do custom ops here and return transformed string */ }, // custom encoder function; sends Key/Values in an iterative fashion
+-    serialize?: (params: Record<string, any>, options?: ParamsSerializerOptions ), // mimic pre 1.x behavior and send entire params object to a custom serializer func. Allows consumer to control how params are serialized.
+-    indexes: false // array indexes format (null - no brackets, false (default) - empty brackets, true - brackets with indexes)
++
++    //Custom encoder function which sends key/value pairs in an iterative fashion.
++    encode?: (param: string): string => { /* Do custom operations here and return transformed string */ }, 
++    
++    // Custom serializer function for the entire parameter. Allows user to mimic pre 1.x behaviour.
++    serialize?: (params: Record<string, any>, options?: ParamsSerializerOptions ), 
++    
++    //Configuration for formatting array indexes in the params. 
++    indexes: false // Three available options: (1) indexes: null (leads to no brackets), (2) (default) indexes: false (leads to empty brackets), (3) indexes: true (leads to brackets with indexes).    
+   },
+ 
+   // `data` is the data to be sent as the request body
++ git -c core.fileMode=false diff ae003913a39f3bdf9bbbd8f71a1ed681fd044d8b
+diff --git a/dist/node/axios.cjs b/dist/node/axios.cjs
+index fbd7868..53e8f58 100644
+--- a/dist/node/axios.cjs
++++ b/dist/node/axios.cjs
+@@ -2894,7 +2894,7 @@ const httpAdapter = isHttpAdapterSupported && function httpAdapter(config) {
+           delete res.headers['content-encoding'];
+         }
+ 
+-        switch (res.headers['content-encoding']) {
++        switch (res.headers['content-encoding'].toLowerCase()) {
+         /*eslint default-case:0*/
+         case 'gzip':
+         case 'x-gzip':
+diff --git a/lib/adapters/http.js b/lib/adapters/http.js
+index 888b78d..8f5bee7 100755
+--- a/lib/adapters/http.js
++++ b/lib/adapters/http.js
+@@ -471,7 +471,7 @@ export default isHttpAdapterSupported && function httpAdapter(config) {
+           delete res.headers['content-encoding'];
+         }
+ 
+-        switch (res.headers['content-encoding']) {
++        switch (res.headers['content-encoding'].toLowerCase()) {
+         /*eslint default-case:0*/
+         case 'gzip':
+         case 'x-gzip':
++ git checkout ae003913a39f3bdf9bbbd8f71a1ed681fd044d8b test/unit/adapters/http.js
+Updated 0 paths from d37c275
++ git apply -v -
+Checking patch test/unit/adapters/http.js...
+Applied patch test/unit/adapters/http.js cleanly.
++ : '>>>>> Start Test Output'
++ npx mocha test/unit/adapters/http.js -R tap -g compression
++ cat
+ok 1 supports http with nodejs compression should support transparent gunzip
+ok 2 supports http with nodejs compression should support gunzip error handling
+ok 3 supports http with nodejs compression should support disabling automatic decompression of response data
+ok 4 supports http with nodejs compression algorithms gzip decompression should support decompression
+ok 5 supports http with nodejs compression algorithms gzip decompression should not fail if response content-length header is missing (gzip)
+ok 6 supports http with nodejs compression algorithms gzip decompression should not fail with chunked responses (without Content-Length header)
+ok 7 supports http with nodejs compression algorithms gzip decompression should not fail with an empty response without content-length header (Z_BUF_ERROR)
+ok 8 supports http with nodejs compression algorithms gzip decompression should not fail with an empty response with content-length header (Z_BUF_ERROR)
+ok 9 supports http with nodejs compression algorithms GZIP decompression should support decompression
+ok 10 supports http with nodejs compression algorithms GZIP decompression should not fail if response content-length header is missing (GZIP)
+ok 11 supports http with nodejs compression algorithms GZIP decompression should not fail with chunked responses (without Content-Length header)
+ok 12 supports http with nodejs compression algorithms GZIP decompression should not fail with an empty response without content-length header (Z_BUF_ERROR)
+ok 13 supports http with nodejs compression algorithms GZIP decompression should not fail with an empty response with content-length header (Z_BUF_ERROR)
+ok 14 supports http with nodejs compression algorithms compress decompression should support decompression
+ok 15 supports http with nodejs compression algorithms compress decompression should not fail if response content-length header is missing (compress)
+ok 16 supports http with nodejs compression algorithms compress decompression should not fail with chunked responses (without Content-Length header)
+ok 17 supports http with nodejs compression algorithms compress decompression should not fail with an empty response without content-length header (Z_BUF_ERROR)
+ok 18 supports http with nodejs compression algorithms compress decompression should not fail with an empty response with content-length header (Z_BUF_ERROR)
+ok 19 supports http with nodejs compression algorithms deflate decompression should support decompression
+ok 20 supports http with nodejs compression algorithms deflate decompression should not fail if response content-length header is missing (deflate)
+ok 21 supports http with nodejs compression algorithms deflate decompression should not fail with chunked responses (without Content-Length header)
+ok 22 supports http with nodejs compression algorithms deflate decompression should not fail with an empty response without content-length header (Z_BUF_ERROR)
+ok 23 supports http with nodejs compression algorithms deflate decompression should not fail with an empty response with content-length header (Z_BUF_ERROR)
+ok 24 supports http with nodejs compression algorithms deflate-raw decompression should support decompression
+ok 25 supports http with nodejs compression algorithms deflate-raw decompression should not fail if response content-length header is missing (deflate)
+ok 26 supports http with nodejs compression algorithms deflate-raw decompression should not fail with chunked responses (without Content-Length header)
+ok 27 supports http with nodejs compression algorithms deflate-raw decompression should not fail with an empty response without content-length header (Z_BUF_ERROR)
+ok 28 supports http with nodejs compression algorithms deflate-raw decompression should not fail with an empty response with content-length header (Z_BUF_ERROR)
+ok 29 supports http with nodejs compression algorithms br decompression should support decompression
+ok 30 supports http with nodejs compression algorithms br decompression should not fail if response content-length header is missing (br)
+ok 31 supports http with nodejs compression algorithms br decompression should not fail with chunked responses (without Content-Length header)
+ok 32 supports http with nodejs compression algorithms br decompression should not fail with an empty response without content-length header (Z_BUF_ERROR)
+ok 33 supports http with nodejs compression algorithms br decompression should not fail with an empty response with content-length header (Z_BUF_ERROR)
+# tests 33
+# pass 33
+# fail 0
+1..33
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 12.0.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+npm notice To update run: npm install -g npm@12.0.2
+npm notice
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout ae003913a39f3bdf9bbbd8f71a1ed681fd044d8b test/unit/adapters/http.js
+>>>>> Test Exit Code: 0
+Updated 1 path from d37c275

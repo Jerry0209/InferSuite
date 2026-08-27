@@ -1,0 +1,52 @@
+diff --git a/History.markdown b/History.markdown
+index e77d8daad..de9a19aca 100644
+--- a/History.markdown
++++ b/History.markdown
+@@ -78,6 +78,7 @@
+   * Fix deprecation message for missing doc method (#8960)
+   * Fix response header for content served via `jekyll serve` (#8965)
+   * Trigger livereload in sites without pages (#8337)
++  * Expose `basename` from `document.rb` as `name` to Liquid templates (#8761)
+ 
+ ### Development Fixes
+ 
+diff --git a/lib/jekyll/drops/document_drop.rb b/lib/jekyll/drops/document_drop.rb
+index fef5920be..6b1f97950 100644
+--- a/lib/jekyll/drops/document_drop.rb
++++ b/lib/jekyll/drops/document_drop.rb
+@@ -25,6 +25,15 @@ module Jekyll
+         fallback_data["excerpt"].to_s
+       end
+ 
++      # `basename` of the underlying document exposed as `name` to Liquid templates.
++      # If the document's front matter defines a `name` attribute, that takes
++      # precedence over the basename of the source file.
++      #
++      # Returns the name of the document as a String.
++      def name
++        fallback_data["name"] || @obj.basename
++      end
++
+       def <=>(other)
+         return nil unless other.is_a? DocumentDrop
+ 
+diff --git a/lib/jekyll/drops/excerpt_drop.rb b/lib/jekyll/drops/excerpt_drop.rb
+index 425133fa7..35a51062d 100644
+--- a/lib/jekyll/drops/excerpt_drop.rb
++++ b/lib/jekyll/drops/excerpt_drop.rb
+@@ -14,6 +14,15 @@ module Jekyll
+       def excerpt
+         nil
+       end
++
++      # `basename` of the document the excerpt belongs to, exposed as `name` to
++      # Liquid templates. If the document's front matter defines a `name`
++      # attribute, that takes precedence over the basename of the source file.
++      #
++      # Returns the name of the excerpt's document as a String.
++      def name
++        @obj.doc.data["name"] || @obj.doc.basename
++      end
+     end
+   end
+ end

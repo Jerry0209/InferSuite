@@ -1,0 +1,44 @@
+{
+    "nushell__nushell-13246": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "infra_failure": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "commands::find::find_with_bytestream_search_with_char"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "commands::find::find_with_list_search_with_char",
+                    "commands::find::find_takes_into_account_linebreaks_in_string",
+                    "commands::find::find_in_table_only_keep_rows_with_matches_on_selected_columns",
+                    "commands::find::find_with_filepath_search_with_string",
+                    "commands::find::find_with_filepath_search_with_multiple_patterns",
+                    "commands::find::find_with_list_search_with_number",
+                    "commands::find::find_in_table_keeps_row_with_single_matched_and_keeps_other_columns",
+                    "commands::find::find_with_string_search_with_string",
+                    "commands::find::find_with_regex_in_table_keeps_row_if_one_column_matches",
+                    "commands::find::inverted_find_in_table_keeps_row_if_none_of_the_selected_columns_matches",
+                    "commands::find::find_with_list_search_with_string",
+                    "commands::find::find_in_table_keeps_row_with_multiple_matched_and_keeps_other_columns",
+                    "commands::find::find_with_string_search_with_string_not_found",
+                    "commands::find::inverted_find_with_regex_in_table_keeps_row_if_none_of_the_columns_matches"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

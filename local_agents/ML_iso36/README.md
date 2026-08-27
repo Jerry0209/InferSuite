@@ -18,15 +18,24 @@ cell's median fence). Realized layout (27 cells + 9 top-ups):
 
 | lang | B | T | S | M | top-ups |
 |---|---|---|---|---|---|
-| C | redis-12272 | micropython-13039 | jq-2598 | valkey-1499 | — |
+| C | redis-12272 | micropython-13039 | jq-2598 | redis-10068 | — |
 | C++ | nlohmann-4237 | — | — | — | 3× fmt (B; only repo besides nlohmann in the cell) |
 | Rust | nushell-13831 | ripgrep-2209 | — | bat-2835 | axum-1730 (B) |
 | Go | caddy-4774 | gin-2121 | — | prometheus-10720 | hugo-12579 (M) |
 | Java | gson-1093 | gson-2134 | lombok-3479 | javaparser-4538 | — |
 | PHP | laravel-52684 | php-cs-fixer-8064 | carbon-2752 | phpspreadsheet-3463 | — |
-| Ruby | fpm-1829 | fastlane-20958 | rubocop-13396 | rubocop-13560 | — |
-| JavaScript | — | babel-15649 | — | preact-3763 | axios-6539, three.js-26589 (T) |
-| TypeScript | — | docusaurus-9897 | vuejs-core-11589 | — | immutable-js-2006, docusaurus-10130 (T) |
+| Ruby | fpm-1829 | fastlane-20958 | — | rubocop-13560 | fluentd-3328 (T) |
+| JavaScript | — | babel-15649 | — | preact-3763 | axios-5892, three.js-26589 (T) |
+| TypeScript | — | docusaurus-9897 | vuejs-core-11870 | — | immutable-js-2006, docusaurus-10130 (T) |
+
+**Resolution-clean revision (2026-08-27).** After the full-census official SWE-bench
+evaluation (docs/multi_full_stratification.md, 2026-08-27 section), the four picks whose
+live episodes are not officially resolved were replaced under the original ranking:
+valkey-1499 → redis-10068 (C×M), rubocop-13396 → fluentd-3328 (Ruby×S had no resolvable
+candidate — slot converted to majority-T top-up), vuejs-core-11589 → core-11870 (TS×S),
+axios-6539 → axios-5892 (JS×T). The table above shows the revised set (26 cells). The
+four replacements still need P7 replay profiling; the four dropped tasks's banked
+profiles remain valid data but leave the 36-set figures.
 
 Known forced outcomes (all recorded in the TSV `why` column): the JavaScript×S cell's only
 member is hard-flagged, so JS runs without S; Java×B and Java×T are singletons (both gson);

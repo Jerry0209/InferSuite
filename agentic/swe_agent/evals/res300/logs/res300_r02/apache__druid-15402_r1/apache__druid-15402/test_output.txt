@@ -1,0 +1,497 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   processing/src/main/java/org/apache/druid/query/groupby/GroupByQueryQueryToolChest.java
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 1df53d6eb30a019fff69a5ff7533ebbd998a438d
+Author: Vadim Ogievetsky <vadim@ogievetsky.com>
+Date:   Mon Nov 20 23:19:11 2023 -0800
+
+    fix physical memory detection on OSX (#15405)
+    
+    * fix physical memory detection on OSX
+    
+    * typo
+
+diff --git a/examples/bin/start-druid-main.py b/examples/bin/start-druid-main.py
+index 36d07c17b6..cceb6ff60d 100644
+--- a/examples/bin/start-druid-main.py
++++ b/examples/bin/start-druid-main.py
+@@ -362,7 +362,7 @@ def get_physical_memory_linux():
+ 
+ def get_physical_memory_osx():
+     p1 = subprocess.Popen(['sysctl', '-a'], stdout=subprocess.PIPE)
+-    p2 = subprocess.check_output(['grep', 'hw.memsize'], stdin=p1.stdout)
++    p2 = subprocess.check_output(['grep', 'hw.memsize:'], stdin=p1.stdout)
+     p2 = p2.decode('utf-8')
+     fields = p2.split(':')
+ 
+@@ -394,7 +394,7 @@ def convert_total_memory_string(memory):
+             physical_memory = get_physical_memory()
+ 
+             if physical_memory is None:
+-                raise ValueError('Please specify memory argument')
++                raise ValueError('Could not automatically determine memory size. Please explicitly specify the memory argument as --memory=<integer_value><m/g>')
+ 
+             return physical_memory
+         elif memory.endswith(MEM_MB_SUFFIX):
++ git -c core.fileMode=false diff 1df53d6eb30a019fff69a5ff7533ebbd998a438d
+diff --git a/processing/src/main/java/org/apache/druid/query/groupby/GroupByQueryQueryToolChest.java b/processing/src/main/java/org/apache/druid/query/groupby/GroupByQueryQueryToolChest.java
+index 9c746dd414..96b8c7ec69 100644
+--- a/processing/src/main/java/org/apache/druid/query/groupby/GroupByQueryQueryToolChest.java
++++ b/processing/src/main/java/org/apache/druid/query/groupby/GroupByQueryQueryToolChest.java
+@@ -35,6 +35,7 @@ import com.google.common.base.Supplier;
+ import com.google.common.collect.Lists;
+ import com.google.inject.Inject;
+ import org.apache.druid.data.input.Row;
++import org.apache.druid.error.DruidException;
+ import org.apache.druid.frame.Frame;
+ import org.apache.druid.frame.FrameType;
+ import org.apache.druid.frame.allocation.MemoryAllocatorFactory;
+@@ -62,7 +63,6 @@ import org.apache.druid.query.SubqueryQueryRunner;
+ import org.apache.druid.query.aggregation.AggregatorFactory;
+ import org.apache.druid.query.aggregation.MetricManipulationFn;
+ import org.apache.druid.query.aggregation.MetricManipulatorFns;
+-import org.apache.druid.query.aggregation.PostAggregator;
+ import org.apache.druid.query.cache.CacheKeyBuilder;
+ import org.apache.druid.query.context.ResponseContext;
+ import org.apache.druid.query.dimension.DefaultDimensionSpec;
+@@ -651,9 +651,10 @@ public class GroupByQueryQueryToolChest extends QueryToolChest<ResultRow, GroupB
+             );
+ 
+             if (isResultLevelCache) {
+-              Iterator<PostAggregator> postItr = query.getPostAggregatorSpecs().iterator();
+-              int postPos = 0;
+-              while (postItr.hasNext() && results.hasNext()) {
++              for (int postPos = 0; postPos < query.getPostAggregatorSpecs().size(); postPos++) {
++                if (!results.hasNext()) {
++                  throw DruidException.defensive("Ran out of objects while reading postaggs from cache!");
++                }
+                 resultRow.set(postAggregatorStart + postPos, results.next());
+               }
+             }
++ git checkout 1df53d6eb30a019fff69a5ff7533ebbd998a438d processing/src/test/java/org/apache/druid/query/groupby/GroupByQueryQueryToolChestTest.java
+Updated 0 paths from 784d81e5ff
++ git apply -v -
+Checking patch processing/src/test/java/org/apache/druid/query/groupby/GroupByQueryQueryToolChestTest.java...
+Applied patch processing/src/test/java/org/apache/druid/query/groupby/GroupByQueryQueryToolChestTest.java cleanly.
++ : '>>>>> Start Test Output'
++ mvnd test -B -T 1C -pl processing -Dtest=org.apache.druid.query.groupby.GroupByQueryQueryToolChestTest#testCacheStrategy
++ cat
+Aug 27, 2026 9:16:10 AM org.jline.utils.Log logr
+WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[main] WARNING org.jline - Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[INFO] Processing build on daemon 60b1bd69
+[INFO] Scanning for projects...
+[INFO] BuildTimeEventSpy is registered.
+[INFO] 
+[INFO] Using the SmartBuilder implementation with a thread count of 28
+[INFO] 
+[INFO] -----------------< org.apache.druid:druid-processing >------------------
+[INFO] Building druid-processing 29.0.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/junit/junit-dep/maven-metadata.xml
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/junit/junit-dep/maven-metadata.xml
+[INFO] Downloading from apache.snapshots: https://repository.apache.org/snapshots/junit/junit-dep/maven-metadata.xml
+[INFO] Downloading from sigar: https://repository.mulesoft.org/nexus/content/repositories/public/junit/junit-dep/maven-metadata.xml
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/junit/junit-dep/maven-metadata.xml (563 B at 3.1 kB/s)
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/junit/junit-dep/maven-metadata.xml (563 B at 3.1 kB/s)
+[INFO] Downloaded from sigar: https://repository.mulesoft.org/nexus/content/repositories/public/junit/junit-dep/maven-metadata.xml (610 B at 638 B/s)
+[WARNING] The artifact org.hibernate:hibernate-validator:jar:6.2.5.Final has been relocated to org.hibernate.validator:hibernate-validator:jar:6.2.5.Final
+[INFO] 
+[INFO] --- checkstyle:3.0.0:check (validate) @ druid-processing ---
+[INFO] Starting audit...
+Audit done.
+[INFO] 
+[INFO] >>> pmd:3.16.0:check (validate) > :pmd @ druid-processing >>>
+[WARNING] The artifact org.hibernate:hibernate-validator:jar:6.2.5.Final has been relocated to org.hibernate.validator:hibernate-validator:jar:6.2.5.Final
+[INFO] 
+[INFO] --- pmd:3.16.0:pmd (pmd) @ druid-processing ---
+[INFO] PMD version: 6.42.0
+[WARNING] There are 1 PMD processing errors:
+[WARNING] /testbed/processing/src/main/java/org/apache/druid/query/aggregation/JavaScriptAggregatorFactory.java: PMDException: Error while parsing /testbed/processing/src/main/java/org/apache/druid/query/aggregation/JavaScriptAggregatorFactory.java
+[INFO] 
+[INFO] <<< pmd:3.16.0:check (validate) < :pmd @ druid-processing <<<
+[INFO] 
+[INFO] 
+[INFO] --- pmd:3.16.0:check (validate) @ druid-processing ---
+[INFO] PMD version: 6.42.0
+[INFO] 
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (enforce-maven-version) @ druid-processing ---
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (enforce-java-version) @ druid-processing ---
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (default-cli) @ druid-processing ---
+[WARNING] The artifact org.hibernate:hibernate-validator:jar:6.2.5.Final has been relocated to org.hibernate.validator:hibernate-validator:jar:6.2.5.Final
+[INFO] 
+[INFO] --- git-commit-id:4.9.10:revision (default) @ druid-processing ---
+[INFO] 
+[INFO] --- jacoco:0.8.7:prepare-agent (prepare-agent) @ druid-processing ---
+[INFO] jacocoArgLine set to -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.7/org.jacoco.agent-0.8.7-runtime.jar=destfile=/testbed/processing/target/jacoco.exec,excludes=org/apache/druid/java/util/emitter/core/LoggingEmitter.class:org/apache/druid/java/util/common/logger/Logger.class
+[INFO] 
+[INFO] --- antlr4:4.5.3:antlr4 (default) @ druid-processing ---
+[INFO] No grammars to process
+[INFO] ANTLR 4: Processing source directory /testbed/processing/src/main/antlr4
+[INFO] 
+[INFO] --- remote-resources:1.7.0:process (process-resource-bundles) @ druid-processing ---
+[INFO] Preparing remote bundle org.apache.apache.resources:apache-jar-resource-bundle:1.5
+[INFO] Copying 3 resources from 1 bundle.
+[WARNING] While downloading org.hibernate:hibernate-validator:6.2.5.Final
+  This artifact has been relocated to org.hibernate.validator:hibernate-validator:6.2.5.Final.
+[INFO] artifact junit:junit-dep: checking for updates from maven.org
+[INFO] artifact junit:junit-dep: checking for updates from sigar
+[INFO] artifact junit:junit-dep: checking for updates from central
+[INFO] artifact junit:junit: checking for updates from maven.org
+[INFO] artifact junit:junit: checking for updates from sigar
+[INFO] artifact junit:junit: checking for updates from central
+[INFO] 
+[INFO] --- dependency:3.1.1:unpack-dependencies (copy-sigar-lib-to-resources) @ druid-processing ---
+[INFO] org.hyperic:sigar-dist:zip:1.6.5.132 already exists in destination.
+[INFO] 
+[INFO] --- resources:3.2.0:resources (default-resources) @ druid-processing ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 23 resources
+[INFO] Copying 3 resources
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ druid-processing ---
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 2208 source files with javac [debug release 8] to target/classes
+[INFO] /testbed/processing/src/main/java/org/apache/druid/segment/incremental/IncrementalIndex.java: Some input files use or override a deprecated API.
+[INFO] /testbed/processing/src/main/java/org/apache/druid/segment/incremental/IncrementalIndex.java: Recompile with -Xlint:deprecation for details.
+[INFO] /testbed/processing/src/main/java/org/apache/druid/query/topn/TopNParams.java: Some input files use unchecked or unsafe operations.
+[INFO] /testbed/processing/src/main/java/org/apache/druid/query/topn/TopNParams.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- forbiddenapis:3.2:check (compile) @ druid-processing ---
+[INFO] Scanning for classes to check...
+[INFO] Reading bundled API signatures: jdk-unsafe-1.8
+[INFO] Reading bundled API signatures: jdk-system-out
+[INFO] Reading API signatures: /testbed/codestyle/joda-time-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/druid-forbidden-apis.txt
+[INFO] Loading classes to check...
+[INFO] Scanning classes for violations...
+[INFO] Scanned 4285 class file(s) for forbidden API invocations (in 1.76s), 0 error(s).
+[INFO] 
+[INFO] --- resources:3.2.0:testResources (default-testResources) @ druid-processing ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 58 resources
+[INFO] Copying 3 resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ druid-processing ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 1025 source files with javac [debug release 8] to target/test-classes
+[INFO] /testbed/processing/src/test/java/org/apache/druid/timeline/VersionedIntervalTimelineTestBase.java: Some input files use or override a deprecated API.
+[INFO] /testbed/processing/src/test/java/org/apache/druid/timeline/VersionedIntervalTimelineTestBase.java: Recompile with -Xlint:deprecation for details.
+[INFO] /testbed/processing/src/test/java/org/apache/druid/matchers/LambdaMatcher.java: Some input files use unchecked or unsafe operations.
+[INFO] /testbed/processing/src/test/java/org/apache/druid/matchers/LambdaMatcher.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- forbiddenapis:3.2:testCheck (testCompile) @ druid-processing ---
+[INFO] Scanning for classes to check...
+[INFO] Reading bundled API signatures: jdk-unsafe-1.8
+[INFO] Reading API signatures: /testbed/codestyle/joda-time-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/druid-forbidden-apis.txt
+[INFO] Loading classes to check...
+[INFO] Scanning classes for violations...
+[INFO] Scanned 1878 class file(s) for forbidden API invocations (in 0.63s), 0 error(s).
+[INFO] 
+[INFO] --- surefire:3.1.2:test (default-test) @ druid-processing ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitcore.JUnitCoreProvider
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-junit47/3.1.2/surefire-junit47-3.1.2.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-junit47/3.1.2/surefire-junit47-3.1.2.pom (3.7 kB at 65 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-providers/3.1.2/surefire-providers-3.1.2.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-providers/3.1.2/surefire-providers-3.1.2.pom (2.6 kB at 84 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit48/3.1.2/common-junit48-3.1.2.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit48/3.1.2/common-junit48-3.1.2.pom (6.6 kB at 129 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit4/3.1.2/common-junit4-3.1.2.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit4/3.1.2/common-junit4-3.1.2.pom (3.1 kB at 58 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit3/3.1.2/common-junit3-3.1.2.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit3/3.1.2/common-junit3-3.1.2.pom (2.8 kB at 69 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-java5/3.1.2/common-java5-3.1.2.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-java5/3.1.2/common-java5-3.1.2.pom (2.8 kB at 113 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-grouper/3.1.2/surefire-grouper-3.1.2.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-grouper/3.1.2/surefire-grouper-3.1.2.pom (3.4 kB at 104 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-junit47/3.1.2/surefire-junit47-3.1.2.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-junit47/3.1.2/surefire-junit47-3.1.2.jar (90 kB at 2.1 MB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit48/3.1.2/common-junit48-3.1.2.jar
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit4/3.1.2/common-junit4-3.1.2.jar
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit3/3.1.2/common-junit3-3.1.2.jar
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-java5/3.1.2/common-java5-3.1.2.jar
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-grouper/3.1.2/surefire-grouper-3.1.2.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit48/3.1.2/common-junit48-3.1.2.jar (22 kB at 584 kB/s)
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-java5/3.1.2/common-java5-3.1.2.jar (18 kB at 474 kB/s)
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit3/3.1.2/common-junit3-3.1.2.jar (12 kB at 198 kB/s)
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit4/3.1.2/common-junit4-3.1.2.jar (26 kB at 380 kB/s)
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-grouper/3.1.2/surefire-grouper-3.1.2.jar (40 kB at 576 kB/s)
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running org.apache.druid.query.groupby.GroupByQueryQueryToolChestTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.492 s -- in org.apache.druid.query.groupby.GroupByQueryQueryToolChestTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- animal-sniffer:1.23:check (check-java-api) @ druid-processing ---
+[INFO] Checking unresolved references to org.codehaus.mojo.signature:java18:1.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  01:30 min (Wall Clock)
+[INFO] Finished at: 2026-08-27T09:17:42Z
+[INFO] ------------------------------------------------------------------------
++ mvnd test -B -T 1C -pl processing -Dtest=org.apache.druid.query.groupby.GroupByQueryQueryToolChestTest#testResultLevelCacheKeyWithSubTotalsSpec
+Aug 27, 2026 9:17:42 AM org.jline.utils.Log logr
+WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[main] WARNING org.jline - Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[INFO] Processing build on daemon 60b1bd69
+[INFO] Scanning for projects...
+[INFO] BuildTimeEventSpy is registered.
+[INFO] 
+[INFO] Using the SmartBuilder implementation with a thread count of 28
+[INFO] 
+[INFO] -----------------< org.apache.druid:druid-processing >------------------
+[INFO] Building druid-processing 29.0.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] The artifact org.hibernate:hibernate-validator:jar:6.2.5.Final has been relocated to org.hibernate.validator:hibernate-validator:jar:6.2.5.Final
+[INFO] 
+[INFO] --- checkstyle:3.0.0:check (validate) @ druid-processing ---
+[INFO] Starting audit...
+Audit done.
+[INFO] 
+[INFO] >>> pmd:3.16.0:check (validate) > :pmd @ druid-processing >>>
+[WARNING] The artifact org.hibernate:hibernate-validator:jar:6.2.5.Final has been relocated to org.hibernate.validator:hibernate-validator:jar:6.2.5.Final
+[INFO] 
+[INFO] --- pmd:3.16.0:pmd (pmd) @ druid-processing ---
+[INFO] PMD version: 6.42.0
+[WARNING] There are 1 PMD processing errors:
+[WARNING] /testbed/processing/src/main/java/org/apache/druid/query/aggregation/JavaScriptAggregatorFactory.java: PMDException: Error while parsing /testbed/processing/src/main/java/org/apache/druid/query/aggregation/JavaScriptAggregatorFactory.java
+[INFO] 
+[INFO] <<< pmd:3.16.0:check (validate) < :pmd @ druid-processing <<<
+[INFO] 
+[INFO] 
+[INFO] --- pmd:3.16.0:check (validate) @ druid-processing ---
+[INFO] PMD version: 6.42.0
+[INFO] 
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (enforce-maven-version) @ druid-processing ---
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (enforce-java-version) @ druid-processing ---
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (default-cli) @ druid-processing ---
+[WARNING] The artifact org.hibernate:hibernate-validator:jar:6.2.5.Final has been relocated to org.hibernate.validator:hibernate-validator:jar:6.2.5.Final
+[INFO] 
+[INFO] --- git-commit-id:4.9.10:revision (default) @ druid-processing ---
+[INFO] 
+[INFO] --- jacoco:0.8.7:prepare-agent (prepare-agent) @ druid-processing ---
+[INFO] jacocoArgLine set to -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.7/org.jacoco.agent-0.8.7-runtime.jar=destfile=/testbed/processing/target/jacoco.exec,excludes=org/apache/druid/java/util/emitter/core/LoggingEmitter.class:org/apache/druid/java/util/common/logger/Logger.class
+[INFO] 
+[INFO] --- antlr4:4.5.3:antlr4 (default) @ druid-processing ---
+[INFO] No grammars to process
+[INFO] ANTLR 4: Processing source directory /testbed/processing/src/main/antlr4
+[INFO] 
+[INFO] --- remote-resources:1.7.0:process (process-resource-bundles) @ druid-processing ---
+[INFO] Preparing remote bundle org.apache.apache.resources:apache-jar-resource-bundle:1.5
+[INFO] Copying 3 resources from 1 bundle.
+[WARNING] While downloading org.hibernate:hibernate-validator:6.2.5.Final
+  This artifact has been relocated to org.hibernate.validator:hibernate-validator:6.2.5.Final.
+[INFO] 
+[INFO] --- dependency:3.1.1:unpack-dependencies (copy-sigar-lib-to-resources) @ druid-processing ---
+[INFO] org.hyperic:sigar-dist:zip:1.6.5.132 already exists in destination.
+[INFO] 
+[INFO] --- resources:3.2.0:resources (default-resources) @ druid-processing ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 23 resources
+[INFO] Copying 3 resources
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ druid-processing ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- forbiddenapis:3.2:check (compile) @ druid-processing ---
+[INFO] Scanning for classes to check...
+[INFO] Reading bundled API signatures: jdk-unsafe-1.8
+[INFO] Reading bundled API signatures: jdk-system-out
+[INFO] Reading API signatures: /testbed/codestyle/joda-time-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/druid-forbidden-apis.txt
+[INFO] Loading classes to check...
+[INFO] Scanning classes for violations...
+[INFO] Scanned 4285 class file(s) for forbidden API invocations (in 0.66s), 0 error(s).
+[INFO] 
+[INFO] --- resources:3.2.0:testResources (default-testResources) @ druid-processing ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 58 resources
+[INFO] Copying 3 resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ druid-processing ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- forbiddenapis:3.2:testCheck (testCompile) @ druid-processing ---
+[INFO] Scanning for classes to check...
+[INFO] Reading bundled API signatures: jdk-unsafe-1.8
+[INFO] Reading API signatures: /testbed/codestyle/joda-time-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/druid-forbidden-apis.txt
+[INFO] Loading classes to check...
+[INFO] Scanning classes for violations...
+[INFO] Scanned 1878 class file(s) for forbidden API invocations (in 0.39s), 0 error(s).
+[INFO] 
+[INFO] --- surefire:3.1.2:test (default-test) @ druid-processing ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitcore.JUnitCoreProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running org.apache.druid.query.groupby.GroupByQueryQueryToolChestTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.299 s -- in org.apache.druid.query.groupby.GroupByQueryQueryToolChestTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- animal-sniffer:1.23:check (check-java-api) @ druid-processing ---
+[INFO] Checking unresolved references to org.codehaus.mojo.signature:java18:1.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  7.550 s (Wall Clock)
+[INFO] Finished at: 2026-08-27T09:17:50Z
+[INFO] ------------------------------------------------------------------------
++ mvnd test -B -T 1C -pl processing -Dtest=org.apache.druid.query.groupby.GroupByQueryQueryToolChestTest#testMultiColumnCacheStrategy
+Aug 27, 2026 9:17:50 AM org.jline.utils.Log logr
+WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[main] WARNING org.jline - Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[INFO] Processing build on daemon 60b1bd69
+[INFO] Scanning for projects...
+[INFO] BuildTimeEventSpy is registered.
+[INFO] 
+[INFO] Using the SmartBuilder implementation with a thread count of 28
+[INFO] 
+[INFO] -----------------< org.apache.druid:druid-processing >------------------
+[INFO] Building druid-processing 29.0.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] The artifact org.hibernate:hibernate-validator:jar:6.2.5.Final has been relocated to org.hibernate.validator:hibernate-validator:jar:6.2.5.Final
+[INFO] 
+[INFO] --- checkstyle:3.0.0:check (validate) @ druid-processing ---
+[INFO] Starting audit...
+Audit done.
+[INFO] 
+[INFO] >>> pmd:3.16.0:check (validate) > :pmd @ druid-processing >>>
+[WARNING] The artifact org.hibernate:hibernate-validator:jar:6.2.5.Final has been relocated to org.hibernate.validator:hibernate-validator:jar:6.2.5.Final
+[INFO] 
+[INFO] --- pmd:3.16.0:pmd (pmd) @ druid-processing ---
+[INFO] PMD version: 6.42.0
+[WARNING] There are 1 PMD processing errors:
+[WARNING] /testbed/processing/src/main/java/org/apache/druid/query/aggregation/JavaScriptAggregatorFactory.java: PMDException: Error while parsing /testbed/processing/src/main/java/org/apache/druid/query/aggregation/JavaScriptAggregatorFactory.java
+[INFO] 
+[INFO] <<< pmd:3.16.0:check (validate) < :pmd @ druid-processing <<<
+[INFO] 
+[INFO] 
+[INFO] --- pmd:3.16.0:check (validate) @ druid-processing ---
+[INFO] PMD version: 6.42.0
+[INFO] 
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (enforce-maven-version) @ druid-processing ---
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (enforce-java-version) @ druid-processing ---
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (default-cli) @ druid-processing ---
+[WARNING] The artifact org.hibernate:hibernate-validator:jar:6.2.5.Final has been relocated to org.hibernate.validator:hibernate-validator:jar:6.2.5.Final
+[INFO] 
+[INFO] --- git-commit-id:4.9.10:revision (default) @ druid-processing ---
+[INFO] 
+[INFO] --- jacoco:0.8.7:prepare-agent (prepare-agent) @ druid-processing ---
+[INFO] jacocoArgLine set to -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.7/org.jacoco.agent-0.8.7-runtime.jar=destfile=/testbed/processing/target/jacoco.exec,excludes=org/apache/druid/java/util/emitter/core/LoggingEmitter.class:org/apache/druid/java/util/common/logger/Logger.class
+[INFO] 
+[INFO] --- antlr4:4.5.3:antlr4 (default) @ druid-processing ---
+[INFO] No grammars to process
+[INFO] ANTLR 4: Processing source directory /testbed/processing/src/main/antlr4
+[INFO] 
+[INFO] --- remote-resources:1.7.0:process (process-resource-bundles) @ druid-processing ---
+[INFO] Preparing remote bundle org.apache.apache.resources:apache-jar-resource-bundle:1.5
+[INFO] Copying 3 resources from 1 bundle.
+[WARNING] While downloading org.hibernate:hibernate-validator:6.2.5.Final
+  This artifact has been relocated to org.hibernate.validator:hibernate-validator:6.2.5.Final.
+[INFO] 
+[INFO] --- dependency:3.1.1:unpack-dependencies (copy-sigar-lib-to-resources) @ druid-processing ---
+[INFO] org.hyperic:sigar-dist:zip:1.6.5.132 already exists in destination.
+[INFO] 
+[INFO] --- resources:3.2.0:resources (default-resources) @ druid-processing ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 23 resources
+[INFO] Copying 3 resources
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ druid-processing ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- forbiddenapis:3.2:check (compile) @ druid-processing ---
+[INFO] Scanning for classes to check...
+[INFO] Reading bundled API signatures: jdk-unsafe-1.8
+[INFO] Reading bundled API signatures: jdk-system-out
+[INFO] Reading API signatures: /testbed/codestyle/joda-time-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/druid-forbidden-apis.txt
+[INFO] Loading classes to check...
+[INFO] Scanning classes for violations...
+[INFO] Scanned 4285 class file(s) for forbidden API invocations (in 1.49s), 0 error(s).
+[INFO] 
+[INFO] --- resources:3.2.0:testResources (default-testResources) @ druid-processing ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 58 resources
+[INFO] Copying 3 resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ druid-processing ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- forbiddenapis:3.2:testCheck (testCompile) @ druid-processing ---
+[INFO] Scanning for classes to check...
+[INFO] Reading bundled API signatures: jdk-unsafe-1.8
+[INFO] Reading API signatures: /testbed/codestyle/joda-time-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/druid-forbidden-apis.txt
+[INFO] Loading classes to check...
+[INFO] Scanning classes for violations...
+[INFO] Scanned 1878 class file(s) for forbidden API invocations (in 1.07s), 0 error(s).
+[INFO] 
+[INFO] --- surefire:3.1.2:test (default-test) @ druid-processing ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitcore.JUnitCoreProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running org.apache.druid.query.groupby.GroupByQueryQueryToolChestTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.005 s -- in org.apache.druid.query.groupby.GroupByQueryQueryToolChestTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- animal-sniffer:1.23:check (check-java-api) @ druid-processing ---
+[INFO] Checking unresolved references to org.codehaus.mojo.signature:java18:1.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  10.832 s (Wall Clock)
+[INFO] Finished at: 2026-08-27T09:18:01Z
+[INFO] ------------------------------------------------------------------------
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 1df53d6eb30a019fff69a5ff7533ebbd998a438d processing/src/test/java/org/apache/druid/query/groupby/GroupByQueryQueryToolChestTest.java
+Updated 1 path from 784d81e5ff

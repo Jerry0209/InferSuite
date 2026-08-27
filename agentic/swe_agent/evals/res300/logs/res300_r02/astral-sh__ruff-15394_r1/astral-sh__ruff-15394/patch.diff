@@ -1,0 +1,99 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index db0d827e8..dc115a3a8 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -80,6 +80,7 @@ This release introduces the new 2025 stable style ([#13371](https://github.com/a
+ ### Bug fixes
+ 
+ - \[`eradicate`\] Ignore metadata blocks directly followed by normal blocks (`ERA001`) ([#15330](https://github.com/astral-sh/ruff/pull/15330))
++- \[`flake8-pie`\] Avoid introducing a syntax error when removing an unnecessary spread of a parenthesized dict (`PIE800`) ([#15403](https://github.com/astral-sh/ruff/pull/15403))
+ - \[`flake8-django`\] Recognize other magic methods (`DJ012`) ([#15365](https://github.com/astral-sh/ruff/pull/15365))
+ - \[`pycodestyle`\] Avoid false positives related to type aliases (`E252`) ([#15356](https://github.com/astral-sh/ruff/pull/15356))
+ - \[`pydocstyle`\] Avoid treating newline-separated sections as sub-sections (`D405`) ([#15311](https://github.com/astral-sh/ruff/pull/15311))
+diff --git a/crates/ruff_linter/src/rules/flake8_pie/rules/unnecessary_spread.rs b/crates/ruff_linter/src/rules/flake8_pie/rules/unnecessary_spread.rs
+index 15dd9b883..2bf4801cc 100644
+--- a/crates/ruff_linter/src/rules/flake8_pie/rules/unnecessary_spread.rs
++++ b/crates/ruff_linter/src/rules/flake8_pie/rules/unnecessary_spread.rs
+@@ -2,7 +2,7 @@ use ruff_diagnostics::{Diagnostic, Edit, Fix, FixAvailability, Violation};
+ use ruff_macros::{derive_message_formats, ViolationMetadata};
+ use ruff_python_ast::{self as ast, Expr};
+ use ruff_python_trivia::{SimpleTokenKind, SimpleTokenizer};
+-use ruff_text_size::{Ranged, TextSize};
++use ruff_text_size::{Ranged, TextRange, TextSize};
+ 
+ use crate::checkers::ast::Checker;
+ use crate::Locator;
+@@ -74,9 +74,22 @@ fn unnecessary_spread_fix(
+     let doublestar = SimpleTokenizer::starts_at(prev_end, locator.contents())
+         .find(|tok| matches!(tok.kind(), SimpleTokenKind::DoubleStar))?;
+ 
++    // The dict literal may be wrapped in parentheses, e.g. `**({...})`. Count the
++    // number of opening parentheses between `**` and the dict's opening brace so
++    // that the matching closing parentheses can be removed as well.
++    let parens = SimpleTokenizer::new(
++        locator.contents(),
++        TextRange::new(doublestar.end(), dict.start()),
++    )
++    .skip_trivia()
++    .take_while(|tok| matches!(tok.kind(), SimpleTokenKind::LParen))
++    .count();
++
+     if let Some(last) = dict.iter_values().last() {
+         // Ex) `**{a: 1, b: 2}`
+         let mut edits = vec![];
++        // The position immediately following the closing brace of the spread dict.
++        let mut close_end = None;
+         for tok in SimpleTokenizer::starts_at(last.end(), locator.contents()).skip_trivia() {
+             match tok.kind() {
+                 SimpleTokenKind::Comma => {
+@@ -84,22 +97,44 @@ fn unnecessary_spread_fix(
+                 }
+                 SimpleTokenKind::RBrace => {
+                     edits.push(Edit::range_deletion(tok.range()));
++                    close_end = Some(tok.end());
+                     break;
+                 }
+                 _ => {}
+             }
+         }
++        // Delete the matching closing parentheses, e.g. for `**({...})`.
++        if let Some(end) = close_end {
++            let mut remaining = parens;
++            for tok in SimpleTokenizer::starts_at(end, locator.contents()).skip_trivia() {
++                if remaining > 0 && matches!(tok.kind(), SimpleTokenKind::RParen) {
++                    edits.push(Edit::range_deletion(tok.range()));
++                    remaining -= 1;
++                } else {
++                    break;
++                }
++            }
++        }
+         Some(Fix::safe_edits(
+-            // Delete the first `**{`
++            // Delete the first `**{` (and any opening parentheses)
+             Edit::deletion(doublestar.start(), dict.start() + TextSize::from(1)),
+-            // Delete the trailing `}`
++            // Delete the trailing `}` (and any closing parentheses)
+             edits,
+         ))
+     } else {
+         // Ex) `**{}`
+-        Some(Fix::safe_edit(Edit::deletion(
+-            doublestar.start(),
+-            dict.end(),
+-        )))
++        // Delete from `**` to the end of the dict, including the closing brace and
++        // any matching closing parentheses.
++        let mut end = dict.end();
++        let mut remaining = parens;
++        for tok in SimpleTokenizer::starts_at(end, locator.contents()).skip_trivia() {
++            if remaining > 0 && matches!(tok.kind(), SimpleTokenKind::RParen) {
++                end = tok.end();
++                remaining -= 1;
++            } else {
++                break;
++            }
++        }
++        Some(Fix::safe_edit(Edit::deletion(doublestar.start(), end)))
+     }
+ }

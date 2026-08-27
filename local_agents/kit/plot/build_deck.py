@@ -15,7 +15,11 @@ inlines must already exist; regenerate them first with the plotters in this dire
 """
 import base64, io, os, pathlib
 
-PLOTS = pathlib.Path("/home/thu/InferSuite/local_agents/superseded_40min/plots")
+# Portable repo root (2026-08-27): figure paths inside the slide entries are written with the
+# P7's /home/thu/InferSuite prefix; uri() rewrites that prefix to THIS checkout's root, so the
+# deck rebuilds identically on any machine with the repo's committed figures.
+REPO_LOCAL = str(pathlib.Path(__file__).resolve().parents[3])
+PLOTS = pathlib.Path(REPO_LOCAL) / "local_agents/superseded_40min/plots"
 OUT = pathlib.Path(os.environ.get("DECK_OUT", "/tmp/deck.html"))
 
 # Embedded-figure optimization (2026-08-24). The artifact platform caps a page at 16 MB and
@@ -27,6 +31,7 @@ OPT = os.environ.get("DECK_OPT", "1") == "1"
 MAXW = int(os.environ.get("DECK_MAXW", "2200"))
 
 def uri(name):
+    name = str(name).replace("/home/thu/InferSuite", REPO_LOCAL)
     pth = pathlib.Path(name) if str(name).startswith("/") else (PLOTS / name)
     if OPT:
         from PIL import Image

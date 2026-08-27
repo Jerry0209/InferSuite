@@ -1,0 +1,101 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   crates/nu-command/src/filters/find.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 46ed69ab126015375d5163972ae321715f34874b
+Author: Bruce Weirdan <weirdan@gmail.com>
+Date:   Thu Jun 27 01:49:44 2024 +0200
+
+    Add `char nul` (#13241)
+    
+    # Description
+    
+    Adds `char nul`, `char null_byte` and `char zero_byte` named characters.
+    All of them generate 0x00 byte.
+    
+    # User-Facing Changes
+    Three new named characters are added:
+     * `char nul` - generates 0x00 byte
+     * `char null_byte` - generates 0x00 byte
+     * `char zero_byte` - generates 0x00 byte
+
+diff --git a/crates/nu-command/src/strings/char_.rs b/crates/nu-command/src/strings/char_.rs
+index dd7b5cf39..6834134b2 100644
+--- a/crates/nu-command/src/strings/char_.rs
++++ b/crates/nu-command/src/strings/char_.rs
+@@ -19,6 +19,9 @@ static CHAR_MAP: Lazy<IndexMap<&'static str, String>> = Lazy::new(|| {
+         // These are some regular characters that either can't be used or
+         // it's just easier to use them like this.
+ 
++        "nul" => '\x00'.to_string(),                                // nul character, 0x00
++        "null_byte" => '\x00'.to_string(),                          // nul character, 0x00
++        "zero_byte" => '\x00'.to_string(),                          // nul character, 0x00
+         // This are the "normal" characters section
+         "newline" => '\n'.to_string(),
+         "enter" => '\n'.to_string(),
++ git -c core.fileMode=false diff 46ed69ab126015375d5163972ae321715f34874b
+diff --git a/crates/nu-command/src/filters/find.rs b/crates/nu-command/src/filters/find.rs
+index dfdef6696..58f1b9403 100644
+--- a/crates/nu-command/src/filters/find.rs
++++ b/crates/nu-command/src/filters/find.rs
+@@ -457,9 +457,10 @@ fn find_with_rest_and_highlight(
+ 
+                 let mut output: Vec<Value> = vec![];
+                 for line in lines {
+-                    let line = line?.to_lowercase();
++                    let line = line?;
++                    let lower_val = line.to_lowercase();
+                     for term in &terms {
+-                        if line.contains(term) {
++                        if lower_val.contains(term) {
+                             output.push(Value::string(
+                                 highlight_search_string(
+                                     &line,
++ git checkout 46ed69ab126015375d5163972ae321715f34874b crates/nu-command/tests/commands/find.rs
+Updated 0 paths from 05b59aa23
++ git apply -v -
+Checking patch crates/nu-command/tests/commands/find.rs...
+Applied patch crates/nu-command/tests/commands/find.rs cleanly.
++ cargo build
+   Compiling nu-command v0.95.1 (/testbed/crates/nu-command)
+   Compiling nu v0.95.1 (/testbed)
+    Finished dev [unoptimized + debuginfo] target(s) in 12.10s
++ : '>>>>> Start Test Output'
++ cargo test -p nu-command --no-fail-fast --test main find::
++ cat
+   Compiling nu-command v0.95.1 (/testbed/crates/nu-command)
+    Finished test [unoptimized + debuginfo] target(s) in 9.73s
+     Running tests/main.rs (target/debug/deps/main-0afca0aadad468d6)
+
+running 15 tests
+test commands::find::find_with_string_search_with_string_not_found ... ok
+test commands::find::find_with_regex_in_table_keeps_row_if_one_column_matches ... ok
+test commands::find::find_with_list_search_with_number ... ok
+test commands::find::find_with_list_search_with_string ... ok
+test commands::find::find_with_filepath_search_with_string ... ok
+test commands::find::find_in_table_only_keep_rows_with_matches_on_selected_columns ... ok
+test commands::find::find_takes_into_account_linebreaks_in_string ... ok
+test commands::find::inverted_find_with_regex_in_table_keeps_row_if_none_of_the_columns_matches ... ok
+test commands::find::find_with_list_search_with_char ... ok
+test commands::find::inverted_find_in_table_keeps_row_if_none_of_the_selected_columns_matches ... ok
+test commands::find::find_with_string_search_with_string ... ok
+test commands::find::find_with_bytestream_search_with_char ... ok
+test commands::find::find_with_filepath_search_with_multiple_patterns ... ok
+test commands::find::find_in_table_keeps_row_with_multiple_matched_and_keeps_other_columns ... ok
+test commands::find::find_in_table_keeps_row_with_single_matched_and_keeps_other_columns ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 1539 filtered out; finished in 0.02s
+
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout 46ed69ab126015375d5163972ae321715f34874b crates/nu-command/tests/commands/find.rs
+Updated 1 path from 05b59aa23

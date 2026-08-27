@@ -1,0 +1,17 @@
+diff --git a/src/Fixer/LanguageConstruct/NullableTypeDeclarationFixer.php b/src/Fixer/LanguageConstruct/NullableTypeDeclarationFixer.php
+index fd1037205..81446b29c 100644
+--- a/src/Fixer/LanguageConstruct/NullableTypeDeclarationFixer.php
++++ b/src/Fixer/LanguageConstruct/NullableTypeDeclarationFixer.php
+@@ -274,8 +274,10 @@ private function normalizeNullableType(Tokens $tokens, TypeAnalysis $typeAnalysi
+             $this->createTypeDeclarationTokens($normalizedType, $isQuestionMarkSyntax)
+         );
+ 
+-        if (!$tokens[$typeAnalysis->getStartIndex() - 1]->equals('(')) {
+-            $tokens->ensureWhitespaceAtIndex($typeAnalysis->getStartIndex() - 1, 1, ' ');
++        $prevIndex = $typeAnalysis->getStartIndex() - 1;
++
++        if (!$tokens[$prevIndex]->equals('(') && !$tokens[$prevIndex]->isWhitespace()) {
++            $tokens->ensureWhitespaceAtIndex($prevIndex, 1, ' ');
+         }
+     }
+ 

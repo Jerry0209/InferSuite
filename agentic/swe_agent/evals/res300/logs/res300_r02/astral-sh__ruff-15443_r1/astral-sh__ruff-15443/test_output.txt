@@ -1,0 +1,500 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   crates/ruff_linter/src/rules/flake8_bandit/rules/exec_used.rs
+	modified:   crates/ruff_linter/src/rules/flake8_use_pathlib/rules/replaceable_by_pathlib.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit d1666fbbeec27fe534f261f388fbd5891546ffcf
+Author: InSync <insyncwithfoo@gmail.com>
+Date:   Mon Jan 13 00:00:57 2025 +0700
+
+    [red-knot] Add `AlwaysTruthy` and `AlwaysFalsy` to `knot_extensions` (#15437)
+    
+    Co-authored-by: Alex Waygood <Alex.Waygood@Gmail.com>
+
+diff --git a/crates/red_knot_python_semantic/resources/mdtest/type_api.md b/crates/red_knot_python_semantic/resources/mdtest/type_api.md
+index c4e7aa1a1..715ceef58 100644
+--- a/crates/red_knot_python_semantic/resources/mdtest/type_api.md
++++ b/crates/red_knot_python_semantic/resources/mdtest/type_api.md
+@@ -94,6 +94,36 @@ reveal_type(C.__mro__)
+ u: Unknown[str]
+ ```
+ 
++### `AlwaysTruthy` and `AlwaysFalsy`
++
++`AlwaysTruthy` and `AlwaysFalsy` represent the sets of all possible objects whose truthiness is
++always truthy or falsy, respectively.
++
++They do not accept any type arguments.
++
++```py
++from typing_extensions import Literal
++
++from knot_extensions import AlwaysFalsy, AlwaysTruthy, is_subtype_of, static_assert
++
++static_assert(is_subtype_of(Literal[True], AlwaysTruthy))
++static_assert(is_subtype_of(Literal[False], AlwaysFalsy))
++
++static_assert(not is_subtype_of(int, AlwaysFalsy))
++static_assert(not is_subtype_of(str, AlwaysFalsy))
++
++def _(t: AlwaysTruthy, f: AlwaysFalsy):
++    reveal_type(t)  # revealed: AlwaysTruthy
++    reveal_type(f)  # revealed: AlwaysFalsy
++
++def f(
++    a: AlwaysTruthy[int],  # error: [invalid-type-form]
++    b: AlwaysFalsy[str],  # error: [invalid-type-form]
++):
++    reveal_type(a)  # revealed: Unknown
++    reveal_type(b)  # revealed: Unknown
++```
++
+ ## Static assertions
+ 
+ ### Basics
+diff --git a/crates/red_knot_python_semantic/src/types.rs b/crates/red_knot_python_semantic/src/types.rs
+index 9c22c45ae..3bec7b5e4 100644
+--- a/crates/red_knot_python_semantic/src/types.rs
++++ b/crates/red_knot_python_semantic/src/types.rs
+@@ -2292,6 +2292,8 @@ impl<'db> Type<'db> {
+                 fallback_type: Type::unknown(),
+             }),
+             Type::KnownInstance(KnownInstanceType::Unknown) => Ok(Type::unknown()),
++            Type::KnownInstance(KnownInstanceType::AlwaysTruthy) => Ok(Type::AlwaysTruthy),
++            Type::KnownInstance(KnownInstanceType::AlwaysFalsy) => Ok(Type::AlwaysFalsy),
+             _ => Ok(todo_type!(
+                 "Unsupported or invalid type in a type expression"
+             )),
+@@ -2827,6 +2829,10 @@ pub enum KnownInstanceType<'db> {
+     TypeAliasType(TypeAliasType<'db>),
+     /// The symbol `knot_extensions.Unknown`
+     Unknown,
++    /// The symbol `knot_extensions.AlwaysTruthy`
++    AlwaysTruthy,
++    /// The symbol `knot_extensions.AlwaysFalsy`
++    AlwaysFalsy,
+     /// The symbol `knot_extensions.Not`
+     Not,
+     /// The symbol `knot_extensions.Intersection`
+@@ -2888,6 +2894,8 @@ impl<'db> KnownInstanceType<'db> {
+             Self::OrderedDict => "OrderedDict",
+             Self::ReadOnly => "ReadOnly",
+             Self::Unknown => "Unknown",
++            Self::AlwaysTruthy => "AlwaysTruthy",
++            Self::AlwaysFalsy => "AlwaysFalsy",
+             Self::Not => "Not",
+             Self::Intersection => "Intersection",
+             Self::TypeOf => "TypeOf",
+@@ -2931,6 +2939,8 @@ impl<'db> KnownInstanceType<'db> {
+             | Self::ReadOnly
+             | Self::TypeAliasType(_)
+             | Self::Unknown
++            | Self::AlwaysTruthy
++            | Self::AlwaysFalsy
+             | Self::Not
+             | Self::Intersection
+             | Self::TypeOf => Truthiness::AlwaysTrue,
+@@ -2974,6 +2984,8 @@ impl<'db> KnownInstanceType<'db> {
+             Self::TypeVar(typevar) => typevar.name(db),
+             Self::TypeAliasType(_) => "typing.TypeAliasType",
+             Self::Unknown => "knot_extensions.Unknown",
++            Self::AlwaysTruthy => "knot_extensions.AlwaysTruthy",
++            Self::AlwaysFalsy => "knot_extensions.AlwaysFalsy",
+             Self::Not => "knot_extensions.Not",
+             Self::Intersection => "knot_extensions.Intersection",
+             Self::TypeOf => "knot_extensions.TypeOf",
+@@ -3020,6 +3032,8 @@ impl<'db> KnownInstanceType<'db> {
+             Self::Not => KnownClass::SpecialForm,
+             Self::Intersection => KnownClass::SpecialForm,
+             Self::Unknown => KnownClass::Object,
++            Self::AlwaysTruthy => KnownClass::Object,
++            Self::AlwaysFalsy => KnownClass::Object,
+         }
+     }
+ 
+@@ -3071,6 +3085,8 @@ impl<'db> KnownInstanceType<'db> {
+             "NotRequired" => Self::NotRequired,
+             "LiteralString" => Self::LiteralString,
+             "Unknown" => Self::Unknown,
++            "AlwaysTruthy" => Self::AlwaysTruthy,
++            "AlwaysFalsy" => Self::AlwaysFalsy,
+             "Not" => Self::Not,
+             "Intersection" => Self::Intersection,
+             "TypeOf" => Self::TypeOf,
+@@ -3123,9 +3139,12 @@ impl<'db> KnownInstanceType<'db> {
+             | Self::TypeVar(_) => {
+                 matches!(module, KnownModule::Typing | KnownModule::TypingExtensions)
+             }
+-            Self::Unknown | Self::Not | Self::Intersection | Self::TypeOf => {
+-                module.is_knot_extensions()
+-            }
++            Self::Unknown
++            | Self::AlwaysTruthy
++            | Self::AlwaysFalsy
++            | Self::Not
++            | Self::Intersection
++            | Self::TypeOf => module.is_knot_extensions(),
+         }
+     }
+ 
+diff --git a/crates/red_knot_python_semantic/src/types/class_base.rs b/crates/red_knot_python_semantic/src/types/class_base.rs
+index 1b4a35791..18f0605b0 100644
+--- a/crates/red_knot_python_semantic/src/types/class_base.rs
++++ b/crates/red_knot_python_semantic/src/types/class_base.rs
+@@ -105,7 +105,9 @@ impl<'db> ClassBase<'db> {
+                 | KnownInstanceType::Optional
+                 | KnownInstanceType::Not
+                 | KnownInstanceType::Intersection
+-                | KnownInstanceType::TypeOf => None,
++                | KnownInstanceType::TypeOf
++                | KnownInstanceType::AlwaysTruthy
++                | KnownInstanceType::AlwaysFalsy => None,
+                 KnownInstanceType::Unknown => Some(Self::unknown()),
+                 KnownInstanceType::Any => Some(Self::any()),
+                 // TODO: Classes inheriting from `typing.Type` et al. also have `Generic` in their MRO
+diff --git a/crates/red_knot_python_semantic/src/types/infer.rs b/crates/red_knot_python_semantic/src/types/infer.rs
+index 4923285ad..194ce6c63 100644
+--- a/crates/red_knot_python_semantic/src/types/infer.rs
++++ b/crates/red_knot_python_semantic/src/types/infer.rs
+@@ -4539,7 +4539,7 @@ impl<'db> TypeInferenceBuilder<'db> {
+ 
+                         return dunder_getitem_method
+                             .call(self.db(), &CallArguments::positional([value_ty, slice_ty]))
+-                            .return_ty_result( &self.context, value_node.into())
++                            .return_ty_result(&self.context, value_node.into())
+                             .unwrap_or_else(|err| {
+                                 self.context.report_lint(
+                                     &CALL_NON_CALLABLE,
+@@ -5373,7 +5373,11 @@ impl<'db> TypeInferenceBuilder<'db> {
+                 self.infer_type_expression(arguments_slice);
+                 todo_type!("`Unpack[]` special form")
+             }
+-            KnownInstanceType::NoReturn | KnownInstanceType::Never | KnownInstanceType::Any => {
++            KnownInstanceType::NoReturn
++            | KnownInstanceType::Never
++            | KnownInstanceType::Any
++            | KnownInstanceType::AlwaysTruthy
++            | KnownInstanceType::AlwaysFalsy => {
+                 self.context.report_lint(
+                     &INVALID_TYPE_FORM,
+                     subscript.into(),
+diff --git a/crates/red_knot_vendored/knot_extensions/knot_extensions.pyi b/crates/red_knot_vendored/knot_extensions/knot_extensions.pyi
+index 581b2a3d2..e2695caa9 100644
+--- a/crates/red_knot_vendored/knot_extensions/knot_extensions.pyi
++++ b/crates/red_knot_vendored/knot_extensions/knot_extensions.pyi
+@@ -5,6 +5,8 @@ def static_assert(condition: object, msg: LiteralString | None = None) -> None:
+ 
+ # Types
+ Unknown = object()
++AlwaysTruthy = object()
++AlwaysFalsy = object()
+ 
+ # Special forms
+ Not: _SpecialForm
++ git -c core.fileMode=false diff d1666fbbeec27fe534f261f388fbd5891546ffcf
+diff --git a/crates/ruff_linter/src/rules/flake8_bandit/rules/exec_used.rs b/crates/ruff_linter/src/rules/flake8_bandit/rules/exec_used.rs
+index b09429dda..f5b40f791 100644
+--- a/crates/ruff_linter/src/rules/flake8_bandit/rules/exec_used.rs
++++ b/crates/ruff_linter/src/rules/flake8_bandit/rules/exec_used.rs
+@@ -36,7 +36,7 @@ pub(crate) fn exec_used(checker: &mut Checker, func: &Expr) {
+     if checker
+         .semantic()
+         .resolve_qualified_name(func)
+-        .is_some_and(|qualified_name| matches!(qualified_name.segments(), ["" | "builtin", "exec"]))
++        .is_some_and(|qualified_name| matches!(qualified_name.segments(), ["" | "builtins", "exec"]))
+     {
+         checker
+             .diagnostics
+diff --git a/crates/ruff_linter/src/rules/flake8_use_pathlib/rules/replaceable_by_pathlib.rs b/crates/ruff_linter/src/rules/flake8_use_pathlib/rules/replaceable_by_pathlib.rs
+index 4331d77ff..af6251467 100644
+--- a/crates/ruff_linter/src/rules/flake8_use_pathlib/rules/replaceable_by_pathlib.rs
++++ b/crates/ruff_linter/src/rules/flake8_use_pathlib/rules/replaceable_by_pathlib.rs
+@@ -97,7 +97,7 @@ pub(crate) fn replaceable_by_pathlib(checker: &mut Checker, call: &ExprCall) {
+             // PTH205
+             ["os", "path", "getctime"] => Some(OsPathGetctime.into()),
+             // PTH123
+-            ["" | "builtin", "open"] => {
++            ["" | "builtins", "open"] => {
+                 // `closefd` and `openener` are not supported by pathlib, so check if they are
+                 // are set to non-default values.
+                 // https://github.com/astral-sh/ruff/issues/7620
++ git checkout d1666fbbeec27fe534f261f388fbd5891546ffcf crates/ruff_linter/resources/test/fixtures/flake8_bandit/S102.py crates/ruff_linter/resources/test/fixtures/flake8_use_pathlib/import_from.py crates/ruff_linter/src/rules/flake8_bandit/snapshots/ruff_linter__rules__flake8_bandit__tests__S102_S102.py.snap crates/ruff_linter/src/rules/flake8_use_pathlib/snapshots/ruff_linter__rules__flake8_use_pathlib__tests__import_from.py.snap
+Updated 0 paths from 3ccd98201
++ git apply -v -
+<stdin>:62: trailing whitespace.
+12 | 
+<stdin>:84: trailing whitespace.
+42 | 
+Checking patch crates/ruff_linter/resources/test/fixtures/flake8_bandit/S102.py...
+Checking patch crates/ruff_linter/resources/test/fixtures/flake8_use_pathlib/import_from.py...
+Checking patch crates/ruff_linter/src/rules/flake8_bandit/snapshots/ruff_linter__rules__flake8_bandit__tests__S102_S102.py.snap...
+Checking patch crates/ruff_linter/src/rules/flake8_use_pathlib/snapshots/ruff_linter__rules__flake8_use_pathlib__tests__import_from.py.snap...
+Applied patch crates/ruff_linter/resources/test/fixtures/flake8_bandit/S102.py cleanly.
+Applied patch crates/ruff_linter/resources/test/fixtures/flake8_use_pathlib/import_from.py cleanly.
+Applied patch crates/ruff_linter/src/rules/flake8_bandit/snapshots/ruff_linter__rules__flake8_bandit__tests__S102_S102.py.snap cleanly.
+Applied patch crates/ruff_linter/src/rules/flake8_use_pathlib/snapshots/ruff_linter__rules__flake8_use_pathlib__tests__import_from.py.snap cleanly.
+warning: 2 lines add whitespace errors.
++ : '>>>>> Start Test Output'
++ cargo test --package ruff_linter --lib rules::flake8_bandit
++ cat
+   Compiling unicode-ident v1.0.14
+   Compiling proc-macro2 v1.0.93
+   Compiling memchr v2.7.4
+   Compiling cfg-if v1.0.0
+   Compiling serde v1.0.217
+   Compiling libc v0.2.169
+   Compiling ppv-lite86 v0.2.17
+   Compiling either v1.11.0
+   Compiling regex-syntax v0.8.5
+   Compiling stable_deref_trait v1.2.0
+   Compiling siphasher v0.3.11
+   Compiling rustversion v1.0.15
+   Compiling once_cell v1.20.2
+   Compiling log v0.4.22
+   Compiling heck v0.5.0
+   Compiling writeable v0.5.5
+   Compiling thiserror v1.0.67
+   Compiling litemap v0.7.3
+   Compiling unicode-width v0.1.13
+   Compiling ruff_text_size v0.0.0 (/testbed/crates/ruff_text_size)
+   Compiling smallvec v1.13.2
+   Compiling ryu v1.0.17
+   Compiling itoa v1.0.11
+   Compiling rustc-hash v2.1.0
+   Compiling icu_locid_transform_data v1.5.0
+   Compiling bitflags v2.7.0
+   Compiling seahash v4.1.0
+   Compiling static_assertions v1.1.0
+   Compiling icu_properties_data v1.5.0
+   Compiling glob v0.3.2
+   Compiling getopts v0.2.21
+   Compiling utf8_iter v1.0.4
+   Compiling ident_case v1.0.1
+   Compiling write16 v1.0.0
+   Compiling fnv v1.0.7
+   Compiling phf_shared v0.11.2
+   Compiling icu_normalizer_data v1.5.0
+   Compiling itertools v0.14.0
+   Compiling strsim v0.10.0
+   Compiling equivalent v1.0.1
+   Compiling utf16_iter v1.0.5
+   Compiling hashbrown v0.15.2
+   Compiling tinyvec_macros v0.1.1
+   Compiling ucd-trie v0.1.6
+   Compiling autocfg v1.2.0
+   Compiling unic-char-range v0.9.0
+   Compiling tinyvec v1.6.0
+   Compiling anyhow v1.0.95
+   Compiling thiserror v2.0.11
+   Compiling phf v0.11.2
+   Compiling unic-common v0.9.0
+   Compiling percent-encoding v2.3.1
+   Compiling unic-char-property v0.9.0
+   Compiling version-ranges v0.1.1
+   Compiling winnow v0.6.18
+   Compiling peg-runtime v0.8.3
+   Compiling utf8parse v0.2.1
+   Compiling serde_json v1.0.135
+   Compiling unicode-width v0.2.0
+   Compiling unscanny v0.1.0
+   Compiling unic-ucd-version v0.9.0
+   Compiling matches v0.1.10
+   Compiling paste v1.0.15
+   Compiling aho-corasick v1.1.3
+   Compiling ruff_source_file v0.0.0 (/testbed/crates/ruff_source_file)
+   Compiling newtype-uuid v1.1.3
+   Compiling unic-ucd-category v0.9.0
+   Compiling itertools v0.13.0
+   Compiling lazy_static v1.4.0
+   Compiling form_urlencoded v1.2.1
+   Compiling annotate-snippets v0.6.1
+   Compiling urlencoding v2.1.3
+   Compiling iana-time-zone v0.1.60
+   Compiling boxcar v0.2.7
+   Compiling quick-xml v0.37.1
+   Compiling num-traits v0.2.18
+   Compiling path-dedot v3.1.1
+   Compiling is-docker v0.2.0
+   Compiling ruff_python_stdlib v0.0.0 (/testbed/crates/ruff_python_stdlib)
+   Compiling yansi-term v0.1.2
+   Compiling linked-hash-map v0.5.6
+   Compiling similar v2.6.0
+   Compiling path-absolutize v3.1.1
+   Compiling annotate-snippets v0.9.2
+   Compiling is-wsl v0.4.0
+   Compiling fern v0.7.1
+   Compiling pathdiff v0.2.3
+   Compiling typed-arena v2.0.2
+   Compiling natord v1.0.9
+   Compiling chic v1.2.2
+   Compiling colored v3.0.0
+   Compiling quote v1.0.38
+   Compiling unicode-normalization v0.1.24
+   Compiling getrandom v0.2.14
+   Compiling filetime v0.2.25
+   Compiling syn v2.0.96
+   Compiling console v0.15.8
+   Compiling rand_core v0.6.4
+   Compiling vte_generate_state_changes v0.1.1
+   Compiling castaway v0.2.3
+   Compiling peg-macros v0.8.4
+   Compiling ruff_python_trivia v0.0.0 (/testbed/crates/ruff_python_trivia)
+   Compiling rand_chacha v0.3.1
+   Compiling vte v0.11.1
+   Compiling rand v0.8.5
+   Compiling chrono v0.4.39
+   Compiling strip-ansi-escapes v0.2.0
+   Compiling regex-automata v0.4.8
+   Compiling phf_generator v0.11.2
+   Compiling phf_codegen v0.11.2
+   Compiling unicode_names2_generator v1.3.0
+   Compiling peg v0.8.4
+   Compiling unicode_names2 v1.3.0
+   Compiling synstructure v0.13.1
+   Compiling darling_core v0.20.8
+   Compiling test-case-core v3.3.1
+   Compiling regex v1.11.1
+   Compiling bstr v1.11.3
+   Compiling serde_derive v1.0.217
+   Compiling zerofrom-derive v0.1.4
+   Compiling yoke-derive v0.7.4
+   Compiling zerovec-derive v0.10.3
+   Compiling displaydoc v0.2.5
+   Compiling icu_provider_macros v1.5.0
+   Compiling thiserror-impl v1.0.67
+   Compiling is-macro v0.3.7
+   Compiling ruff_macros v0.0.0 (/testbed/crates/ruff_macros)
+   Compiling uuid-macro-internal v1.11.1
+   Compiling thiserror-impl v2.0.11
+   Compiling strum_macros v0.26.4
+   Compiling libcst_derive v1.6.0
+   Compiling globset v0.4.15
+   Compiling test-case-macros v3.3.1
+   Compiling uuid v1.11.1
+   Compiling ruff_cache v0.0.0 (/testbed/crates/ruff_cache)
+   Compiling test-case v3.3.1
+   Compiling pest v2.7.11
+   Compiling libcst v1.6.0
+   Compiling zerofrom v0.1.4
+   Compiling yoke v0.7.4
+   Compiling darling_macro v0.20.8
+   Compiling zerovec v0.10.4
+   Compiling strum v0.26.3
+   Compiling darling v0.20.8
+   Compiling serde_with_macros v3.12.0
+   Compiling tinystr v0.7.6
+   Compiling icu_collections v1.5.0
+   Compiling ruff_index v0.0.0 (/testbed/crates/ruff_index)
+   Compiling pest_meta v2.7.11
+   Compiling icu_locid v1.5.0
+   Compiling pest_generator v2.7.11
+   Compiling icu_provider v1.5.0
+   Compiling icu_locid_transform v1.5.0
+   Compiling pest_derive v2.7.11
+   Compiling icu_properties v1.5.1
+   Compiling compact_str v0.8.1
+   Compiling indexmap v2.7.0
+   Compiling toml_datetime v0.6.8
+   Compiling serde_spanned v0.6.7
+   Compiling rust-stemmers v1.2.0
+   Compiling serde_with v3.12.0
+   Compiling insta v1.42.0
+   Compiling pep440_rs v0.7.3
+   Compiling ruff_diagnostics v0.0.0 (/testbed/crates/ruff_diagnostics)
+   Compiling icu_normalizer v1.5.0
+   Compiling toml_edit v0.22.20
+   Compiling quick-junit v0.5.1
+   Compiling idna_adapter v1.2.0
+   Compiling ruff_notebook v0.0.0 (/testbed/crates/ruff_notebook)
+   Compiling idna v1.0.3
+   Compiling ruff_python_ast v0.0.0 (/testbed/crates/ruff_python_ast)
+   Compiling url v2.5.4
+   Compiling imperative v1.0.6
+   Compiling pep508_rs v0.9.1
+   Compiling toml v0.8.19
+   Compiling pyproject-toml v0.13.4
+   Compiling ruff_python_parser v0.0.0 (/testbed/crates/ruff_python_parser)
+   Compiling ruff_python_literal v0.0.0 (/testbed/crates/ruff_python_literal)
+   Compiling ruff_python_codegen v0.0.0 (/testbed/crates/ruff_python_codegen)
+   Compiling ruff_python_index v0.0.0 (/testbed/crates/ruff_python_index)
+   Compiling ruff_python_semantic v0.0.0 (/testbed/crates/ruff_python_semantic)
+   Compiling ruff_linter v0.9.1 (/testbed/crates/ruff_linter)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 51.00s
+     Running unittests src/lib.rs (target/debug/deps/ruff_linter-3f8d9e2946e9b6c1)
+
+running 59 tests
+test rules::flake8_bandit::tests::rules::rule_paramikocall_path_new_s601_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_flaskdebugtrue_path_new_s201_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_snmpinsecureversion_path_new_s508_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_assert_path_new_s101_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_loggingconfiginsecurelisten_path_new_s612_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_makotemplates_path_new_s702_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_requestwithouttimeout_path_new_s113_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_hardcodedbindallinterfaces_path_new_s104_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_snmpweakcryptography_path_new_s509_py_expects ... ok
+test rules::flake8_bandit::tests::check_typed_exception ... ok
+test rules::flake8_bandit::tests::rules::rule_callwithshellequalstrue_path_new_s604_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_execbuiltin_path_new_s102_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_sslwithbaddefaults_path_new_s503_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_hardcodedpasswordfuncarg_path_new_s106_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_sslwithnoversion_path_new_s504_py_expects ... ok
+test rules::flake8_bandit::tests::check_hardcoded_tmp_additional_dirs ... ok
+test rules::flake8_bandit::tests::rules::rule_badfilepermissions_path_new_s103_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_requestwithnocertvalidation_path_new_s501_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_hashlibinsecurehashfunction_path_new_s324_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_hardcodedpassworddefault_path_new_s107_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_sslinsecureversion_path_new_s502_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_hardcodedtempfile_path_new_s108_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_djangoextra_path_new_s610_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_hardcodedsqlexpression_path_new_s608_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_jinja2autoescapefalse_path_new_s701_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_djangorawsql_path_new_s611_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_sshnohostkeyverification_path_new_s507_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_hardcodedpasswordstring_path_new_s105_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspiciouspickleusage_path_new_s301_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspiciousevalusage_path_new_s307_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspicioushttpoxyimport_path_new_s412_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspiciouslxmlimport_path_new_s410_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspiciouspyghmiimport_path_new_s415_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspiciousftplibimport_path_new_s402_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspicioustelnetlibimport_path_new_s401_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspiciouspycryptoimport_path_new_s413_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspiciouspickleimport_path_new_s403_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspicioussubprocessimport_path_new_s404_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_subprocesswithoutshellequalstrue_path_new_s603_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_subprocesspopenwithshellequalstrue_path_new_s602_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspiciousmarksafeusage_path_new_s308_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspiciousnoncryptographicrandomusage_path_new_s311_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspicioustelnetusage_path_new_s312_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspiciousxmlminidomimport_path_new_s408_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspiciousxmlrpcimport_path_new_s411_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspiciousxmlsaximport_path_new_s406_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_tryexceptpass_path_new_s110_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_tryexceptcontinue_path_new_s112_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspiciousxmletreeimport_path_new_s405_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspiciousxmlexpatimport_path_new_s407_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspiciousxmlpulldomimport_path_new_s409_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_startprocesswithnoshell_path_new_s606_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_startprocesswithashell_path_new_s605_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_tarfileunsafemembers_path_new_s202_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_startprocesswithpartialpath_path_new_s607_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_unixcommandwildcardinjection_path_new_s609_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_unsafeyamlload_path_new_s506_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_suspiciousurlopenusage_path_new_s310_py_expects ... ok
+test rules::flake8_bandit::tests::rules::rule_weakcryptographickey_path_new_s505_py_expects ... ok
+
+test result: ok. 59 passed; 0 failed; 0 ignored; 0 measured; 2165 filtered out; finished in 0.03s
+
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout d1666fbbeec27fe534f261f388fbd5891546ffcf crates/ruff_linter/resources/test/fixtures/flake8_bandit/S102.py crates/ruff_linter/resources/test/fixtures/flake8_use_pathlib/import_from.py crates/ruff_linter/src/rules/flake8_bandit/snapshots/ruff_linter__rules__flake8_bandit__tests__S102_S102.py.snap crates/ruff_linter/src/rules/flake8_use_pathlib/snapshots/ruff_linter__rules__flake8_use_pathlib__tests__import_from.py.snap
+Updated 4 paths from 3ccd98201

@@ -1,0 +1,237 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   Gemfile
+	modified:   lib/jekyll/utils.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 11dd8934166d0947055bc01017426bad01277bc1
+Author: Ashwin Maroli <ashmaroli@gmail.com>
+Date:   Mon May 11 18:21:16 2020 +0530
+
+    Bump RuboCop to v0.83.x
+
+diff --git a/.rubocop.yml b/.rubocop.yml
+index fb736c5e..4a0432c4 100644
+--- a/.rubocop.yml
++++ b/.rubocop.yml
+@@ -21,6 +21,8 @@ AllCops:
+     - script/**/*
+     - vendor/**/*
+     - tmp/**/*
++Layout/EmptyLinesAroundAttributeAccessor:
++  Enabled: false
+ Layout/HashAlignment:
+   EnforcedHashRocketStyle: table
+ Layout/IndentationWidth:
+@@ -165,6 +167,8 @@ Style/RescueModifier:
+ Style/SafeNavigation:
+   Exclude:
+     - lib/jekyll/document.rb
++Style/SlicingWithRange:
++  Enabled: false
+ Style/SignalException:
+   EnforcedStyle: only_raise
+ Style/StringLiterals:
+diff --git a/Gemfile b/Gemfile
+index f0611ea2..ff48521d 100644
+--- a/Gemfile
++++ b/Gemfile
+@@ -27,7 +27,7 @@ group :test do
+   gem "nokogiri", "~> 1.7"
+   gem "rspec"
+   gem "rspec-mocks"
+-  gem "rubocop", "~> 0.82.0"
++  gem "rubocop", "~> 0.83.0"
+   gem "rubocop-performance"
+   gem "test-dependency-theme", :path => File.expand_path("test/fixtures/test-dependency-theme", __dir__)
+   gem "test-theme", :path => File.expand_path("test/fixtures/test-theme", __dir__)
+diff --git a/lib/jekyll/entry_filter.rb b/lib/jekyll/entry_filter.rb
+index a7ece193..272e7bbb 100644
+--- a/lib/jekyll/entry_filter.rb
++++ b/lib/jekyll/entry_filter.rb
+@@ -3,6 +3,7 @@
+ module Jekyll
+   class EntryFilter
+     attr_reader :site
++
+     SPECIAL_LEADING_CHAR_REGEX = %r!\A#{Regexp.union([".", "_", "#", "~"])}!o.freeze
+ 
+     def initialize(site, base_directory = nil)
+diff --git a/lib/jekyll/readers/collection_reader.rb b/lib/jekyll/readers/collection_reader.rb
+index 77c70097..6d182750 100644
+--- a/lib/jekyll/readers/collection_reader.rb
++++ b/lib/jekyll/readers/collection_reader.rb
+@@ -5,6 +5,7 @@ module Jekyll
+     SPECIAL_COLLECTIONS = %w(posts data).freeze
+ 
+     attr_reader :site, :content
++
+     def initialize(site)
+       @site = site
+       @content = {}
+diff --git a/lib/jekyll/readers/data_reader.rb b/lib/jekyll/readers/data_reader.rb
+index 8d5803cb..4fa873fc 100644
+--- a/lib/jekyll/readers/data_reader.rb
++++ b/lib/jekyll/readers/data_reader.rb
+@@ -3,6 +3,7 @@
+ module Jekyll
+   class DataReader
+     attr_reader :site, :content
++
+     def initialize(site)
+       @site = site
+       @content = {}
+diff --git a/lib/jekyll/readers/layout_reader.rb b/lib/jekyll/readers/layout_reader.rb
+index 883ca724..981867b3 100644
+--- a/lib/jekyll/readers/layout_reader.rb
++++ b/lib/jekyll/readers/layout_reader.rb
+@@ -3,6 +3,7 @@
+ module Jekyll
+   class LayoutReader
+     attr_reader :site
++
+     def initialize(site)
+       @site = site
+       @layouts = {}
+diff --git a/lib/jekyll/readers/page_reader.rb b/lib/jekyll/readers/page_reader.rb
+index af4b879d..e72f7676 100644
+--- a/lib/jekyll/readers/page_reader.rb
++++ b/lib/jekyll/readers/page_reader.rb
+@@ -3,6 +3,7 @@
+ module Jekyll
+   class PageReader
+     attr_reader :site, :dir, :unfiltered_content
++
+     def initialize(site, dir)
+       @site = site
+       @dir = dir
+diff --git a/lib/jekyll/readers/post_reader.rb b/lib/jekyll/readers/post_reader.rb
+index 17b12321..f6de49ae 100644
+--- a/lib/jekyll/readers/post_reader.rb
++++ b/lib/jekyll/readers/post_reader.rb
+@@ -3,6 +3,7 @@
+ module Jekyll
+   class PostReader
+     attr_reader :site, :unfiltered_content
++
+     def initialize(site)
+       @site = site
+     end
+diff --git a/lib/jekyll/readers/static_file_reader.rb b/lib/jekyll/readers/static_file_reader.rb
+index 97df05af..5c8a6775 100644
+--- a/lib/jekyll/readers/static_file_reader.rb
++++ b/lib/jekyll/readers/static_file_reader.rb
+@@ -3,6 +3,7 @@
+ module Jekyll
+   class StaticFileReader
+     attr_reader :site, :dir, :unfiltered_content
++
+     def initialize(site, dir)
+       @site = site
+       @dir = dir
+diff --git a/lib/jekyll/readers/theme_assets_reader.rb b/lib/jekyll/readers/theme_assets_reader.rb
+index 8b62c9d3..b20a3a08 100644
+--- a/lib/jekyll/readers/theme_assets_reader.rb
++++ b/lib/jekyll/readers/theme_assets_reader.rb
+@@ -3,6 +3,7 @@
+ module Jekyll
+   class ThemeAssetsReader
+     attr_reader :site
++
+     def initialize(site)
+       @site = site
+     end
+diff --git a/lib/jekyll/theme.rb b/lib/jekyll/theme.rb
+index 3e5172f7..9c0b6ca3 100644
+--- a/lib/jekyll/theme.rb
++++ b/lib/jekyll/theme.rb
+@@ -4,6 +4,7 @@ module Jekyll
+   class Theme
+     extend Forwardable
+     attr_reader   :name
++
+     def_delegator :gemspec, :version, :version
+ 
+     def initialize(name)
++ git -c core.fileMode=false diff 11dd8934166d0947055bc01017426bad01277bc1
+diff --git a/Gemfile b/Gemfile
+index ff48521d..fceb8471 100644
+--- a/Gemfile
++++ b/Gemfile
+@@ -99,3 +99,5 @@ group :site do
+   gem "jekyll-sitemap"
+   gem "jemoji"
+ end
++
++gem "webrick", "~> 1.9"
+diff --git a/lib/jekyll/utils.rb b/lib/jekyll/utils.rb
+index 062300ae..049d57d4 100644
+--- a/lib/jekyll/utils.rb
++++ b/lib/jekyll/utils.rb
+@@ -13,8 +13,8 @@ module Jekyll
+     # Constants for use in #slugify
+     SLUGIFY_MODES = %w(raw default pretty ascii latin).freeze
+     SLUGIFY_RAW_REGEXP = Regexp.new('\\s+').freeze
+-    SLUGIFY_DEFAULT_REGEXP = Regexp.new("[^[:alnum:]]+").freeze
+-    SLUGIFY_PRETTY_REGEXP = Regexp.new("[^[:alnum:]._~!$&'()+,;=@]+").freeze
++    SLUGIFY_DEFAULT_REGEXP = Regexp.new("[^\\p{M}\\p{L}\\p{Nd}]+").freeze
++    SLUGIFY_PRETTY_REGEXP = Regexp.new("[^\\p{M}\\p{L}\\p{Nd}._~!$&'()+,;=@]+").freeze
+     SLUGIFY_ASCII_REGEXP = Regexp.new("[^[A-Za-z0-9]]+").freeze
+ 
+     # Takes a slug and turns it into a simple title.
++ git checkout 11dd8934166d0947055bc01017426bad01277bc1 test/test_utils.rb
+Updated 0 paths from c7327ab7
++ git apply -v -
+Checking patch test/test_utils.rb...
+Applied patch test/test_utils.rb cleanly.
++ : '>>>>> Start Test Output'
++ bundle exec ruby -I test test/test_utils.rb -v -n /Utils.slugify/
++ cat
+# -------------------------------------------------------------
+# SPECS AND TESTS ARE RUNNING WITH WARNINGS OFF.
+# SEE: https://github.com/Shopify/liquid/issues/730
+# SEE: https://github.com/jekyll/jekyll/issues/4719
+# -------------------------------------------------------------
+
+# Running tests with run options -v -n /Utils.slugify/ --seed 29551:
+
+
+TestUtils#test_: The `Utils.slugify` method should replace punctuation in any scripts by hyphens.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should not replace period and underscore if mode is pretty.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should records a warning in the log if the returned slug is empty.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should not change behaviour if mode is nil.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should replace everything else but ASCII characters.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should only replace whitespace if mode is raw.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should trim leading and trailing whitespace.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should not change behaviour if mode is default.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should replace consecutive whitespace with a single hyphen.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should drop trailing punctuation.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should Keep all uppercase letters if cased is true.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should ignore hyphens.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should not modify the original string.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should combine adjacent hyphens and spaces.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should replace whitespace with hyphens.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should not replace Unicode 'Mark', 'Letter', or 'Number: Decimal Digit' category characters.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should map accented latin characters to ASCII characters.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should replace underscores with hyphens.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should return nil if passed nil.  0.00 = .
+TestUtils#test_: The `Utils.slugify` method should return the given string if mode is none.  0.00 = .
+
+Finished tests in 0.009778s, 2045.3869 tests/s, 3783.9658 assertions/s.
+
+
+20 tests, 37 assertions, 0 failures, 0 errors, 0 skips
+Coverage report generated for Unit Tests to coverage/index.html
+Line coverage: 791 / 1992 (39.70%)
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 11dd8934166d0947055bc01017426bad01277bc1 test/test_utils.rb
+>>>>> Test Exit Code: 0
+Updated 1 path from c7327ab7

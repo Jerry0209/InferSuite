@@ -1,0 +1,24 @@
+diff --git a/src/OrderedMap.js b/src/OrderedMap.js
+index 5b0791a85..387f47494 100644
+--- a/src/OrderedMap.js
++++ b/src/OrderedMap.js
+@@ -62,10 +62,15 @@ export class OrderedMap extends Map {
+   }
+ 
+   __iterate(fn, reverse) {
+-    return this._list.__iterate(
+-      entry => entry && fn(entry[1], entry[0], this),
+-      reverse
+-    );
++    let iterations = 0;
++    this._list.__iterate(entry => {
++      if (entry) {
++        iterations++;
++        return fn(entry[1], entry[0], this);
++      }
++      return undefined;
++    }, reverse);
++    return iterations;
+   }
+ 
+   __iterator(type, reverse) {

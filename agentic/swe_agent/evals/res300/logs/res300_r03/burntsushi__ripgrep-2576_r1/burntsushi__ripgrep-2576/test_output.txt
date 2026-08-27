@@ -1,0 +1,193 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   CHANGELOG.md
+	modified:   crates/regex/src/word.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit fed4fea217abbc502f2e823465de903c8f2b623d
+Author: Vidar <vidar.asberg@pm.me>
+Date:   Mon Jul 31 13:08:44 2023 +0200
+
+    ignore/types: add csproj
+    
+    Supports the .NET C# Project file extension.
+    
+    PR #2575
+
+diff --git a/crates/ignore/src/default_types.rs b/crates/ignore/src/default_types.rs
+index e138067..91a6cbc 100644
+--- a/crates/ignore/src/default_types.rs
++++ b/crates/ignore/src/default_types.rs
+@@ -55,6 +55,7 @@ pub const DEFAULT_TYPES: &[(&[&str], &[&str])] = &[
+     (&["cs"], &["*.cs"]),
+     (&["csharp"], &["*.cs"]),
+     (&["cshtml"], &["*.cshtml"]),
++    (&["csproj"], &["*.csproj"]),
+     (&["css"], &["*.css", "*.scss"]),
+     (&["csv"], &["*.csv"]),
+     (&["cuda"], &["*.cu", "*.cuh"]),
++ git -c core.fileMode=false diff fed4fea217abbc502f2e823465de903c8f2b623d
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 1b43527..c637aea 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -38,6 +38,8 @@ Bug fixes:
+   Fix bug when using inline regex flags with `-e/--regexp`.
+ * [BUG #2523](https://github.com/BurntSushi/ripgrep/issues/2523):
+   Make executable searching take `.com` into account on Windows.
++* [BUG #2574](https://github.com/BurntSushi/ripgrep/issues/2574):
++  Fix bug in `-w/--word-regexp` that would result in incorrect match offsets.
+ 
+ 
+ 13.0.0 (2021-06-12)
+diff --git a/crates/regex/src/word.rs b/crates/regex/src/word.rs
+index af4480a..52fb61c 100644
+--- a/crates/regex/src/word.rs
++++ b/crates/regex/src/word.rs
+@@ -128,6 +128,9 @@ impl WordMatcher {
+         // The reason why we cannot handle the ^/$ cases here is because we
+         // can't assume anything about the original pattern. (Try commenting
+         // out the checks for ^/$ below and run the tests to see examples.)
++        //
++        // NOTE(2023-07-31): After fixing #2574, this logic honestly still
++        // doesn't seem correct. Regex composition is hard.
+         let input = Input::new(haystack).span(at..haystack.len());
+         let mut cand = match self.regex.find(input) {
+             None => return Ok(None),
+@@ -136,8 +139,17 @@ impl WordMatcher {
+         if cand.start() == 0 || cand.end() == haystack.len() {
+             return Err(());
+         }
+-        let (_, slen) = bstr::decode_utf8(&haystack[cand]);
+-        let (_, elen) = bstr::decode_last_utf8(&haystack[cand]);
++        // We decode the chars on either side of the match. If either char is
++        // a word character, then that means the ^/$ matched and not \W. In
++        // that case, we defer to the slower engine.
++        let (ch, slen) = bstr::decode_utf8(&haystack[cand]);
++        if ch.map_or(true, regex_syntax::is_word_character) {
++            return Err(());
++        }
++        let (ch, elen) = bstr::decode_last_utf8(&haystack[cand]);
++        if ch.map_or(true, regex_syntax::is_word_character) {
++            return Err(());
++        }
+         let new_start = cand.start() + slen;
+         let new_end = cand.end() - elen;
+         // This occurs the original regex can match the empty string. In this
++ git checkout fed4fea217abbc502f2e823465de903c8f2b623d tests/regression.rs
+Updated 0 paths from d624887
++ git apply -v -
+Checking patch tests/regression.rs...
+Applied patch tests/regression.rs cleanly.
++ : '>>>>> Start Test Output'
++ RUSTFLAGS=-Awarnings
++ cargo test --package ripgrep --test integration -- regression
++ cat
+   Compiling ripgrep v13.0.0 (/testbed)
+   Compiling grep-regex v0.1.11 (/testbed/crates/regex)
+   Compiling grep v0.2.12 (/testbed/crates/grep)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.07s
+     Running tests/tests.rs (target/debug/deps/integration-e770ad21170e7259)
+
+running 86 tests
+test regression::r1412_look_behind_no_replacement ... ok
+test regression::r1401_look_ahead_only_matching_2 ... ok
+test regression::r1401_look_ahead_only_matching_1 ... ok
+test regression::r1159_invalid_flag ... ok
+test regression::r1389_bad_symlinks_no_biscuit ... ok
+test regression::r1573 ... ok
+test regression::r1311_multi_line_term_replace ... ok
+test regression::r1176_line_regex ... ok
+test regression::r1176_literal_file ... ok
+test regression::r1223_no_dir_check_for_default_path ... ok
+test regression::r1446_respect_excludes_in_worktree ... ok
+test regression::r137 ... ok
+test regression::r1380 ... ok
+test regression::r1173 ... ok
+test regression::r1174 ... ok
+test regression::r1098 ... ok
+test regression::r127 ... ok
+test regression::r105_part1 ... ok
+test regression::r128 ... ok
+test regression::r1163 ... ok
+test regression::r131 ... ok
+test regression::r1866 ... ok
+test regression::r1259_drop_last_byte_nonl ... ok
+test regression::r1334_crazy_literals ... ok
+test regression::r105_part2 ... ok
+test regression::r16 ... ok
+test regression::r1319 ... ok
+test regression::r1765 ... ok
+test regression::r1559 ... ok
+test regression::r1638 ... ok
+test regression::r1739_replacement_lineterm_match ... ok
+test regression::r210 ... ok
+test regression::r1064 ... ok
+test regression::r1537 ... ok
+test regression::r1130 ... ok
+test regression::r199 ... ok
+test regression::r206 ... ok
+test regression::r256_j1 ... ok
+test regression::r1164 ... ok
+test regression::r2198 ... ok
+test regression::r2236 ... ok
+test regression::r228 ... ok
+test regression::r229 ... ok
+test regression::r391 ... ok
+test regression::r451_only_matching_as_in_issue ... ok
+test regression::r184 ... ok
+test regression::r483_non_matching_exit_code ... ok
+test regression::r256 ... ok
+test regression::r2095 ... ok
+test regression::r251 ... ok
+test regression::r405 ... ok
+test regression::r30 ... ok
+test regression::r270 ... ok
+test regression::r483_matching_no_stdout ... ok
+test regression::r279 ... ok
+test regression::r2574 ... ok
+test regression::r493 ... ok
+test regression::r428_unrecognized_style ... ok
+test regression::r49 ... ok
+test regression::r428_color_context_path ... ok
+test regression::r900 ... ok
+test regression::r156 ... ok
+test regression::r451_only_matching ... ok
+test regression::r25 ... ok
+test regression::r50 ... ok
+test regression::r599 ... ok
+test regression::r693_context_in_contextless_mode ... ok
+test regression::r64 ... ok
+test regression::r99 ... ok
+test regression::r67 ... ok
+test regression::r90 ... ok
+test regression::r553_flag ... ok
+test regression::r2208 ... ok
+test regression::r65 ... ok
+test regression::r807 ... ok
+test regression::r87 ... ok
+test regression::r568_leading_hyphen_option_args ... ok
+test regression::r2480 ... ok
+test regression::r553_switch ... ok
+test regression::r1878 ... ok
+test regression::r1868_context_passthru_override ... ok
+test regression::r1203_reverse_suffix_literal ... ok
+test regression::r1891 ... ok
+test regression::r1159_exit_status ... ok
+test regression::r506_word_not_parenthesized ... ok
+test regression::r93 ... ok
+
+test result: ok. 86 passed; 0 failed; 0 ignored; 0 measured; 199 filtered out; finished in 0.17s
+
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout fed4fea217abbc502f2e823465de903c8f2b623d tests/regression.rs
+Updated 1 path from d624887

@@ -1,0 +1,20 @@
+diff --git a/changelog/fix_dig_chain_safe_navigation_autocorrect.md b/changelog/fix_dig_chain_safe_navigation_autocorrect.md
+new file mode 100644
+index 000000000..aab81901f
+--- /dev/null
++++ b/changelog/fix_dig_chain_safe_navigation_autocorrect.md
+@@ -0,0 +1 @@
++* [#13525](https://github.com/rubocop/rubocop/issues/13525): Fix an incorrect autocorrect for `Style/DigChain` when the leftmost `dig` in the chain uses the safe navigation operator (`&.`) or the scope resolution operator (`::`).
+diff --git a/lib/rubocop/cop/style/dig_chain.rb b/lib/rubocop/cop/style/dig_chain.rb
+index 6be9519cc..e5ed505c2 100644
+--- a/lib/rubocop/cop/style/dig_chain.rb
++++ b/lib/rubocop/cop/style/dig_chain.rb
+@@ -52,7 +52,7 @@ module RuboCop
+           end_pos = node.source_range.end_pos
+ 
+           while dig?((node = node.receiver))
+-            begin_pos = node.loc.dot ? node.loc.dot.begin_pos + 1 : 0
++            begin_pos = node.loc.dot ? node.loc.dot.end_pos : 0
+             arguments.unshift(*node.arguments)
+             ignore_node(node)
+           end

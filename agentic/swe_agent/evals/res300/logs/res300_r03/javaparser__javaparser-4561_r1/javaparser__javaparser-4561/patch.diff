@@ -1,0 +1,28 @@
+diff --git a/changelog.md b/changelog.md
+index 71bde2738..9085d7732 100644
+--- a/changelog.md
++++ b/changelog.md
+@@ -8,6 +8,7 @@ Next Release (Version 3.26.3-snapshot)
+ ### Deprecated
+ ### Removed
+ ### Fixed
++* Fix resolution of method calls on text block literals (TextBlockLiteralExpr) which previously threw UnsupportedOperationException
+ ### Security
+ 
+ Version 3.26.2
+diff --git a/javaparser-symbol-solver-core/src/main/java/com/github/javaparser/symbolsolver/javaparsermodel/TypeExtractor.java b/javaparser-symbol-solver-core/src/main/java/com/github/javaparser/symbolsolver/javaparsermodel/TypeExtractor.java
+index f253dec3c..d4fd8c31d 100644
+--- a/javaparser-symbol-solver-core/src/main/java/com/github/javaparser/symbolsolver/javaparsermodel/TypeExtractor.java
++++ b/javaparser-symbol-solver-core/src/main/java/com/github/javaparser/symbolsolver/javaparsermodel/TypeExtractor.java
+@@ -287,6 +287,11 @@ public class TypeExtractor extends DefaultVisitorAdapter {
+         return stringReferenceType;
+     }
+ 
++    @Override
++    public ResolvedType visit(TextBlockLiteralExpr node, Boolean solveLambdas) {
++        return stringReferenceType;
++    }
++
+     @Override
+     public ResolvedType visit(IntegerLiteralExpr node, Boolean solveLambdas) {
+         return ResolvedPrimitiveType.INT;

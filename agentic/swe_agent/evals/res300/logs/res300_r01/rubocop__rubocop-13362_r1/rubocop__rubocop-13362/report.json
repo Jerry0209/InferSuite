@@ -1,0 +1,69 @@
+{
+    "rubocop__rubocop-13362": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "infra_failure": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "allows \"#$a\" with freeze",
+                    "allows \"#@@a\" with freeze",
+                    "allows \"#@a\" with freeze"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "allows \"\" with freeze",
+                    "allows \"#{a}\" with freeze",
+                    "allows \"top#$foo\" with freeze",
+                    "allows \"top#@@foo\" with freeze",
+                    "allows \"top#@foo\" with freeze",
+                    "allows \"top#{1 + 2}\" with freeze",
+                    "allows 'str' with freeze",
+                    "allows ('a' * 20) with freeze",
+                    "allows ('a' + 'b') with freeze",
+                    "allows (1...5) with freeze",
+                    "allows (1..5) with freeze",
+                    "allows ([42] * 42) with freeze",
+                    "allows (a + b) with freeze",
+                    "allows .freeze on method call",
+                    "allows /./ with freeze",
+                    "allows ::ENV['foo'] with freeze",
+                    "allows ENV['foo'] with freeze",
+                    "allows [1, 2, 3] with freeze",
+                    "allows { a: 1, b: 2 } with freeze",
+                    "registers an offense for frozen \"\"",
+                    "registers an offense for frozen \"#$a\"",
+                    "registers an offense for frozen \"#@@a\"",
+                    "registers an offense for frozen \"#@a\"",
+                    "registers an offense for frozen \"#{a}\"",
+                    "registers an offense for frozen 'foo'.count",
+                    "registers an offense for frozen ('a' > 'b')",
+                    "registers an offense for frozen (1 + 2)",
+                    "registers an offense for frozen (1...5)",
+                    "registers an offense for frozen (1..5)",
+                    "registers an offense for frozen (2 > 1)",
+                    "registers an offense for frozen (a > b)",
+                    "registers an offense for frozen /./",
+                    "registers an offense for frozen 1",
+                    "registers an offense for frozen 1.5",
+                    "registers an offense for frozen :\"\"",
+                    "registers an offense for frozen :sym",
+                    "registers an offense for frozen [1, 2, 3].size"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

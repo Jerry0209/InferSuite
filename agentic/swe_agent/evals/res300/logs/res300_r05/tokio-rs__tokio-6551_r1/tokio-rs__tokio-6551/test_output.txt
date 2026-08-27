@@ -1,0 +1,113 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   tokio/src/runtime/scheduler/multi_thread/handle/metrics.rs
+	modified:   tokio/src/runtime/scheduler/multi_thread_alt/handle/metrics.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 0a85a9662d30139c779ea49a59be30db0f292b5d
+Author: Maxwell Borden <Tacklebox@users.noreply.github.com>
+Date:   Sat May 25 22:14:59 2024 +0200
+
+    net: implement `Clone` for `NamedPipeInfo` (#6586)
+
+diff --git a/tokio/src/net/windows/named_pipe.rs b/tokio/src/net/windows/named_pipe.rs
+index 98e63f0c..81148482 100644
+--- a/tokio/src/net/windows/named_pipe.rs
++++ b/tokio/src/net/windows/named_pipe.rs
+@@ -2626,7 +2626,7 @@ pub enum PipeEnd {
+ /// Information about a named pipe.
+ ///
+ /// Constructed through [`NamedPipeServer::info`] or [`NamedPipeClient::info`].
+-#[derive(Debug)]
++#[derive(Debug, Clone)]
+ #[non_exhaustive]
+ pub struct PipeInfo {
+     /// Indicates the mode of a named pipe.
++ git -c core.fileMode=false diff 0a85a9662d30139c779ea49a59be30db0f292b5d
+diff --git a/tokio/src/runtime/scheduler/multi_thread/handle/metrics.rs b/tokio/src/runtime/scheduler/multi_thread/handle/metrics.rs
+index 838694fc..3d614b47 100644
+--- a/tokio/src/runtime/scheduler/multi_thread/handle/metrics.rs
++++ b/tokio/src/runtime/scheduler/multi_thread/handle/metrics.rs
+@@ -8,7 +8,10 @@ impl Handle {
+     }
+ 
+     pub(crate) fn num_blocking_threads(&self) -> usize {
+-        self.blocking_spawner.num_threads()
++        // workers are currently spawned using spawn_blocking
++        self.blocking_spawner
++            .num_threads()
++            .saturating_sub(self.num_workers())
+     }
+ 
+     pub(crate) fn num_idle_blocking_threads(&self) -> usize {
+diff --git a/tokio/src/runtime/scheduler/multi_thread_alt/handle/metrics.rs b/tokio/src/runtime/scheduler/multi_thread_alt/handle/metrics.rs
+index 838694fc..3d614b47 100644
+--- a/tokio/src/runtime/scheduler/multi_thread_alt/handle/metrics.rs
++++ b/tokio/src/runtime/scheduler/multi_thread_alt/handle/metrics.rs
+@@ -8,7 +8,10 @@ impl Handle {
+     }
+ 
+     pub(crate) fn num_blocking_threads(&self) -> usize {
+-        self.blocking_spawner.num_threads()
++        // workers are currently spawned using spawn_blocking
++        self.blocking_spawner
++            .num_threads()
++            .saturating_sub(self.num_workers())
+     }
+ 
+     pub(crate) fn num_idle_blocking_threads(&self) -> usize {
++ git checkout 0a85a9662d30139c779ea49a59be30db0f292b5d tokio/tests/rt_metrics.rs
+Updated 0 paths from e137b02b
++ git apply -v -
+Checking patch tokio/tests/rt_metrics.rs...
+Applied patch tokio/tests/rt_metrics.rs cleanly.
++ : '>>>>> Start Test Output'
++ RUSTFLAGS='--cfg tokio_unstable'
++ cargo test --features full --test rt_metrics --no-fail-fast
++ cat
+   Compiling tokio v1.37.0 (/testbed/tokio)
+   Compiling tokio-util v0.7.11 (/testbed/tokio-util)
+   Compiling tokio-stream v0.1.15 (/testbed/tokio-stream)
+   Compiling tokio-test v0.4.4 (/testbed/tokio-test)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.58s
+     Running tests/rt_metrics.rs (target/debug/deps/rt_metrics-5f41c670676ab39e)
+
+running 23 tests
+test budget_exhaustion_yield ... ok
+test budget_exhaustion_yield_with_joins ... ok
+test injection_queue_depth_current_thread ... ok
+test active_tasks_count ... ok
+test num_workers ... ok
+test blocking_queue_depth ... ok
+test injection_queue_depth_multi_thread ... ok
+test worker_steal_count ... ignored
+test remote_schedule_count ... ok
+test worker_local_queue_depth ... ok
+test num_blocking_threads ... ok
+test worker_total_busy_duration ... ok
+test worker_poll_count_and_time ... ok
+test io_driver_fd_count ... ok
+test io_driver_ready_count ... ok
+test worker_park_count ... ok
+test worker_noop_count ... ok
+test num_idle_blocking_threads ... ok
+test worker_poll_count_histogram_range ... ok
+test worker_local_schedule_count ... ok
+test worker_poll_count_histogram_disabled_without_explicit_enable ... ok
+test worker_poll_count_histogram ... ok
+test worker_overflow_count ... ok
+
+test result: ok. 22 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
+>>>>> Test Exit Code: 0
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 0a85a9662d30139c779ea49a59be30db0f292b5d tokio/tests/rt_metrics.rs
+Updated 1 path from e137b02b

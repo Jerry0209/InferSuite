@@ -1,0 +1,81 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/fluent/plugin/in_http.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 26c62cddbf236361b797eac498301c7d4a77d010
+Merge: e9513244 ed962c91
+Author: Takuro Ashie <ashie@clear-code.com>
+Date:   Wed Feb 2 12:03:23 2022 +0900
+
+    Merge pull request #3613 from fluent/build-x64-mingw-ucrt
+    
+    Build x64-mingw-ucrt gem
+
++ git -c core.fileMode=false diff 26c62cddbf236361b797eac498301c7d4a77d010
+diff --git a/lib/fluent/plugin/in_http.rb b/lib/fluent/plugin/in_http.rb
+index 17500e1a..98961cf9 100644
+--- a/lib/fluent/plugin/in_http.rb
++++ b/lib/fluent/plugin/in_http.rb
+@@ -314,8 +314,16 @@ module Fluent::Plugin
+         @parser_json.parse(js) do |_time, record|
+           return nil, record
+         end
++      elsif ndjson = params['ndjson']
++        events = []
++        ndjson.split(/\r?\n/).each do |js|
++          @parser_json.parse(js) do |_time, record|
++            events.push(record)
++          end
++        end
++        return nil, events
+       else
+-        raise "'json' or 'msgpack' parameter is required"
++        raise "'json', 'ndjson' or 'msgpack' parameter is required"
+       end
+     end
+ 
+@@ -567,6 +575,8 @@ module Fluent::Plugin
+           params['json'] = @body
+         elsif @content_type =~ /^application\/msgpack/
+           params['msgpack'] = @body
++        elsif @content_type =~ /^application\/x-ndjson/
++          params['ndjson'] = @body
+         end
+         path_info = uri.path
+ 
++ git checkout 26c62cddbf236361b797eac498301c7d4a77d010 test/plugin/test_in_http.rb
+Updated 0 paths from db16bc32
++ git apply -v -
+Checking patch test/plugin/test_in_http.rb...
+Applied patch test/plugin/test_in_http.rb cleanly.
++ : '>>>>> Start Test Output'
++ bundle exec ruby test/plugin/test_in_http.rb -v -n /test_application/
++ cat
+/testbed/lib/fluent/compat/parser.rb:28: warning: csv was loaded from the standard library, but will no longer be part of the default gems starting from Ruby 3.4.0.
+You can add csv to your Gemfile or gemspec to silence this warning.
+Loaded suite test/plugin/test_in_http
+Started
+HttpInputTest: 
+  test_application_json:				.: (0.603749)
+  test_application_msgpack:				.: (0.602730)
+  test_application_ndjson:				.: (0.602735)
+
+Finished in 1.809836976 seconds.
+-------------------------------------------------------------------------------
+3 tests, 11 assertions, 0 failures, 0 errors, 0 pendings, 0 omissions, 0 notifications
+100% passed
+-------------------------------------------------------------------------------
+1.66 tests/s, 6.08 assertions/s
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 26c62cddbf236361b797eac498301c7d4a77d010 test/plugin/test_in_http.rb
+Updated 1 path from db16bc32

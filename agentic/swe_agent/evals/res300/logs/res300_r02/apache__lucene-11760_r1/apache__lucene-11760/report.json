@@ -1,0 +1,41 @@
+{
+    "apache__lucene-11760": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "infra_failure": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "org.apache.lucene.queries.intervals.TestIntervalBuilder > testEmptyIntervals"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "org.apache.lucene.queries.intervals.TestIntervalBuilder > testUnordered",
+                    "org.apache.lucene.queries.intervals.TestIntervalBuilder > testGraphSynonyms",
+                    "org.apache.lucene.queries.intervals.TestIntervalBuilder > testGraphTerminatesOnGap",
+                    "org.apache.lucene.queries.intervals.TestIntervalBuilder > testPhrase",
+                    "org.apache.lucene.queries.intervals.TestIntervalBuilder > testPhraseWithStopword",
+                    "org.apache.lucene.queries.intervals.TestIntervalBuilder > testSimpleSynonyms",
+                    "org.apache.lucene.queries.intervals.TestIntervalBuilder > testOrdered",
+                    "org.apache.lucene.queries.intervals.TestIntervalBuilder > testEmptyTokenStream",
+                    "org.apache.lucene.queries.intervals.TestIntervalBuilder > testSimpleTerm",
+                    "org.apache.lucene.queries.intervals.TestIntervalBuilder > testSimpleSynonymsWithGap",
+                    "org.apache.lucene.queries.intervals.TestIntervalBuilder > testGraphSynonymsWithGaps"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

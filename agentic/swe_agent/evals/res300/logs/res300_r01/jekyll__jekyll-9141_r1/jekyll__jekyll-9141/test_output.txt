@@ -1,0 +1,96 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   History.markdown
+	modified:   lib/jekyll/site.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit bb851e235dfbe1f197388aea3e7f0eeb1b50c4e3
+Author: jekyllbot <jekyllbot@jekyllrb.com>
+Date:   Thu Oct 6 23:04:42 2022 -0700
+
+    Update history to reflect merge of #9151 [ci skip]
+
+diff --git a/History.markdown b/History.markdown
+index def3a380..d510fcac 100644
+--- a/History.markdown
++++ b/History.markdown
+@@ -70,6 +70,7 @@
+   * Windows: describe which option to choose (#9049)
+   * Improve links (http -&gt; https) (#9064)
+   * Update ruby version for macos guide (#9086)
++  * Update posts.md (#9151)
+ 
+ ### Bug Fixes
+ 
++ git -c core.fileMode=false diff bb851e235dfbe1f197388aea3e7f0eeb1b50c4e3
+diff --git a/History.markdown b/History.markdown
+index d510fcac..bccd79cd 100644
+--- a/History.markdown
++++ b/History.markdown
+@@ -90,6 +90,7 @@
+   * Ensure theme config is a `Jekyll::Configuration` object (#8988)
+   * Remove misleading totals row from `--profile` table (#9039)
+   * Unlock Psych dependency (#9135)
++  * Fix false positive conflicts for static files in a collection (#9141)
+ 
+ ### Development Fixes
+ 
+diff --git a/lib/jekyll/site.rb b/lib/jekyll/site.rb
+index 2fad097b..d6c5a0b8 100644
+--- a/lib/jekyll/site.rb
++++ b/lib/jekyll/site.rb
+@@ -360,9 +360,13 @@ module Jekyll
+     end
+ 
+     def each_site_file
++      seen_files = []
+       %w(pages static_files_to_write docs_to_write).each do |type|
+         send(type).each do |item|
++          next if seen_files.include?(item)
++
+           yield item
++          seen_files << item
+         end
+       end
+     end
++ git checkout bb851e235dfbe1f197388aea3e7f0eeb1b50c4e3 test/test_site.rb
+Updated 0 paths from 950af6a2
++ git apply -v -
+Checking patch test/test_site.rb...
+Applied patch test/test_site.rb cleanly.
++ : '>>>>> Start Test Output'
++ bundle exec ruby -I test test/test_site.rb -v -n '/static files/'
++ cat
+# -------------------------------------------------------------
+# SPECS AND TESTS ARE RUNNING WITH WARNINGS OFF.
+# SEE: https://github.com/Shopify/liquid/issues/730
+# SEE: https://github.com/jekyll/jekyll/issues/4719
+# -------------------------------------------------------------
+
+# Running tests with run options -v -n "/static files/" --seed 21880:
+
+
+TestSite#test_: creating sites should expose list of static files to site payload.  0.01 = .
+TestSite#test_: creating sites should write only modified static files.  3.32 = .
+TestSite#test_: static files in a collection should not be revisited in `Site#each_site_file`.  0.01 = .
+TestSite#test_: creating sites should write static files if not modified but missing in destination.  3.17 = .
+TestSite#test_: static files in a collection should be exposed via site instance.  0.01 = .
+
+Finished tests in 6.533010s, 0.7653 tests/s, 1.6838 assertions/s.
+
+
+5 tests, 11 assertions, 0 failures, 0 errors, 0 skips
+Coverage report generated for Unit Tests to coverage/index.html
+Line coverage: 2616 / 3952 (66.19%)
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout bb851e235dfbe1f197388aea3e7f0eeb1b50c4e3 test/test_site.rb
+Updated 1 path from 950af6a2

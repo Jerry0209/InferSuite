@@ -1,0 +1,16 @@
+diff --git a/src/Carbon/CarbonInterval.php b/src/Carbon/CarbonInterval.php
+index bbff99fc..62954850 100644
+--- a/src/Carbon/CarbonInterval.php
++++ b/src/Carbon/CarbonInterval.php
+@@ -2180,6 +2180,11 @@ class CarbonInterval extends DateInterval implements CarbonConverterInterface
+         }
+ 
+         $sign = ($this->invert === 1) !== ($interval->invert === 1) ? self::NEGATIVE : self::POSITIVE;
++
++        if ($this->startDate && $this->endDate) {
++            $this->endDate = $this->endDate->avoidMutation()->add($interval);
++        }
++
+         $this->years += $interval->y * $sign;
+         $this->months += $interval->m * $sign;
+         $this->dayz += ($interval->days === false ? $interval->d : $interval->days) * $sign;

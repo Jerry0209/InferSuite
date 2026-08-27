@@ -1,0 +1,184 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   tokio/src/sync/mpsc/block.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 873cb8ae2fc291eaffbd71e3c83d17b2f0ed7abf
+Author: Weijia Jiang <wjjiang19@163.com>
+Date:   Thu May 30 16:45:45 2024 +0800
+
+    runtime: move task out of the `lifo_slot` in `block_in_place` (#6596)
+
+diff --git a/tokio/src/runtime/scheduler/multi_thread/worker.rs b/tokio/src/runtime/scheduler/multi_thread/worker.rs
+index 65851b21..8ef487b0 100644
+--- a/tokio/src/runtime/scheduler/multi_thread/worker.rs
++++ b/tokio/src/runtime/scheduler/multi_thread/worker.rs
+@@ -395,11 +395,19 @@ where
+         let cx = maybe_cx.expect("no .is_some() == false cases above should lead here");
+ 
+         // Get the worker core. If none is set, then blocking is fine!
+-        let core = match cx.core.borrow_mut().take() {
++        let mut core = match cx.core.borrow_mut().take() {
+             Some(core) => core,
+             None => return Ok(()),
+         };
+ 
++        // If we heavily call `spawn_blocking`, there might be no available thread to
++        // run this core. Except for the task in the lifo_slot, all tasks can be
++        // stolen, so we move the task out of the lifo_slot to the run_queue.
++        if let Some(task) = core.lifo_slot.take() {
++            core.run_queue
++                .push_back_or_overflow(task, &*cx.worker.handle, &mut core.stats);
++        }
++
+         // We are taking the core from the context and sending it to another
+         // thread.
+         take_core = true;
++ git -c core.fileMode=false diff 873cb8ae2fc291eaffbd71e3c83d17b2f0ed7abf
+diff --git a/tokio/src/sync/mpsc/block.rs b/tokio/src/sync/mpsc/block.rs
+index e7798592..927c4566 100644
+--- a/tokio/src/sync/mpsc/block.rs
++++ b/tokio/src/sync/mpsc/block.rs
+@@ -168,14 +168,17 @@ impl<T> Block<T> {
+         Some(Read::Value(value.assume_init()))
+     }
+ 
+-    /// Returns true if there is a value in the slot to be consumed
++    /// Returns true if *this* block has a value in the given slot.
+     ///
+-    /// # Safety
+-    ///
+-    /// To maintain safety, the caller must ensure:
+-    ///
+-    /// * No concurrent access to the slot.
++    /// Always returns false when given an index from a different block.
+     pub(crate) fn has_value(&self, slot_index: usize) -> bool {
++        if slot_index < self.header.start_index {
++            return false;
++        }
++        if slot_index >= self.header.start_index + super::BLOCK_CAP {
++            return false;
++        }
++
+         let offset = offset(slot_index);
+         let ready_bits = self.header.ready_slots.load(Acquire);
+         is_ready(ready_bits, offset)
++ git checkout 873cb8ae2fc291eaffbd71e3c83d17b2f0ed7abf tokio/tests/sync_mpsc.rs
+Updated 0 paths from 7e5756e9
++ git apply -v -
+Checking patch tokio/tests/sync_mpsc.rs...
+Applied patch tokio/tests/sync_mpsc.rs cleanly.
++ : '>>>>> Start Test Output'
++ cargo test --test sync_mpsc --no-fail-fast
++ cat
+   Compiling tokio v1.37.0 (/testbed/tokio)
+   Compiling tokio-stream v0.1.15 (/testbed/tokio-stream)
+   Compiling tokio-test v0.4.4 (/testbed/tokio-test)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.64s
+     Running tests/sync_mpsc.rs (target/debug/deps/sync_mpsc-7d2a9452308618c6)
+
+running 89 tests
+test async_send_recv_unbounded ... ok
+test async_send_recv_many_with_buffer ... ok
+test blocking_recv_async - should panic ... ok
+test async_send_recv_with_buffer ... ok
+test drop_permit_releases_permit ... ok
+test dropping_rx_closes_channel ... ok
+test buffer_gteq_one - should panic ... ok
+test blocking_send_async - should panic ... ok
+test dropping_rx_closes_channel_for_try ... ok
+test drop_permit_iterator_releases_permits ... ok
+test no_t_bounds_buffer ... ok
+test no_t_bounds_unbounded ... ok
+test permit_available_not_acquired_close ... ok
+test ready_close_cancel_bounded ... ok
+test recv_close_gets_none_idle ... ok
+test recv_timeout_panic - should panic ... ok
+test recv_close_gets_none_reserved ... ok
+test recv_timeout ... ok
+test reserve_disarm ... ok
+test reserve_many_above_cap ... ok
+test reserve_many_on_closed_channel ... ok
+test reserve_many_zero ... ok
+test send_recv_buffer_limited ... ok
+test send_recv_many_bounded_capacity ... ok
+test send_recv_many_unbounded ... ok
+test send_recv_many_unbounded_capacity ... ok
+test send_recv_unbounded ... ok
+test start_send_past_cap ... ok
+test send_recv_with_buffer ... ok
+test send_recv_stream_unbounded ... ok
+test test_rx_is_empty_when_all_messages_are_consumed ... ok
+test test_rx_is_closed_when_calling_close_with_sender ... ok
+test send_recv_stream_with_buffer ... ok
+test test_rx_is_closed_when_dropping_all_senders ... ok
+test test_rx_is_not_closed_when_there_are_senders ... ok
+test test_rx_is_not_empty_when_all_but_one_messages_are_consumed ... ok
+test test_rx_is_not_closed_when_there_are_senders_and_buffer_filled ... ok
+test test_rx_len_on_empty_channel ... ok
+test test_rx_is_not_closed_when_there_are_permits_but_not_senders ... ok
+test test_is_empty_32_msgs ... ok
+test test_rx_is_not_empty_when_there_are_messages_in_the_buffer ... ok
+test test_rx_is_empty_when_no_messages_were_sent ... ok
+test test_rx_is_closed_when_there_are_messages_and_close_is_called ... ok
+test test_rx_len_on_filled_channel ... ok
+test test_rx_is_not_empty_when_the_buffer_is_full ... ok
+test test_rx_len_when_close_is_called_before_dropping_sender ... ok
+test test_rx_len_on_empty_channel_without_senders ... ok
+test test_rx_is_empty_all_senders_are_dropped_and_messages_consumed ... ok
+test test_rx_is_closed_when_there_are_no_senders_and_there_are_messages ... ok
+test test_rx_unbounded_is_empty_when_no_messages_were_sent ... ok
+test test_rx_len_on_filled_channel_without_senders ... ok
+test test_rx_unbounded_is_not_closed_when_there_are_senders ... ok
+test test_rx_len_when_consuming_all_messages ... ok
+test test_rx_len_when_close_is_called ... ok
+test test_rx_unbounded_is_not_empty_when_all_but_one_messages_are_consumed ... ok
+test test_rx_len_when_close_is_called_after_dropping_sender ... ok
+test test_rx_unbounded_is_not_empty_when_there_are_messages_in_the_buffer ... ok
+test test_rx_unbounded_is_closed_when_there_are_no_senders_and_there_are_messages ... ok
+test test_rx_unbounded_len_on_empty_channel ... ok
+test test_rx_unbounded_len_when_close_is_called ... ok
+test test_rx_unbounded_len_on_empty_channel_without_senders ... ok
+test test_rx_unbounded_is_closed_when_calling_close_with_sender ... ok
+test test_rx_unbounded_is_closed_when_there_are_messages_and_close_is_called ... ok
+test test_rx_unbounded_len_with_multiple_messages ... ok
+test test_rx_unbounded_is_empty_when_all_messages_are_consumed ... ok
+test test_rx_unbounded_is_empty_all_senders_are_dropped_and_messages_consumed ... ok
+test test_rx_unbounded_len_when_close_is_called_after_dropping_sender ... ok
+test test_rx_unbounded_is_closed_when_dropping_all_senders ... ok
+test test_rx_unbounded_len_with_multiple_messages_and_dropped_senders ... ok
+test test_rx_unbounded_len_when_close_is_called_before_dropping_sender ... ok
+test test_tx_capacity ... ok
+test try_recv_bounded ... ok
+test try_recv_close_while_empty_bounded ... ok
+test test_rx_unbounded_len_when_consuming_all_messages ... ok
+test try_recv_close_while_empty_unbounded ... ok
+test try_reserve_many_edge_cases ... ok
+test try_reserve_many_on_closed_channel ... ok
+test try_reserve_fails ... ok
+test try_reserve_many_zero ... ok
+test try_send_fail_with_try_recv ... ok
+test try_send_fail ... ok
+test try_recv_unbounded ... ok
+test tx_close_gets_none ... ok
+test unconsumed_messages_are_dropped ... ok
+test blocking_send ... ok
+test reserve_many_and_send ... ok
+test blocking_recv ... ok
+test try_reserve_many_and_send ... ok
+test try_reserve_many_full ... ok
+
+test result: ok. 89 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 873cb8ae2fc291eaffbd71e3c83d17b2f0ed7abf tokio/tests/sync_mpsc.rs
+>>>>> Test Exit Code: 0
+Updated 1 path from 7e5756e9

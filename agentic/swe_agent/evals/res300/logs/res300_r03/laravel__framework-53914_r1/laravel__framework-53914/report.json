@@ -1,0 +1,37 @@
+{
+    "laravel__framework-53914": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "infra_failure": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "Database Connections > Dynamic connection doesnt fail on reconnect"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "Database Connections > Build database connection",
+                    "Database Connections > Establish database connection",
+                    "Database Connections > Throw exception if connection already exists",
+                    "Database Connections > Override existing connection",
+                    "Database Connections > Establishing a connection will dispatch an event",
+                    "Database Connections > Table prefix",
+                    "Database Connections > Dynamic connection with no name doesnt fail on reconnect"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

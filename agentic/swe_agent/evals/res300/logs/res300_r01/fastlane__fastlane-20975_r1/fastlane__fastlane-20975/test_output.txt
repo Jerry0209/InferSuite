@@ -1,0 +1,122 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   match/lib/match/storage/s3_storage.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 65db20a25897595169cb64d7e0900b8176aa62c3
+Author: apps4everyone <stefan@apps4everyone.at>
+Date:   Mon Aug 28 20:40:44 2023 +0100
+
+    [xcodes] fix issue where xcodes action wouldn't accept beta versions of Xcode (#21434)
+
+diff --git a/fastlane/lib/fastlane/helper/xcodes_helper.rb b/fastlane/lib/fastlane/helper/xcodes_helper.rb
+index 74f1608a6..480e7fa3c 100644
+--- a/fastlane/lib/fastlane/helper/xcodes_helper.rb
++++ b/fastlane/lib/fastlane/helper/xcodes_helper.rb
+@@ -18,9 +18,6 @@ module Fastlane
+       module Verify
+         def self.requirement(req)
+           UI.user_error!("Version must be specified") if req.nil? || req.to_s.strip.size == 0
+-          Gem::Requirement.new(req.to_s)
+-        rescue Gem::Requirement::BadRequirementError
+-          UI.user_error!("The requirement '#{req}' is not a valid RubyGems style requirement")
+         end
+       end
+     end
+diff --git a/fastlane/spec/actions_specs/xcversion_spec.rb b/fastlane/spec/actions_specs/xcversion_spec.rb
+index ed7cb306d..bf146f2e4 100644
+--- a/fastlane/spec/actions_specs/xcversion_spec.rb
++++ b/fastlane/spec/actions_specs/xcversion_spec.rb
+@@ -18,16 +18,6 @@ describe Fastlane do
+           double("XcodeInstall::Xcode", version: "7.3", path: "/Test/Xcode7.3")
+         end
+ 
+-        context "with an invalid requirement" do
+-          it "raises an error" do
+-            expect do
+-              Fastlane::FastFile.new.parse("lane :test do
+-                xcversion version: '= aaaa'
+-              end").runner.execute(:test)
+-            end.to raise_error("The requirement '= aaaa' is not a valid RubyGems style requirement")
+-          end
+-        end
+-
+         context "with a valid requirement" do
+           before do
+             require "xcode/install"
+diff --git a/fastlane/spec/helper/xcodes_helper_spec.rb b/fastlane/spec/helper/xcodes_helper_spec.rb
+index 8050f0ab5..eb5c3b4fc 100644
+--- a/fastlane/spec/helper/xcodes_helper_spec.rb
++++ b/fastlane/spec/helper/xcodes_helper_spec.rb
+@@ -45,22 +45,6 @@ describe Fastlane::Helper::XcodesHelper do
+           expect { subject.class::Verify.requirement(argument) }.to raise_error(FastlaneCore::Interface::FastlaneError, 'Version must be specified')
+         end
+       end
+-
+-      context "when argument is not in RubyGems style" do
+-        let(:argument) { "banana" }
+-
+-        it "raises user error" do
+-          expect { subject.class::Verify.requirement(argument) }.to raise_error(FastlaneCore::Interface::FastlaneError, "The requirement '#{argument}' is not a valid RubyGems style requirement")
+-        end
+-      end
+-
+-      context "when argument is in RubyGems style" do
+-        let(:argument) { "1.2.3" }
+-
+-        it "returns Gem::Requirement instance" do
+-          expect(subject.class::Verify.requirement(argument)).to be_an_instance_of(Gem::Requirement)
+-        end
+-      end
+     end
+   end
+ end
++ git -c core.fileMode=false diff 65db20a25897595169cb64d7e0900b8176aa62c3
+diff --git a/match/lib/match/storage/s3_storage.rb b/match/lib/match/storage/s3_storage.rb
+index 3ef0c68ea..f9357ffed 100644
+--- a/match/lib/match/storage/s3_storage.rb
++++ b/match/lib/match/storage/s3_storage.rb
+@@ -102,6 +102,12 @@ module Match
+         self.working_directory = Dir.mktmpdir
+ 
+         s3_client.find_bucket!(s3_bucket).objects(prefix: s3_object_prefix).each do |object|
++
++          # Prevent download if the file path is a directory.
++          # We need to check if string ends with "/" instead of using `File.directory?` because
++          # the string represent a remote location, not a local file in disk.
++          next if object.key.end_with?("/")
++
+           file_path = strip_s3_object_prefix(object.key) # :s3_object_prefix:team_id/path/to/file
+ 
+           # strip s3_prefix from file_path
++ git checkout 65db20a25897595169cb64d7e0900b8176aa62c3 match/spec/storage/s3_storage_spec.rb
+Updated 0 paths from d44a71cbb
++ git apply -v -
+Checking patch match/spec/storage/s3_storage_spec.rb...
+Applied patch match/spec/storage/s3_storage_spec.rb cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ FASTLANE_SKIP_UPDATE_CHECK=1
++ bundle exec rspec ./match/spec/storage/s3_storage_spec.rb --no-color --format json
++ tail -n +2
++ jq -r '.examples[] | "\(.description) - \(.id) - \(.status)"'
+reads the correct files from local storage - ./match/spec/storage/s3_storage_spec.rb[1:1:1:1] - passed
+uploads files to the correct path in remote storage - ./match/spec/storage/s3_storage_spec.rb[1:1:1:2] - passed
+uploads files with s3_object_prefix if set - ./match/spec/storage/s3_storage_spec.rb[1:1:1:3] - passed
+deletes files with correct paths - ./match/spec/storage/s3_storage_spec.rb[1:1:2:1] - passed
+deletes files with s3_object_prefix if set - ./match/spec/storage/s3_storage_spec.rb[1:1:2:2] - passed
+downloads to correct working directory - ./match/spec/storage/s3_storage_spec.rb[1:1:3:1] - passed
+downloads files and strips the s3_object_prefix for working_directory path - ./match/spec/storage/s3_storage_spec.rb[1:1:3:2] - passed
+downloads only file-like objects and skips folder-like objects - ./match/spec/storage/s3_storage_spec.rb[1:1:3:3] - passed
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
+>>>>> Test Exit Code: 0
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 65db20a25897595169cb64d7e0900b8176aa62c3 match/spec/storage/s3_storage_spec.rb
+Updated 1 path from d44a71cbb

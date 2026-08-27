@@ -1,0 +1,32 @@
+diff --git a/changelog/fix_false_negative_for_layout_empty_lines_around_method_body.md b/changelog/fix_false_negative_for_layout_empty_lines_around_method_body.md
+new file mode 100644
+index 000000000..39fcda686
+--- /dev/null
++++ b/changelog/fix_false_negative_for_layout_empty_lines_around_method_body.md
+@@ -0,0 +1 @@
++* [#13435](https://github.com/rubocop/rubocop/issues/13435): Fix false negative for `Layout/EmptyLinesAroundMethodBody` when a method's arguments span multiple lines.
+diff --git a/lib/rubocop/cop/layout/empty_lines_around_method_body.rb b/lib/rubocop/cop/layout/empty_lines_around_method_body.rb
+index b00156373..6c8851822 100644
+--- a/lib/rubocop/cop/layout/empty_lines_around_method_body.rb
++++ b/lib/rubocop/cop/layout/empty_lines_around_method_body.rb
+@@ -27,12 +27,19 @@ module RuboCop
+         KIND = 'method'
+ 
+         def on_def(node)
+-          check(node, node.body)
++          check(node, node.body, adjusted_first_line: first_line(node))
+         end
+         alias on_defs on_def
+ 
+         private
+ 
++        def first_line(node)
++          args = node.arguments
++          return node.first_line unless args.source_range
++
++          args.last_line > node.first_line ? args.last_line : node.first_line
++        end
++
+         def style
+           :no_empty_lines
+         end

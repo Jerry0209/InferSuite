@@ -1,0 +1,286 @@
+diff --git a/doc/changelog.markdown b/doc/changelog.markdown
+index a3b3a48a..5ddaacf2 100644
+--- a/doc/changelog.markdown
++++ b/doc/changelog.markdown
+@@ -8,6 +8,7 @@ Lombok Changelog
+ * BUGFIX: Many lombok features wouldn't work properly on records contained within an outer type unless you explicitly marked it `static`. [Issue #3497](https://github.com/projectlombok/lombok/issues/3497) [Issue #3559](https://github.com/projectlombok/lombok/issues/3559).
+ * BUGFIX: Eclipse projects using the `com.pro-crafting.tools:jasperreports-plugin` will now compile.
+ * BUGFIX: `@FieldNameConstants` now works when generated fields are involved. [Issue #3529](https://github.com/projectlombok/lombok/issues/3529).
++* BUGFIX: `@SuperBuilder` on a class that extends a generic superclass while applying a type-use annotation to one of the generic type arguments (e.g. `extends Parent<@SomeAnnotation Double>`) no longer fails with `wrong number of type arguments`. [Issue #3620](https://github.com/projectlombok/lombok/issues/3620).
+ 
+ ### v1.18.30 (September 20th, 2023)
+ * PLATFORM: Initial JDK21 support added. [Issue #3393](https://github.com/projectlombok/lombok/issues/3393).
+diff --git a/src/core/lombok/javac/handlers/HandleSuperBuilder.java b/src/core/lombok/javac/handlers/HandleSuperBuilder.java
+index 3a230437..b2fabb4a 100644
+--- a/src/core/lombok/javac/handlers/HandleSuperBuilder.java
++++ b/src/core/lombok/javac/handlers/HandleSuperBuilder.java
+@@ -1108,6 +1108,8 @@ public class HandleSuperBuilder extends JavacAnnotationHandler<SuperBuilder> {
+ 				typeParamsForBuilderParameter.append(copySelect(maker, (JCFieldAccess) typeParam));
+ 			} else if (typeParam instanceof JCTypeApply) {
+ 				typeParamsForBuilderParameter.append(cloneType(maker, (JCTypeApply)typeParam, source));
++			} else if (JCAnnotatedTypeReflect.is(typeParam)) {
++				typeParamsForBuilderParameter.append(cloneType(maker, (JCExpression) typeParam, source));
+ 			}
+ 		}
+ 		return typeParamsForBuilderParameter;
+diff --git a/test/transform/resource/after-delombok/SuperBuilderWithGenerics4.java b/test/transform/resource/after-delombok/SuperBuilderWithGenerics4.java
+new file mode 100644
+index 00000000..4a74d2ba
+--- /dev/null
++++ b/test/transform/resource/after-delombok/SuperBuilderWithGenerics4.java
+@@ -0,0 +1,138 @@
++//version 8:
++import java.lang.annotation.ElementType;
++import java.lang.annotation.Target;
++
++@Target(ElementType.TYPE_USE)
++@interface MyAnnotation {
++}
++
++public class SuperBuilderWithGenerics4 {
++
++	public static class Parent<A> {
++		A field1;
++
++
++		@java.lang.SuppressWarnings("all")
++		public static abstract class ParentBuilder<A, C extends SuperBuilderWithGenerics4.Parent<A>, B extends SuperBuilderWithGenerics4.Parent.ParentBuilder<A, C, B>> {
++			@java.lang.SuppressWarnings("all")
++			private A field1;
++
++			/**
++			 * @return {@code this}.
++			 */
++			@java.lang.SuppressWarnings("all")
++			public B field1(final A field1) {
++				this.field1 = field1;
++				return self();
++			}
++
++			@java.lang.SuppressWarnings("all")
++			protected abstract B self();
++
++			@java.lang.SuppressWarnings("all")
++			public abstract C build();
++
++			@java.lang.Override
++			@java.lang.SuppressWarnings("all")
++			public java.lang.String toString() {
++				return "SuperBuilderWithGenerics4.Parent.ParentBuilder(field1=" + this.field1 + ")";
++			}
++		}
++
++
++		@java.lang.SuppressWarnings("all")
++		private static final class ParentBuilderImpl<A> extends SuperBuilderWithGenerics4.Parent.ParentBuilder<A, SuperBuilderWithGenerics4.Parent<A>, SuperBuilderWithGenerics4.Parent.ParentBuilderImpl<A>> {
++			@java.lang.SuppressWarnings("all")
++			private ParentBuilderImpl() {
++			}
++
++			@java.lang.Override
++			@java.lang.SuppressWarnings("all")
++			protected SuperBuilderWithGenerics4.Parent.ParentBuilderImpl<A> self() {
++				return this;
++			}
++
++			@java.lang.Override
++			@java.lang.SuppressWarnings("all")
++			public SuperBuilderWithGenerics4.Parent<A> build() {
++				return new SuperBuilderWithGenerics4.Parent<A>(this);
++			}
++		}
++
++		@java.lang.SuppressWarnings("all")
++		protected Parent(final SuperBuilderWithGenerics4.Parent.ParentBuilder<A, ?, ?> b) {
++			this.field1 = b.field1;
++		}
++
++		@java.lang.SuppressWarnings("all")
++		public static <A> SuperBuilderWithGenerics4.Parent.ParentBuilder<A, ?, ?> builder() {
++			return new SuperBuilderWithGenerics4.Parent.ParentBuilderImpl<A>();
++		}
++	}
++
++
++	public static class Child extends Parent<@MyAnnotation String> {
++		double field3;
++
++
++		@java.lang.SuppressWarnings("all")
++		public static abstract class ChildBuilder<C extends SuperBuilderWithGenerics4.Child, B extends SuperBuilderWithGenerics4.Child.ChildBuilder<C, B>> extends Parent.ParentBuilder<@MyAnnotation String, C, B> {
++			@java.lang.SuppressWarnings("all")
++			private double field3;
++
++			/**
++			 * @return {@code this}.
++			 */
++			@java.lang.SuppressWarnings("all")
++			public B field3(final double field3) {
++				this.field3 = field3;
++				return self();
++			}
++
++			@java.lang.Override
++			@java.lang.SuppressWarnings("all")
++			protected abstract B self();
++
++			@java.lang.Override
++			@java.lang.SuppressWarnings("all")
++			public abstract C build();
++
++			@java.lang.Override
++			@java.lang.SuppressWarnings("all")
++			public java.lang.String toString() {
++				return "SuperBuilderWithGenerics4.Child.ChildBuilder(super=" + super.toString() + ", field3=" + this.field3 + ")";
++			}
++		}
++
++
++		@java.lang.SuppressWarnings("all")
++		private static final class ChildBuilderImpl extends SuperBuilderWithGenerics4.Child.ChildBuilder<SuperBuilderWithGenerics4.Child, SuperBuilderWithGenerics4.Child.ChildBuilderImpl> {
++			@java.lang.SuppressWarnings("all")
++			private ChildBuilderImpl() {
++			}
++
++			@java.lang.Override
++			@java.lang.SuppressWarnings("all")
++			protected SuperBuilderWithGenerics4.Child.ChildBuilderImpl self() {
++				return this;
++			}
++
++			@java.lang.Override
++			@java.lang.SuppressWarnings("all")
++			public SuperBuilderWithGenerics4.Child build() {
++				return new SuperBuilderWithGenerics4.Child(this);
++			}
++		}
++
++		@java.lang.SuppressWarnings("all")
++		protected Child(final SuperBuilderWithGenerics4.Child.ChildBuilder<?, ?> b) {
++			super(b);
++			this.field3 = b.field3;
++		}
++
++		@java.lang.SuppressWarnings("all")
++		public static SuperBuilderWithGenerics4.Child.ChildBuilder<?, ?> builder() {
++			return new SuperBuilderWithGenerics4.Child.ChildBuilderImpl();
++		}
++	}
++}
+diff --git a/test/transform/resource/after-ecj/SuperBuilderWithGenerics4.java b/test/transform/resource/after-ecj/SuperBuilderWithGenerics4.java
+new file mode 100644
+index 00000000..a70d9e5f
+--- /dev/null
++++ b/test/transform/resource/after-ecj/SuperBuilderWithGenerics4.java
+@@ -0,0 +1,87 @@
++import java.lang.annotation.ElementType;
++import java.lang.annotation.Target;
++@Target(ElementType.TYPE_USE) @interface MyAnnotation {
++}
++public class SuperBuilderWithGenerics4 {
++  public static @lombok.experimental.SuperBuilder class Parent<A> {
++    public static abstract @java.lang.SuppressWarnings("all") class ParentBuilder<A, C extends SuperBuilderWithGenerics4.Parent<A>, B extends SuperBuilderWithGenerics4.Parent.ParentBuilder<A, C, B>> {
++      private @java.lang.SuppressWarnings("all") A field1;
++      public ParentBuilder() {
++        super();
++      }
++      /**
++       * @return {@code this}.
++       */
++      public @java.lang.SuppressWarnings("all") B field1(final A field1) {
++        this.field1 = field1;
++        return self();
++      }
++      protected abstract @java.lang.SuppressWarnings("all") B self();
++      public abstract @java.lang.SuppressWarnings("all") C build();
++      public @java.lang.Override @java.lang.SuppressWarnings("all") java.lang.String toString() {
++        return (("SuperBuilderWithGenerics4.Parent.ParentBuilder(field1=" + this.field1) + ")");
++      }
++    }
++    private static final @java.lang.SuppressWarnings("all") class ParentBuilderImpl<A> extends SuperBuilderWithGenerics4.Parent.ParentBuilder<A, SuperBuilderWithGenerics4.Parent<A>, SuperBuilderWithGenerics4.Parent.ParentBuilderImpl<A>> {
++      private ParentBuilderImpl() {
++        super();
++      }
++      protected @java.lang.Override @java.lang.SuppressWarnings("all") SuperBuilderWithGenerics4.Parent.ParentBuilderImpl<A> self() {
++        return this;
++      }
++      public @java.lang.Override @java.lang.SuppressWarnings("all") SuperBuilderWithGenerics4.Parent<A> build() {
++        return new SuperBuilderWithGenerics4.Parent<A>(this);
++      }
++    }
++    A field1;
++    protected @java.lang.SuppressWarnings("all") Parent(final SuperBuilderWithGenerics4.Parent.ParentBuilder<A, ?, ?> b) {
++      super();
++      this.field1 = b.field1;
++    }
++    public static @java.lang.SuppressWarnings("all") <A>SuperBuilderWithGenerics4.Parent.ParentBuilder<A, ?, ?> builder() {
++      return new SuperBuilderWithGenerics4.Parent.ParentBuilderImpl<A>();
++    }
++  }
++  public static @lombok.experimental.SuperBuilder class Child extends Parent<@MyAnnotation String> {
++    public static abstract @java.lang.SuppressWarnings("all") class ChildBuilder<C extends SuperBuilderWithGenerics4.Child, B extends SuperBuilderWithGenerics4.Child.ChildBuilder<C, B>> extends Parent.ParentBuilder<@MyAnnotation String, C, B> {
++      private @java.lang.SuppressWarnings("all") double field3;
++      public ChildBuilder() {
++        super();
++      }
++      /**
++       * @return {@code this}.
++       */
++      public @java.lang.SuppressWarnings("all") B field3(final double field3) {
++        this.field3 = field3;
++        return self();
++      }
++      protected abstract @java.lang.Override @java.lang.SuppressWarnings("all") B self();
++      public abstract @java.lang.Override @java.lang.SuppressWarnings("all") C build();
++      public @java.lang.Override @java.lang.SuppressWarnings("all") java.lang.String toString() {
++        return (((("SuperBuilderWithGenerics4.Child.ChildBuilder(super=" + super.toString()) + ", field3=") + this.field3) + ")");
++      }
++    }
++    private static final @java.lang.SuppressWarnings("all") class ChildBuilderImpl extends SuperBuilderWithGenerics4.Child.ChildBuilder<SuperBuilderWithGenerics4.Child, SuperBuilderWithGenerics4.Child.ChildBuilderImpl> {
++      private ChildBuilderImpl() {
++        super();
++      }
++      protected @java.lang.Override @java.lang.SuppressWarnings("all") SuperBuilderWithGenerics4.Child.ChildBuilderImpl self() {
++        return this;
++      }
++      public @java.lang.Override @java.lang.SuppressWarnings("all") SuperBuilderWithGenerics4.Child build() {
++        return new SuperBuilderWithGenerics4.Child(this);
++      }
++    }
++    double field3;
++    protected @java.lang.SuppressWarnings("all") Child(final SuperBuilderWithGenerics4.Child.ChildBuilder<?, ?> b) {
++      super(b);
++      this.field3 = b.field3;
++    }
++    public static @java.lang.SuppressWarnings("all") SuperBuilderWithGenerics4.Child.ChildBuilder<?, ?> builder() {
++      return new SuperBuilderWithGenerics4.Child.ChildBuilderImpl();
++    }
++  }
++  public SuperBuilderWithGenerics4() {
++    super();
++  }
++}
+diff --git a/test/transform/resource/before/SuperBuilderWithGenerics4.java b/test/transform/resource/before/SuperBuilderWithGenerics4.java
+new file mode 100644
+index 00000000..d2783a7b
+--- /dev/null
++++ b/test/transform/resource/before/SuperBuilderWithGenerics4.java
+@@ -0,0 +1,18 @@
++//version 8:
++import java.lang.annotation.ElementType;
++import java.lang.annotation.Target;
++
++@Target(ElementType.TYPE_USE)
++@interface MyAnnotation {}
++
++public class SuperBuilderWithGenerics4 {
++	@lombok.experimental.SuperBuilder
++	public static class Parent<A> {
++		A field1;
++	}
++	
++	@lombok.experimental.SuperBuilder
++	public static class Child extends Parent<@MyAnnotation String> {
++		double field3;
++	}
++}

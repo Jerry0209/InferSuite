@@ -1,0 +1,122 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/rubocop/cop/style/sole_nested_conditional.rb
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	changelog/fix_maintain_precedence_in_autocorrect_for.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 418fdc98d631cfb52333c7aeae80c43c4a68d13a
+Author: Bozhidar Batsov <bozhidar@batsov.dev>
+Date:   Fri Jan 10 09:46:29 2025 +0200
+
+    Reset the docs version
+
+diff --git a/docs/antora.yml b/docs/antora.yml
+index 290f5d5b6..9c897ea03 100644
+--- a/docs/antora.yml
++++ b/docs/antora.yml
+@@ -2,6 +2,6 @@ name: rubocop
+ title: RuboCop
+ # We always provide version without patch here (e.g. 1.1),
+ # as patch versions should not appear in the docs.
+-version: '1.70'
++version: ~
+ nav:
+   - modules/ROOT/nav.adoc
++ git -c core.fileMode=false diff 418fdc98d631cfb52333c7aeae80c43c4a68d13a
+diff --git a/lib/rubocop/cop/style/sole_nested_conditional.rb b/lib/rubocop/cop/style/sole_nested_conditional.rb
+index fe5ae21c9..69094f1d2 100644
+--- a/lib/rubocop/cop/style/sole_nested_conditional.rb
++++ b/lib/rubocop/cop/style/sole_nested_conditional.rb
+@@ -159,7 +159,7 @@ module RuboCop
+           node_to_check = condition&.block_type? ? condition.send_node : condition
+           return unless wrap_condition?(node_to_check)
+ 
+-          if condition.call_type?
++          if condition.call_type? && !condition.comparison_method?
+             source = parenthesized_method_arguments(condition)
+ 
+             corrector.replace(condition, source)
+@@ -243,7 +243,7 @@ module RuboCop
+         def replace_condition(condition)
+           return condition.source unless wrap_condition?(condition)
+ 
+-          if condition.call_type?
++          if condition.call_type? && !condition.comparison_method?
+             parenthesized_method_arguments(condition)
+           else
+             "(#{condition.source})"
++ git checkout 418fdc98d631cfb52333c7aeae80c43c4a68d13a spec/rubocop/cop/style/sole_nested_conditional_spec.rb
+Updated 0 paths from 1cdd0aee0
++ git apply -v -
+Checking patch spec/rubocop/cop/style/sole_nested_conditional_spec.rb...
+Applied patch spec/rubocop/cop/style/sole_nested_conditional_spec.rb cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ bundle exec rspec spec/rubocop/cop/style/sole_nested_conditional_spec.rb --no-color --format json
++ sed -n '/^{/,$p'
++ jq -r '.examples | group_by(.description) | .[] |
+    if any(select(.status == "failed")) then
+      (.[0] | "\(.description) - failed")
+    else
+      (.[0] | "\(.description) - \(.status)")
+    end'
+does not register an offense for nested conditionals when outer conditional has an `else` branch - passed
+does not register an offense when nested conditional has an `else` branch - passed
+does not register an offense when no nested conditionals - passed
+does not register an offense when using nested conditional is not the whole body - passed
+does not register an offense when using nested conditional within `elsif` - passed
+does not register an offense when using nested modifier conditional - passed
+does not register an offense when using nested modifier on value assigned in multiple conditions - passed
+does not register an offense when using nested modifier on value assigned in single condition - passed
+does not register an offense when using nested ternary within conditional - passed
+registers an offense and corrects - passed
+registers an offense and corrects for multiple nested conditionals - passed
+registers an offense and corrects for multiple nested conditionals with using method call outer condition by omitting parentheses - passed
+registers an offense and corrects when `if` foo && bar do_something end `if` baz - passed
+registers an offense and corrects when `if` foo && bar do_something end `unless` baz - passed
+registers an offense and corrects when `if` foo do_something end `if` bar - passed
+registers an offense and corrects when `if` foo do_something end `if` bar && baz - passed
+registers an offense and corrects when `if` foo do_something end `unless` bar - passed
+registers an offense and corrects when `if` foo do_something end `unless` bar && baz - passed
+registers an offense and corrects when `unless` foo && bar do_something end `if` baz - passed
+registers an offense and corrects when `unless` foo do_something end `if` bar - passed
+registers an offense and corrects when comment is in an empty nested `if` body - passed
+registers an offense and corrects when nested `||` operator condition - passed
+registers an offense and corrects when nested `||` operator modifier condition - passed
+registers an offense and corrects when there are outer and inline comments - passed
+registers an offense and corrects when using `unless` and `&&` without parens in the outer condition and nested modifier condition - passed
+registers an offense and corrects when using `unless` and `===` without parens in the outer condition and nested modifier condition - passed
+registers an offense and corrects when using `unless` and `||` and parens in the outer condition and nested modifier condition - passed
+registers an offense and corrects when using `unless` and `||` without parens in the outer condition and nested modifier condition - passed
+registers an offense and corrects when using `unless` and method arguments with parentheses in the outer condition and nested modifier condition - passed
+registers an offense and corrects when using `unless` and method arguments without parentheses in the outer condition and nested modifier condition - passed
+registers an offense and corrects when using `unless` and multiple method arguments with parenthesesin the outer condition and nested modifier condition - passed
+registers an offense and corrects when using `||` in the outer condition - passed
+registers an offense and corrects when using `||` in the outer condition and nested modifier condition - passed
+registers an offense and corrects when using guard conditional with outer comment - passed
+registers an offense and corrects when using nested `if` modifier conditional - passed
+registers an offense and corrects when using nested `if` within `if foo = bar` - passed
+registers an offense and corrects when using nested `if` within `if` - passed
+registers an offense and corrects when using nested `if` within `unless foo == bar` - passed
+registers an offense and corrects when using nested `if` within `unless` - passed
+registers an offense and corrects when using nested `unless` modifier conditional - passed
+registers an offense and corrects when using nested `unless` modifier multiple conditional - passed
+registers an offense and corrects when using nested `unless` modifier with a single expression condition - passed
+registers an offense and corrects when using nested `unless` within `if` - passed
+registers an offense and corrects when using nested `unless` within `unless` - passed
+registers an offense and corrects when using nested conditional and branch contains a comment - passed
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 418fdc98d631cfb52333c7aeae80c43c4a68d13a spec/rubocop/cop/style/sole_nested_conditional_spec.rb
+>>>>> Test Exit Code: 0
+Updated 1 path from 1cdd0aee0

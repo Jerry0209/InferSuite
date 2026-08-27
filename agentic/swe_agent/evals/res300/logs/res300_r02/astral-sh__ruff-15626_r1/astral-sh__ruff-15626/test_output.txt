@@ -1,0 +1,446 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   crates/ruff_linter/src/rules/flake8_simplify/rules/ast_unary_op.rs
+	modified:   crates/ruff_linter/src/rules/flake8_simplify/snapshots/ruff_linter__rules__flake8_simplify__tests__SIM201_SIM201.py.snap
+	modified:   crates/ruff_linter/src/rules/flake8_simplify/snapshots/ruff_linter__rules__flake8_simplify__tests__SIM202_SIM202.py.snap
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 13a6b5600b47489ca6af0b5a13d916bda8e50662
+Author: David Peter <sharkdp@users.noreply.github.com>
+Date:   Tue Jan 21 15:59:36 2025 +0100
+
+    [red-knot] mdtest runner: include stderr for crashing tests (#15644)
+    
+    ## Summary
+    
+    Test executables usually write failure messages (including panics) to
+    stdout, but I just managed to make a mdtest crash with
+    ```
+    thread 'mdtest__unary_not' has overflowed its stack
+    fatal runtime error: stack overflow
+    ```
+    which is printed to stderr. This test simply appends stderr to stdout
+    (`stderr=subprocess.STDOUT` can not be used with `capture_output`)
+    
+    ## Test Plan
+    
+    Make sure that the error message is now visible in the output of `uv -q
+    run crates/red_knot_python_semantic/mdtest.py`
+
+diff --git a/crates/red_knot_python_semantic/mdtest.py b/crates/red_knot_python_semantic/mdtest.py
+index 5be5dce5b..9fb30a4d1 100644
+--- a/crates/red_knot_python_semantic/mdtest.py
++++ b/crates/red_knot_python_semantic/mdtest.py
+@@ -125,22 +125,27 @@ class MDTestRunner:
+                 f"Test for [bold red]{markdown_file}[/bold red] failed",
+                 style="gray",
+             )
+-            # Skip 'cargo test' boilerplate at the beginning:
+-            lines = output.stdout.splitlines()
+-            start_index = 0
+-            for i, line in enumerate(lines):
+-                if f"{test_name} stdout" in line:
+-                    start_index = i
+-                    break
+-
+-            for line in lines[start_index + 1 :]:
+-                if "MDTEST_TEST_FILTER" in line:
+-                    continue
+-                if line.strip() == "-" * 50:
+-                    # Skip 'cargo test' boilerplate at the end
+-                    break
++            self._print_trimmed_cargo_test_output(
++                output.stdout + output.stderr, test_name
++            )
++
++    def _print_trimmed_cargo_test_output(self, output: str, test_name: str) -> None:
++        # Skip 'cargo test' boilerplate at the beginning:
++        lines = output.splitlines()
++        start_index = 0
++        for i, line in enumerate(lines):
++            if f"{test_name} stdout" in line:
++                start_index = i
++                break
++
++        for line in lines[start_index + 1 :]:
++            if "MDTEST_TEST_FILTER" in line:
++                continue
++            if line.strip() == "-" * 50:
++                # Skip 'cargo test' boilerplate at the end
++                break
+ 
+-                print(line)
++            print(line)
+ 
+     def watch(self) -> Never:
+         self._recompile_tests("Compiling tests...", message_on_success=False)
++ git -c core.fileMode=false diff 13a6b5600b47489ca6af0b5a13d916bda8e50662
+diff --git a/crates/ruff_linter/src/rules/flake8_simplify/rules/ast_unary_op.rs b/crates/ruff_linter/src/rules/flake8_simplify/rules/ast_unary_op.rs
+index afc2ab3f1..2d8dc052c 100644
+--- a/crates/ruff_linter/src/rules/flake8_simplify/rules/ast_unary_op.rs
++++ b/crates/ruff_linter/src/rules/flake8_simplify/rules/ast_unary_op.rs
+@@ -25,6 +25,11 @@ use crate::checkers::ast::Checker;
+ /// a != b
+ /// ```
+ ///
++/// ## Fix safety
++/// The fix is marked as unsafe, as it might change the behaviour
++/// if `a` and/or `b` overrides `__eq__`/`__ne__`
++/// in such a manner that they don't return booleans.
++///
+ /// ## References
+ /// - [Python documentation: Comparisons](https://docs.python.org/3/reference/expressions.html#comparisons)
+ #[derive(ViolationMetadata)]
+@@ -62,6 +67,11 @@ impl AlwaysFixableViolation for NegateEqualOp {
+ /// a == b
+ /// ```
+ ///
++/// ## Fix safety
++/// The fix is marked as unsafe, as it might change the behaviour
++/// if `a` and/or `b` overrides `__ne__`/`__eq__`
++/// in such a manner that they don't return booleans.
++///
+ /// ## References
+ /// - [Python documentation: Comparisons](https://docs.python.org/3/reference/expressions.html#comparisons)
+ #[derive(ViolationMetadata)]
+@@ -181,7 +191,7 @@ pub(crate) fn negation_with_equal_op(
+         comparators: comparators.clone(),
+         range: TextRange::default(),
+     };
+-    diagnostic.set_fix(Fix::safe_edit(Edit::range_replacement(
++    diagnostic.set_fix(Fix::unsafe_edit(Edit::range_replacement(
+         checker.generator().expr(&node.into()),
+         expr.range(),
+     )));
+@@ -236,7 +246,7 @@ pub(crate) fn negation_with_not_equal_op(
+         comparators: comparators.clone(),
+         range: TextRange::default(),
+     };
+-    diagnostic.set_fix(Fix::safe_edit(Edit::range_replacement(
++    diagnostic.set_fix(Fix::unsafe_edit(Edit::range_replacement(
+         checker.generator().expr(&node.into()),
+         expr.range(),
+     )));
+diff --git a/crates/ruff_linter/src/rules/flake8_simplify/snapshots/ruff_linter__rules__flake8_simplify__tests__SIM201_SIM201.py.snap b/crates/ruff_linter/src/rules/flake8_simplify/snapshots/ruff_linter__rules__flake8_simplify__tests__SIM201_SIM201.py.snap
+index b0381d5c3..e3cceb1d6 100644
+--- a/crates/ruff_linter/src/rules/flake8_simplify/snapshots/ruff_linter__rules__flake8_simplify__tests__SIM201_SIM201.py.snap
++++ b/crates/ruff_linter/src/rules/flake8_simplify/snapshots/ruff_linter__rules__flake8_simplify__tests__SIM201_SIM201.py.snap
+@@ -1,6 +1,5 @@
+ ---
+ source: crates/ruff_linter/src/rules/flake8_simplify/mod.rs
+-snapshot_kind: text
+ ---
+ SIM201.py:2:4: SIM201 [*] Use `a != b` instead of `not a == b`
+   |
+@@ -11,7 +10,7 @@ SIM201.py:2:4: SIM201 [*] Use `a != b` instead of `not a == b`
+   |
+   = help: Replace with `!=` operator
+ 
+-ℹ Safe fix
++ℹ Unsafe fix
+ 1 1 | # SIM201
+ 2   |-if not a == b:
+   2 |+if a != b:
+@@ -28,7 +27,7 @@ SIM201.py:6:4: SIM201 [*] Use `a != b + c` instead of `not a == b + c`
+   |
+   = help: Replace with `!=` operator
+ 
+-ℹ Safe fix
++ℹ Unsafe fix
+ 3 3 |     pass
+ 4 4 | 
+ 5 5 | # SIM201
+@@ -47,7 +46,7 @@ SIM201.py:10:4: SIM201 [*] Use `a + b != c` instead of `not a + b == c`
+    |
+    = help: Replace with `!=` operator
+ 
+-ℹ Safe fix
++ℹ Unsafe fix
+ 7  7  |     pass
+ 8  8  | 
+ 9  9  | # SIM201
+diff --git a/crates/ruff_linter/src/rules/flake8_simplify/snapshots/ruff_linter__rules__flake8_simplify__tests__SIM202_SIM202.py.snap b/crates/ruff_linter/src/rules/flake8_simplify/snapshots/ruff_linter__rules__flake8_simplify__tests__SIM202_SIM202.py.snap
+index 4cd1ded7e..f32eb412b 100644
+--- a/crates/ruff_linter/src/rules/flake8_simplify/snapshots/ruff_linter__rules__flake8_simplify__tests__SIM202_SIM202.py.snap
++++ b/crates/ruff_linter/src/rules/flake8_simplify/snapshots/ruff_linter__rules__flake8_simplify__tests__SIM202_SIM202.py.snap
+@@ -1,6 +1,5 @@
+ ---
+ source: crates/ruff_linter/src/rules/flake8_simplify/mod.rs
+-snapshot_kind: text
+ ---
+ SIM202.py:2:4: SIM202 [*] Use `a == b` instead of `not a != b`
+   |
+@@ -11,7 +10,7 @@ SIM202.py:2:4: SIM202 [*] Use `a == b` instead of `not a != b`
+   |
+   = help: Replace with `==` operator
+ 
+-ℹ Safe fix
++ℹ Unsafe fix
+ 1 1 | # SIM202
+ 2   |-if not a != b:
+   2 |+if a == b:
+@@ -28,7 +27,7 @@ SIM202.py:6:4: SIM202 [*] Use `a == b + c` instead of `not a != b + c`
+   |
+   = help: Replace with `==` operator
+ 
+-ℹ Safe fix
++ℹ Unsafe fix
+ 3 3 |     pass
+ 4 4 | 
+ 5 5 | # SIM202
+@@ -47,7 +46,7 @@ SIM202.py:10:4: SIM202 [*] Use `a + b == c` instead of `not a + b != c`
+    |
+    = help: Replace with `==` operator
+ 
+-ℹ Safe fix
++ℹ Unsafe fix
+ 7  7  |     pass
+ 8  8  | 
+ 9  9  | # SIM202
++ git checkout 13a6b5600b47489ca6af0b5a13d916bda8e50662 crates/ruff_linter/src/rules/flake8_simplify/snapshots/ruff_linter__rules__flake8_simplify__tests__SIM201_SIM201.py.snap crates/ruff_linter/src/rules/flake8_simplify/snapshots/ruff_linter__rules__flake8_simplify__tests__SIM202_SIM202.py.snap
+Updated 2 paths from ed1a05376
++ git apply -v -
+Checking patch crates/ruff_linter/src/rules/flake8_simplify/snapshots/ruff_linter__rules__flake8_simplify__tests__SIM201_SIM201.py.snap...
+Checking patch crates/ruff_linter/src/rules/flake8_simplify/snapshots/ruff_linter__rules__flake8_simplify__tests__SIM202_SIM202.py.snap...
+Applied patch crates/ruff_linter/src/rules/flake8_simplify/snapshots/ruff_linter__rules__flake8_simplify__tests__SIM201_SIM201.py.snap cleanly.
+Applied patch crates/ruff_linter/src/rules/flake8_simplify/snapshots/ruff_linter__rules__flake8_simplify__tests__SIM202_SIM202.py.snap cleanly.
++ : '>>>>> Start Test Output'
++ cargo test --package ruff_linter --lib rules::flake8_simplify::tests
++ cat
+   Compiling unicode-ident v1.0.14
+   Compiling proc-macro2 v1.0.93
+   Compiling memchr v2.7.4
+   Compiling cfg-if v1.0.0
+   Compiling serde v1.0.217
+   Compiling libc v0.2.169
+   Compiling ppv-lite86 v0.2.17
+   Compiling either v1.11.0
+   Compiling regex-syntax v0.8.5
+   Compiling siphasher v0.3.11
+   Compiling stable_deref_trait v1.2.0
+   Compiling rustversion v1.0.15
+   Compiling once_cell v1.20.2
+   Compiling log v0.4.25
+   Compiling heck v0.5.0
+   Compiling thiserror v1.0.67
+   Compiling litemap v0.7.3
+   Compiling ruff_text_size v0.0.0 (/testbed/crates/ruff_text_size)
+   Compiling writeable v0.5.5
+   Compiling unicode-width v0.1.13
+   Compiling smallvec v1.13.2
+   Compiling ryu v1.0.17
+   Compiling itoa v1.0.11
+   Compiling icu_locid_transform_data v1.5.0
+   Compiling rustc-hash v2.1.0
+   Compiling glob v0.3.2
+   Compiling icu_properties_data v1.5.0
+   Compiling seahash v4.1.0
+   Compiling static_assertions v1.1.0
+   Compiling bitflags v2.8.0
+   Compiling getopts v0.2.21
+   Compiling icu_normalizer_data v1.5.0
+   Compiling ident_case v1.0.1
+   Compiling tinyvec_macros v0.1.1
+   Compiling itertools v0.14.0
+   Compiling utf16_iter v1.0.5
+   Compiling phf_shared v0.11.2
+   Compiling fnv v1.0.7
+   Compiling utf8_iter v1.0.4
+   Compiling write16 v1.0.0
+   Compiling hashbrown v0.15.2
+   Compiling equivalent v1.0.1
+   Compiling strsim v0.10.0
+   Compiling tinyvec v1.6.0
+   Compiling autocfg v1.2.0
+   Compiling ucd-trie v0.1.6
+   Compiling unic-char-range v0.9.0
+   Compiling unicode-width v0.2.0
+   Compiling anyhow v1.0.95
+   Compiling thiserror v2.0.11
+   Compiling percent-encoding v2.3.1
+   Compiling unic-common v0.9.0
+   Compiling unic-char-property v0.9.0
+   Compiling version-ranges v0.1.1
+   Compiling paste v1.0.15
+   Compiling serde_json v1.0.137
+   Compiling winnow v0.6.18
+   Compiling utf8parse v0.2.1
+   Compiling unic-ucd-version v0.9.0
+   Compiling phf v0.11.2
+   Compiling unscanny v0.1.0
+   Compiling newtype-uuid v1.1.3
+   Compiling peg-runtime v0.8.3
+   Compiling form_urlencoded v1.2.1
+   Compiling matches v0.1.10
+   Compiling unic-ucd-category v0.9.0
+   Compiling itertools v0.13.0
+   Compiling annotate-snippets v0.6.1
+   Compiling lazy_static v1.4.0
+   Compiling iana-time-zone v0.1.60
+   Compiling urlencoding v2.1.3
+   Compiling boxcar v0.2.7
+   Compiling ruff_python_stdlib v0.0.0 (/testbed/crates/ruff_python_stdlib)
+   Compiling path-dedot v3.1.1
+   Compiling is-docker v0.2.0
+   Compiling anstyle v1.0.10
+   Compiling num-traits v0.2.18
+   Compiling linked-hash-map v0.5.6
+   Compiling similar v2.7.0
+   Compiling path-absolutize v3.1.1
+   Compiling is-wsl v0.4.0
+   Compiling fern v0.7.1
+   Compiling aho-corasick v1.1.3
+   Compiling ruff_source_file v0.0.0 (/testbed/crates/ruff_source_file)
+   Compiling quick-xml v0.37.1
+   Compiling chic v1.2.2
+   Compiling ruff_annotate_snippets v0.1.0 (/testbed/crates/ruff_annotate_snippets)
+   Compiling typed-arena v2.0.2
+   Compiling colored v3.0.0
+   Compiling natord v1.0.9
+   Compiling pathdiff v0.2.3
+   Compiling getrandom v0.2.14
+   Compiling quote v1.0.38
+   Compiling filetime v0.2.25
+   Compiling unicode-normalization v0.1.24
+   Compiling rand_core v0.6.4
+   Compiling console v0.15.8
+   Compiling rand_chacha v0.3.1
+   Compiling castaway v0.2.3
+   Compiling syn v2.0.96
+   Compiling vte_generate_state_changes v0.1.1
+   Compiling peg-macros v0.8.4
+   Compiling rand v0.8.5
+   Compiling vte v0.11.1
+   Compiling chrono v0.4.39
+   Compiling regex-automata v0.4.8
+   Compiling ruff_python_trivia v0.0.0 (/testbed/crates/ruff_python_trivia)
+   Compiling phf_generator v0.11.2
+   Compiling phf_codegen v0.11.2
+   Compiling strip-ansi-escapes v0.2.0
+   Compiling unicode_names2_generator v1.3.0
+   Compiling unicode_names2 v1.3.0
+   Compiling peg v0.8.4
+   Compiling regex v1.11.1
+   Compiling bstr v1.11.3
+   Compiling globset v0.4.15
+   Compiling synstructure v0.13.1
+   Compiling darling_core v0.20.8
+   Compiling test-case-core v3.3.1
+   Compiling ruff_cache v0.0.0 (/testbed/crates/ruff_cache)
+   Compiling serde_derive v1.0.217
+   Compiling zerofrom-derive v0.1.4
+   Compiling yoke-derive v0.7.4
+   Compiling zerovec-derive v0.10.3
+   Compiling displaydoc v0.2.5
+   Compiling thiserror-impl v1.0.67
+   Compiling icu_provider_macros v1.5.0
+   Compiling is-macro v0.3.7
+   Compiling ruff_macros v0.0.0 (/testbed/crates/ruff_macros)
+   Compiling uuid-macro-internal v1.12.0
+   Compiling thiserror-impl v2.0.11
+   Compiling libcst_derive v1.6.0
+   Compiling strum_macros v0.26.4
+   Compiling test-case-macros v3.3.1
+   Compiling uuid v1.12.0
+   Compiling test-case v3.3.1
+   Compiling darling_macro v0.20.8
+   Compiling zerofrom v0.1.4
+   Compiling yoke v0.7.4
+   Compiling strum v0.26.3
+   Compiling pest v2.7.11
+   Compiling libcst v1.6.0
+   Compiling zerovec v0.10.4
+   Compiling darling v0.20.8
+   Compiling serde_with_macros v3.12.0
+   Compiling ruff_index v0.0.0 (/testbed/crates/ruff_index)
+   Compiling tinystr v0.7.6
+   Compiling icu_collections v1.5.0
+   Compiling pest_meta v2.7.11
+   Compiling icu_locid v1.5.0
+   Compiling icu_provider v1.5.0
+   Compiling pest_generator v2.7.11
+   Compiling icu_locid_transform v1.5.0
+   Compiling pest_derive v2.7.11
+   Compiling icu_properties v1.5.1
+   Compiling compact_str v0.8.1
+   Compiling indexmap v2.7.1
+   Compiling toml_datetime v0.6.8
+   Compiling serde_spanned v0.6.7
+   Compiling serde_with v3.12.0
+   Compiling rust-stemmers v1.2.0
+   Compiling insta v1.42.0
+   Compiling pep440_rs v0.7.3
+   Compiling ruff_diagnostics v0.0.0 (/testbed/crates/ruff_diagnostics)
+   Compiling toml_edit v0.22.20
+   Compiling quick-junit v0.5.1
+   Compiling ruff_notebook v0.0.0 (/testbed/crates/ruff_notebook)
+   Compiling imperative v1.0.6
+   Compiling icu_normalizer v1.5.0
+   Compiling idna_adapter v1.2.0
+   Compiling idna v1.0.3
+   Compiling ruff_python_ast v0.0.0 (/testbed/crates/ruff_python_ast)
+   Compiling url v2.5.4
+   Compiling pep508_rs v0.9.1
+   Compiling toml v0.8.19
+   Compiling pyproject-toml v0.13.4
+   Compiling ruff_python_parser v0.0.0 (/testbed/crates/ruff_python_parser)
+   Compiling ruff_python_literal v0.0.0 (/testbed/crates/ruff_python_literal)
+   Compiling ruff_python_semantic v0.0.0 (/testbed/crates/ruff_python_semantic)
+   Compiling ruff_python_index v0.0.0 (/testbed/crates/ruff_python_index)
+   Compiling ruff_python_codegen v0.0.0 (/testbed/crates/ruff_python_codegen)
+   Compiling ruff_linter v0.9.2 (/testbed/crates/ruff_linter)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 45.09s
+     Running unittests src/lib.rs (target/debug/deps/ruff_linter-40f4126ba16b201b)
+
+running 36 tests
+test rules::flake8_simplify::tests::rules::rule_exprandnotexpr_path_new_sim220_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_returnintryexceptfinally_path_new_sim107_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_ifexprwithtwistedarms_path_new_sim212_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_negatenotequalop_path_new_sim202_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_ifexprwithfalsetrue_path_new_sim211_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_doublenegation_path_new_sim208_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_exprornotexpr_path_new_sim221_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_comparewithtuple_path_new_sim109_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_dictgetwithnonedefault_path_new_sim910_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_negateequalop_path_new_sim201_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_enumerateforloop_path_new_sim113_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_ifexprwithtruefalse_path_new_sim210_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_openfilewithcontexthandler_path_new_sim115_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_ifelseblockinsteadofdictget_path_new_sim401_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_ifelseblockinsteadofifexp_path_new_sim108_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_reimplementedbuiltin_path_new_sim110_py_expects ... ok
+test rules::flake8_simplify::tests::preview_rules::rule_ifelseblockinsteadofifexp_path_new_sim108_py_expects ... ok
+test rules::flake8_simplify::tests::preview_rules::rule_needlessbool_path_new_sim103_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_collapsibleif_path_new_sim102_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_multiplewithstatements_path_new_sim117_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_ifelseblockinsteadofdictlookup_path_new_sim116_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_suppressibleexception_path_new_sim105_2_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_reimplementedbuiltin_path_new_sim111_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_needlessbool_path_new_sim103_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_ifwithsamearms_path_new_sim114_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_suppressibleexception_path_new_sim105_3_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_duplicateisinstancecall_path_new_sim101_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_suppressibleexception_path_new_sim105_4_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_exprortrue_path_new_sim222_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_indictkeys_path_new_sim118_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_suppressibleexception_path_new_sim105_1_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_exprandfalse_path_new_sim223_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_uncapitalizedenvironmentvariables_path_new_sim112_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_suppressibleexception_path_new_sim105_0_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_splitstaticstring_path_new_sim905_py_expects ... ok
+test rules::flake8_simplify::tests::rules::rule_yodaconditions_path_new_sim300_py_expects ... ok
+
+test result: ok. 36 passed; 0 failed; 0 ignored; 0 measured; 2222 filtered out; finished in 0.04s
+
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 13a6b5600b47489ca6af0b5a13d916bda8e50662 crates/ruff_linter/src/rules/flake8_simplify/snapshots/ruff_linter__rules__flake8_simplify__tests__SIM201_SIM201.py.snap crates/ruff_linter/src/rules/flake8_simplify/snapshots/ruff_linter__rules__flake8_simplify__tests__SIM202_SIM202.py.snap
+Updated 2 paths from ed1a05376

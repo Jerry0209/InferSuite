@@ -1,0 +1,163 @@
+diff --git a/src/core/lombok/eclipse/handlers/HandleNonNull.java b/src/core/lombok/eclipse/handlers/HandleNonNull.java
+index 365eef33..08079486 100644
+--- a/src/core/lombok/eclipse/handlers/HandleNonNull.java
++++ b/src/core/lombok/eclipse/handlers/HandleNonNull.java
+@@ -221,9 +221,10 @@ public class HandleNonNull extends EclipseAnnotationHandler<NonNull> {
+ 		// As we need both for @NonNull we reset the handled flag during diet parse.
+ 		
+ 		if (!annotationNode.isCompleteParse()) {
+-			if (annotationNode.up().getKind() == Kind.FIELD) {
++			EclipseNode fieldNode = getFieldNode(annotationNode);
++			if (fieldNode != null) {
+ 				//Check if this is a record and we need to generate the compact form constructor.
+-				EclipseNode typeNode = annotationNode.up().up();
++				EclipseNode typeNode = fieldNode.up();
+ 				if (typeNode.getKind() == Kind.TYPE) {
+ 					if (isRecord(typeNode)) {
+ 						addCompactConstructorIfNeeded(typeNode, annotationNode);
+@@ -248,19 +249,36 @@ public class HandleNonNull extends EclipseAnnotationHandler<NonNull> {
+ 		return null;
+ 	}
+ 	
++	/**
++	 * Resolves the field node that an {@code @NonNull} annotation hangs off of. The annotation can either be a
++	 * declaration annotation (directly on the field) or a type use annotation (e.g. on an array type such as
++	 * {@code byte @NonNull []}); in the latter case the field is reached by walking up through the type use node.
++	 * Returns {@code null} if the annotation is not (type-use-)on a field.
++	 */
++	private EclipseNode getFieldNode(EclipseNode annotationNode) {
++		if (annotationNode.up().getKind() == Kind.FIELD) return annotationNode.up();
++		if (annotationNode.up().getKind() == Kind.TYPE_USE) {
++			EclipseNode typeNode = annotationNode.directUp();
++			if (typeNode != null && typeNode.getKind() == Kind.TYPE_USE && typeNode.directUp() != null && typeNode.directUp().getKind() == Kind.FIELD) {
++				return typeNode.directUp();
++			}
++		}
++		return null;
++	}
++	
+ 	private void handle0(Annotation ast, EclipseNode annotationNode, boolean force) {
+ 		handleFlagUsage(annotationNode, ConfigurationKeys.NON_NULL_FLAG_USAGE, "@NonNull");
+ 		
+-		if (annotationNode.up().getKind() == Kind.FIELD) {
++		EclipseNode fieldNode = getFieldNode(annotationNode);
++		if (fieldNode != null) {
+ 			// This is meaningless unless the field is used to generate a method (@Setter, @RequiredArgsConstructor, etc),
+ 			// but in that case those handlers will take care of it. However, we DO check if the annotation is applied to
+ 			// a primitive, because those handlers trigger on any annotation named @NonNull and we only want the warning
+ 			// behaviour on _OUR_ 'lombok.NonNull'.
+-			EclipseNode fieldNode = annotationNode.up();
+ 			EclipseNode typeNode = fieldNode.up();
+ 			
+ 			try {
+-				if (isPrimitive(((AbstractVariableDeclaration) annotationNode.up().get()).type)) {
++				if (isPrimitive(((AbstractVariableDeclaration) fieldNode.get()).type)) {
+ 					annotationNode.addWarning("@NonNull is meaningless on a primitive.");
+ 					return;
+ 				}
+diff --git a/src/core/lombok/javac/handlers/HandleNonNull.java b/src/core/lombok/javac/handlers/HandleNonNull.java
+index 271bedbb..438233d6 100644
+--- a/src/core/lombok/javac/handlers/HandleNonNull.java
++++ b/src/core/lombok/javac/handlers/HandleNonNull.java
+@@ -218,25 +218,41 @@ public class HandleNonNull extends JavacAnnotationHandler<NonNull> {
+ 	
+ 	@Override public void handle(AnnotationValues<NonNull> annotation, JCAnnotation ast, JavacNode annotationNode) {
+ 		handleFlagUsage(annotationNode, ConfigurationKeys.NON_NULL_FLAG_USAGE, "@NonNull");
++		
++		/*
++		 * @NonNull can either be a declaration annotation (directly on the field/parameter) or a type use annotation
++		 * (e.g. on an array type such as 'byte @NonNull []'). For fields we have to figure out which one it is so we
++		 * can fetch the field declaration regardless of where exactly the annotation hangs in the AST.
++		 */
++		JavacNode fieldNode = null;
+ 		if (annotationNode.up().getKind() == Kind.FIELD) {
++			fieldNode = annotationNode.up();
++		} else if (annotationNode.up().getKind() == Kind.TYPE_USE) {
++			JavacNode typeNode = annotationNode.directUp();
++			if (typeNode != null && typeNode.getKind() == Kind.TYPE_USE && typeNode.directUp() != null && typeNode.directUp().getKind() == Kind.FIELD) {
++				fieldNode = typeNode.directUp();
++			}
++		}
++		
++		if (fieldNode != null) {
+ 			// This is meaningless unless the field is used to generate a method (@Setter, @RequiredArgsConstructor, etc),
+ 			// but in that case those handlers will take care of it. However, we DO check if the annotation is applied to
+ 			// a primitive, because those handlers trigger on any annotation named @NonNull and we only want the warning
+ 			// behaviour on _OUR_ 'lombok.NonNull'.
+ 			
+ 			try {
+-				if (isPrimitive(((JCVariableDecl) annotationNode.up().get()).vartype)) {
++				if (isPrimitive(((JCVariableDecl) fieldNode.get()).vartype)) {
+ 					annotationNode.addWarning("@NonNull is meaningless on a primitive.");
+ 				}
+ 			} catch (Exception ignore) {}
+ 			
+-			JCVariableDecl fDecl = (JCVariableDecl) annotationNode.up().get();
++			JCVariableDecl fDecl = (JCVariableDecl) fieldNode.get();
+ 			if ((fDecl.mods.flags & RECORD) != 0) {
+ 				// well, these kinda double as parameters (of the compact constructor), so we do some work here.
+ 				
+-				List<JCMethodDecl> compactConstructors = addCompactConstructorIfNeeded(annotationNode.up().up(), annotationNode);
++				List<JCMethodDecl> compactConstructors = addCompactConstructorIfNeeded(fieldNode.up(), annotationNode);
+ 				for (JCMethodDecl ctr : compactConstructors) {
+-					addNullCheckIfNeeded(ctr, annotationNode.up(), annotationNode);
++					addNullCheckIfNeeded(ctr, fieldNode, annotationNode);
+ 				}
+ 			}
+ 			return;
+diff --git a/test/transform/resource/after-delombok/NonNullOnRecordPrimitiveArray.java b/test/transform/resource/after-delombok/NonNullOnRecordPrimitiveArray.java
+new file mode 100644
+index 00000000..d250ef9e
+--- /dev/null
++++ b/test/transform/resource/after-delombok/NonNullOnRecordPrimitiveArray.java
+@@ -0,0 +1,13 @@
++// version 16:
++import lombok.NonNull;
++public record NonNullOnRecordPrimitiveArray(@NonNull String name, byte @NonNull [] bytes) {
++	@java.lang.SuppressWarnings("all")
++	public NonNullOnRecordPrimitiveArray {
++		if (name == null) {
++			throw new java.lang.NullPointerException("name is marked non-null but is null");
++		}
++		if (bytes == null) {
++			throw new java.lang.NullPointerException("bytes is marked non-null but is null");
++		}
++	}
++}
+diff --git a/test/transform/resource/after-ecj/NonNullOnRecordPrimitiveArray.java b/test/transform/resource/after-ecj/NonNullOnRecordPrimitiveArray.java
+new file mode 100644
+index 00000000..850d8c69
+--- /dev/null
++++ b/test/transform/resource/after-ecj/NonNullOnRecordPrimitiveArray.java
+@@ -0,0 +1,19 @@
++// version 14:
++import lombok.NonNull;
++public record NonNullOnRecordPrimitiveArray(String name, byte bytes) {
++/* Implicit */  private final String name;
++/* Implicit */  private final byte @NonNull [] bytes;
++  public @java.lang.SuppressWarnings("all") NonNullOnRecordPrimitiveArray(@NonNull String name, byte @NonNull [] bytes) {
++    super();
++    if ((name == null))
++        {
++          throw new java.lang.NullPointerException("name is marked non-null but is null");
++        }
++    if ((bytes == null))
++        {
++          throw new java.lang.NullPointerException("bytes is marked non-null but is null");
++        }
++    this.name = name;
++    this.bytes = bytes;
++  }
++}
+diff --git a/test/transform/resource/before/NonNullOnRecordPrimitiveArray.java b/test/transform/resource/before/NonNullOnRecordPrimitiveArray.java
+new file mode 100644
+index 00000000..031c78da
+--- /dev/null
++++ b/test/transform/resource/before/NonNullOnRecordPrimitiveArray.java
+@@ -0,0 +1,6 @@
++// version 14:
++
++import lombok.NonNull;
++
++public record NonNullOnRecordPrimitiveArray(@NonNull String name, byte @NonNull [] bytes) {
++}

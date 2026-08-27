@@ -1,0 +1,34 @@
+{
+    "astral-sh__ruff-15309": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "infra_failure": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "rules::pyflakes::tests::rules::rule_stringdotformatextrapositionalarguments_path_new_f523_py_expects"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "rules::pyflakes::tests::rules::rule_stringdotformatmixingautomatic_path_new_f525_py_expects",
+                    "rules::pyflakes::tests::rules::rule_stringdotformatinvalidformat_path_new_f521_py_expects",
+                    "rules::pyflakes::tests::rules::rule_stringdotformatmissingarguments_path_new_f524_py_expects",
+                    "rules::pyflakes::tests::rules::rule_stringdotformatextranamedarguments_path_new_f522_py_expects"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

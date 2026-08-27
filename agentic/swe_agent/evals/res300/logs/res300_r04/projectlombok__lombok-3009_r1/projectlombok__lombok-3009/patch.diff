@@ -1,0 +1,34 @@
+diff --git a/src/core/lombok/eclipse/handlers/HandleFieldDefaults.java b/src/core/lombok/eclipse/handlers/HandleFieldDefaults.java
+index 5900e7ed..33350c45 100644
+--- a/src/core/lombok/eclipse/handlers/HandleFieldDefaults.java
++++ b/src/core/lombok/eclipse/handlers/HandleFieldDefaults.java
+@@ -154,7 +154,7 @@ public class HandleFieldDefaults extends EclipseASTAdapter {
+ 			break;
+ 		}
+ 		
+-		if (fd == null && (type.modifiers & (ClassFileConstants.AccInterface | ClassFileConstants.AccAnnotation)) != 0) return;
++		if (fd == null && (type.modifiers & (ClassFileConstants.AccInterface | ClassFileConstants.AccAnnotation | Eclipse.AccRecord)) != 0) return;
+ 		
+ 		boolean defaultToPrivate = levelIsExplicit ? false : Boolean.TRUE.equals(typeNode.getAst().readConfiguration(ConfigurationKeys.FIELD_DEFAULTS_PRIVATE_EVERYWHERE));
+ 		boolean defaultToFinal = makeFinalIsExplicit ? false : Boolean.TRUE.equals(typeNode.getAst().readConfiguration(ConfigurationKeys.FIELD_DEFAULTS_FINAL_EVERYWHERE));
+diff --git a/src/core/lombok/javac/handlers/HandleFieldDefaults.java b/src/core/lombok/javac/handlers/HandleFieldDefaults.java
+index ebab67e3..e72c7d3f 100644
+--- a/src/core/lombok/javac/handlers/HandleFieldDefaults.java
++++ b/src/core/lombok/javac/handlers/HandleFieldDefaults.java
+@@ -22,6 +22,7 @@
+ package lombok.javac.handlers;
+ 
+ import static lombok.core.handlers.HandlerUtil.*;
++import static lombok.javac.Javac.*;
+ import static lombok.javac.handlers.JavacHandlerUtil.*;
+ import lombok.AccessLevel;
+ import lombok.ConfigurationKeys;
+@@ -134,7 +135,7 @@ public class HandleFieldDefaults extends JavacASTAdapter {
+ 			break;
+ 		}
+ 		
+-		if (fd == null && (type.mods.flags & (Flags.INTERFACE | Flags.ANNOTATION)) != 0) return;
++		if (fd == null && (type.mods.flags & (Flags.INTERFACE | Flags.ANNOTATION | RECORD)) != 0) return;
+ 		
+ 		boolean defaultToPrivate = levelIsExplicit ? false : Boolean.TRUE.equals(typeNode.getAst().readConfiguration(ConfigurationKeys.FIELD_DEFAULTS_PRIVATE_EVERYWHERE));
+ 		boolean defaultToFinal = makeFinalIsExplicit ? false : Boolean.TRUE.equals(typeNode.getAst().readConfiguration(ConfigurationKeys.FIELD_DEFAULTS_FINAL_EVERYWHERE));

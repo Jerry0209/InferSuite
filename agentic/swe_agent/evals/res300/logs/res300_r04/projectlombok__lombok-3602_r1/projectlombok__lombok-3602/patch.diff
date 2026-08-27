@@ -1,0 +1,53 @@
+diff --git a/doc/changelog.markdown b/doc/changelog.markdown
+index a3b3a48a..2f542954 100644
+--- a/doc/changelog.markdown
++++ b/doc/changelog.markdown
+@@ -8,6 +8,7 @@ Lombok Changelog
+ * BUGFIX: Many lombok features wouldn't work properly on records contained within an outer type unless you explicitly marked it `static`. [Issue #3497](https://github.com/projectlombok/lombok/issues/3497) [Issue #3559](https://github.com/projectlombok/lombok/issues/3559).
+ * BUGFIX: Eclipse projects using the `com.pro-crafting.tools:jasperreports-plugin` will now compile.
+ * BUGFIX: `@FieldNameConstants` now works when generated fields are involved. [Issue #3529](https://github.com/projectlombok/lombok/issues/3529).
++* BUGFIX: `@SneakyThrows` (and `@NonNull`) no longer leaves traces to `lombok.Lombok.sneakyThrow` / `lombok.Lombok.preventNullAnalysis` in the constant pool of compiled class files, which could cause tools to incorrectly add lombok as a runtime dependency. [Issue #3540](https://github.com/projectlombok/lombok/issues/3540).
+ 
+ ### v1.18.30 (September 20th, 2023)
+ * PLATFORM: Initial JDK21 support added. [Issue #3393](https://github.com/projectlombok/lombok/issues/3393).
+diff --git a/src/core/lombok/bytecode/FixedClassWriter.java b/src/core/lombok/bytecode/FixedClassWriter.java
+index f18dc3a4..c5b7f277 100644
+--- a/src/core/lombok/bytecode/FixedClassWriter.java
++++ b/src/core/lombok/bytecode/FixedClassWriter.java
+@@ -28,6 +28,10 @@ class FixedClassWriter extends ClassWriter {
+ 	FixedClassWriter(ClassReader classReader, int flags) {
+ 		super(classReader, flags);
+ 	}
++
++	FixedClassWriter(int flags) {
++		super(flags);
++	}
+ 	
+ 	@Override protected String getCommonSuperClass(String type1, String type2) {
+ 		//By default, ASM will attempt to live-load the class types, which will fail if meddling with classes in an
+diff --git a/src/core/lombok/bytecode/PreventNullAnalysisRemover.java b/src/core/lombok/bytecode/PreventNullAnalysisRemover.java
+index 8ae7af5b..654a308a 100644
+--- a/src/core/lombok/bytecode/PreventNullAnalysisRemover.java
++++ b/src/core/lombok/bytecode/PreventNullAnalysisRemover.java
+@@ -44,7 +44,7 @@ public class PreventNullAnalysisRemover implements PostCompilerTransformation {
+ 		byte[] fixedByteCode = fixJSRInlining(original);
+ 		
+ 		ClassReader reader = new ClassReader(fixedByteCode);
+-		ClassWriter writer = new FixedClassWriter(reader, 0);
++		ClassWriter writer = new FixedClassWriter(0);
+ 		
+ 		final AtomicBoolean changesMade = new AtomicBoolean();
+ 		
+diff --git a/src/core/lombok/bytecode/SneakyThrowsRemover.java b/src/core/lombok/bytecode/SneakyThrowsRemover.java
+index ea1c3cec..674ff491 100644
+--- a/src/core/lombok/bytecode/SneakyThrowsRemover.java
++++ b/src/core/lombok/bytecode/SneakyThrowsRemover.java
+@@ -46,7 +46,7 @@ public class SneakyThrowsRemover implements PostCompilerTransformation {
+ 		byte[] fixedByteCode = fixJSRInlining(original);
+ 		
+ 		ClassReader reader = new ClassReader(fixedByteCode);
+-		ClassWriter writer = new ClassWriter(reader, 0);
++		ClassWriter writer = new FixedClassWriter(0);
+ 
+ 		final AtomicBoolean changesMade = new AtomicBoolean();
+ 		

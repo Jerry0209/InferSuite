@@ -1,0 +1,116 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   Gemfile
+	modified:   lib/jekyll/filters.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit ab6ef0b257e4c7aafec0518d93bea3e9c4b75b75
+Author: jekyllbot <jekyllbot@jekyllrb.com>
+Date:   Wed Mar 4 10:14:55 2020 -0500
+
+    Update history to reflect merge of #8044 [ci skip]
+
+diff --git a/History.markdown b/History.markdown
+index c402d3b8..9e3d417f 100644
+--- a/History.markdown
++++ b/History.markdown
+@@ -81,6 +81,7 @@
+   * Update unit tests for Kramdown-based converter (#8014)
+   * Add Visual Studio Code Development Container (#8016)
+   * Configure kramdown toc_levels as array by default (#8015)
++  * Simplify Jekyll::Hooks.trigger logic (#8044)
+ 
+ ### Site Enhancements
+ 
++ git -c core.fileMode=false diff ab6ef0b257e4c7aafec0518d93bea3e9c4b75b75
+diff --git a/Gemfile b/Gemfile
+index 3026f996..863808ac 100644
+--- a/Gemfile
++++ b/Gemfile
+@@ -82,10 +82,6 @@ group :jekyll_optional_dependencies do
+ 
+   # Windows and JRuby does not include zoneinfo files, so bundle the tzinfo-data gem
+   # and associated library
+-  install_if -> { RUBY_PLATFORM =~ %r!mingw|mswin|java! } do
+-    gem "tzinfo", "~> 1.2"
+-    gem "tzinfo-data"
+-  end
+ end
+ 
+ #
+@@ -99,3 +95,5 @@ group :site do
+   gem "jekyll-sitemap"
+   gem "jemoji"
+ end
++
++gem "webrick", "~> 1.9"
+diff --git a/lib/jekyll/filters.rb b/lib/jekyll/filters.rb
+index 31b24d7a..fcfe6477 100644
+--- a/lib/jekyll/filters.rb
++++ b/lib/jekyll/filters.rb
+@@ -432,10 +432,14 @@ module Jekyll
+     #
+     # Returns an instance of Liquid::Condition
+     def parse_binary_comparison(parser)
+-      parse_comparison(parser).tap do |condition|
+-        binary_operator = parser.id?("and") || parser.id?("or")
+-        condition.send(binary_operator, parse_comparison(parser)) if binary_operator
++      condition = parse_comparison(parser)
++      first_condition = condition
++      while (binary_operator = parser.id?("and") || parser.id?("or"))
++        child_condition = parse_comparison(parser)
++        condition.send(binary_operator, child_condition)
++        condition = child_condition
+       end
++      first_condition
+     end
+ 
+     # Generates a Liquid::Condition object from a Liquid::Parser object based on whether the parsed
++ git checkout ab6ef0b257e4c7aafec0518d93bea3e9c4b75b75 test/test_filters.rb
+Updated 0 paths from b85e1dee
++ git apply -v -
+Checking patch test/test_filters.rb...
+Applied patch test/test_filters.rb cleanly.
++ : '>>>>> Start Test Output'
++ bundle exec ruby -I test test/test_filters.rb -v -n '/where_exp filter/'
++ cat
+# -------------------------------------------------------------
+# SPECS AND TESTS ARE RUNNING WITH WARNINGS OFF.
+# SEE: https://github.com/Shopify/liquid/issues/730
+# SEE: https://github.com/jekyll/jekyll/issues/4719
+# -------------------------------------------------------------
+
+# Running tests with run options -v -n "/where_exp filter/" --seed 5215:
+
+
+TestFilters#test_: filters where_exp filter should filter objects in a hash appropriately.  0.01 = .
+TestFilters#test_: filters where_exp filter should filter by variable values.  0.02 = .
+TestFilters#test_: filters where_exp filter should filter with other operators.  0.00 = .
+TestFilters#test_: filters where_exp filter should filter with the contains operator over arrays.  0.00 = .
+TestFilters#test_: filters where_exp filter should filter posts.  0.01 = .
+TestFilters#test_: filters where_exp filter should stringify during comparison for compatibility with liquid parsing.  0.00 = .
+TestFilters#test_: filters where_exp filter should filter objects across multiple conditions.  0.00 = .
+TestFilters#test_: filters where_exp filter should filter objects appropriately with 'or', 'and' operators.  0.00 = .
+TestFilters#test_: filters where_exp filter should filter with the contains operator over hash keys.  0.00 = .
+TestFilters#test_: filters where_exp filter should filter objects appropriately.  0.00 = .
+TestFilters#test_: filters where_exp filter should always return an array if the object responds to 'select'.  0.00 = .
+TestFilters#test_: filters where_exp filter should return any input that is not an array.  0.00 = .
+
+Finished tests in 0.048642s, 246.7016 tests/s, 493.4032 assertions/s.
+
+
+12 tests, 24 assertions, 0 failures, 0 errors, 0 skips
+Coverage report generated for Unit Tests to coverage/index.html
+Line coverage: 1863 / 3501 (53.21%)
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout ab6ef0b257e4c7aafec0518d93bea3e9c4b75b75 test/test_filters.rb
+Updated 1 path from b85e1dee

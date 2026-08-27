@@ -1,0 +1,142 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/faker/default/internet.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 37a7ea2cdceae530d79197d887a347a877cd3dd4
+Author: fynsta <63241108+fynsta@users.noreply.github.com>
+Date:   Wed Jun 19 20:22:06 2024 +0200
+
+    Fix typo (#2968)
+    
+    * Fix typo
+    
+    * Fix rubocop
+
+diff --git a/doc/default/vehicle.md b/doc/default/vehicle.md
+index 84944104..1f58668e 100644
+--- a/doc/default/vehicle.md
++++ b/doc/default/vehicle.md
+@@ -6,7 +6,7 @@ Available since version 1.6.4.
+ Faker::Vehicle.vin #=> "LLDWXZLG77VK2LUUF"
+ 
+ # Random vehicle manufacturer
+-Faker::Vehicle.manufacture #=> "Lamborghini"
++Faker::Vehicle.manufacturer #=> "Lamborghini"
+ 
+ Faker::Vehicle.make #=> "Honda"
+ 
+diff --git a/lib/faker/default/vehicle.rb b/lib/faker/default/vehicle.rb
+index e574db74..3f02c4c4 100644
+--- a/lib/faker/default/vehicle.rb
++++ b/lib/faker/default/vehicle.rb
+@@ -48,12 +48,13 @@ module Faker
+       # @return [String]
+       #
+       # @example
+-      #   Faker::Vehicle.manufacture #=> "Lamborghini"
++      #   Faker::Vehicle.manufacturer #=> "Lamborghini"
+       #
+       # @faker.version 1.6.4
+-      def manufacture
+-        fetch('vehicle.manufacture')
++      def manufacturer
++        fetch('vehicle.manufacturer')
+       end
++      alias manufacture manufacturer
+ 
+       ##
+       # Produces a random vehicle make.
+diff --git a/lib/locales/en/vehicle.yml b/lib/locales/en/vehicle.yml
+index 320f1925..3f8d1f18 100644
+--- a/lib/locales/en/vehicle.yml
++++ b/lib/locales/en/vehicle.yml
+@@ -1,7 +1,7 @@
+ en:
+   faker:
+     vehicle:
+-      manufacture:
++      manufacturer:
+         - Abarth
+         - Acura
+         - Aixam
+diff --git a/test/faker/default/test_faker_vehicle.rb b/test/faker/default/test_faker_vehicle.rb
+index ea232099..71a43943 100644
+--- a/test/faker/default/test_faker_vehicle.rb
++++ b/test/faker/default/test_faker_vehicle.rb
+@@ -20,8 +20,8 @@ class TestFakerVehicle < Test::Unit::TestCase
+     end
+   end
+ 
+-  def test_manufacture
+-    assert_match WORD_MATCH, @tester.manufacture
++  def test_manufacturer
++    assert_match WORD_MATCH, @tester.manufacturer
+   end
+ 
+   def test_color
++ git -c core.fileMode=false diff 37a7ea2cdceae530d79197d887a347a877cd3dd4
+diff --git a/lib/faker/default/internet.rb b/lib/faker/default/internet.rb
+index 688b9f89..6be04446 100644
+--- a/lib/faker/default/internet.rb
++++ b/lib/faker/default/internet.rb
+@@ -65,7 +65,7 @@ module Faker
+         with_locale(:en) do
+           case specifier
+           when ::String
+-            names = specifier&.gsub("'", '')&.split
++            names = specifier.gsub("'", '').scan(/[[:word:]]+/)
+             shuffled_names = shuffle(names)
+ 
+             return shuffled_names.join(sample(separators)).downcase
++ git checkout 37a7ea2cdceae530d79197d887a347a877cd3dd4 test/faker/default/test_faker_internet.rb
+Updated 0 paths from b35f9918
++ git apply -v -
+Checking patch test/faker/default/test_faker_internet.rb...
+Applied patch test/faker/default/test_faker_internet.rb cleanly.
++ : '>>>>> Start Test Output'
++ bundle exec ruby test/faker/default/test_faker_internet.rb -v -n /email/
++ cat
+Calling `DidYouMean::SPELL_CHECKERS.merge!(error_name => spell_checker)' has been deprecated. Please call `DidYouMean.correct_error(error_name, spell_checker)' instead.
+Calling `DidYouMean::SPELL_CHECKERS.merge!(error_name => spell_checker)' has been deprecated. Please call `DidYouMean.correct_error(error_name, spell_checker)' instead.
+Loaded suite test/faker/default/test_faker_internet
+Started
+TestFakerInternet: 
+  test_email_against_name_generator:			.: (0.001321)
+  test_email_name_with_non_permitted_characters:	.: (0.000428)
+  test_email_with_abbreviations:			.: (0.000276)
+  test_email_with_apostrophes:				.: (0.000279)
+  test_email_with_domain_name_option_given:		.: (0.000272)
+  test_email_with_full_domain_option_given:		.: (0.000323)
+  test_email_with_name_seperators_domain:		.: (0.000295)
+  test_email_with_no_arguments:				.: (0.000436)
+  test_email_with_separators:				.: (0.000342)
+
+Finished in 0.004236119 seconds.
+-------------------------------------------------------------------------------
+9 tests, 45 assertions, 0 failures, 0 errors, 0 pendings, 0 omissions, 0 notifications
+100% passed
+-------------------------------------------------------------------------------
+2124.59 tests/s, 10622.93 assertions/s
+Run options: --seed 8318
+
+# Running:
+
+
+
+Finished in 0.000596s, 0.0000 runs/s, 0.0000 assertions/s.
+
+0 runs, 0 assertions, 0 failures, 0 errors, 0 skips
+JSON Coverage report generated for Unit Tests to /testbed/coverage.         2564 / 4985 LOC (51.43%) covered.
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 37a7ea2cdceae530d79197d887a347a877cd3dd4 test/faker/default/test_faker_internet.rb
+>>>>> Test Exit Code: 0
+Updated 1 path from b35f9918

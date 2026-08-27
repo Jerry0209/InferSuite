@@ -1,0 +1,95 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch v1.x
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/core/AxiosHeaders.js
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 85740c3e7a1fa48346dfcbd4497f463ccb1c1b05
+Author: Lenz Weber-Tronic <mail@lenzw.de>
+Date:   Thu Oct 13 21:05:15 2022 +0200
+
+    pin CDN install instructions to a specific version (#5060)
+
+diff --git a/README.md b/README.md
+index 5f17e58..f1f0e79 100755
+--- a/README.md
++++ b/README.md
+@@ -118,13 +118,13 @@ $ pnpm add axios
+ Using jsDelivr CDN:
+ 
+ ```html
+-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
++<script src="https://cdn.jsdelivr.net/npm/axios@1.1.2/dist/axios.min.js"></script>
+ ```
+ 
+ Using unpkg CDN:
+ 
+ ```html
+-<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
++<script src="https://unpkg.com/axios@1.1.2/dist/axios.min.js"></script>
+ ```
+ 
+ ## Example
++ git -c core.fileMode=false diff 85740c3e7a1fa48346dfcbd4497f463ccb1c1b05
+diff --git a/lib/core/AxiosHeaders.js b/lib/core/AxiosHeaders.js
+index 9d56538..3981596 100644
+--- a/lib/core/AxiosHeaders.js
++++ b/lib/core/AxiosHeaders.js
+@@ -15,6 +15,10 @@ function normalizeValue(value) {
+     return value;
+   }
+ 
++  if (utils.isArray(value)) {
++    return value.map(normalizeValue);
++  }
++
+   return String(value);
+ }
+ 
+@@ -102,13 +106,7 @@ Object.assign(AxiosHeaders.prototype, {
+         return;
+       }
+ 
+-      if (utils.isArray(_value)) {
+-        _value = _value.map(normalizeValue);
+-      } else {
+-        _value = normalizeValue(_value);
+-      }
+-
+-      self[key || _header] = _value;
++      self[key || _header] = normalizeValue(_value);
+     }
+ 
+     if (utils.isPlainObject(header)) {
++ git checkout 85740c3e7a1fa48346dfcbd4497f463ccb1c1b05 test/unit/core/AxiosHeaders.js test/unit/regression/bugs.js
+Updated 0 paths from 1d61ba6
++ git apply -v -
+Checking patch test/unit/core/AxiosHeaders.js...
+Checking patch test/unit/regression/bugs.js...
+Applied patch test/unit/core/AxiosHeaders.js cleanly.
+Applied patch test/unit/regression/bugs.js cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ npx mocha -R tap test/unit/regression/bugs.js
+ok 1 issues 4999 should not fail with query parsing
+ok 2 issues 5028 should handle set-cookie headers as an array
+# tests 2
+# pass 2
+# fail 0
+1..2
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 12.0.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+npm notice To update run: npm install -g npm@12.0.2
+npm notice
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout 85740c3e7a1fa48346dfcbd4497f463ccb1c1b05 test/unit/core/AxiosHeaders.js test/unit/regression/bugs.js
+Updated 2 paths from 1d61ba6

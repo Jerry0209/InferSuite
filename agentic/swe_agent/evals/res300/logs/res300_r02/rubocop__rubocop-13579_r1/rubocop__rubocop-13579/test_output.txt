@@ -1,0 +1,86 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/rubocop/cop/layout/line_continuation_spacing.rb
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	changelog/fix_false_positives_for_layout_line_continuation_spacing.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit c5ac2b9a31dbe8dac520ecf4307b1ac206a65630
+Merge: 96b0de6c1 a6c8be197
+Author: Koichi ITO <koic.ito@gmail.com>
+Date:   Mon Dec 16 17:26:57 2024 +0900
+
+    Merge pull request #13593 from GabeIsman/expand-lint-void-to-non-modifier-conditionals
+    
+    [Fix #12393] Fix false negative in Lint/Void inside of non-modifier if blocks
+
++ git -c core.fileMode=false diff c5ac2b9a31dbe8dac520ecf4307b1ac206a65630
+diff --git a/lib/rubocop/cop/layout/line_continuation_spacing.rb b/lib/rubocop/cop/layout/line_continuation_spacing.rb
+index f400b01bf..6255ef802 100644
+--- a/lib/rubocop/cop/layout/line_continuation_spacing.rb
++++ b/lib/rubocop/cop/layout/line_continuation_spacing.rb
+@@ -92,14 +92,14 @@ module RuboCop
+           # which lines start inside a string literal?
+           return [] if ast.nil?
+ 
+-          ast.each_node(:str, :dstr, :array).with_object(Set.new) do |literal, ranges|
++          ast.each_node(:str, :dstr, :regexp, :array).with_object(Set.new) do |literal, ranges|
+             loc = literal.location
+ 
+             if literal.array_type?
+               next unless literal.percent_literal?
+ 
+               ranges << loc.expression
+-            elsif literal.heredoc?
++            elsif literal.respond_to?(:heredoc?) && literal.heredoc?
+               ranges << loc.heredoc_body
+             elsif loc.respond_to?(:begin) && loc.begin
+               ranges << loc.expression
++ git checkout c5ac2b9a31dbe8dac520ecf4307b1ac206a65630 spec/rubocop/cop/layout/line_continuation_spacing_spec.rb
+Updated 0 paths from 05818b1e0
++ git apply -v -
+Checking patch spec/rubocop/cop/layout/line_continuation_spacing_spec.rb...
+Applied patch spec/rubocop/cop/layout/line_continuation_spacing_spec.rb cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ bundle exec rspec spec/rubocop/cop/layout/line_continuation_spacing_spec.rb --no-color --format json
++ sed -n '/^{/,$p'
++ jq -r '.examples | group_by(.description) | .[] |
+    if any(select(.status == "failed")) then
+      (.[0] | "\(.description) - failed")
+    else
+      (.[0] | "\(.description) - \(.status)")
+    end'
+does not register an offense for a continuation inside a %q string - passed
+does not register an offense for a continuation inside a %r regexp - passed
+does not register an offense for a continuation inside a multiline string - passed
+does not register an offense for a continuation inside a multiline string with interpolation - passed
+does not register an offense for a continuation inside a regexp - passed
+does not register an offense for a continuation inside an %x xstr - failed
+does not register an offense for a continuation inside an xstr - failed
+ignores empty code - passed
+ignores heredocs and comments - passed
+ignores percent literals - passed
+ignores when too much space in front of backslash after `__END__` - passed
+marks the offense correctly when offense is not in first line - passed
+registers an offense when many spaces in front of backslash - passed
+registers an offense when no space in front of backslash - passed
+registers an offense when one space in front of backslash - passed
+registers an offense when too much space in front of backslash - passed
+registers an offense when too much space in front of backslash in array literals - passed
+registers no offense with one space in front of backslash - passed
+registers no offense with zero spaces in front of backslash - passed
++ SWEBENCH_TEST_EXIT_CODE=1
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 1'
++ git checkout c5ac2b9a31dbe8dac520ecf4307b1ac206a65630 spec/rubocop/cop/layout/line_continuation_spacing_spec.rb
+>>>>> Test Exit Code: 1
+Updated 1 path from 05818b1e0

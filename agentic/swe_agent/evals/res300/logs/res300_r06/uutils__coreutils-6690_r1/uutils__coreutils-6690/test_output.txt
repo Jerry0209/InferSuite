@@ -1,0 +1,131 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/uu/cp/src/cp.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit af86aee6b86a99736ca304ff656d0e4c6d547333
+Author: Samuel Tardieu <sam@rfc1149.net>
+Date:   Sun Sep 8 00:30:47 2024 +0200
+
+    cp: look for specific error messages in tests
+
+diff --git a/tests/by-util/test_cp.rs b/tests/by-util/test_cp.rs
+index 290c49f3b..f0d9b1763 100644
+--- a/tests/by-util/test_cp.rs
++++ b/tests/by-util/test_cp.rs
+@@ -170,12 +170,17 @@ fn test_cp_multiple_files() {
+ 
+ #[test]
+ fn test_cp_multiple_files_with_nonexistent_file() {
++    #[cfg(windows)]
++    let error_msg = "The system cannot find the file specified";
++    #[cfg(not(windows))]
++    let error_msg = format!("'{TEST_NONEXISTENT_FILE}': No such file or directory");
+     let (at, mut ucmd) = at_and_ucmd!();
+     ucmd.arg(TEST_HELLO_WORLD_SOURCE)
+         .arg(TEST_NONEXISTENT_FILE)
+         .arg(TEST_HOW_ARE_YOU_SOURCE)
+         .arg(TEST_COPY_TO_FOLDER)
+-        .fails();
++        .fails()
++        .stderr_contains(error_msg);
+ 
+     assert_eq!(at.read(TEST_COPY_TO_FOLDER_FILE), "Hello, World!\n");
+     assert_eq!(at.read(TEST_HOW_ARE_YOU_DEST), "How are you?\n");
+@@ -183,12 +188,17 @@ fn test_cp_multiple_files_with_nonexistent_file() {
+ 
+ #[test]
+ fn test_cp_multiple_files_with_empty_file_name() {
++    #[cfg(windows)]
++    let error_msg = "The system cannot find the path specified";
++    #[cfg(not(windows))]
++    let error_msg = "'': No such file or directory";
+     let (at, mut ucmd) = at_and_ucmd!();
+     ucmd.arg(TEST_HELLO_WORLD_SOURCE)
+         .arg("")
+         .arg(TEST_HOW_ARE_YOU_SOURCE)
+         .arg(TEST_COPY_TO_FOLDER)
+-        .fails();
++        .fails()
++        .stderr_contains(error_msg);
+ 
+     assert_eq!(at.read(TEST_COPY_TO_FOLDER_FILE), "Hello, World!\n");
+     assert_eq!(at.read(TEST_HOW_ARE_YOU_DEST), "How are you?\n");
++ git -c core.fileMode=false diff af86aee6b86a99736ca304ff656d0e4c6d547333
+diff --git a/src/uu/cp/src/cp.rs b/src/uu/cp/src/cp.rs
+index cce042bfa..0ee0bacfb 100644
+--- a/src/uu/cp/src/cp.rs
++++ b/src/uu/cp/src/cp.rs
+@@ -677,6 +677,7 @@ pub fn uu_app() -> Command {
+         .arg(
+             Arg::new(options::PATHS)
+                 .action(ArgAction::Append)
++                .num_args(1..)
+                 .value_hint(clap::ValueHint::AnyPath)
+                 .value_parser(ValueParser::os_string()),
+         )
++ git checkout af86aee6b86a99736ca304ff656d0e4c6d547333 tests/by-util/test_cp.rs
+Updated 0 paths from 452379850
++ git apply -v -
+Checking patch tests/by-util/test_cp.rs...
+Applied patch tests/by-util/test_cp.rs cleanly.
++ : '>>>>> Start Test Output'
++ cargo test --no-fail-fast -- test_cp_cp test_cp_same_file test_cp_multiple_files test_cp_single_file test_cp_no_file
++ cat
+   Compiling uu_cp v0.0.27 (/testbed/src/uu/cp)
+   Compiling coreutils v0.0.27 (/testbed)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.26s
+     Running unittests src/bin/coreutils.rs (target/debug/deps/coreutils-4c325d81403ca3f3)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/test_util_name.rs (target/debug/deps/test_util_name-517c0a2447987e84)
+     Running tests/tests.rs (target/debug/deps/tests-e4edcbb27c0fea8e)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 78 filtered out; finished in 0.00s
+
+
+running 8 tests
+test test_cp::test_cp_single_file ... ok
+test test_cp::test_cp_same_file ... ok
+test test_cp::test_cp_multiple_files_target_is_file ... ok
+test test_cp::test_cp_no_file ... FAILED
+test test_cp::test_cp_cp ... ok
+test test_cp::test_cp_multiple_files_with_nonexistent_file ... ok
+test test_cp::test_cp_multiple_files_with_empty_file_name ... ok
+test test_cp::test_cp_multiple_files ... ok
+
+failures:
+
+---- test_cp::test_cp_no_file stdout ----
+run: /testbed/target/debug/coreutils cp
+thread 'test_cp::test_cp_no_file' panicked at tests/by-util/test_cp.rs:5769:10:
+'cp: missing file operand
+' does not contain 'error: the following required arguments were not provided:'
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    test_cp::test_cp_no_file
+
+test result: FAILED. 7 passed; 1 failed; 0 ignored; 0 measured; 3122 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test tests`
+error: 1 target failed:
+    `--test tests`
++ SWEBENCH_TEST_EXIT_CODE=101
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 101'
++ git checkout af86aee6b86a99736ca304ff656d0e4c6d547333 tests/by-util/test_cp.rs
+>>>>> Test Exit Code: 101
+Updated 1 path from 452379850

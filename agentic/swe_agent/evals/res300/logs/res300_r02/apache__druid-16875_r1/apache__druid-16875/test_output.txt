@@ -1,0 +1,2056 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   server/src/main/java/org/apache/druid/server/metrics/WorkerTaskCountStatsMonitor.java
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 483a03f26c7221f10493d86715985a58e61af967
+Author: Vadim Ogievetsky <vadim@ogievetsky.com>
+Date:   Fri Aug 9 14:46:59 2024 -0700
+
+    Web console: Server context defaults (#16868)
+    
+    * add server defaults
+    
+    * null is NULL
+    
+    * r to d
+    
+    * add test
+    
+    * typo
+
+diff --git a/licenses.yaml b/licenses.yaml
+index dcdac7bd18..0646c7131f 100644
+--- a/licenses.yaml
++++ b/licenses.yaml
+@@ -5085,7 +5085,7 @@ license_category: binary
+ module: web-console
+ license_name: Apache License version 2.0
+ copyright: Imply Data
+-version: 0.22.20
++version: 0.22.21
+ 
+ ---
+ 
+diff --git a/web-console/console-config.js b/web-console/console-config.js
+index 10bdddb611..25d99e7c65 100644
+--- a/web-console/console-config.js
++++ b/web-console/console-config.js
+@@ -17,6 +17,5 @@
+  */
+ 
+ window.consoleConfig = {
+-  exampleManifestsUrl: 'https://druid.apache.org/data/example-manifests-v2.tsv',
+-  /* future configs may go here */
++  /* configs go here */
+ };
+diff --git a/web-console/package-lock.json b/web-console/package-lock.json
+index 412f728d56..e9319969b6 100644
+--- a/web-console/package-lock.json
++++ b/web-console/package-lock.json
+@@ -14,7 +14,7 @@
+         "@blueprintjs/datetime2": "^2.3.7",
+         "@blueprintjs/icons": "^5.10.0",
+         "@blueprintjs/select": "^5.2.1",
+-        "@druid-toolkit/query": "^0.22.20",
++        "@druid-toolkit/query": "^0.22.21",
+         "@druid-toolkit/visuals-core": "^0.3.3",
+         "@druid-toolkit/visuals-react": "^0.3.3",
+         "@fontsource/open-sans": "^5.0.28",
+@@ -989,9 +989,9 @@
+       }
+     },
+     "node_modules/@druid-toolkit/query": {
+-      "version": "0.22.20",
+-      "resolved": "https://registry.npmjs.org/@druid-toolkit/query/-/query-0.22.20.tgz",
+-      "integrity": "sha512-GmmSd27y7zLVTjgTBQy+XoGeSSGhSDNmwyiwWtSua7I5LX8XqHV7Chi8HIH25YQoVgTK1pLK4RS8eRXxthRAzg==",
++      "version": "0.22.21",
++      "resolved": "https://registry.npmjs.org/@druid-toolkit/query/-/query-0.22.21.tgz",
++      "integrity": "sha512-4k0NGO2Ay90naSO8nyivPPvvhz73D/OkCo6So3frmPDLFfw5CYKSvAhy4RadtnLMZPwsnlVREjAmqbvBsHqgjQ==",
+       "dependencies": {
+         "tslib": "^2.5.2"
+       }
+@@ -19093,9 +19093,9 @@
+       "dev": true
+     },
+     "@druid-toolkit/query": {
+-      "version": "0.22.20",
+-      "resolved": "https://registry.npmjs.org/@druid-toolkit/query/-/query-0.22.20.tgz",
+-      "integrity": "sha512-GmmSd27y7zLVTjgTBQy+XoGeSSGhSDNmwyiwWtSua7I5LX8XqHV7Chi8HIH25YQoVgTK1pLK4RS8eRXxthRAzg==",
++      "version": "0.22.21",
++      "resolved": "https://registry.npmjs.org/@druid-toolkit/query/-/query-0.22.21.tgz",
++      "integrity": "sha512-4k0NGO2Ay90naSO8nyivPPvvhz73D/OkCo6So3frmPDLFfw5CYKSvAhy4RadtnLMZPwsnlVREjAmqbvBsHqgjQ==",
+       "requires": {
+         "tslib": "^2.5.2"
+       }
+diff --git a/web-console/package.json b/web-console/package.json
+index 0c9370f880..d55bb79d60 100644
+--- a/web-console/package.json
++++ b/web-console/package.json
+@@ -68,7 +68,7 @@
+     "@blueprintjs/datetime2": "^2.3.7",
+     "@blueprintjs/icons": "^5.10.0",
+     "@blueprintjs/select": "^5.2.1",
+-    "@druid-toolkit/query": "^0.22.20",
++    "@druid-toolkit/query": "^0.22.21",
+     "@druid-toolkit/visuals-core": "^0.3.3",
+     "@druid-toolkit/visuals-react": "^0.3.3",
+     "@fontsource/open-sans": "^5.0.28",
+diff --git a/web-console/src/components/header-bar/header-bar.tsx b/web-console/src/components/header-bar/header-bar.tsx
+index e1b97cf4e1..aed6679829 100644
+--- a/web-console/src/components/header-bar/header-bar.tsx
++++ b/web-console/src/components/header-bar/header-bar.tsx
+@@ -59,7 +59,6 @@ import './header-bar.scss';
+ const capabilitiesOverride = localStorageGetJson(LocalStorageKeys.CAPABILITIES_OVERRIDE);
+ 
+ export type HeaderActiveTab =
+-  | null
+   | 'data-loader'
+   | 'streaming-data-loader'
+   | 'classic-batch-data-loader'
+@@ -93,7 +92,7 @@ const DruidLogo = React.memo(function DruidLogo() {
+ });
+ 
+ export interface HeaderBarProps {
+-  active: HeaderActiveTab;
++  active: HeaderActiveTab | null;
+   capabilities: Capabilities;
+   onUnrestrict(capabilities: Capabilities): void;
+ }
+diff --git a/web-console/src/console-application.tsx b/web-console/src/console-application.tsx
+index 0d097729cb..36a0b8aa39 100644
+--- a/web-console/src/console-application.tsx
++++ b/web-console/src/console-application.tsx
+@@ -28,7 +28,7 @@ import type { Filter } from 'react-table';
+ 
+ import type { HeaderActiveTab } from './components';
+ import { HeaderBar, Loader } from './components';
+-import type { DruidEngine, QueryWithContext } from './druid-models';
++import type { DruidEngine, QueryContext, QueryWithContext } from './druid-models';
+ import { Capabilities, maybeGetClusterCapacity } from './helpers';
+ import { stringToTableFilters, tableFiltersToString } from './react-table';
+ import { AppToaster } from './singletons';
+@@ -51,22 +51,32 @@ import './console-application.scss';
+ 
+ type FiltersRouteMatch = RouteComponentProps<{ filters?: string }>;
+ 
+-function changeHashWithFilter(slug: string, filters: Filter[]) {
++function changeTabWithFilter(tab: HeaderActiveTab, filters: Filter[]) {
+   const filterString = tableFiltersToString(filters);
+-  location.hash = slug + (filterString ? `/${filterString}` : '');
++  location.hash = tab + (filterString ? `/${filterString}` : '');
+ }
+ 
+-function viewFilterChange(slug: string) {
+-  return (filters: Filter[]) => changeHashWithFilter(slug, filters);
++function viewFilterChange(tab: HeaderActiveTab) {
++  return (filters: Filter[]) => changeTabWithFilter(tab, filters);
+ }
+ 
+-function pathWithFilter(slug: string) {
+-  return [`/${slug}/:filters`, `/${slug}`];
++function pathWithFilter(tab: HeaderActiveTab) {
++  return [`/${tab}/:filters`, `/${tab}`];
++}
++
++function switchTab(tab: HeaderActiveTab) {
++  location.hash = tab;
++}
++
++function switchToWorkbenchTab(tabId: string) {
++  location.hash = `workbench/${tabId}`;
+ }
+ 
+ export interface ConsoleApplicationProps {
+-  defaultQueryContext?: Record<string, any>;
+-  mandatoryQueryContext?: Record<string, any>;
++  baseQueryContext?: QueryContext;
++  defaultQueryContext?: QueryContext;
++  mandatoryQueryContext?: QueryContext;
++  serverQueryContext?: QueryContext;
+ }
+ 
+ export interface ConsoleApplicationState {
+@@ -158,22 +168,22 @@ export class ConsoleApplication extends React.PureComponent<
+ 
+   private readonly goToStreamingDataLoader = (supervisorId?: string) => {
+     if (supervisorId) this.supervisorId = supervisorId;
+-    location.hash = 'streaming-data-loader';
++    switchTab('streaming-data-loader');
+     this.resetInitialsWithDelay();
+   };
+ 
+   private readonly goToClassicBatchDataLoader = (taskId?: string) => {
+     if (taskId) this.taskId = taskId;
+-    location.hash = 'classic-batch-data-loader';
++    switchTab('classic-batch-data-loader');
+     this.resetInitialsWithDelay();
+   };
+ 
+   private readonly goToDatasources = (datasource: string) => {
+-    changeHashWithFilter('datasources', [{ id: 'datasource', value: `=${datasource}` }]);
++    changeTabWithFilter('datasources', [{ id: 'datasource', value: `=${datasource}` }]);
+   };
+ 
+   private readonly goToSegments = (datasource: string, onlyUnavailable = false) => {
+-    changeHashWithFilter(
++    changeTabWithFilter(
+       'segments',
+       compact([
+         { id: 'datasource', value: `=${datasource}` },
+@@ -183,19 +193,19 @@ export class ConsoleApplication extends React.PureComponent<
+   };
+ 
+   private readonly goToSupervisor = (supervisorId: string) => {
+-    changeHashWithFilter('supervisors', [{ id: 'supervisor_id', value: `=${supervisorId}` }]);
++    changeTabWithFilter('supervisors', [{ id: 'supervisor_id', value: `=${supervisorId}` }]);
+   };
+ 
+   private readonly goToTasksWithTaskId = (taskId: string) => {
+-    changeHashWithFilter('tasks', [{ id: 'task_id', value: `=${taskId}` }]);
++    changeTabWithFilter('tasks', [{ id: 'task_id', value: `=${taskId}` }]);
+   };
+ 
+   private readonly goToTasksWithTaskGroupId = (taskGroupId: string) => {
+-    changeHashWithFilter('tasks', [{ id: 'group_id', value: `=${taskGroupId}` }]);
++    changeTabWithFilter('tasks', [{ id: 'group_id', value: `=${taskGroupId}` }]);
+   };
+ 
+   private readonly goToTasksWithDatasource = (datasource: string, type?: string) => {
+-    changeHashWithFilter(
++    changeTabWithFilter(
+       'tasks',
+       compact([
+         { id: 'datasource', value: `=${datasource}` },
+@@ -206,24 +216,24 @@ export class ConsoleApplication extends React.PureComponent<
+ 
+   private readonly openSupervisorSubmit = () => {
+     this.openSupervisorDialog = true;
+-    location.hash = 'supervisors';
++    switchTab('supervisors');
+     this.resetInitialsWithDelay();
+   };
+ 
+   private readonly openTaskSubmit = () => {
+     this.openTaskDialog = true;
+-    location.hash = 'tasks';
++    switchTab('tasks');
+     this.resetInitialsWithDelay();
+   };
+ 
+   private readonly goToQuery = (queryWithContext: QueryWithContext) => {
+     this.queryWithContext = queryWithContext;
+-    location.hash = 'workbench';
++    switchTab('workbench');
+     this.resetInitialsWithDelay();
+   };
+ 
+   private readonly wrapInViewContainer = (
+-    active: HeaderActiveTab,
++    active: HeaderActiveTab | null,
+     el: JSX.Element,
+     classType: 'normal' | 'narrow-pad' | 'thin' | 'thinner' = 'normal',
+   ) => {
+@@ -293,7 +303,8 @@ export class ConsoleApplication extends React.PureComponent<
+   };
+ 
+   private readonly wrappedWorkbenchView = (p: RouteComponentProps<{ tabId?: string }>) => {
+-    const { defaultQueryContext, mandatoryQueryContext } = this.props;
++    const { defaultQueryContext, mandatoryQueryContext, baseQueryContext, serverQueryContext } =
++      this.props;
+     const { capabilities } = this.state;
+ 
+     const queryEngines: DruidEngine[] = ['native'];
+@@ -309,12 +320,12 @@ export class ConsoleApplication extends React.PureComponent<
+       <WorkbenchView
+         capabilities={capabilities}
+         tabId={p.match.params.tabId}
+-        onTabChange={newTabId => {
+-          location.hash = `workbench/${newTabId}`;
+-        }}
++        onTabChange={switchToWorkbenchTab}
+         initQueryWithContext={this.queryWithContext}
+         defaultQueryContext={defaultQueryContext}
+         mandatoryQueryContext={mandatoryQueryContext}
++        baseQueryContext={baseQueryContext}
++        serverQueryContext={serverQueryContext}
+         queryEngines={queryEngines}
+         allowExplain
+         goToTask={this.goToTasksWithTaskId}
+@@ -325,6 +336,7 @@ export class ConsoleApplication extends React.PureComponent<
+   };
+ 
+   private readonly wrappedSqlDataLoaderView = () => {
++    const { serverQueryContext } = this.props;
+     const { capabilities } = this.state;
+     return this.wrapInViewContainer(
+       'sql-data-loader',
+@@ -334,6 +346,7 @@ export class ConsoleApplication extends React.PureComponent<
+         goToTask={this.goToTasksWithTaskId}
+         goToTaskGroup={this.goToTasksWithTaskGroupId}
+         getClusterCapacity={maybeGetClusterCapacity}
++        serverQueryContext={serverQueryContext}
+       />,
+     );
+   };
+diff --git a/web-console/src/druid-models/query-context/query-context.tsx b/web-console/src/druid-models/query-context/query-context.tsx
+index 17e8204e94..a25d268d84 100644
+--- a/web-console/src/druid-models/query-context/query-context.tsx
++++ b/web-console/src/druid-models/query-context/query-context.tsx
+@@ -16,9 +16,10 @@
+  * limitations under the License.
+  */
+ 
+-import { deepDelete, deepSet } from '../../utils';
+-
++export type SelectDestination = 'taskReport' | 'durableStorage';
+ export type ArrayIngestMode = 'array' | 'mvd';
++export type TaskAssignment = 'auto' | 'max';
++export type SqlJoinAlgorithm = 'broadcast' | 'sortMerge';
+ 
+ export interface QueryContext {
+   useCache?: boolean;
+@@ -30,15 +31,38 @@ export interface QueryContext {
+   // Multi-stage query
+   maxNumTasks?: number;
+   finalizeAggregations?: boolean;
+-  selectDestination?: string;
++  selectDestination?: SelectDestination;
+   durableShuffleStorage?: boolean;
+   maxParseExceptions?: number;
+   groupByEnableMultiValueUnnesting?: boolean;
+   arrayIngestMode?: ArrayIngestMode;
++  taskAssignment?: TaskAssignment;
++  sqlJoinAlgorithm?: SqlJoinAlgorithm;
++  failOnEmptyInsert?: boolean;
++  waitUntilSegmentsLoad?: boolean;
+ 
+   [key: string]: any;
+ }
+ 
++export const DEFAULT_SERVER_QUERY_CONTEXT: QueryContext = {
++  useCache: true,
++  populateCache: true,
++  useApproximateCountDistinct: true,
++  useApproximateTopN: true,
++  sqlTimeZone: 'Etc/UTC',
++
++  // Multi-stage query
++  finalizeAggregations: true,
++  selectDestination: 'taskReport',
++  durableShuffleStorage: false,
++  maxParseExceptions: 0,
++  groupByEnableMultiValueUnnesting: true,
++  taskAssignment: 'max',
++  sqlJoinAlgorithm: 'broadcast',
++  failOnEmptyInsert: false,
++  waitUntilSegmentsLoad: false,
++};
++
+ export interface QueryWithContext {
+   queryString: string;
+   queryContext?: QueryContext;
+@@ -49,221 +73,10 @@ export function isEmptyContext(context: QueryContext | undefined): boolean {
+   return !context || Object.keys(context).length === 0;
+ }
+ 
+-// -----------------------------
+-
+-export function getUseCache(context: QueryContext): boolean {
+-  const { useCache } = context;
+-  return typeof useCache === 'boolean' ? useCache : true;
+-}
+-
+-export function changeUseCache(context: QueryContext, useCache: boolean): QueryContext {
+-  let newContext = context;
+-  if (useCache) {
+-    newContext = deepDelete(newContext, 'useCache');
+-    newContext = deepDelete(newContext, 'populateCache');
+-  } else {
+-    newContext = deepSet(newContext, 'useCache', false);
+-    newContext = deepSet(newContext, 'populateCache', false);
+-  }
+-  return newContext;
+-}
+-
+-// -----------------------------
+-
+-export function getUseApproximateCountDistinct(context: QueryContext): boolean {
+-  const { useApproximateCountDistinct } = context;
+-  return typeof useApproximateCountDistinct === 'boolean' ? useApproximateCountDistinct : true;
+-}
+-
+-export function changeUseApproximateCountDistinct(
+-  context: QueryContext,
+-  useApproximateCountDistinct: boolean,
+-): QueryContext {
+-  if (useApproximateCountDistinct) {
+-    return deepDelete(context, 'useApproximateCountDistinct');
+-  } else {
+-    return deepSet(context, 'useApproximateCountDistinct', false);
+-  }
+-}
+-
+-// -----------------------------
+-
+-export function getUseApproximateTopN(context: QueryContext): boolean {
+-  const { useApproximateTopN } = context;
+-  return typeof useApproximateTopN === 'boolean' ? useApproximateTopN : true;
+-}
+-
+-export function changeUseApproximateTopN(
+-  context: QueryContext,
+-  useApproximateTopN: boolean,
+-): QueryContext {
+-  if (useApproximateTopN) {
+-    return deepDelete(context, 'useApproximateTopN');
+-  } else {
+-    return deepSet(context, 'useApproximateTopN', false);
+-  }
+-}
+-
+-// sqlTimeZone
+-
+-export function getTimezone(context: QueryContext): string | undefined {
+-  return context.sqlTimeZone;
+-}
+-
+-export function changeTimezone(context: QueryContext, timezone: string | undefined): QueryContext {
+-  if (timezone) {
+-    return deepSet(context, 'sqlTimeZone', timezone);
+-  } else {
+-    return deepDelete(context, 'sqlTimeZone');
+-  }
+-}
+-
+-// maxNumTasks
+-
+-export function getMaxNumTasks(context: QueryContext): number | undefined {
+-  return context.maxNumTasks;
+-}
+-
+-export function changeMaxNumTasks(
+-  context: QueryContext,
+-  maxNumTasks: number | undefined,
+-): QueryContext {
+-  return typeof maxNumTasks === 'number'
+-    ? deepSet(context, 'maxNumTasks', maxNumTasks)
+-    : deepDelete(context, 'maxNumTasks');
+-}
+-
+-// taskAssignment
+-
+-export function getTaskAssigment(context: QueryContext): string {
+-  const { taskAssignment } = context;
+-  return taskAssignment ?? 'max';
+-}
+-
+-export function changeTaskAssigment(
+-  context: QueryContext,
+-  taskAssignment: string | undefined,
+-): QueryContext {
+-  return typeof taskAssignment === 'string'
+-    ? deepSet(context, 'taskAssignment', taskAssignment)
+-    : deepDelete(context, 'taskAssignment');
+-}
+-
+-// failOnEmptyInsert
+-
+-export function getFailOnEmptyInsert(context: QueryContext): boolean | undefined {
+-  const { failOnEmptyInsert } = context;
+-  return typeof failOnEmptyInsert === 'boolean' ? failOnEmptyInsert : undefined;
+-}
+-
+-export function changeFailOnEmptyInsert(
+-  context: QueryContext,
+-  failOnEmptyInsert: boolean | undefined,
+-): QueryContext {
+-  return typeof failOnEmptyInsert === 'boolean'
+-    ? deepSet(context, 'failOnEmptyInsert', failOnEmptyInsert)
+-    : deepDelete(context, 'failOnEmptyInsert');
+-}
+-
+-// finalizeAggregations
+-
+-export function getFinalizeAggregations(context: QueryContext): boolean | undefined {
+-  const { finalizeAggregations } = context;
+-  return typeof finalizeAggregations === 'boolean' ? finalizeAggregations : undefined;
+-}
+-
+-export function changeFinalizeAggregations(
+-  context: QueryContext,
+-  finalizeAggregations: boolean | undefined,
+-): QueryContext {
+-  return typeof finalizeAggregations === 'boolean'
+-    ? deepSet(context, 'finalizeAggregations', finalizeAggregations)
+-    : deepDelete(context, 'finalizeAggregations');
+-}
+-
+-// waitUntilSegmentsLoad
+-
+-export function getWaitUntilSegmentsLoad(context: QueryContext): boolean | undefined {
+-  const { waitUntilSegmentsLoad } = context;
+-  return typeof waitUntilSegmentsLoad === 'boolean' ? waitUntilSegmentsLoad : undefined;
+-}
+-
+-export function changeWaitUntilSegmentsLoad(
+-  context: QueryContext,
+-  waitUntilSegmentsLoad: boolean | undefined,
+-): QueryContext {
+-  return typeof waitUntilSegmentsLoad === 'boolean'
+-    ? deepSet(context, 'waitUntilSegmentsLoad', waitUntilSegmentsLoad)
+-    : deepDelete(context, 'waitUntilSegmentsLoad');
+-}
+-
+-// groupByEnableMultiValueUnnesting
+-
+-export function getGroupByEnableMultiValueUnnesting(context: QueryContext): boolean | undefined {
+-  const { groupByEnableMultiValueUnnesting } = context;
+-  return typeof groupByEnableMultiValueUnnesting === 'boolean'
+-    ? groupByEnableMultiValueUnnesting
+-    : undefined;
+-}
+-
+-export function changeGroupByEnableMultiValueUnnesting(
+-  context: QueryContext,
+-  groupByEnableMultiValueUnnesting: boolean | undefined,
+-): QueryContext {
+-  return typeof groupByEnableMultiValueUnnesting === 'boolean'
+-    ? deepSet(context, 'groupByEnableMultiValueUnnesting', groupByEnableMultiValueUnnesting)
+-    : deepDelete(context, 'groupByEnableMultiValueUnnesting');
+-}
+-
+-// durableShuffleStorage
+-
+-export function getDurableShuffleStorage(context: QueryContext): boolean {
+-  const { durableShuffleStorage } = context;
+-  return Boolean(durableShuffleStorage);
+-}
+-
+-export function changeDurableShuffleStorage(
+-  context: QueryContext,
+-  durableShuffleStorage: boolean,
+-): QueryContext {
+-  if (durableShuffleStorage) {
+-    return deepSet(context, 'durableShuffleStorage', true);
+-  } else {
+-    return deepDelete(context, 'durableShuffleStorage');
+-  }
+-}
+-
+-// maxParseExceptions
+-
+-export function getMaxParseExceptions(context: QueryContext): number {
+-  const { maxParseExceptions } = context;
+-  return Number(maxParseExceptions) || 0;
+-}
+-
+-export function changeMaxParseExceptions(
+-  context: QueryContext,
+-  maxParseExceptions: number,
+-): QueryContext {
+-  if (maxParseExceptions !== 0) {
+-    return deepSet(context, 'maxParseExceptions', maxParseExceptions);
+-  } else {
+-    return deepDelete(context, 'maxParseExceptions');
+-  }
+-}
+-
+-// arrayIngestMode
+-
+-export function getArrayIngestMode(context: QueryContext): ArrayIngestMode | undefined {
+-  return context.arrayIngestMode;
+-}
+-
+-export function changeArrayIngestMode(
++export function getQueryContextKey(
++  key: keyof QueryContext,
+   context: QueryContext,
+-  arrayIngestMode: ArrayIngestMode | undefined,
+-): QueryContext {
+-  if (arrayIngestMode) {
+-    return deepSet(context, 'arrayIngestMode', arrayIngestMode);
+-  } else {
+-    return deepDelete(context, 'arrayIngestMode');
+-  }
++  defaultContext: QueryContext,
++): any {
++  return typeof context[key] !== 'undefined' ? context[key] : defaultContext[key];
+ }
+diff --git a/web-console/src/entry.tsx b/web-console/src/entry.tsx
+index 25518ecdeb..0e698a3f84 100644
+--- a/web-console/src/entry.tsx
++++ b/web-console/src/entry.tsx
+@@ -28,6 +28,7 @@ import { createRoot } from 'react-dom/client';
+ import { bootstrapJsonParse } from './bootstrap/json-parser';
+ import { bootstrapReactTable } from './bootstrap/react-table-defaults';
+ import { ConsoleApplication } from './console-application';
++import type { QueryContext } from './druid-models';
+ import type { Links } from './links';
+ import { setLinkOverrides } from './links';
+ import { Api, UrlBaser } from './singletons';
+@@ -55,11 +56,16 @@ interface ConsoleConfig {
+   // A set of custom headers name/value to set on every AJAX request
+   customHeaders?: Record<string, string>;
+ 
+-  // The query context to set if the user does not have one saved in local storage, defaults to {}
+-  defaultQueryContext?: Record<string, any>;
++  baseQueryContext?: QueryContext;
++
++  // The query context to set one new query tabs
++  defaultQueryContext?: QueryContext;
+ 
+   // Extra context properties that will be added to all query requests
+-  mandatoryQueryContext?: Record<string, any>;
++  mandatoryQueryContext?: QueryContext;
++
++  // The default context that is set by the server
++  serverQueryContext?: QueryContext;
+ 
+   // Allow for link overriding to different docs
+   linkOverrides?: Links;
+@@ -104,8 +110,10 @@ QueryRunner.defaultQueryExecutor = (payload, isSql, cancelToken) => {
+ createRoot(container).render(
+   <OverlaysProvider>
+     <ConsoleApplication
++      baseQueryContext={consoleConfig.baseQueryContext}
+       defaultQueryContext={consoleConfig.defaultQueryContext}
+       mandatoryQueryContext={consoleConfig.mandatoryQueryContext}
++      serverQueryContext={consoleConfig.serverQueryContext}
+     />
+   </OverlaysProvider>,
+ );
+diff --git a/web-console/src/helpers/execution/sql-task-execution.ts b/web-console/src/helpers/execution/sql-task-execution.ts
+index 0fa9b09095..f4dd45a2cb 100644
+--- a/web-console/src/helpers/execution/sql-task-execution.ts
++++ b/web-console/src/helpers/execution/sql-task-execution.ts
+@@ -36,6 +36,7 @@ function ensureExecutionModeIsSet(context: QueryContext | undefined): QueryConte
+ export interface SubmitTaskQueryOptions {
+   query: string | Record<string, any>;
+   context?: QueryContext;
++  baseQueryContext?: QueryContext;
+   prefixLines?: number;
+   cancelToken?: CancelToken;
+   preserveOnTermination?: boolean;
+@@ -45,7 +46,15 @@ export interface SubmitTaskQueryOptions {
+ export async function submitTaskQuery(
+   options: SubmitTaskQueryOptions,
+ ): Promise<Execution | IntermediateQueryState<Execution>> {
+-  const { query, context, prefixLines, cancelToken, preserveOnTermination, onSubmitted } = options;
++  const {
++    query,
++    context,
++    baseQueryContext,
++    prefixLines,
++    cancelToken,
++    preserveOnTermination,
++    onSubmitted,
++  } = options;
+ 
+   let sqlQuery: string;
+   let jsonQuery: Record<string, any>;
+@@ -53,7 +62,7 @@ export async function submitTaskQuery(
+     sqlQuery = query;
+     jsonQuery = {
+       query: sqlQuery,
+-      context: ensureExecutionModeIsSet(context),
++      context: ensureExecutionModeIsSet({ ...baseQueryContext, ...context }),
+       resultFormat: 'array',
+       header: true,
+       typesHeader: true,
+@@ -65,6 +74,7 @@ export async function submitTaskQuery(
+     jsonQuery = {
+       ...query,
+       context: ensureExecutionModeIsSet({
++        ...baseQueryContext,
+         ...query.context,
+         ...context,
+       }),
+@@ -96,7 +106,7 @@ export async function submitTaskQuery(
+     );
+   }
+ 
+-  const execution = Execution.fromAsyncStatus(sqlAsyncStatus, sqlQuery, context);
++  const execution = Execution.fromAsyncStatus(sqlAsyncStatus, sqlQuery, jsonQuery.context);
+ 
+   if (onSubmitted) {
+     onSubmitted(execution.id);
+diff --git a/web-console/src/utils/general.tsx b/web-console/src/utils/general.tsx
+index a3256c3ab1..7698d3c3af 100644
+--- a/web-console/src/utils/general.tsx
++++ b/web-console/src/utils/general.tsx
+@@ -389,6 +389,12 @@ export function assemble<T>(...xs: (T | undefined | false | null | '')[]): T[] {
+   return compact(xs);
+ }
+ 
++export function removeUndefinedValues<T extends Record<string, any>>(obj: T): Partial<T> {
++  return Object.fromEntries(
++    Object.entries(obj).filter(([_, value]) => value !== undefined),
++  ) as Partial<T>;
++}
++
+ export function moveToEnd<T>(
+   xs: T[],
+   predicate: (value: T, index: number, array: T[]) => unknown,
+diff --git a/web-console/src/utils/values-query.spec.tsx b/web-console/src/utils/values-query.spec.tsx
+index 99884f382c..7bc093bc3e 100644
+--- a/web-console/src/utils/values-query.spec.tsx
++++ b/web-console/src/utils/values-query.spec.tsx
+@@ -45,6 +45,7 @@ describe('queryResultToValuesQuery', () => {
+           [2, 3],
+           null,
+         ],
++        [null, null, null, null, null, null, null],
+       ],
+       false,
+       true,
+@@ -64,7 +65,8 @@ describe('queryResultToValuesQuery', () => {
+       FROM (
+         VALUES
+         ('2022-02-01T00:00:00.000Z', 'brokerA.internal', 'broker', '{"type":"sys","swap/free":1223334,"swap/max":3223334}', 'es<#>es-419', '1', NULL),
+-        ('2022-02-01T00:00:00.000Z', 'brokerA.internal', 'broker', '{"type":"query","time":1223,"bytes":2434234}', 'en<#>es<#>es-419', '2<#>3', NULL)
++        ('2022-02-01T00:00:00.000Z', 'brokerA.internal', 'broker', '{"type":"query","time":1223,"bytes":2434234}', 'en<#>es<#>es-419', '2<#>3', NULL),
++        (NULL, NULL, NULL, NULL, NULL, NULL, NULL)
+       ) AS "t" ("c1", "c2", "c3", "c4", "c5", "c6", "c7")
+     `);
+   });
+diff --git a/web-console/src/utils/values-query.tsx b/web-console/src/utils/values-query.tsx
+index 2f1a5f699c..1b5e62b44c 100644
+--- a/web-console/src/utils/values-query.tsx
++++ b/web-console/src/utils/values-query.tsx
+@@ -65,28 +65,29 @@ export function queryResultToValuesQuery(sample: QueryResult): SqlQuery {
+       expression: SqlValues.create(
+         rows.map(row =>
+           SqlRecord.create(
+-            row.map((r, i) => {
++            row.map((d, i) => {
++              if (d == null) return L.NULL;
+               const column = header[i];
+               const { nativeType } = column;
+               const sqlType = getEffectiveSqlType(column);
+               if (nativeType === 'COMPLEX<json>') {
+-                return L(isJsonString(r) ? r : JSONBig.stringify(r));
++                return L(isJsonString(d) ? d : JSONBig.stringify(d));
+               } else if (String(sqlType).endsWith(' ARRAY')) {
+-                return L(r.join(SAMPLE_ARRAY_SEPARATOR));
++                return L(d.join(SAMPLE_ARRAY_SEPARATOR));
+               } else if (
+                 sqlType === 'OTHER' &&
+                 String(nativeType).startsWith('COMPLEX<') &&
+-                typeof r === 'string' &&
+-                r.startsWith('"') &&
+-                r.endsWith('"')
++                typeof d === 'string' &&
++                d.startsWith('"') &&
++                d.endsWith('"')
+               ) {
+-                // r is a JSON encoded base64 string
+-                return L(r.slice(1, -1));
+-              } else if (typeof r === 'object') {
++                // d is a JSON encoded base64 string
++                return L(d.slice(1, -1));
++              } else if (typeof d === 'object') {
+                 // Cleanup array if it happens to get here, it shouldn't.
+                 return L.NULL;
+               } else {
+-                return L(r);
++                return L(d);
+               }
+             }),
+           ),
+diff --git a/web-console/src/views/sql-data-loader-view/sql-data-loader-view.tsx b/web-console/src/views/sql-data-loader-view/sql-data-loader-view.tsx
+index 6cc00957b8..2e10734a17 100644
+--- a/web-console/src/views/sql-data-loader-view/sql-data-loader-view.tsx
++++ b/web-console/src/views/sql-data-loader-view/sql-data-loader-view.tsx
+@@ -30,6 +30,7 @@ import type {
+   QueryWithContext,
+ } from '../../druid-models';
+ import {
++  DEFAULT_SERVER_QUERY_CONTEXT,
+   Execution,
+   externalConfigToIngestQueryPattern,
+   ingestQueryPatternToQuery,
+@@ -65,12 +66,20 @@ export interface SqlDataLoaderViewProps {
+   goToTask(taskId: string): void;
+   goToTaskGroup(taskGroupId: string): void;
+   getClusterCapacity: (() => Promise<CapacityInfo | undefined>) | undefined;
++  serverQueryContext?: QueryContext;
+ }
+ 
+ export const SqlDataLoaderView = React.memo(function SqlDataLoaderView(
+   props: SqlDataLoaderViewProps,
+ ) {
+-  const { capabilities, goToQuery, goToTask, goToTaskGroup, getClusterCapacity } = props;
++  const {
++    capabilities,
++    goToQuery,
++    goToTask,
++    goToTaskGroup,
++    getClusterCapacity,
++    serverQueryContext = DEFAULT_SERVER_QUERY_CONTEXT,
++  } = props;
+   const [alertElement, setAlertElement] = useState<JSX.Element | undefined>();
+   const [externalConfigStep, setExternalConfigStep] = useState<Partial<ExternalConfig>>({});
+   const [content, setContent] = useLocalStorageState<LoaderContent | undefined>(
+@@ -187,6 +196,7 @@ export const SqlDataLoaderView = React.memo(function SqlDataLoaderView(
+               clusterCapacity={capabilities.getMaxTaskSlots()}
+               queryContext={content.queryContext || {}}
+               changeQueryContext={queryContext => setContent({ ...content, queryContext })}
++              defaultQueryContext={serverQueryContext}
+               minimal
+             />
+           }
+diff --git a/web-console/src/views/workbench-view/max-tasks-button/max-tasks-button.spec.tsx b/web-console/src/views/workbench-view/max-tasks-button/max-tasks-button.spec.tsx
+index 5954c1f3f9..1ae864dee0 100644
+--- a/web-console/src/views/workbench-view/max-tasks-button/max-tasks-button.spec.tsx
++++ b/web-console/src/views/workbench-view/max-tasks-button/max-tasks-button.spec.tsx
+@@ -18,6 +18,7 @@
+ 
+ import React from 'react';
+ 
++import { DEFAULT_SERVER_QUERY_CONTEXT } from '../../../druid-models';
+ import { shallow } from '../../../utils/shallow-renderer';
+ 
+ import { MaxTasksButton } from './max-tasks-button';
+@@ -25,7 +26,12 @@ import { MaxTasksButton } from './max-tasks-button';
+ describe('MaxTasksButton', () => {
+   it('matches snapshot', () => {
+     const comp = shallow(
+-      <MaxTasksButton clusterCapacity={6} queryContext={{}} changeQueryContext={() => {}} />,
++      <MaxTasksButton
++        clusterCapacity={6}
++        queryContext={{}}
++        changeQueryContext={() => {}}
++        defaultQueryContext={DEFAULT_SERVER_QUERY_CONTEXT}
++      />,
+     );
+ 
+     expect(comp).toMatchSnapshot();
+diff --git a/web-console/src/views/workbench-view/max-tasks-button/max-tasks-button.tsx b/web-console/src/views/workbench-view/max-tasks-button/max-tasks-button.tsx
+index ea239bc3a2..c84f9f00e3 100644
+--- a/web-console/src/views/workbench-view/max-tasks-button/max-tasks-button.tsx
++++ b/web-console/src/views/workbench-view/max-tasks-button/max-tasks-button.tsx
+@@ -19,37 +19,38 @@
+ import type { ButtonProps } from '@blueprintjs/core';
+ import { Button, Menu, MenuDivider, MenuItem, Popover, Position } from '@blueprintjs/core';
+ import { IconNames } from '@blueprintjs/icons';
++import type { JSX } from 'react';
+ import React, { useState } from 'react';
+ 
+ import { NumericInputDialog } from '../../../dialogs';
+-import type { QueryContext } from '../../../druid-models';
+-import {
+-  changeMaxNumTasks,
+-  changeTaskAssigment,
+-  getMaxNumTasks,
+-  getTaskAssigment,
+-} from '../../../druid-models';
+-import { formatInteger, tickIcon } from '../../../utils';
++import type { QueryContext, TaskAssignment } from '../../../druid-models';
++import { getQueryContextKey } from '../../../druid-models';
++import { deleteKeys, formatInteger, tickIcon } from '../../../utils';
+ 
+ const MAX_NUM_TASK_OPTIONS = [2, 3, 4, 5, 7, 9, 11, 17, 33, 65, 129];
+-const TASK_ASSIGNMENT_OPTIONS = ['max', 'auto'];
++const TASK_ASSIGNMENT_OPTIONS: TaskAssignment[] = ['max', 'auto'];
+ 
+ const TASK_ASSIGNMENT_DESCRIPTION: Record<string, string> = {
+   max: 'Use as many tasks as possible, up to the maximum.',
+   auto: `Use as few tasks as possible without exceeding 512 MiB or 10,000 files per task, unless exceeding these limits is necessary to stay within 'maxNumTasks'. When calculating the size of files, the weighted size is used, which considers the file format and compression format used if any. When file sizes cannot be determined through directory listing (for example: http), behaves the same as 'max'.`,
+ };
+ 
+-const DEFAULT_MAX_NUM_LABEL_FN = (maxNum: number) => {
++const DEFAULT_MAX_NUM_TASKS_LABEL_FN = (maxNum: number) => {
+   if (maxNum === 2) return { text: formatInteger(maxNum), label: '(1 controller + 1 worker)' };
+   return { text: formatInteger(maxNum), label: `(1 controller + max ${maxNum - 1} workers)` };
+ };
+ 
++const DEFAULT_FULL_CLUSTER_CAPACITY_LABEL_FN = (clusterCapacity: number) =>
++  `${formatInteger(clusterCapacity)} (full cluster capacity)`;
++
+ export interface MaxTasksButtonProps extends Omit<ButtonProps, 'text' | 'rightIcon'> {
+   clusterCapacity: number | undefined;
+   queryContext: QueryContext;
+   changeQueryContext(queryContext: QueryContext): void;
++  defaultQueryContext: QueryContext;
+   menuHeader?: JSX.Element;
+-  maxNumLabelFn?: (maxNum: number) => { text: string; label?: string };
++  maxTasksLabelFn?: (maxNum: number) => { text: string; label?: string };
++  fullClusterCapacityLabelFn?: (clusterCapacity: number) => string;
+ }
+ 
+ export const MaxTasksButton = function MaxTasksButton(props: MaxTasksButtonProps) {
+@@ -57,19 +58,19 @@ export const MaxTasksButton = function MaxTasksButton(props: MaxTasksButtonProps
+     clusterCapacity,
+     queryContext,
+     changeQueryContext,
++    defaultQueryContext,
+     menuHeader,
+-    maxNumLabelFn = DEFAULT_MAX_NUM_LABEL_FN,
++    maxTasksLabelFn = DEFAULT_MAX_NUM_TASKS_LABEL_FN,
++    fullClusterCapacityLabelFn = DEFAULT_FULL_CLUSTER_CAPACITY_LABEL_FN,
+     ...rest
+   } = props;
+   const [customMaxNumTasksDialogOpen, setCustomMaxNumTasksDialogOpen] = useState(false);
+ 
+-  const maxNumTasks = getMaxNumTasks(queryContext);
+-  const taskAssigment = getTaskAssigment(queryContext);
++  const maxNumTasks = queryContext.maxNumTasks;
++  const taskAssigment = getQueryContextKey('taskAssignment', queryContext, defaultQueryContext);
+ 
+   const fullClusterCapacity =
+-    typeof clusterCapacity === 'number'
+-      ? `${formatInteger(clusterCapacity)} (full cluster capacity)`
+-      : undefined;
++    typeof clusterCapacity === 'number' ? fullClusterCapacityLabelFn(clusterCapacity) : undefined;
+ 
+   const shownMaxNumTaskOptions = clusterCapacity
+     ? MAX_NUM_TASK_OPTIONS.filter(_ => _ <= clusterCapacity)
+@@ -88,11 +89,11 @@ export const MaxTasksButton = function MaxTasksButton(props: MaxTasksButtonProps
+               <MenuItem
+                 icon={tickIcon(typeof maxNumTasks === 'undefined')}
+                 text={fullClusterCapacity}
+-                onClick={() => changeQueryContext(changeMaxNumTasks(queryContext, undefined))}
++                onClick={() => changeQueryContext(deleteKeys(queryContext, ['maxNumTasks']))}
+               />
+             )}
+             {shownMaxNumTaskOptions.map(m => {
+-              const { text, label } = maxNumLabelFn(m);
++              const { text, label } = maxTasksLabelFn(m);
+ 
+               return (
+                 <MenuItem
+@@ -100,7 +101,7 @@ export const MaxTasksButton = function MaxTasksButton(props: MaxTasksButtonProps
+                   icon={tickIcon(m === maxNumTasks)}
+                   text={text}
+                   label={label}
+-                  onClick={() => changeQueryContext(changeMaxNumTasks(queryContext, m))}
++                  onClick={() => changeQueryContext({ ...queryContext, maxNumTasks: m })}
+                 />
+               );
+             })}
+@@ -124,7 +125,7 @@ export const MaxTasksButton = function MaxTasksButton(props: MaxTasksButtonProps
+                   }
+                   shouldDismissPopover={false}
+                   multiline
+-                  onClick={() => changeQueryContext(changeTaskAssigment(queryContext, t))}
++                  onClick={() => changeQueryContext({ ...queryContext, taskAssignment: t })}
+                 />
+               ))}
+             </MenuItem>
+@@ -158,8 +159,8 @@ export const MaxTasksButton = function MaxTasksButton(props: MaxTasksButtonProps
+           minValue={2}
+           integer
+           initValue={maxNumTasks || 2}
+-          onSubmit={p => {
+-            changeQueryContext(changeMaxNumTasks(queryContext, p));
++          onSubmit={maxNumTasks => {
++            changeQueryContext({ ...queryContext, maxNumTasks });
+           }}
+           onClose={() => setCustomMaxNumTasksDialogOpen(false)}
+         />
+diff --git a/web-console/src/views/workbench-view/query-tab/query-tab.tsx b/web-console/src/views/workbench-view/query-tab/query-tab.tsx
+index cf863a1438..acdfa67fad 100644
+--- a/web-console/src/views/workbench-view/query-tab/query-tab.tsx
++++ b/web-console/src/views/workbench-view/query-tab/query-tab.tsx
+@@ -21,14 +21,14 @@ import { IconNames } from '@blueprintjs/icons';
+ import type { QueryResult } from '@druid-toolkit/query';
+ import { QueryRunner, SqlQuery } from '@druid-toolkit/query';
+ import axios from 'axios';
+-import type { ComponentProps, JSX } from 'react';
++import type { JSX } from 'react';
+ import React, { useCallback, useEffect, useRef, useState } from 'react';
+ import SplitterLayout from 'react-splitter-layout';
+ import { useStore } from 'zustand';
+ 
+ import { Loader, QueryErrorPane } from '../../../components';
+ import type { CapacityInfo, DruidEngine, LastExecution, QueryContext } from '../../../druid-models';
+-import { Execution, WorkbenchQuery } from '../../../druid-models';
++import { DEFAULT_SERVER_QUERY_CONTEXT, Execution, WorkbenchQuery } from '../../../druid-models';
+ import {
+   executionBackgroundStatusCheck,
+   reattachTaskExecution,
+@@ -60,6 +60,7 @@ import { FlexibleQueryInput } from '../flexible-query-input/flexible-query-input
+ import { IngestSuccessPane } from '../ingest-success-pane/ingest-success-pane';
+ import { metadataStateStore } from '../metadata-state-store';
+ import { ResultTablePane } from '../result-table-pane/result-table-pane';
++import type { RunPanelProps } from '../run-panel/run-panel';
+ import { RunPanel } from '../run-panel/run-panel';
+ import { workStateStore } from '../work-state-store';
+ 
+@@ -69,10 +70,16 @@ const queryRunner = new QueryRunner({
+   inflateDateStrategy: 'none',
+ });
+ 
+-export interface QueryTabProps {
++export interface QueryTabProps
++  extends Pick<
++    RunPanelProps,
++    'maxTasksMenuHeader' | 'enginesLabelFn' | 'maxTasksLabelFn' | 'fullClusterCapacityLabelFn'
++  > {
+   query: WorkbenchQuery;
+   id: string;
+   mandatoryQueryContext: QueryContext | undefined;
++  baseQueryContext: QueryContext | undefined;
++  serverQueryContext: QueryContext;
+   columnMetadata: readonly ColumnMetadata[] | undefined;
+   onQueryChange(newQuery: WorkbenchQuery): void;
+   onQueryTab(newQuery: WorkbenchQuery, tabName?: string): void;
+@@ -82,9 +89,6 @@ export interface QueryTabProps {
+   clusterCapacity: number | undefined;
+   goToTask(taskId: string): void;
+   getClusterCapacity: (() => Promise<CapacityInfo | undefined>) | undefined;
+-  maxTaskMenuHeader?: JSX.Element;
+-  enginesLabelFn?: ComponentProps<typeof RunPanel>['enginesLabelFn'];
+-  maxTaskLabelFn?: ComponentProps<typeof RunPanel>['maxTaskLabelFn'];
+ }
+ 
+ export const QueryTab = React.memo(function QueryTab(props: QueryTabProps) {
+@@ -93,6 +97,8 @@ export const QueryTab = React.memo(function QueryTab(props: QueryTabProps) {
+     id,
+     columnMetadata,
+     mandatoryQueryContext,
++    baseQueryContext,
++    serverQueryContext = DEFAULT_SERVER_QUERY_CONTEXT,
+     onQueryChange,
+     onQueryTab,
+     onDetails,
+@@ -101,9 +107,10 @@ export const QueryTab = React.memo(function QueryTab(props: QueryTabProps) {
+     clusterCapacity,
+     goToTask,
+     getClusterCapacity,
+-    maxTaskMenuHeader,
++    maxTasksMenuHeader,
+     enginesLabelFn,
+-    maxTaskLabelFn,
++    maxTasksLabelFn,
++    fullClusterCapacityLabelFn,
+   } = props;
+   const [alertElement, setAlertElement] = useState<JSX.Element | undefined>();
+ 
+@@ -196,6 +203,8 @@ export const QueryTab = React.memo(function QueryTab(props: QueryTabProps) {
+           case 'sql-msq-task':
+             return await submitTaskQuery({
+               query,
++              context: mandatoryQueryContext,
++              baseQueryContext,
+               prefixLines,
+               cancelToken,
+               preserveOnTermination: true,
+@@ -227,6 +236,7 @@ export const QueryTab = React.memo(function QueryTab(props: QueryTabProps) {
+               const resultPromise = queryRunner.runQuery({
+                 query,
+                 extraQueryContext: mandatoryQueryContext,
++                defaultQueryContext: baseQueryContext,
+                 cancelToken: new axios.CancelToken(cancelFn => {
+                   nativeQueryCancelFnRef.current = cancelFn;
+                 }),
+@@ -404,10 +414,12 @@ export const QueryTab = React.memo(function QueryTab(props: QueryTabProps) {
+               running={executionState.loading}
+               queryEngines={queryEngines}
+               clusterCapacity={clusterCapacity}
++              defaultQueryContext={{ ...serverQueryContext, ...baseQueryContext }}
+               moreMenu={runMoreMenu}
+-              maxTaskMenuHeader={maxTaskMenuHeader}
++              maxTasksMenuHeader={maxTasksMenuHeader}
+               enginesLabelFn={enginesLabelFn}
+-              maxTaskLabelFn={maxTaskLabelFn}
++              maxTasksLabelFn={maxTasksLabelFn}
++              fullClusterCapacityLabelFn={fullClusterCapacityLabelFn}
+             />
+             {executionState.isLoading() && (
+               <ExecutionTimerPanel
+diff --git a/web-console/src/views/workbench-view/run-panel/run-panel.tsx b/web-console/src/views/workbench-view/run-panel/run-panel.tsx
+index f823537961..9ed135da35 100644
+--- a/web-console/src/views/workbench-view/run-panel/run-panel.tsx
++++ b/web-console/src/views/workbench-view/run-panel/run-panel.tsx
+@@ -30,7 +30,7 @@ import {
+   useHotkeys,
+ } from '@blueprintjs/core';
+ import { IconNames } from '@blueprintjs/icons';
+-import type { ComponentProps, JSX } from 'react';
++import type { JSX } from 'react';
+ import React, { useCallback, useMemo, useState } from 'react';
+ 
+ import { MenuCheckbox, MenuTristate } from '../../../components';
+@@ -41,35 +41,14 @@ import type {
+   DruidEngine,
+   IndexSpec,
+   QueryContext,
++  SelectDestination,
++  SqlJoinAlgorithm,
+   WorkbenchQuery,
+ } from '../../../druid-models';
+-import {
+-  changeArrayIngestMode,
+-  changeDurableShuffleStorage,
+-  changeFailOnEmptyInsert,
+-  changeFinalizeAggregations,
+-  changeGroupByEnableMultiValueUnnesting,
+-  changeMaxParseExceptions,
+-  changeTimezone,
+-  changeUseApproximateCountDistinct,
+-  changeUseApproximateTopN,
+-  changeUseCache,
+-  changeWaitUntilSegmentsLoad,
+-  getArrayIngestMode,
+-  getDurableShuffleStorage,
+-  getFailOnEmptyInsert,
+-  getFinalizeAggregations,
+-  getGroupByEnableMultiValueUnnesting,
+-  getMaxParseExceptions,
+-  getTimezone,
+-  getUseApproximateCountDistinct,
+-  getUseApproximateTopN,
+-  getUseCache,
+-  getWaitUntilSegmentsLoad,
+-  summarizeIndexSpec,
+-} from '../../../druid-models';
++import { getQueryContextKey, summarizeIndexSpec } from '../../../druid-models';
+ import { getLink } from '../../../links';
+-import { deepGet, deepSet, pluralIfNeeded, tickIcon } from '../../../utils';
++import { deepGet, pluralIfNeeded, removeUndefinedValues, tickIcon } from '../../../utils';
++import type { MaxTasksButtonProps } from '../max-tasks-button/max-tasks-button';
+ import { MaxTasksButton } from '../max-tasks-button/max-tasks-button';
+ import { QueryParametersDialog } from '../query-parameters-dialog/query-parameters-dialog';
+ 
+@@ -119,7 +98,8 @@ const DEFAULT_ENGINES_LABEL_FN = (engine: DruidEngine | undefined) => {
+   };
+ };
+ 
+-export interface RunPanelProps {
++export interface RunPanelProps
++  extends Pick<MaxTasksButtonProps, 'maxTasksLabelFn' | 'fullClusterCapacityLabelFn'> {
+   query: WorkbenchQuery;
+   onQueryChange(query: WorkbenchQuery): void;
+   running: boolean;
+@@ -127,10 +107,10 @@ export interface RunPanelProps {
+   onRun(preview: boolean): void | Promise<void>;
+   queryEngines: DruidEngine[];
+   clusterCapacity: number | undefined;
++  defaultQueryContext: QueryContext;
+   moreMenu?: JSX.Element;
+-  maxTaskMenuHeader?: JSX.Element;
++  maxTasksMenuHeader?: JSX.Element;
+   enginesLabelFn?: (engine: DruidEngine | undefined) => { text: string; label?: string };
+-  maxTaskLabelFn?: ComponentProps<typeof MaxTasksButton>['maxNumLabelFn'];
+ }
+ 
+ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+@@ -143,9 +123,11 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+     small,
+     queryEngines,
+     clusterCapacity,
+-    maxTaskMenuHeader,
+-    maxTaskLabelFn,
++    defaultQueryContext,
++    maxTasksMenuHeader,
+     enginesLabelFn = DEFAULT_ENGINES_LABEL_FN,
++    maxTasksLabelFn,
++    fullClusterCapacityLabelFn,
+   } = props;
+   const [editContextDialogOpen, setEditContextDialogOpen] = useState(false);
+   const [editParametersDialogOpen, setEditParametersDialogOpen] = useState(false);
+@@ -158,20 +140,52 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+   const numContextKeys = Object.keys(queryContext).length;
+   const queryParameters = query.queryParameters;
+ 
+-  const arrayIngestMode = getArrayIngestMode(queryContext);
+-  const maxParseExceptions = getMaxParseExceptions(queryContext);
+-  const failOnEmptyInsert = getFailOnEmptyInsert(queryContext);
+-  const finalizeAggregations = getFinalizeAggregations(queryContext);
+-  const waitUntilSegmentsLoad = getWaitUntilSegmentsLoad(queryContext);
+-  const groupByEnableMultiValueUnnesting = getGroupByEnableMultiValueUnnesting(queryContext);
+-  const sqlJoinAlgorithm = queryContext.sqlJoinAlgorithm ?? 'broadcast';
+-  const selectDestination = queryContext.selectDestination ?? 'taskReport';
+-  const durableShuffleStorage = getDurableShuffleStorage(queryContext);
++  // Extract the context parts that have UI
++  const sqlTimeZone = queryContext.sqlTimeZone;
++
++  const useCache = getQueryContextKey('useCache', queryContext, defaultQueryContext);
++  const useApproximateTopN = getQueryContextKey(
++    'useApproximateTopN',
++    queryContext,
++    defaultQueryContext,
++  );
++  const useApproximateCountDistinct = getQueryContextKey(
++    'useApproximateCountDistinct',
++    queryContext,
++    defaultQueryContext,
++  );
++
++  const arrayIngestMode = queryContext.arrayIngestMode;
++  const maxParseExceptions = getQueryContextKey(
++    'maxParseExceptions',
++    queryContext,
++    defaultQueryContext,
++  );
++  const failOnEmptyInsert = getQueryContextKey(
++    'failOnEmptyInsert',
++    queryContext,
++    defaultQueryContext,
++  );
++  const finalizeAggregations = queryContext.finalizeAggregations;
++  const waitUntilSegmentsLoad = queryContext.waitUntilSegmentsLoad;
++  const groupByEnableMultiValueUnnesting = queryContext.groupByEnableMultiValueUnnesting;
++  const sqlJoinAlgorithm = getQueryContextKey(
++    'sqlJoinAlgorithm',
++    queryContext,
++    defaultQueryContext,
++  );
++  const selectDestination = getQueryContextKey(
++    'selectDestination',
++    queryContext,
++    defaultQueryContext,
++  );
++  const durableShuffleStorage = getQueryContextKey(
++    'durableShuffleStorage',
++    queryContext,
++    defaultQueryContext,
++  );
++
+   const indexSpec: IndexSpec | undefined = deepGet(queryContext, 'indexSpec');
+-  const useApproximateCountDistinct = getUseApproximateCountDistinct(queryContext);
+-  const useApproximateTopN = getUseApproximateTopN(queryContext);
+-  const useCache = getUseCache(queryContext);
+-  const timezone = getTimezone(queryContext);
+ 
+   const handleRun = useCallback(() => {
+     if (!onRun) return;
+@@ -210,7 +224,7 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+   const queryEngine = query.engine;
+ 
+   function changeQueryContext(queryContext: QueryContext) {
+-    onQueryChange(query.changeQueryContext(queryContext));
++    onQueryChange(query.changeQueryContext(removeUndefinedValues(queryContext)));
+   }
+ 
+   function offsetOptions(): JSX.Element[] {
+@@ -221,10 +235,10 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+       items.push(
+         <MenuItem
+           key={offset}
+-          icon={tickIcon(offset === timezone)}
++          icon={tickIcon(offset === sqlTimeZone)}
+           text={offset}
+           shouldDismissPopover={false}
+-          onClick={() => changeQueryContext(changeTimezone(queryContext, offset))}
++          onClick={() => changeQueryContext({ ...queryContext, sqlTimeZone: offset })}
+         />,
+       );
+     }
+@@ -315,29 +329,32 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+                   <MenuItem
+                     icon={IconNames.GLOBE_NETWORK}
+                     text="Timezone"
+-                    label={timezone || 'default'}
++                    label={sqlTimeZone ?? defaultQueryContext.sqlTimeZone}
+                   >
+                     <MenuDivider title="Timezone type" />
+                     <MenuItem
+-                      icon={tickIcon(!timezone)}
++                      icon={tickIcon(!sqlTimeZone)}
+                       text="Default"
++                      label={defaultQueryContext.sqlTimeZone}
+                       shouldDismissPopover={false}
+-                      onClick={() => changeQueryContext(changeTimezone(queryContext, undefined))}
++                      onClick={() =>
++                        changeQueryContext({ ...queryContext, sqlTimeZone: undefined })
++                      }
+                     />
+-                    <MenuItem icon={tickIcon(String(timezone).includes('/'))} text="Named">
++                    <MenuItem icon={tickIcon(String(sqlTimeZone).includes('/'))} text="Named">
+                       {NAMED_TIMEZONES.map(namedTimezone => (
+                         <MenuItem
+                           key={namedTimezone}
+-                          icon={tickIcon(namedTimezone === timezone)}
++                          icon={tickIcon(namedTimezone === sqlTimeZone)}
+                           text={namedTimezone}
+                           shouldDismissPopover={false}
+                           onClick={() =>
+-                            changeQueryContext(changeTimezone(queryContext, namedTimezone))
++                            changeQueryContext({ ...queryContext, sqlTimeZone: namedTimezone })
+                           }
+                         />
+                       ))}
+                     </MenuItem>
+-                    <MenuItem icon={tickIcon(String(timezone).includes(':'))} text="Offset">
++                    <MenuItem icon={tickIcon(String(sqlTimeZone).includes(':'))} text="Offset">
+                       {offsetOptions()}
+                     </MenuItem>
+                     <MenuItem
+@@ -360,7 +377,7 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+                           icon={tickIcon(v === maxParseExceptions)}
+                           text={v === -1 ? '∞ (-1)' : String(v)}
+                           onClick={() =>
+-                            changeQueryContext(changeMaxParseExceptions(queryContext, v))
++                            changeQueryContext({ ...queryContext, maxParseExceptions: v })
+                           }
+                           shouldDismissPopover={false}
+                         />
+@@ -371,8 +388,8 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+                       text="Fail on empty insert"
+                       value={failOnEmptyInsert}
+                       undefinedEffectiveValue={false}
+-                      onValueChange={v =>
+-                        changeQueryContext(changeFailOnEmptyInsert(queryContext, v))
++                      onValueChange={failOnEmptyInsert =>
++                        changeQueryContext({ ...queryContext, failOnEmptyInsert })
+                       }
+                     />
+                     <MenuTristate
+@@ -380,8 +397,8 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+                       text="Finalize aggregations"
+                       value={finalizeAggregations}
+                       undefinedEffectiveValue={!ingestMode}
+-                      onValueChange={v =>
+-                        changeQueryContext(changeFinalizeAggregations(queryContext, v))
++                      onValueChange={finalizeAggregations =>
++                        changeQueryContext({ ...queryContext, finalizeAggregations })
+                       }
+                     />
+                     <MenuTristate
+@@ -389,8 +406,8 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+                       text="Wait until segments have loaded"
+                       value={waitUntilSegmentsLoad}
+                       undefinedEffectiveValue={ingestMode}
+-                      onValueChange={v =>
+-                        changeQueryContext(changeWaitUntilSegmentsLoad(queryContext, v))
++                      onValueChange={waitUntilSegmentsLoad =>
++                        changeQueryContext({ ...queryContext, waitUntilSegmentsLoad })
+                       }
+                     />
+                     <MenuTristate
+@@ -398,8 +415,8 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+                       text="Enable GroupBy multi-value unnesting"
+                       value={groupByEnableMultiValueUnnesting}
+                       undefinedEffectiveValue={!ingestMode}
+-                      onValueChange={v =>
+-                        changeQueryContext(changeGroupByEnableMultiValueUnnesting(queryContext, v))
++                      onValueChange={groupByEnableMultiValueUnnesting =>
++                        changeQueryContext({ ...queryContext, groupByEnableMultiValueUnnesting })
+                       }
+                     />
+                     <MenuItem
+@@ -407,14 +424,14 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+                       text="Join algorithm"
+                       label={sqlJoinAlgorithm}
+                     >
+-                      {['broadcast', 'sortMerge'].map(o => (
++                      {(['broadcast', 'sortMerge'] as SqlJoinAlgorithm[]).map(o => (
+                         <MenuItem
+                           key={o}
+                           icon={tickIcon(sqlJoinAlgorithm === o)}
+                           text={o}
+                           shouldDismissPopover={false}
+                           onClick={() =>
+-                            changeQueryContext(deepSet(queryContext, 'sqlJoinAlgorithm', o))
++                            changeQueryContext({ ...queryContext, sqlJoinAlgorithm: o })
+                           }
+                         />
+                       ))}
+@@ -425,14 +442,14 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+                       label={selectDestination}
+                       intent={intent}
+                     >
+-                      {['taskReport', 'durableStorage'].map(o => (
++                      {(['taskReport', 'durableStorage'] as SelectDestination[]).map(o => (
+                         <MenuItem
+                           key={o}
+                           icon={tickIcon(selectDestination === o)}
+                           text={o}
+                           shouldDismissPopover={false}
+                           onClick={() =>
+-                            changeQueryContext(deepSet(queryContext, 'selectDestination', o))
++                            changeQueryContext({ ...queryContext, selectDestination: o })
+                           }
+                         />
+                       ))}
+@@ -454,9 +471,10 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+                       checked={durableShuffleStorage}
+                       text="Durable shuffle storage"
+                       onChange={() =>
+-                        changeQueryContext(
+-                          changeDurableShuffleStorage(queryContext, !durableShuffleStorage),
+-                        )
++                        changeQueryContext({
++                          ...queryContext,
++                          durableShuffleStorage: !durableShuffleStorage,
++                        })
+                       }
+                     />
+                     <MenuItem
+@@ -474,15 +492,22 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+                     <MenuCheckbox
+                       checked={useCache}
+                       text="Use cache"
+-                      onChange={() => changeQueryContext(changeUseCache(queryContext, !useCache))}
++                      onChange={() =>
++                        changeQueryContext({
++                          ...queryContext,
++                          useCache: !useCache,
++                          populateCache: !useCache,
++                        })
++                      }
+                     />
+                     <MenuCheckbox
+                       checked={useApproximateTopN}
+                       text="Use approximate TopN"
+                       onChange={() =>
+-                        changeQueryContext(
+-                          changeUseApproximateTopN(queryContext, !useApproximateTopN),
+-                        )
++                        changeQueryContext({
++                          ...queryContext,
++                          useApproximateTopN: !useApproximateTopN,
++                        })
+                       }
+                     />
+                   </>
+@@ -492,12 +517,10 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+                     checked={useApproximateCountDistinct}
+                     text="Use approximate COUNT(DISTINCT)"
+                     onChange={() =>
+-                      changeQueryContext(
+-                        changeUseApproximateCountDistinct(
+-                          queryContext,
+-                          !useApproximateCountDistinct,
+-                        ),
+-                      )
++                      changeQueryContext({
++                        ...queryContext,
++                        useApproximateCountDistinct: !useApproximateCountDistinct,
++                      })
+                     }
+                   />
+                 )}
+@@ -519,8 +542,9 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+           >
+             <Button
+               text={`Engine: ${
+-                (enginesLabelFn ? enginesLabelFn(queryEngine).text : queryEngine) ||
+-                `auto (${enginesLabelFn ? enginesLabelFn(effectiveEngine) : effectiveEngine})`
++                queryEngine
++                  ? enginesLabelFn(queryEngine).text
++                  : `${autoEngineLabel.text} (${enginesLabelFn(effectiveEngine).text})`
+               }`}
+               rightIcon={IconNames.CARET_DOWN}
+               intent={intent}
+@@ -531,8 +555,10 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+               clusterCapacity={clusterCapacity}
+               queryContext={queryContext}
+               changeQueryContext={changeQueryContext}
+-              menuHeader={maxTaskMenuHeader}
+-              maxNumLabelFn={maxTaskLabelFn}
++              defaultQueryContext={defaultQueryContext}
++              menuHeader={maxTasksMenuHeader}
++              maxTasksLabelFn={maxTasksLabelFn}
++              fullClusterCapacityLabelFn={fullClusterCapacityLabelFn}
+             />
+           )}
+           {ingestMode && (
+@@ -544,8 +570,16 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+                     <MenuItem
+                       key={i}
+                       icon={tickIcon(m === arrayIngestMode)}
+-                      text={m ? ARRAY_INGEST_MODE_DESCRIPTION[m] : '(server default)'}
+-                      onClick={() => changeQueryContext(changeArrayIngestMode(queryContext, m))}
++                      text={
++                        m
++                          ? ARRAY_INGEST_MODE_DESCRIPTION[m]
++                          : `(server default${
++                              defaultQueryContext.arrayIngestMode
++                                ? `: ${defaultQueryContext.arrayIngestMode}`
++                                : ''
++                            })`
++                      }
++                      onClick={() => changeQueryContext({ ...queryContext, arrayIngestMode: m })}
+                     />
+                   ))}
+                   <MenuDivider />
+@@ -594,7 +628,7 @@ export const RunPanel = React.memo(function RunPanel(props: RunPanelProps) {
+           title="Custom timezone"
+           placeholder="Etc/UTC"
+           maxLength={50}
+-          onSubmit={tz => changeQueryContext(changeTimezone(queryContext, tz))}
++          onSubmit={sqlTimeZone => changeQueryContext({ ...queryContext, sqlTimeZone })}
+           onClose={() => setCustomTimezoneDialogOpen(false)}
+         />
+       )}
+diff --git a/web-console/src/views/workbench-view/workbench-view.tsx b/web-console/src/views/workbench-view/workbench-view.tsx
+index aaac54e6d4..e4f15a3aa1 100644
+--- a/web-console/src/views/workbench-view/workbench-view.tsx
++++ b/web-console/src/views/workbench-view/workbench-view.tsx
+@@ -30,7 +30,6 @@ import type { SqlQuery } from '@druid-toolkit/query';
+ import { SqlExpression } from '@druid-toolkit/query';
+ import classNames from 'classnames';
+ import copy from 'copy-to-clipboard';
+-import type { ComponentProps } from 'react';
+ import React from 'react';
+ 
+ import { SpecDialog, StringInputDialog } from '../../dialogs';
+@@ -38,10 +37,15 @@ import type {
+   CapacityInfo,
+   DruidEngine,
+   Execution,
++  QueryContext,
+   QueryWithContext,
+   TabEntry,
+ } from '../../druid-models';
+-import { guessDataSourceNameFromInputSource, WorkbenchQuery } from '../../druid-models';
++import {
++  DEFAULT_SERVER_QUERY_CONTEXT,
++  guessDataSourceNameFromInputSource,
++  WorkbenchQuery,
++} from '../../druid-models';
+ import type { Capabilities } from '../../helpers';
+ import { convertSpecToSql, getSpecDatasourceName, getTaskExecution } from '../../helpers';
+ import { getLink } from '../../links';
+@@ -71,6 +75,7 @@ import type { ExecutionDetailsTab } from './execution-details-pane/execution-det
+ import { ExecutionSubmitDialog } from './execution-submit-dialog/execution-submit-dialog';
+ import { ExplainDialog } from './explain-dialog/explain-dialog';
+ import { MetadataChangeDetector } from './metadata-change-detector';
++import type { QueryTabProps } from './query-tab/query-tab';
+ import { QueryTab } from './query-tab/query-tab';
+ import { RecentQueryTaskPanel } from './recent-query-task-panel/recent-query-task-panel';
+ import { TabRenameDialog } from './tab-rename-dialog/tab-rename-dialog';
+@@ -91,20 +96,23 @@ function externalDataTabId(tabId: string | undefined): boolean {
+   return String(tabId).startsWith('connect-external-data');
+ }
+ 
+-export interface WorkbenchViewProps {
++export interface WorkbenchViewProps
++  extends Pick<
++    QueryTabProps,
++    'maxTasksMenuHeader' | 'enginesLabelFn' | 'maxTasksLabelFn' | 'fullClusterCapacityLabelFn'
++  > {
+   capabilities: Capabilities;
+   tabId: string | undefined;
+   onTabChange(newTabId: string): void;
+   initQueryWithContext: QueryWithContext | undefined;
+-  defaultQueryContext?: Record<string, any>;
+-  mandatoryQueryContext?: Record<string, any>;
++  baseQueryContext?: QueryContext;
++  defaultQueryContext?: QueryContext;
++  mandatoryQueryContext?: QueryContext;
++  serverQueryContext?: QueryContext;
+   queryEngines: DruidEngine[];
+   allowExplain: boolean;
+   goToTask(taskId: string): void;
+   getClusterCapacity: (() => Promise<CapacityInfo | undefined>) | undefined;
+-  maxTaskMenuHeader?: JSX.Element;
+-  enginesLabelFn?: ComponentProps<typeof QueryTab>['enginesLabelFn'];
+-  maxTaskLabelFn?: ComponentProps<typeof QueryTab>['maxTaskLabelFn'];
+   hideToolbar?: boolean;
+ }
+ 
+@@ -249,11 +257,15 @@ export class WorkbenchView extends React.PureComponent<WorkbenchViewProps, Workb
+     });
+   };
+ 
++  private getInitWorkbenchQuery(): WorkbenchQuery {
++    return WorkbenchQuery.blank().changeQueryContext(this.props.defaultQueryContext || {});
++  }
++
+   private getInitTab(): TabEntry {
+     return {
+       id: generate8HexId(),
+       tabName: 'Tab 1',
+-      query: WorkbenchQuery.blank().changeQueryContext(this.props.defaultQueryContext || {}),
++      query: this.getInitWorkbenchQuery(),
+     };
+   }
+ 
+@@ -607,7 +619,7 @@ export class WorkbenchView extends React.PureComponent<WorkbenchViewProps, Workb
+           icon={IconNames.PLUS}
+           minimal
+           onClick={() => {
+-            this.handleNewTab(WorkbenchQuery.blank());
++            this.handleNewTab(this.getInitWorkbenchQuery());
+           }}
+         />
+       </div>
+@@ -651,13 +663,16 @@ export class WorkbenchView extends React.PureComponent<WorkbenchViewProps, Workb
+     const {
+       capabilities,
+       mandatoryQueryContext,
++      baseQueryContext,
++      serverQueryContext = DEFAULT_SERVER_QUERY_CONTEXT,
+       queryEngines,
+       allowExplain,
+       goToTask,
+       getClusterCapacity,
+-      maxTaskMenuHeader,
++      maxTasksMenuHeader,
+       enginesLabelFn,
+-      maxTaskLabelFn,
++      maxTasksLabelFn,
++      fullClusterCapacityLabelFn,
+     } = this.props;
+     const { columnMetadataState } = this.state;
+     const currentTabEntry = this.getCurrentTabEntry();
+@@ -674,6 +689,8 @@ export class WorkbenchView extends React.PureComponent<WorkbenchViewProps, Workb
+           query={currentTabEntry.query}
+           id={currentTabEntry.id}
+           mandatoryQueryContext={mandatoryQueryContext}
++          baseQueryContext={baseQueryContext}
++          serverQueryContext={serverQueryContext}
+           columnMetadata={columnMetadataState.getSomeData()}
+           onQueryChange={this.handleQueryChange}
+           onQueryTab={this.handleNewTab}
+@@ -682,9 +699,10 @@ export class WorkbenchView extends React.PureComponent<WorkbenchViewProps, Workb
+           clusterCapacity={capabilities.getMaxTaskSlots()}
+           goToTask={goToTask}
+           getClusterCapacity={getClusterCapacity}
+-          maxTaskMenuHeader={maxTaskMenuHeader}
++          maxTasksMenuHeader={maxTasksMenuHeader}
+           enginesLabelFn={enginesLabelFn}
+-          maxTaskLabelFn={maxTaskLabelFn}
++          maxTasksLabelFn={maxTasksLabelFn}
++          fullClusterCapacityLabelFn={fullClusterCapacityLabelFn}
+           runMoreMenu={
+             <Menu>
+               {allowExplain &&
++ git -c core.fileMode=false diff 483a03f26c7221f10493d86715985a58e61af967
+diff --git a/server/src/main/java/org/apache/druid/server/metrics/WorkerTaskCountStatsMonitor.java b/server/src/main/java/org/apache/druid/server/metrics/WorkerTaskCountStatsMonitor.java
+index bc09e95b5c..edd5aa785c 100644
+--- a/server/src/main/java/org/apache/druid/server/metrics/WorkerTaskCountStatsMonitor.java
++++ b/server/src/main/java/org/apache/druid/server/metrics/WorkerTaskCountStatsMonitor.java
+@@ -38,6 +38,7 @@ public class WorkerTaskCountStatsMonitor extends AbstractMonitor
+   private final String workerCategory;
+   private final String workerVersion;
+   private final boolean isMiddleManager;
++  private final boolean isIndexer;
+ 
+   @Inject
+   public WorkerTaskCountStatsMonitor(
+@@ -46,16 +47,25 @@ public class WorkerTaskCountStatsMonitor extends AbstractMonitor
+   )
+   {
+     this.isMiddleManager = nodeRoles.contains(NodeRole.MIDDLE_MANAGER);
++    this.isIndexer = nodeRoles.contains(NodeRole.INDEXER);
+     if (isMiddleManager) {
+       this.statsProvider = injector.getInstance(WorkerTaskCountStatsProvider.class);
+       this.indexerStatsProvider = null;
+       this.workerCategory = statsProvider.getWorkerCategory();
+       this.workerVersion = statsProvider.getWorkerVersion();
+-    } else {
++    } else if (isIndexer) {
+       this.indexerStatsProvider = injector.getInstance(IndexerTaskCountStatsProvider.class);
+       this.statsProvider = null;
+       this.workerCategory = null;
+       this.workerVersion = null;
++    } else {
++      // The monitor is not applicable for this node role (e.g. peons). The
++      // monitor is loaded on peons because they inherit the middleManager
++      // configuration, but neither stats provider is bound there. Do nothing.
++      this.statsProvider = null;
++      this.indexerStatsProvider = null;
++      this.workerCategory = null;
++      this.workerVersion = null;
+     }
+   }
+ 
+@@ -68,7 +78,7 @@ public class WorkerTaskCountStatsMonitor extends AbstractMonitor
+       emit(emitter, "worker/taskSlot/idle/count", statsProvider.getWorkerIdleTaskSlotCount());
+       emit(emitter, "worker/taskSlot/total/count", statsProvider.getWorkerTotalTaskSlotCount());
+       emit(emitter, "worker/taskSlot/used/count", statsProvider.getWorkerUsedTaskSlotCount());
+-    } else {
++    } else if (isIndexer) {
+       emit(emitter, "worker/task/running/count", indexerStatsProvider.getWorkerRunningTasks());
+       emit(emitter, "worker/task/assigned/count", indexerStatsProvider.getWorkerAssignedTasks());
+       emit(emitter, "worker/task/completed/count", indexerStatsProvider.getWorkerCompletedTasks());
++ git checkout 483a03f26c7221f10493d86715985a58e61af967 server/src/test/java/org/apache/druid/server/metrics/WorkerTaskCountStatsMonitorTest.java
+Updated 0 paths from a7cdbf8d63
++ git apply -v -
+Checking patch server/src/test/java/org/apache/druid/server/metrics/WorkerTaskCountStatsMonitorTest.java...
+Applied patch server/src/test/java/org/apache/druid/server/metrics/WorkerTaskCountStatsMonitorTest.java cleanly.
++ : '>>>>> Start Test Output'
++ mvnd test -B -pl server -Dtest=org.apache.druid.server.metrics.WorkerTaskCountStatsMonitorTest#testMonitorWithPeon
++ cat
+Aug 27, 2026 9:16:10 AM org.jline.utils.Log logr
+WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[main] WARNING org.jline - Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[INFO] Processing build on daemon e331f321
+[INFO] Scanning for projects...
+[INFO] BuildTimeEventSpy is registered.
+[INFO] 
+[INFO] Using the SmartBuilder implementation with a thread count of 27
+[INFO] 
+[INFO] -------------------< org.apache.druid:druid-server >--------------------
+[INFO] Building druid-server 31.0.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] Downloading from apache.snapshots: https://repository.apache.org/snapshots/org/apache/druid/druid-processing/31.0.0-SNAPSHOT/maven-metadata.xml
+[INFO] Downloading from apache.snapshots: https://repository.apache.org/snapshots/org/apache/druid/druid/31.0.0-SNAPSHOT/maven-metadata.xml
+[INFO] Downloading from apache.snapshots: https://repository.apache.org/snapshots/org/apache/druid/druid-aws-common/31.0.0-SNAPSHOT/maven-metadata.xml
+[INFO] Downloading from apache.snapshots: https://repository.apache.org/snapshots/org/apache/druid/druid-gcp-common/31.0.0-SNAPSHOT/maven-metadata.xml
+[INFO] Downloading from sigar: https://repository.mulesoft.org/nexus/content/repositories/public/junit/junit-dep/maven-metadata.xml
+[INFO] Downloading from cflt-public: https://packages.confluent.io/maven/junit/junit-dep/maven-metadata.xml
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/junit/junit-dep/maven-metadata.xml
+[INFO] Downloading from apache.snapshots: https://repository.apache.org/snapshots/junit/junit-dep/maven-metadata.xml
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/junit/junit-dep/maven-metadata.xml
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/junit/junit-dep/maven-metadata.xml (563 B at 7.8 kB/s)
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/junit/junit-dep/maven-metadata.xml (563 B at 7.3 kB/s)
+[INFO] Downloaded from sigar: https://repository.mulesoft.org/nexus/content/repositories/public/junit/junit-dep/maven-metadata.xml (610 B at 687 B/s)
+[INFO] 
+[INFO] --- checkstyle:3.0.0:check (validate) @ druid-server ---
+[INFO] Starting audit...
+Audit done.
+[INFO] 
+[INFO] >>> pmd:3.16.0:check (validate) > :pmd @ druid-server >>>
+[INFO] 
+[INFO] --- pmd:3.16.0:pmd (pmd) @ druid-server ---
+[INFO] PMD version: 6.42.0
+[INFO] 
+[INFO] <<< pmd:3.16.0:check (validate) < :pmd @ druid-server <<<
+[INFO] 
+[INFO] 
+[INFO] --- pmd:3.16.0:check (validate) @ druid-server ---
+[INFO] PMD version: 6.42.0
+[INFO] 
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (enforce-maven-version) @ druid-server ---
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (enforce-java-version) @ druid-server ---
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (default-cli) @ druid-server ---
+[INFO] 
+[INFO] --- git-commit-id:4.9.10:revision (default) @ druid-server ---
+[INFO] 
+[INFO] --- jacoco:0.8.7:prepare-agent (prepare-agent) @ druid-server ---
+[INFO] jacocoArgLine set to -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.7/org.jacoco.agent-0.8.7-runtime.jar=destfile=/testbed/server/target/jacoco.exec,excludes=org/apache/druid/metadata/BasicDataSourceExt.class:org/apache/druid/server/QueryResponse.class:org/apache/druid/curator/CuratorModule.class:org/apache/druid/server/SubqueryGuardrailHelperProvider.class
+[INFO] 
+[INFO] --- remote-resources:1.7.0:process (process-resource-bundles) @ druid-server ---
+[INFO] Preparing remote bundle org.apache.apache.resources:apache-jar-resource-bundle:1.5
+[INFO] Copying 3 resources from 1 bundle.
+[INFO] artifact junit:junit-dep: checking for updates from maven.org
+[INFO] artifact junit:junit-dep: checking for updates from sigar
+[INFO] artifact junit:junit-dep: checking for updates from cflt-public
+[INFO] artifact junit:junit-dep: checking for updates from central
+[INFO] artifact junit:junit: checking for updates from maven.org
+[INFO] artifact junit:junit: checking for updates from sigar
+[INFO] artifact junit:junit: checking for updates from cflt-public
+[INFO] artifact junit:junit: checking for updates from central
+[INFO] 
+[INFO] --- resources:3.2.0:resources (default-resources) @ druid-server ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] skip non existing resourceDirectory /testbed/server/src/main/resources
+[INFO] Copying 3 resources
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ druid-server ---
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 765 source files with javac [debug release 8] to target/classes
+[INFO] /testbed/server/src/main/java/org/apache/druid/server/coordinator/DruidCoordinator.java: Some input files use or override a deprecated API.
+[INFO] /testbed/server/src/main/java/org/apache/druid/server/coordinator/DruidCoordinator.java: Recompile with -Xlint:deprecation for details.
+[INFO] /testbed/server/src/main/java/org/apache/druid/server/coordinator/CoordinatorDynamicConfig.java: Some input files use unchecked or unsafe operations.
+[INFO] /testbed/server/src/main/java/org/apache/druid/server/coordinator/CoordinatorDynamicConfig.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- forbiddenapis:3.2:check (compile) @ druid-server ---
+[INFO] Scanning for classes to check...
+[INFO] Reading bundled API signatures: jdk-unsafe-1.8
+[INFO] Reading bundled API signatures: jdk-system-out
+[INFO] Reading API signatures: /testbed/codestyle/joda-time-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/druid-forbidden-apis.txt
+[INFO] Loading classes to check...
+[INFO] Scanning classes for violations...
+[INFO] Scanned 1218 class file(s) for forbidden API invocations (in 1.42s), 0 error(s).
+[INFO] 
+[INFO] --- resources:3.2.0:testResources (default-testResources) @ druid-server ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 8 resources
+[INFO] Copying 3 resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ druid-server ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 402 source files with javac [debug release 8] to target/test-classes
+[INFO] /testbed/server/src/test/java/org/apache/druid/server/ClientInfoResourceTest.java: Some input files use or override a deprecated API.
+[INFO] /testbed/server/src/test/java/org/apache/druid/server/ClientInfoResourceTest.java: Recompile with -Xlint:deprecation for details.
+[INFO] /testbed/server/src/test/java/org/apache/druid/curator/discovery/ServiceAnnouncerTest.java: Some input files use unchecked or unsafe operations.
+[INFO] /testbed/server/src/test/java/org/apache/druid/curator/discovery/ServiceAnnouncerTest.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- forbiddenapis:3.2:testCheck (testCompile) @ druid-server ---
+[INFO] Scanning for classes to check...
+[INFO] Reading bundled API signatures: jdk-unsafe-1.8
+[INFO] Reading API signatures: /testbed/codestyle/joda-time-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/druid-forbidden-apis.txt
+[INFO] Loading classes to check...
+[INFO] Scanning classes for violations...
+[INFO] Scanned 939 class file(s) for forbidden API invocations (in 0.83s), 0 error(s).
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ druid-server ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-junit-platform/3.2.5/surefire-junit-platform-3.2.5.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-junit-platform/3.2.5/surefire-junit-platform-3.2.5.pom (4.7 kB at 141 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-providers/3.2.5/surefire-providers-3.2.5.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-providers/3.2.5/surefire-providers-3.2.5.pom (2.6 kB at 71 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-java5/3.2.5/common-java5-3.2.5.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-java5/3.2.5/common-java5-3.2.5.pom (2.8 kB at 104 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/junit/platform/junit-platform-launcher/1.9.3/junit-platform-launcher-1.9.3.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/junit/platform/junit-platform-launcher/1.9.3/junit-platform-launcher-1.9.3.pom (3.0 kB at 112 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/junit/platform/junit-platform-engine/1.9.3/junit-platform-engine-1.9.3.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/junit/platform/junit-platform-engine/1.9.3/junit-platform-engine-1.9.3.pom (3.2 kB at 119 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.pom (1.7 kB at 70 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/junit/platform/junit-platform-commons/1.9.3/junit-platform-commons-1.9.3.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/junit/platform/junit-platform-commons/1.9.3/junit-platform-commons-1.9.3.pom (2.8 kB at 129 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-junit-platform/3.2.5/surefire-junit-platform-3.2.5.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-junit-platform/3.2.5/surefire-junit-platform-3.2.5.jar (27 kB at 936 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-java5/3.2.5/common-java5-3.2.5.jar
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/junit/platform/junit-platform-launcher/1.9.3/junit-platform-launcher-1.9.3.jar
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/junit/platform/junit-platform-engine/1.9.3/junit-platform-engine-1.9.3.jar
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.jar
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/junit/platform/junit-platform-commons/1.9.3/junit-platform-commons-1.9.3.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-java5/3.2.5/common-java5-3.2.5.jar (18 kB at 702 kB/s)
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.jar (7.7 kB at 111 kB/s)
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/junit/platform/junit-platform-engine/1.9.3/junit-platform-engine-1.9.3.jar (189 kB at 2.5 MB/s)
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/junit/platform/junit-platform-launcher/1.9.3/junit-platform-launcher-1.9.3.jar (169 kB at 2.1 MB/s)
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/junit/platform/junit-platform-commons/1.9.3/junit-platform-commons-1.9.3.jar (103 kB at 1.2 MB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/junit/platform/junit-platform-launcher/1.10.2/junit-platform-launcher-1.10.2.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/junit/platform/junit-platform-launcher/1.10.2/junit-platform-launcher-1.10.2.pom (3.0 kB at 76 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/junit/platform/junit-platform-launcher/1.10.2/junit-platform-launcher-1.10.2.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/junit/platform/junit-platform-launcher/1.10.2/junit-platform-launcher-1.10.2.jar (184 kB at 4.1 MB/s)
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running org.apache.druid.server.metrics.WorkerTaskCountStatsMonitorTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.566 s -- in org.apache.druid.server.metrics.WorkerTaskCountStatsMonitorTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- animal-sniffer:1.23:check (check-java-api) @ druid-server ---
+[INFO] Checking unresolved references to org.codehaus.mojo.signature:java18:1.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  57.077 s (Wall Clock)
+[INFO] Finished at: 2026-08-27T09:17:09Z
+[INFO] ------------------------------------------------------------------------
++ mvnd test -B -pl server -Dtest=org.apache.druid.server.metrics.WorkerTaskCountStatsMonitorTest#testMonitorWithNulls
+Aug 27, 2026 9:17:09 AM org.jline.utils.Log logr
+WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[main] WARNING org.jline - Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[INFO] Processing build on daemon e331f321
+[INFO] Scanning for projects...
+[INFO] BuildTimeEventSpy is registered.
+[INFO] 
+[INFO] Using the SmartBuilder implementation with a thread count of 27
+[INFO] 
+[INFO] -------------------< org.apache.druid:druid-server >--------------------
+[INFO] Building druid-server 31.0.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- checkstyle:3.0.0:check (validate) @ druid-server ---
+[INFO] Starting audit...
+Audit done.
+[INFO] 
+[INFO] >>> pmd:3.16.0:check (validate) > :pmd @ druid-server >>>
+[INFO] 
+[INFO] --- pmd:3.16.0:pmd (pmd) @ druid-server ---
+[INFO] PMD version: 6.42.0
+[INFO] 
+[INFO] <<< pmd:3.16.0:check (validate) < :pmd @ druid-server <<<
+[INFO] 
+[INFO] 
+[INFO] --- pmd:3.16.0:check (validate) @ druid-server ---
+[INFO] PMD version: 6.42.0
+[INFO] 
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (enforce-maven-version) @ druid-server ---
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (enforce-java-version) @ druid-server ---
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (default-cli) @ druid-server ---
+[INFO] 
+[INFO] --- git-commit-id:4.9.10:revision (default) @ druid-server ---
+[INFO] 
+[INFO] --- jacoco:0.8.7:prepare-agent (prepare-agent) @ druid-server ---
+[INFO] jacocoArgLine set to -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.7/org.jacoco.agent-0.8.7-runtime.jar=destfile=/testbed/server/target/jacoco.exec,excludes=org/apache/druid/metadata/BasicDataSourceExt.class:org/apache/druid/server/QueryResponse.class:org/apache/druid/curator/CuratorModule.class:org/apache/druid/server/SubqueryGuardrailHelperProvider.class
+[INFO] 
+[INFO] --- remote-resources:1.7.0:process (process-resource-bundles) @ druid-server ---
+[INFO] Preparing remote bundle org.apache.apache.resources:apache-jar-resource-bundle:1.5
+[INFO] Copying 3 resources from 1 bundle.
+[INFO] 
+[INFO] --- resources:3.2.0:resources (default-resources) @ druid-server ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] skip non existing resourceDirectory /testbed/server/src/main/resources
+[INFO] Copying 3 resources
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ druid-server ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- forbiddenapis:3.2:check (compile) @ druid-server ---
+[INFO] Scanning for classes to check...
+[INFO] Reading bundled API signatures: jdk-unsafe-1.8
+[INFO] Reading bundled API signatures: jdk-system-out
+[INFO] Reading API signatures: /testbed/codestyle/joda-time-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/druid-forbidden-apis.txt
+[INFO] Loading classes to check...
+[INFO] Scanning classes for violations...
+[INFO] Scanned 1218 class file(s) for forbidden API invocations (in 0.66s), 0 error(s).
+[INFO] 
+[INFO] --- resources:3.2.0:testResources (default-testResources) @ druid-server ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 8 resources
+[INFO] Copying 3 resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ druid-server ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- forbiddenapis:3.2:testCheck (testCompile) @ druid-server ---
+[INFO] Scanning for classes to check...
+[INFO] Reading bundled API signatures: jdk-unsafe-1.8
+[INFO] Reading API signatures: /testbed/codestyle/joda-time-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/druid-forbidden-apis.txt
+[INFO] Loading classes to check...
+[INFO] Scanning classes for violations...
+[INFO] Scanned 939 class file(s) for forbidden API invocations (in 0.62s), 0 error(s).
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ druid-server ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running org.apache.druid.server.metrics.WorkerTaskCountStatsMonitorTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.407 s -- in org.apache.druid.server.metrics.WorkerTaskCountStatsMonitorTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- animal-sniffer:1.23:check (check-java-api) @ druid-server ---
+[INFO] Checking unresolved references to org.codehaus.mojo.signature:java18:1.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  14.481 s (Wall Clock)
+[INFO] Finished at: 2026-08-27T09:17:24Z
+[INFO] ------------------------------------------------------------------------
++ mvnd test -B -pl server -Dtest=org.apache.druid.server.metrics.WorkerTaskCountStatsMonitorTest#testMonitorIndexer
+Aug 27, 2026 9:17:24 AM org.jline.utils.Log logr
+WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[main] WARNING org.jline - Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[INFO] Processing build on daemon e331f321
+[INFO] Scanning for projects...
+[INFO] BuildTimeEventSpy is registered.
+[INFO] 
+[INFO] Using the SmartBuilder implementation with a thread count of 27
+[INFO] 
+[INFO] -------------------< org.apache.druid:druid-server >--------------------
+[INFO] Building druid-server 31.0.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- checkstyle:3.0.0:check (validate) @ druid-server ---
+[INFO] Starting audit...
+Audit done.
+[INFO] 
+[INFO] >>> pmd:3.16.0:check (validate) > :pmd @ druid-server >>>
+[INFO] 
+[INFO] --- pmd:3.16.0:pmd (pmd) @ druid-server ---
+[INFO] PMD version: 6.42.0
+[INFO] 
+[INFO] <<< pmd:3.16.0:check (validate) < :pmd @ druid-server <<<
+[INFO] 
+[INFO] 
+[INFO] --- pmd:3.16.0:check (validate) @ druid-server ---
+[INFO] PMD version: 6.42.0
+[INFO] 
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (enforce-maven-version) @ druid-server ---
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (enforce-java-version) @ druid-server ---
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (default-cli) @ druid-server ---
+[INFO] 
+[INFO] --- git-commit-id:4.9.10:revision (default) @ druid-server ---
+[INFO] 
+[INFO] --- jacoco:0.8.7:prepare-agent (prepare-agent) @ druid-server ---
+[INFO] jacocoArgLine set to -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.7/org.jacoco.agent-0.8.7-runtime.jar=destfile=/testbed/server/target/jacoco.exec,excludes=org/apache/druid/metadata/BasicDataSourceExt.class:org/apache/druid/server/QueryResponse.class:org/apache/druid/curator/CuratorModule.class:org/apache/druid/server/SubqueryGuardrailHelperProvider.class
+[INFO] 
+[INFO] --- remote-resources:1.7.0:process (process-resource-bundles) @ druid-server ---
+[INFO] Preparing remote bundle org.apache.apache.resources:apache-jar-resource-bundle:1.5
+[INFO] Copying 3 resources from 1 bundle.
+[INFO] 
+[INFO] --- resources:3.2.0:resources (default-resources) @ druid-server ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] skip non existing resourceDirectory /testbed/server/src/main/resources
+[INFO] Copying 3 resources
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ druid-server ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- forbiddenapis:3.2:check (compile) @ druid-server ---
+[INFO] Scanning for classes to check...
+[INFO] Reading bundled API signatures: jdk-unsafe-1.8
+[INFO] Reading bundled API signatures: jdk-system-out
+[INFO] Reading API signatures: /testbed/codestyle/joda-time-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/druid-forbidden-apis.txt
+[INFO] Loading classes to check...
+[INFO] Scanning classes for violations...
+[INFO] Scanned 1218 class file(s) for forbidden API invocations (in 0.42s), 0 error(s).
+[INFO] 
+[INFO] --- resources:3.2.0:testResources (default-testResources) @ druid-server ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 8 resources
+[INFO] Copying 3 resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ druid-server ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- forbiddenapis:3.2:testCheck (testCompile) @ druid-server ---
+[INFO] Scanning for classes to check...
+[INFO] Reading bundled API signatures: jdk-unsafe-1.8
+[INFO] Reading API signatures: /testbed/codestyle/joda-time-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/druid-forbidden-apis.txt
+[INFO] Loading classes to check...
+[INFO] Scanning classes for violations...
+[INFO] Scanned 939 class file(s) for forbidden API invocations (in 0.49s), 0 error(s).
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ druid-server ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running org.apache.druid.server.metrics.WorkerTaskCountStatsMonitorTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.358 s -- in org.apache.druid.server.metrics.WorkerTaskCountStatsMonitorTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- animal-sniffer:1.23:check (check-java-api) @ druid-server ---
+[INFO] Checking unresolved references to org.codehaus.mojo.signature:java18:1.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  9.367 s (Wall Clock)
+[INFO] Finished at: 2026-08-27T09:17:33Z
+[INFO] ------------------------------------------------------------------------
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 483a03f26c7221f10493d86715985a58e61af967 server/src/test/java/org/apache/druid/server/metrics/WorkerTaskCountStatsMonitorTest.java
+>>>>> Test Exit Code: 0
+Updated 1 path from a7cdbf8d63

@@ -1,0 +1,179 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   hugolib/content_map_page.go
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit c8dac67defbb512877e974814e196782989b8214
+Author: Joe Mooring <joe.mooring@veriphor.com>
+Date:   Sat May 18 11:15:21 2024 -0700
+
+    resources/page: Deprecate .Sites.First in favor of .Sites.Default
+    
+    Closes #12513
+
+diff --git a/hugolib/pages_language_merge_test.go b/hugolib/pages_language_merge_test.go
+index 8a5d6c184..3862d7cf0 100644
+--- a/hugolib/pages_language_merge_test.go
++++ b/hugolib/pages_language_merge_test.go
+@@ -68,7 +68,7 @@ func TestMergeLanguages(t *testing.T) {
+ 
+ 	firstNN := nnSite.RegularPages()[0]
+ 	c.Assert(len(firstNN.Sites()), qt.Equals, 4)
+-	c.Assert(firstNN.Sites().First().Language().Lang, qt.Equals, "en")
++	c.Assert(firstNN.Sites().Default().Language().Lang, qt.Equals, "en")
+ 
+ 	nnBundle := nnSite.getPageOldVersion("page", "bundle")
+ 	enBundle := enSite.getPageOldVersion("page", "bundle")
+diff --git a/resources/page/site.go b/resources/page/site.go
+index df33485eb..56f438cb6 100644
+--- a/resources/page/site.go
++++ b/resources/page/site.go
+@@ -139,8 +139,15 @@ type Site interface {
+ // Sites represents an ordered list of sites (languages).
+ type Sites []Site
+ 
+-// First is a convenience method to get the first Site, i.e. the main language.
++// Deprecated: Use .Sites.Default instead.
+ func (s Sites) First() Site {
++	hugo.Deprecate(".Sites.First", "Use .Sites.Default instead.", "v0.127.0")
++	return s.Default()
++}
++
++// Default is a convenience method to get the site corresponding to the default
++// content language.
++func (s Sites) Default() Site {
+ 	if len(s) == 0 {
+ 		return nil
+ 	}
+@@ -165,7 +172,7 @@ func (s *siteWrapper) Key() string {
+ 	return s.s.Language().Lang
+ }
+ 
+-// // Deprecated: Use .Site.Params instead.
++// Deprecated: Use .Site.Params instead.
+ func (s *siteWrapper) Social() map[string]string {
+ 	return s.s.Social()
+ }
+diff --git a/resources/page/site_integration_test.go b/resources/page/site_integration_test.go
+new file mode 100644
+index 000000000..60064df3a
+--- /dev/null
++++ b/resources/page/site_integration_test.go
+@@ -0,0 +1,44 @@
++// Copyright 2024 The Hugo Authors. All rights reserved.
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++// http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++package page_test
++
++import (
++	"testing"
++
++	"github.com/gohugoio/hugo/hugolib"
++)
++
++// Issue 12513
++func TestPageSiteSitesDefault(t *testing.T) {
++	t.Parallel()
++
++	files := `
++-- hugo.toml --
++disableKinds = ['page','rss','section','sitemap','taxonomy','term']
++defaultContentLanguage = 'de'
++defaultContentLanguageInSubdir = true
++[languages.en]
++languageName = 'English'
++weight = 1
++[languages.de]
++languageName = 'Deutsch'
++weight = 2
++-- layouts/index.html --
++{{ .Site.Sites.Default.Language.LanguageName }}
++`
++
++	b := hugolib.Test(t, files)
++
++	b.AssertFileContent("public/de/index.html", "Deutsch")
++}
++ git -c core.fileMode=false diff c8dac67defbb512877e974814e196782989b8214
+diff --git a/hugolib/content_map_page.go b/hugolib/content_map_page.go
+index 66baea3d1..a8f5b5fd7 100644
+--- a/hugolib/content_map_page.go
++++ b/hugolib/content_map_page.go
+@@ -932,8 +932,8 @@ func newPageMap(i int, s *Site, mcache *dynacache.Cache, pageTrees *pageTrees) *
+ 				LockType: doctree.LockTypeRead,
+ 				Handle: func(s string, n contentNodeI, match doctree.DimensionFlag) (bool, error) {
+ 					p := n.(*pageState)
+-					if p.File() != nil {
+-						add(p.File().FileInfo().Meta().PathInfo.BaseNameNoIdentifier(), p)
++					if p.PathInfo() != nil {
++						add(p.PathInfo().BaseNameNoIdentifier(), p)
+ 					}
+ 					return false, nil
+ 				},
++ git checkout c8dac67defbb512877e974814e196782989b8214 hugolib/pagecollections_test.go
+Updated 0 paths from 310caa9f6
++ git apply -v -
+Checking patch hugolib/pagecollections_test.go...
+Applied patch hugolib/pagecollections_test.go cleanly.
++ : '>>>>> Start Test Output'
++ go test -v ./hugolib/... -run '^TestGetPage[^/]'
++ cat
+?   	github.com/gohugoio/hugo/hugolib/paths	[no test files]
+=== RUN   TestGetPageIndexIndex
+--- PASS: TestGetPageIndexIndex (0.01s)
+=== RUN   TestGetPageRelative
+WARN  found no layout file for "html" for kind "page": You should create a template file which matches Hugo Layouts Lookup Rules for this combination.
+--- PASS: TestGetPageRelative (0.01s)
+=== RUN   TestGetPageIssue11883
+--- PASS: TestGetPageIssue11883 (0.01s)
+=== RUN   TestGetPageIssue12120
+=== PAUSE TestGetPageIssue12120
+=== RUN   TestGetPageBundleToRegular
+--- PASS: TestGetPageBundleToRegular (0.01s)
+=== RUN   TestGetPageMultilingual
+WARN  found no layout file for "html" for kind "section": You should create a template file which matches Hugo Layouts Lookup Rules for this combination.
+WARN  found no layout file for "html" for kind "taxonomy": You should create a template file which matches Hugo Layouts Lookup Rules for this combination.
+WARN  found no layout file for "html" for kind "page": You should create a template file which matches Hugo Layouts Lookup Rules for this combination.
+--- PASS: TestGetPageMultilingual (0.01s)
+=== RUN   TestGetPageContentAdapterBaseIssue12561
+=== PAUSE TestGetPageContentAdapterBaseIssue12561
+=== CONT  TestGetPageIssue12120
+=== CONT  TestGetPageContentAdapterBaseIssue12561
+--- PASS: TestGetPageIssue12120 (0.01s)
+--- PASS: TestGetPageContentAdapterBaseIssue12561 (0.01s)
+PASS
+ok  	github.com/gohugoio/hugo/hugolib	0.096s
+testing: warning: no tests to run
+PASS
+ok  	github.com/gohugoio/hugo/hugolib/doctree	0.026s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	github.com/gohugoio/hugo/hugolib/filesystems	0.032s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	github.com/gohugoio/hugo/hugolib/pagesfromdata	0.047s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	github.com/gohugoio/hugo/hugolib/segments	0.035s [no tests to run]
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout c8dac67defbb512877e974814e196782989b8214 hugolib/pagecollections_test.go
+Updated 1 path from 310caa9f6

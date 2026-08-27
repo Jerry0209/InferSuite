@@ -1,0 +1,114 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/fluent/config/yaml_parser/loader.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit c0f1db966a2809a13de217b0ec0adc9a29decc79
+Merge: c3284229 9e34c1b6
+Author: Takuro Ashie <ashie@clear-code.com>
+Date:   Fri Sep 2 11:06:47 2022 +0900
+
+    Merge pull request #3883 from fluent/fix-rm-rf-on-windows
+    
+    Fix Errno::EACCES which occurs while testing on Ruby 3.2
+
++ git -c core.fileMode=false diff c0f1db966a2809a13de217b0ec0adc9a29decc79
+diff --git a/lib/fluent/config/yaml_parser/loader.rb b/lib/fluent/config/yaml_parser/loader.rb
+index 22f32885..19a5fb1a 100644
+--- a/lib/fluent/config/yaml_parser/loader.rb
++++ b/lib/fluent/config/yaml_parser/loader.rb
+@@ -44,7 +44,7 @@ module Fluent
+           visitor = Visitor.new(scanner, class_loader)
+ 
+           visitor._register_domain(INCLUDE_TAG) do |_, val|
+-            load(path.parent.join(val))
++            eval_include(Pathname.new(val), path.parent)
+           end
+ 
+           visitor._register_domain(FLUENT_JSON_TAG) do |_, val|
+@@ -60,6 +60,23 @@ module Fluent
+           end
+         end
+ 
++        def eval_include(path, parent)
++          if path.relative?
++            pattern = parent.join(path)
++          else
++            pattern = path
++          end
++          result = []
++          Dir.glob(pattern).sort.each do |path|
++            result.concat(load(Pathname.new(path)))
++          end
++          result
++        rescue SystemCallError => e
++          parse_error = ConfigParseError.new("include error #{path} - #{e}")
++          parse_error.set_backtrace(e.backtrace)
++          raise parse_error
++        end
++
+         class Visitor < Psych::Visitors::ToRuby
+           def initialize(scanner, class_loader)
+             super(scanner, class_loader)
++ git checkout c0f1db966a2809a13de217b0ec0adc9a29decc79 test/test_config.rb
+Updated 0 paths from 098f84ac
++ git apply -v -
+Checking patch test/test_config.rb...
+Applied patch test/test_config.rb cleanly.
++ : '>>>>> Start Test Output'
++ bundle exec ruby test/test_config.rb -v
++ cat
+/testbed/lib/fluent/compat/parser.rb:28: warning: csv was loaded from the standard library, but will no longer be part of the default gems starting from Ruby 3.4.0.
+You can add csv to your Gemfile or gemspec to silence this warning.
+Loaded suite test/test_config
+Started
+ConfigTest: 
+  test_check_not_fetchd:				.: (0.000373)
+  test_include:						F
+===============================================================================
+Failure: test_include(ConfigTest)
+test/test_config.rb:84:in `test_include'
+     81:     assert_equal 'root_config', c['k1']
+     82:     assert_equal 'relative_path_include', c['k2']
+     83:     assert_equal 'relative_include_in_included_file', c['k3']
+  => 84:     assert_equal 'absolute_path_include', c['k4']
+     85:     assert_equal 'uri_include', c['k5']
+     86:     assert_equal 'wildcard_include_1', c['k6']
+     87:     assert_equal 'wildcard_include_2', c['k7']
+<"absolute_path_include"> expected but was
+<nil>
+
+diff:
+? "absolute_path_include"
+? ni                     
+? ?????    -----------------
+===============================================================================
+: (0.005692)
+  test_inline:						.: (0.000862)
+  .build: 
+    test: read config:					.: (0.000241)
+    test: read config with additional_config:		.: (0.000136)
+    test: read config with encoding:			.: (0.000671)
+  yaml config: 
+    test_check_not_fetchd:				.: (0.000475)
+    test_included:					.: (0.000389)
+    test_included_glob:					.: (0.000424)
+
+Finished in 0.009628356 seconds.
+-------------------------------------------------------------------------------
+9 tests, 25 assertions, 1 failures, 0 errors, 0 pendings, 0 omissions, 0 notifications
+88.8889% passed
+-------------------------------------------------------------------------------
+934.74 tests/s, 2596.50 assertions/s
++ SWEBENCH_TEST_EXIT_CODE=1
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 1'
++ git checkout c0f1db966a2809a13de217b0ec0adc9a29decc79 test/test_config.rb
+>>>>> Test Exit Code: 1
+Updated 1 path from 098f84ac

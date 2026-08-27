@@ -1,0 +1,501 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   CHANGELOG.md
+	modified:   crates/ruff_linter/src/rules/flake8_pie/rules/unnecessary_spread.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 73d424ee5e6963d577e196d71c3b19c82e84e612
+Author: Antoine Dechaume <AntoineD@users.noreply.github.com>
+Date:   Fri Jan 10 15:49:23 2025 +0100
+
+    Fix outdated doc for handling the default file types with the pre-commit hook (#15401)
+    
+    Co-authored-by: Antoine DECHAUME <>
+
+diff --git a/docs/integrations.md b/docs/integrations.md
+index 44e132f9d..71806583d 100644
+--- a/docs/integrations.md
++++ b/docs/integrations.md
+@@ -128,7 +128,7 @@ To enable lint fixes, add the `--fix` argument to the lint hook:
+     - id: ruff-format
+ ```
+ 
+-To run the hooks over Jupyter Notebooks too, add `jupyter` to the list of allowed filetypes:
++To avoid running on Jupyter Notebooks, remove `jupyter` from the list of allowed filetypes:
+ 
+ ```yaml
+ - repo: https://github.com/astral-sh/ruff-pre-commit
+@@ -137,11 +137,11 @@ To run the hooks over Jupyter Notebooks too, add `jupyter` to the list of allowe
+   hooks:
+     # Run the linter.
+     - id: ruff
+-      types_or: [ python, pyi, jupyter ]
++      types_or: [ python, pyi ]
+       args: [ --fix ]
+     # Run the formatter.
+     - id: ruff-format
+-      types_or: [ python, pyi, jupyter ]
++      types_or: [ python, pyi ]
+ ```
+ 
+ When running with `--fix`, Ruff's lint hook should be placed _before_ Ruff's formatter hook, and
++ git -c core.fileMode=false diff 73d424ee5e6963d577e196d71c3b19c82e84e612
++ git checkout 73d424ee5e6963d577e196d71c3b19c82e84e612 crates/ruff_linter/resources/test/fixtures/flake8_pie/PIE800.py crates/ruff_linter/src/rules/flake8_pie/snapshots/ruff_linter__rules__flake8_pie__tests__PIE800_PIE800.py.snap
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index db0d827e8..dc115a3a8 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -80,6 +80,7 @@ This release introduces the new 2025 stable style ([#13371](https://github.com/a
+ ### Bug fixes
+ 
+ - \[`eradicate`\] Ignore metadata blocks directly followed by normal blocks (`ERA001`) ([#15330](https://github.com/astral-sh/ruff/pull/15330))
++- \[`flake8-pie`\] Avoid introducing a syntax error when removing an unnecessary spread of a parenthesized dict (`PIE800`) ([#15403](https://github.com/astral-sh/ruff/pull/15403))
+ - \[`flake8-django`\] Recognize other magic methods (`DJ012`) ([#15365](https://github.com/astral-sh/ruff/pull/15365))
+ - \[`pycodestyle`\] Avoid false positives related to type aliases (`E252`) ([#15356](https://github.com/astral-sh/ruff/pull/15356))
+ - \[`pydocstyle`\] Avoid treating newline-separated sections as sub-sections (`D405`) ([#15311](https://github.com/astral-sh/ruff/pull/15311))
+diff --git a/crates/ruff_linter/src/rules/flake8_pie/rules/unnecessary_spread.rs b/crates/ruff_linter/src/rules/flake8_pie/rules/unnecessary_spread.rs
+index 15dd9b883..2bf4801cc 100644
+--- a/crates/ruff_linter/src/rules/flake8_pie/rules/unnecessary_spread.rs
++++ b/crates/ruff_linter/src/rules/flake8_pie/rules/unnecessary_spread.rs
+@@ -2,7 +2,7 @@ use ruff_diagnostics::{Diagnostic, Edit, Fix, FixAvailability, Violation};
+ use ruff_macros::{derive_message_formats, ViolationMetadata};
+ use ruff_python_ast::{self as ast, Expr};
+ use ruff_python_trivia::{SimpleTokenKind, SimpleTokenizer};
+-use ruff_text_size::{Ranged, TextSize};
++use ruff_text_size::{Ranged, TextRange, TextSize};
+ 
+ use crate::checkers::ast::Checker;
+ use crate::Locator;
+@@ -74,9 +74,22 @@ fn unnecessary_spread_fix(
+     let doublestar = SimpleTokenizer::starts_at(prev_end, locator.contents())
+         .find(|tok| matches!(tok.kind(), SimpleTokenKind::DoubleStar))?;
+ 
++    // The dict literal may be wrapped in parentheses, e.g. `**({...})`. Count the
++    // number of opening parentheses between `**` and the dict's opening brace so
++    // that the matching closing parentheses can be removed as well.
++    let parens = SimpleTokenizer::new(
++        locator.contents(),
++        TextRange::new(doublestar.end(), dict.start()),
++    )
++    .skip_trivia()
++    .take_while(|tok| matches!(tok.kind(), SimpleTokenKind::LParen))
++    .count();
++
+     if let Some(last) = dict.iter_values().last() {
+         // Ex) `**{a: 1, b: 2}`
+         let mut edits = vec![];
++        // The position immediately following the closing brace of the spread dict.
++        let mut close_end = None;
+         for tok in SimpleTokenizer::starts_at(last.end(), locator.contents()).skip_trivia() {
+             match tok.kind() {
+                 SimpleTokenKind::Comma => {
+@@ -84,22 +97,44 @@ fn unnecessary_spread_fix(
+                 }
+                 SimpleTokenKind::RBrace => {
+                     edits.push(Edit::range_deletion(tok.range()));
++                    close_end = Some(tok.end());
+                     break;
+                 }
+                 _ => {}
+             }
+         }
++        // Delete the matching closing parentheses, e.g. for `**({...})`.
++        if let Some(end) = close_end {
++            let mut remaining = parens;
++            for tok in SimpleTokenizer::starts_at(end, locator.contents()).skip_trivia() {
++                if remaining > 0 && matches!(tok.kind(), SimpleTokenKind::RParen) {
++                    edits.push(Edit::range_deletion(tok.range()));
++                    remaining -= 1;
++                } else {
++                    break;
++                }
++            }
++        }
+         Some(Fix::safe_edits(
+-            // Delete the first `**{`
++            // Delete the first `**{` (and any opening parentheses)
+             Edit::deletion(doublestar.start(), dict.start() + TextSize::from(1)),
+-            // Delete the trailing `}`
++            // Delete the trailing `}` (and any closing parentheses)
+             edits,
+         ))
+     } else {
+         // Ex) `**{}`
+-        Some(Fix::safe_edit(Edit::deletion(
+-            doublestar.start(),
+-            dict.end(),
+-        )))
++        // Delete from `**` to the end of the dict, including the closing brace and
++        // any matching closing parentheses.
++        let mut end = dict.end();
++        let mut remaining = parens;
++        for tok in SimpleTokenizer::starts_at(end, locator.contents()).skip_trivia() {
++            if remaining > 0 && matches!(tok.kind(), SimpleTokenKind::RParen) {
++                end = tok.end();
++                remaining -= 1;
++            } else {
++                break;
++            }
++        }
++        Some(Fix::safe_edit(Edit::deletion(doublestar.start(), end)))
+     }
+ }
+Updated 0 paths from bdd02f9a6
++ git apply -v -
+<stdin>:104: trailing whitespace.
+26 26 | 
+<stdin>:120: trailing whitespace.
+26 26 | 
+<stdin>:130: trailing whitespace.
+33 33 | 
+<stdin>:146: trailing whitespace.
+33 33 | 
+<stdin>:152: trailing whitespace.
+   36 |+    
+Checking patch crates/ruff_linter/resources/test/fixtures/flake8_pie/PIE800.py...
+Checking patch crates/ruff_linter/src/rules/flake8_pie/snapshots/ruff_linter__rules__flake8_pie__tests__PIE800_PIE800.py.snap...
+Applied patch crates/ruff_linter/resources/test/fixtures/flake8_pie/PIE800.py cleanly.
+Applied patch crates/ruff_linter/src/rules/flake8_pie/snapshots/ruff_linter__rules__flake8_pie__tests__PIE800_PIE800.py.snap cleanly.
+warning: squelched 14 whitespace errors
+warning: 19 lines add whitespace errors.
++ : '>>>>> Start Test Output'
++ cargo test --package ruff_linter --lib rules::flake8_pie
++ cat
+   Compiling unicode-ident v1.0.14
+   Compiling proc-macro2 v1.0.92
+   Compiling memchr v2.7.4
+   Compiling cfg-if v1.0.0
+   Compiling serde v1.0.217
+   Compiling libc v0.2.169
+   Compiling ppv-lite86 v0.2.17
+   Compiling either v1.11.0
+   Compiling regex-syntax v0.8.5
+   Compiling siphasher v0.3.11
+   Compiling stable_deref_trait v1.2.0
+   Compiling rustversion v1.0.15
+   Compiling once_cell v1.20.2
+   Compiling heck v0.5.0
+   Compiling log v0.4.22
+   Compiling unicode-width v0.1.13
+   Compiling litemap v0.7.3
+   Compiling ruff_text_size v0.0.0 (/testbed/crates/ruff_text_size)
+   Compiling writeable v0.5.5
+   Compiling thiserror v1.0.67
+   Compiling smallvec v1.13.2
+   Compiling itoa v1.0.11
+   Compiling ryu v1.0.17
+   Compiling icu_locid_transform_data v1.5.0
+   Compiling rustc-hash v2.1.0
+   Compiling seahash v4.1.0
+   Compiling static_assertions v1.1.0
+   Compiling bitflags v2.6.0
+   Compiling icu_properties_data v1.5.0
+   Compiling getopts v0.2.21
+   Compiling glob v0.3.2
+   Compiling phf_shared v0.11.2
+   Compiling itertools v0.14.0
+   Compiling fnv v1.0.7
+   Compiling hashbrown v0.15.2
+   Compiling tinyvec_macros v0.1.1
+   Compiling utf8_iter v1.0.4
+   Compiling equivalent v1.0.1
+   Compiling write16 v1.0.0
+   Compiling utf16_iter v1.0.5
+   Compiling strsim v0.10.0
+   Compiling ident_case v1.0.1
+   Compiling icu_normalizer_data v1.5.0
+   Compiling tinyvec v1.6.0
+   Compiling ucd-trie v0.1.6
+   Compiling autocfg v1.2.0
+   Compiling percent-encoding v2.3.1
+   Compiling anyhow v1.0.95
+   Compiling unic-char-range v0.9.0
+   Compiling thiserror v2.0.9
+   Compiling phf v0.11.2
+   Compiling unic-common v0.9.0
+   Compiling version-ranges v0.1.1
+   Compiling winnow v0.6.18
+   Compiling serde_json v1.0.134
+   Compiling unic-char-property v0.9.0
+   Compiling lazy_static v1.4.0
+   Compiling unic-ucd-version v0.9.0
+   Compiling form_urlencoded v1.2.1
+   Compiling matches v0.1.10
+   Compiling unicode-width v0.2.0
+   Compiling unscanny v0.1.0
+   Compiling newtype-uuid v1.1.3
+   Compiling paste v1.0.15
+   Compiling utf8parse v0.2.1
+   Compiling peg-runtime v0.8.3
+   Compiling unic-ucd-category v0.9.0
+   Compiling itertools v0.13.0
+   Compiling iana-time-zone v0.1.60
+   Compiling urlencoding v2.1.3
+   Compiling boxcar v0.2.7
+   Compiling annotate-snippets v0.6.1
+   Compiling aho-corasick v1.1.3
+   Compiling ruff_source_file v0.0.0 (/testbed/crates/ruff_source_file)
+   Compiling quick-xml v0.37.1
+   Compiling num-traits v0.2.18
+   Compiling ruff_python_stdlib v0.0.0 (/testbed/crates/ruff_python_stdlib)
+   Compiling is-docker v0.2.0
+   Compiling path-dedot v3.1.1
+   Compiling yansi-term v0.1.2
+   Compiling similar v2.6.0
+   Compiling linked-hash-map v0.5.6
+   Compiling colored v2.2.0
+   Compiling fern v0.7.1
+   Compiling chic v1.2.2
+   Compiling path-absolutize v3.1.1
+   Compiling annotate-snippets v0.9.2
+   Compiling is-wsl v0.4.0
+   Compiling typed-arena v2.0.2
+   Compiling pathdiff v0.2.3
+   Compiling natord v1.0.9
+   Compiling unicode-normalization v0.1.24
+   Compiling quote v1.0.38
+   Compiling getrandom v0.2.14
+   Compiling filetime v0.2.25
+   Compiling console v0.15.8
+   Compiling castaway v0.2.3
+   Compiling rand_core v0.6.4
+   Compiling syn v2.0.95
+   Compiling vte_generate_state_changes v0.1.1
+   Compiling peg-macros v0.8.4
+   Compiling rand_chacha v0.3.1
+   Compiling rand v0.8.5
+   Compiling vte v0.11.1
+   Compiling chrono v0.4.39
+   Compiling ruff_python_trivia v0.0.0 (/testbed/crates/ruff_python_trivia)
+   Compiling regex-automata v0.4.8
+   Compiling strip-ansi-escapes v0.2.0
+   Compiling phf_generator v0.11.2
+   Compiling phf_codegen v0.11.2
+   Compiling peg v0.8.4
+   Compiling unicode_names2_generator v1.3.0
+   Compiling unicode_names2 v1.3.0
+   Compiling regex v1.11.1
+   Compiling bstr v1.11.3
+   Compiling globset v0.4.15
+   Compiling synstructure v0.13.1
+   Compiling darling_core v0.20.8
+   Compiling test-case-core v3.3.1
+   Compiling ruff_cache v0.0.0 (/testbed/crates/ruff_cache)
+   Compiling serde_derive v1.0.217
+   Compiling zerofrom-derive v0.1.4
+   Compiling yoke-derive v0.7.4
+   Compiling zerovec-derive v0.10.3
+   Compiling displaydoc v0.2.5
+   Compiling thiserror-impl v1.0.67
+   Compiling icu_provider_macros v1.5.0
+   Compiling is-macro v0.3.7
+   Compiling ruff_macros v0.0.0 (/testbed/crates/ruff_macros)
+   Compiling uuid-macro-internal v1.11.0
+   Compiling thiserror-impl v2.0.9
+   Compiling libcst_derive v1.4.0
+   Compiling strum_macros v0.26.4
+   Compiling test-case-macros v3.3.1
+   Compiling uuid v1.11.0
+   Compiling test-case v3.3.1
+   Compiling pest v2.7.11
+   Compiling libcst v1.5.1
+   Compiling zerofrom v0.1.4
+   Compiling yoke v0.7.4
+   Compiling darling_macro v0.20.8
+   Compiling zerovec v0.10.4
+   Compiling strum v0.26.3
+   Compiling darling v0.20.8
+   Compiling serde_with_macros v3.12.0
+   Compiling pest_meta v2.7.11
+   Compiling tinystr v0.7.6
+   Compiling icu_collections v1.5.0
+   Compiling ruff_index v0.0.0 (/testbed/crates/ruff_index)
+   Compiling icu_locid v1.5.0
+   Compiling icu_provider v1.5.0
+   Compiling pest_generator v2.7.11
+   Compiling icu_locid_transform v1.5.0
+   Compiling pest_derive v2.7.11
+   Compiling icu_properties v1.5.1
+   Compiling compact_str v0.8.1
+   Compiling indexmap v2.7.0
+   Compiling serde_spanned v0.6.7
+   Compiling toml_datetime v0.6.8
+   Compiling serde_with v3.12.0
+   Compiling rust-stemmers v1.2.0
+   Compiling insta v1.42.0
+   Compiling pep440_rs v0.7.3
+   Compiling ruff_diagnostics v0.0.0 (/testbed/crates/ruff_diagnostics)
+   Compiling icu_normalizer v1.5.0
+   Compiling toml_edit v0.22.20
+   Compiling quick-junit v0.5.1
+   Compiling idna_adapter v1.2.0
+   Compiling idna v1.0.3
+   Compiling ruff_python_ast v0.0.0 (/testbed/crates/ruff_python_ast)
+   Compiling ruff_notebook v0.0.0 (/testbed/crates/ruff_notebook)
+   Compiling url v2.5.4
+   Compiling imperative v1.0.6
+   Compiling pep508_rs v0.9.1
+   Compiling toml v0.8.19
+   Compiling pyproject-toml v0.13.4
+   Compiling ruff_python_parser v0.0.0 (/testbed/crates/ruff_python_parser)
+   Compiling ruff_python_literal v0.0.0 (/testbed/crates/ruff_python_literal)
+   Compiling ruff_python_codegen v0.0.0 (/testbed/crates/ruff_python_codegen)
+   Compiling ruff_python_semantic v0.0.0 (/testbed/crates/ruff_python_semantic)
+   Compiling ruff_python_index v0.0.0 (/testbed/crates/ruff_python_index)
+   Compiling ruff_linter v0.9.0 (/testbed/crates/ruff_linter)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 50.96s
+     Running unittests src/lib.rs (target/debug/deps/ruff_linter-32b04f913a739f44)
+
+running 9 tests
+test rules::flake8_pie::tests::rules::rule_nonuniqueenums_path_new_pie796_pyi_expects ... ok
+test rules::flake8_pie::tests::rules::rule_nonuniqueenums_path_new_pie796_py_expects ... ok
+test rules::flake8_pie::tests::rules::rule_duplicateclassfielddefinition_path_new_pie794_py_expects ... ok
+test rules::flake8_pie::tests::rules::rule_unnecessaryrangestart_path_new_pie808_py_expects ... ok
+test rules::flake8_pie::tests::rules::rule_reimplementedcontainerbuiltin_path_new_pie807_py_expects ... ok
+test rules::flake8_pie::tests::rules::rule_multiplestartsendswith_path_new_pie810_py_expects ... ok
+test rules::flake8_pie::tests::rules::rule_unnecessarydictkwargs_path_new_pie804_py_expects ... ok
+test rules::flake8_pie::tests::rules::rule_unnecessaryplaceholder_path_new_pie790_py_expects ... ok
+stored new snapshot /testbed/crates/ruff_linter/src/rules/flake8_pie/snapshots/ruff_linter__rules__flake8_pie__tests__PIE800_PIE800.py.snap.new
+test rules::flake8_pie::tests::rules::rule_unnecessaryspread_path_new_pie800_py_expects ... FAILED
+
+failures:
+
+---- rules::flake8_pie::tests::rules::rule_unnecessaryspread_path_new_pie800_py_expects stdout ----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Snapshot Summary ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Snapshot file: crates/ruff_linter/src/rules/flake8_pie/snapshots/ruff_linter__rules__flake8_pie__tests__PIE800_PIE800.py.snap
+Snapshot: PIE800_PIE800.py
+Source: crates/ruff_linter/src/rules/flake8_pie/mod.rs:30
+────────────────────────────────────────────────────────────────────────────────
+-old snapshot
++new results
+────────────┬───────────────────────────────────────────────────────────────────
+  166   166 │ 29    |-    **(  # Comment
+  167   167 │ 30    |-        {  # Comment
+  168   168 │ 31    |-            "count": 1 if include_count else {}}),
+  169   169 │    29 |+      # Comment
+  170       │-   30 |+          # Comment
+  171       │-   31 |+            "count": 1 if include_count else {},
+  172       │-32 32 | }
+  173       │-33 33 | 
+  174       │-34 34 | {
+        170 │+   30 |+            "count": 1 if include_count else {},
+        171 │+32 31 | }
+        172 │+33 32 | 
+        173 │+34 33 | {
+  175   174 │ 
+  176   175 │ PIE800.py:37:9: PIE800 [*] Unnecessary spread `**`
+  177   176 │    |
+  178   177 │ 35 |       "data": [],
+┈┈┈┈┈┈┈┈┈┈┈┈┼┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+  192   191 │ 36    |-    **(
+  193   192 │ 37    |-        {
+  194   193 │ 38    |-            "count": (a := 1),}),
+  195   194 │    36 |+    
+  196       │-   37 |+        
+  197       │-   38 |+            "count": (a := 1),
+  198       │-39 39 | }
+  199       │-40 40 | 
+  200       │-41 41 | {
+        195 │+   37 |+            "count": (a := 1),
+        196 │+39 38 | }
+        197 │+40 39 | 
+        198 │+41 40 | {
+  201   199 │ 
+  202   200 │ PIE800.py:44:9: PIE800 [*] Unnecessary spread `**`
+  203   201 │    |
+  204   202 │ 42 |       "data": [],
+┈┈┈┈┈┈┈┈┈┈┈┈┼┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+  219   217 │ 42 42 |     "data": [],
+  220   218 │ 43    |-    **(
+  221   219 │ 44    |-        {
+  222   220 │    43 |+    
+  223       │-   44 |+        
+  224       │-45 45 |             "count": (a := 1)
+        221 │+45 44 |             "count": (a := 1)
+  225   222 │ 46    |-            }
+  226   223 │ 47    |-    )
+  227       │-   46 |+            
+  228       │-   47 |+    
+  229       │-48 48 |     ,
+  230       │-49 49 | }
+  231       │-50 50 | 
+        224 │+   45 |+            
+        225 │+   46 |+    
+        226 │+48 47 |     ,
+        227 │+49 48 | }
+        228 │+50 49 | 
+  232   229 │ 
+  233   230 │ PIE800.py:54:9: PIE800 [*] Unnecessary spread `**`
+  234   231 │    |
+  235   232 │ 52 |       "data": [],
+┈┈┈┈┈┈┈┈┈┈┈┈┼┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+  253   250 │ 55    |-            "count": (a := 1),  # Comment
+  254   251 │ 56    |-            }  # Comment
+  255   252 │ 57    |-    ) # Comment
+  256   253 │    53 |+    
+  257       │-   54 |+        
+  258       │-   55 |+            "count": (a := 1)  # Comment
+  259       │-   56 |+              # Comment
+  260       │-   57 |+     # Comment
+  261       │-58 58 |     ,
+  262       │-59 59 | }
+  263       │-60 60 | 
+        254 │+   54 |+            "count": (a := 1)  # Comment
+        255 │+   55 |+              # Comment
+        256 │+   56 |+     # Comment
+        257 │+58 57 |     ,
+        258 │+59 58 | }
+        259 │+60 59 | 
+  264   260 │ 
+  265   261 │ PIE800.py:65:1: PIE800 [*] Unnecessary spread `**`
+  266   262 │    |
+  267   263 │ 63 |       **(  # Comment
+┈┈┈┈┈┈┈┈┈┈┈┈┼┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+  285   281 │ 66    |-            "count": (a := 1),  # Comment
+  286   282 │ 67    |-        }  # Comment
+  287   283 │ 68    |-            )
+  288   284 │ 69    |-    ) # Comment
+  289       │-   63 |+      # Comment
+  290       │-   64 |+           # Comment
+  291       │-   65 |+ # Comment
+  292       │-   66 |+            "count": (a := 1)  # Comment
+  293       │-   67 |+          # Comment
+  294       │-   68 |+            
+  295       │-   69 |+     # Comment
+  296       │-70 70 |     ,
+  297       │-71 71 | })
+  298       │-72 72 |
+        285 │+   63 |+     # Comment
+        286 │+   64 |+            "count": (a := 1)  # Comment
+        287 │+   65 |+          # Comment
+        288 │+   66 |+            
+        289 │+   67 |+     # Comment
+        290 │+70 68 |     ,
+        291 │+71 69 | })
+        292 │+72 70 |
+────────────┴───────────────────────────────────────────────────────────────────
+To update snapshots run `cargo insta review`
+Stopped on the first failure. Run `cargo insta test` to run all snapshots.
+thread 'rules::flake8_pie::tests::rules::rule_unnecessaryspread_path_new_pie800_py_expects' panicked at /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/insta-1.42.0/src/runtime.rs:679:13:
+snapshot assertion for 'PIE800_PIE800.py' failed in line 30
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    rules::flake8_pie::tests::rules::rule_unnecessaryspread_path_new_pie800_py_expects
+
+test result: FAILED. 8 passed; 1 failed; 0 ignored; 0 measured; 2215 filtered out; finished in 0.03s
+
+error: test failed, to rerun pass `-p ruff_linter --lib`
++ SWEBENCH_TEST_EXIT_CODE=101
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 101'
+>>>>> Test Exit Code: 101
++ git checkout 73d424ee5e6963d577e196d71c3b19c82e84e612 crates/ruff_linter/resources/test/fixtures/flake8_pie/PIE800.py crates/ruff_linter/src/rules/flake8_pie/snapshots/ruff_linter__rules__flake8_pie__tests__PIE800_PIE800.py.snap
+Updated 2 paths from bdd02f9a6

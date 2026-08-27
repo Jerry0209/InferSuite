@@ -1,0 +1,124 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   CHANGELOG.md
+	modified:   src/bin/bat/assets.rs
+	modified:   src/bin/bat/main.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 7c847d84b0c3c97df6badfbb39d153ad93aec74e
+Author: David Peter <mail@david-peter.de>
+Date:   Fri Nov 4 22:08:51 2022 +0100
+
+    Update CHANGELOG
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index c37d935..e0829b0 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -17,6 +17,7 @@
+ - Added `todo.txt` syntax, see #2375 (@BANOnotIT)
+ - Improve Manpage.sublime-syntax. See #2364 (@Freed-Wu)
+ - Added a new `requirements.txt` syntax, see #2361 (@Freed-Wu)
++- Added a new VimHelp syntax, see #2366 (@Freed-Wu)
+ 
+ ## Themes
+ 
++ git -c core.fileMode=false diff 7c847d84b0c3c97df6badfbb39d153ad93aec74e
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index e0829b0..6fdcb1a 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -7,6 +7,8 @@
+ 
+ ## Bugfixes
+ 
++- Fix `bat cache --clear` not clearing the `--target` dir if specified. See #2393 (@miles170)
++
+ ## Other
+ 
+ - Various bash completion improvements, see #2310 (@scop)
+diff --git a/src/bin/bat/assets.rs b/src/bin/bat/assets.rs
+index 951a574..2f9cf84 100644
+--- a/src/bin/bat/assets.rs
++++ b/src/bin/bat/assets.rs
+@@ -1,6 +1,7 @@
+ use std::borrow::Cow;
+ use std::fs;
+ use std::io;
++use std::path::Path;
+ 
+ use clap::crate_version;
+ 
+@@ -18,10 +19,11 @@ pub fn cache_dir() -> Cow<'static, str> {
+     PROJECT_DIRS.cache_dir().to_string_lossy()
+ }
+ 
+-pub fn clear_assets() {
+-    clear_asset("themes.bin", "theme set cache");
+-    clear_asset("syntaxes.bin", "syntax set cache");
+-    clear_asset("metadata.yaml", "metadata file");
++pub fn clear_assets(target_dir: Option<&Path>) {
++    let target_dir = target_dir.unwrap_or_else(|| PROJECT_DIRS.cache_dir());
++    clear_asset(target_dir, "themes.bin", "theme set cache");
++    clear_asset(target_dir, "syntaxes.bin", "syntax set cache");
++    clear_asset(target_dir, "metadata.yaml", "metadata file");
+ }
+ 
+ pub fn assets_from_cache_or_binary(use_custom_assets: bool) -> Result<HighlightingAssets> {
+@@ -50,9 +52,9 @@ pub fn assets_from_cache_or_binary(use_custom_assets: bool) -> Result<Highlighti
+     Ok(custom_assets.unwrap_or_else(HighlightingAssets::from_binary))
+ }
+ 
+-fn clear_asset(filename: &str, description: &str) {
++fn clear_asset(target_dir: &Path, filename: &str, description: &str) {
+     print!("Clearing {} ... ", description);
+-    let path = PROJECT_DIRS.cache_dir().join(filename);
++    let path = target_dir.join(filename);
+     match fs::remove_file(&path) {
+         Err(err) if err.kind() == io::ErrorKind::NotFound => {
+             println!("skipped (not present)");
+diff --git a/src/bin/bat/main.rs b/src/bin/bat/main.rs
+index b4e5d9b..cd5f0ed 100644
+--- a/src/bin/bat/main.rs
++++ b/src/bin/bat/main.rs
+@@ -67,7 +67,7 @@ fn run_cache_subcommand(matches: &clap::ArgMatches) -> Result<()> {
+         #[cfg(not(feature = "build-assets"))]
+         println!("bat has been built without the 'build-assets' feature. The 'cache --build' option is not available.");
+     } else if matches.get_flag("clear") {
+-        clear_assets();
++        clear_assets(matches.get_one::<String>("target").map(Path::new));
+     }
+ 
+     Ok(())
++ git checkout 7c847d84b0c3c97df6badfbb39d153ad93aec74e tests/integration_tests.rs
+Updated 0 paths from 21c8e43
++ git apply -v -
+Checking patch tests/integration_tests.rs...
+Applied patch tests/integration_tests.rs cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ RUSTFLAGS=-Awarnings
++ cargo test --package bat --test integration_tests cache_
+   Compiling bat v0.22.1 (/testbed)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.29s
+     Running tests/integration_tests.rs (target/debug/deps/integration_tests-b42b320cd4268527)
+
+running 3 tests
+test cache_clear ... ok
+test cache_build ... ok
+test can_print_file_named_cache_with_additional_argument ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 114 filtered out; finished in 0.01s
+
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 7c847d84b0c3c97df6badfbb39d153ad93aec74e tests/integration_tests.rs
+>>>>> Test Exit Code: 0
+Updated 1 path from 21c8e43

@@ -1,0 +1,133 @@
+diff --git a/tokio/src/loom/std/atomic_u16.rs b/tokio/src/loom/std/atomic_u16.rs
+index c1c53120..efd025ff 100644
+--- a/tokio/src/loom/std/atomic_u16.rs
++++ b/tokio/src/loom/std/atomic_u16.rs
+@@ -1,6 +1,7 @@
+ use std::cell::UnsafeCell;
+ use std::fmt;
+ use std::ops::Deref;
++use std::panic::{RefUnwindSafe, UnwindSafe};
+ 
+ /// `AtomicU16` providing an additional `load_unsync` function.
+ pub(crate) struct AtomicU16 {
+@@ -10,6 +11,9 @@ pub(crate) struct AtomicU16 {
+ unsafe impl Send for AtomicU16 {}
+ unsafe impl Sync for AtomicU16 {}
+ 
++impl UnwindSafe for AtomicU16 {}
++impl RefUnwindSafe for AtomicU16 {}
++
+ impl AtomicU16 {
+     pub(crate) const fn new(val: u16) -> AtomicU16 {
+         let inner = UnsafeCell::new(std::sync::atomic::AtomicU16::new(val));
+diff --git a/tokio/src/loom/std/atomic_u32.rs b/tokio/src/loom/std/atomic_u32.rs
+index 61f95fb3..9d958a10 100644
+--- a/tokio/src/loom/std/atomic_u32.rs
++++ b/tokio/src/loom/std/atomic_u32.rs
+@@ -1,6 +1,7 @@
+ use std::cell::UnsafeCell;
+ use std::fmt;
+ use std::ops::Deref;
++use std::panic::{RefUnwindSafe, UnwindSafe};
+ 
+ /// `AtomicU32` providing an additional `load_unsync` function.
+ pub(crate) struct AtomicU32 {
+@@ -10,6 +11,9 @@ pub(crate) struct AtomicU32 {
+ unsafe impl Send for AtomicU32 {}
+ unsafe impl Sync for AtomicU32 {}
+ 
++impl UnwindSafe for AtomicU32 {}
++impl RefUnwindSafe for AtomicU32 {}
++
+ impl AtomicU32 {
+     pub(crate) const fn new(val: u32) -> AtomicU32 {
+         let inner = UnsafeCell::new(std::sync::atomic::AtomicU32::new(val));
+diff --git a/tokio/src/loom/std/atomic_u64.rs b/tokio/src/loom/std/atomic_u64.rs
+index 8ea6bd40..9ad1813f 100644
+--- a/tokio/src/loom/std/atomic_u64.rs
++++ b/tokio/src/loom/std/atomic_u64.rs
+@@ -12,6 +12,7 @@ cfg_has_atomic_u64! {
+ 
+ cfg_not_has_atomic_u64! {
+     use crate::loom::sync::Mutex;
++    use std::panic::{RefUnwindSafe, UnwindSafe};
+     use std::sync::atomic::Ordering;
+ 
+     #[derive(Debug)]
+@@ -19,6 +20,9 @@ cfg_not_has_atomic_u64! {
+         inner: Mutex<u64>,
+     }
+ 
++    impl UnwindSafe for AtomicU64 {}
++    impl RefUnwindSafe for AtomicU64 {}
++
+     impl AtomicU64 {
+         pub(crate) fn new(val: u64) -> Self {
+             Self {
+diff --git a/tokio/src/loom/std/atomic_u8.rs b/tokio/src/loom/std/atomic_u8.rs
+index 408aea33..eb853f07 100644
+--- a/tokio/src/loom/std/atomic_u8.rs
++++ b/tokio/src/loom/std/atomic_u8.rs
+@@ -1,6 +1,7 @@
+ use std::cell::UnsafeCell;
+ use std::fmt;
+ use std::ops::Deref;
++use std::panic::{RefUnwindSafe, UnwindSafe};
+ 
+ /// `AtomicU8` providing an additional `load_unsync` function.
+ pub(crate) struct AtomicU8 {
+@@ -10,6 +11,9 @@ pub(crate) struct AtomicU8 {
+ unsafe impl Send for AtomicU8 {}
+ unsafe impl Sync for AtomicU8 {}
+ 
++impl UnwindSafe for AtomicU8 {}
++impl RefUnwindSafe for AtomicU8 {}
++
+ impl AtomicU8 {
+     pub(crate) const fn new(val: u8) -> AtomicU8 {
+         let inner = UnsafeCell::new(std::sync::atomic::AtomicU8::new(val));
+diff --git a/tokio/src/loom/std/atomic_usize.rs b/tokio/src/loom/std/atomic_usize.rs
+index 0d5f36e4..e813ae14 100644
+--- a/tokio/src/loom/std/atomic_usize.rs
++++ b/tokio/src/loom/std/atomic_usize.rs
+@@ -1,6 +1,7 @@
+ use std::cell::UnsafeCell;
+ use std::fmt;
+ use std::ops;
++use std::panic::{RefUnwindSafe, UnwindSafe};
+ 
+ /// `AtomicUsize` providing an additional `load_unsync` function.
+ pub(crate) struct AtomicUsize {
+@@ -10,6 +11,9 @@ pub(crate) struct AtomicUsize {
+ unsafe impl Send for AtomicUsize {}
+ unsafe impl Sync for AtomicUsize {}
+ 
++impl UnwindSafe for AtomicUsize {}
++impl RefUnwindSafe for AtomicUsize {}
++
+ impl AtomicUsize {
+     pub(crate) const fn new(val: usize) -> AtomicUsize {
+         let inner = UnsafeCell::new(std::sync::atomic::AtomicUsize::new(val));
+diff --git a/tokio/src/loom/std/parking_lot.rs b/tokio/src/loom/std/parking_lot.rs
+index 034a0ce6..201e64eb 100644
+--- a/tokio/src/loom/std/parking_lot.rs
++++ b/tokio/src/loom/std/parking_lot.rs
+@@ -6,6 +6,7 @@
+ use std::fmt;
+ use std::marker::PhantomData;
+ use std::ops::{Deref, DerefMut};
++use std::panic::RefUnwindSafe;
+ use std::sync::LockResult;
+ use std::time::Duration;
+ 
+@@ -27,6 +28,10 @@ pub(crate) struct RwLock<T>(PhantomData<std::sync::RwLock<T>>, parking_lot::RwLo
+ #[derive(Debug)]
+ pub(crate) struct Condvar(PhantomData<std::sync::Condvar>, parking_lot::Condvar);
+ 
++impl<T: ?Sized> RefUnwindSafe for Mutex<T> {}
++
++impl<T> RefUnwindSafe for RwLock<T> {}
++
+ #[derive(Debug)]
+ pub(crate) struct MutexGuard<'a, T: ?Sized>(
+     PhantomData<std::sync::MutexGuard<'a, T>>,

@@ -1,0 +1,738 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   server/src/main/java/org/apache/druid/discovery/DruidLeaderClient.java
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 4fffee17761286996a8c43154b72db4bcaafb16d
+Author: Vadim Ogievetsky <vadim@ogievetsky.com>
+Date:   Wed Apr 19 09:27:55 2023 -0700
+
+    Web console: better lookup 404 detection (#14108)
+    
+    * better lookup 404 detection
+    
+    * update snapshot
+
+diff --git a/web-console/src/utils/druid-lookup.ts b/web-console/src/utils/druid-lookup.ts
+index 990881a47f..6560ab0a6e 100644
+--- a/web-console/src/utils/druid-lookup.ts
++++ b/web-console/src/utils/druid-lookup.ts
+@@ -16,6 +16,8 @@
+  * limitations under the License.
+  */
+ 
++import { deepGet } from './object-change';
++
+ export function isLookupsUninitialized(error: Error | undefined) {
+-  return error && error.message === 'Request failed with status code 404';
++  return deepGet(error || {}, 'response.status') === 404;
+ }
+diff --git a/web-console/src/views/lookups-view/__snapshots__/lookups-view.spec.tsx.snap b/web-console/src/views/lookups-view/__snapshots__/lookups-view.spec.tsx.snap
+index 4f8bde6b34..5dbee9dd83 100755
+--- a/web-console/src/views/lookups-view/__snapshots__/lookups-view.spec.tsx.snap
++++ b/web-console/src/views/lookups-view/__snapshots__/lookups-view.spec.tsx.snap
+@@ -210,7 +210,7 @@ exports[`LookupsView matches snapshot 1`] = `
+     multiSort={true}
+     nestingLevelKey="_nestingLevel"
+     nextText="Next"
+-    noDataText=""
++    noDataText="No lookups"
+     ofText="of"
+     onFetchData={[Function]}
+     onFilteredChange={[Function]}
+diff --git a/web-console/src/views/lookups-view/lookups-view.tsx b/web-console/src/views/lookups-view/lookups-view.tsx
+index 70d0c3f6b1..524203372a 100644
+--- a/web-console/src/views/lookups-view/lookups-view.tsx
++++ b/web-console/src/views/lookups-view/lookups-view.tsx
+@@ -355,11 +355,7 @@ export class LookupsView extends React.PureComponent<LookupsViewProps, LookupsVi
+       <ReactTable
+         data={lookups}
+         loading={lookupEntriesAndTiersState.loading}
+-        noDataText={
+-          !lookupEntriesAndTiersState.loading && !lookups.length
+-            ? 'No lookups'
+-            : lookupEntriesAndTiersState.getErrorMessage() || ''
+-        }
++        noDataText={lookupEntriesAndTiersState.getErrorMessage() || 'No lookups'}
+         filterable
+         filtered={lookupFilter}
+         onFilteredChange={filtered => {
++ git -c core.fileMode=false diff 4fffee17761286996a8c43154b72db4bcaafb16d
+diff --git a/server/src/main/java/org/apache/druid/discovery/DruidLeaderClient.java b/server/src/main/java/org/apache/druid/discovery/DruidLeaderClient.java
+index 0679ac39e4..3bc29da40f 100644
+--- a/server/src/main/java/org/apache/druid/discovery/DruidLeaderClient.java
++++ b/server/src/main/java/org/apache/druid/discovery/DruidLeaderClient.java
+@@ -122,6 +122,14 @@ public class DruidLeaderClient
+     return new Request(httpMethod, new URL(StringUtils.format("%s%s", getCurrentKnownLeader(true), urlPath)));
+   }
+ 
++  /**
++   * Executes a Request object aimed at the leader. Throws IOException if the leader cannot be located.
++   * Internal retries with cache invalidation are attempted if 503/504 response is received.
++   *
++   * @param request
++   * @throws IOException
++   * @throws InterruptedException
++   */
+   public StringFullResponseHolder go(Request request) throws IOException, InterruptedException
+   {
+     return go(request, new StringFullResponseHandler(StandardCharsets.UTF_8));
+@@ -129,8 +137,17 @@ public class DruidLeaderClient
+ 
+   /**
+    * Executes a Request object aimed at the leader. Throws IOException if the leader cannot be located.
++   * Internal retries with cache invalidation are attempted if 503/504 response is received.
++   *
++   * @param request
++   * @param responseHandler
++   * @throws IOException
++   * @throws InterruptedException
+    */
+-  public <T, H extends FullResponseHolder<T>> H go(Request request, HttpResponseHandler<H, H> responseHandler)
++  public <T, H extends FullResponseHolder<T>> H go(
++      Request request,
++      HttpResponseHandler<H, H> responseHandler
++  )
+       throws IOException, InterruptedException
+   {
+     Preconditions.checkState(lifecycleLock.awaitStarted(1, TimeUnit.MILLISECONDS));
+@@ -152,38 +169,11 @@ public class DruidLeaderClient
+       catch (IOException | ChannelException ex) {
+         // can happen if the node is stopped.
+         log.warn(ex, "Request[%s] failed.", request.getUrl());
+-
+-        try {
+-          if (request.getUrl().getQuery() == null) {
+-            request = withUrl(
+-                request,
+-                new URL(StringUtils.format("%s%s", getCurrentKnownLeader(false), request.getUrl().getPath()))
+-            );
+-          } else {
+-            request = withUrl(
+-                request,
+-                new URL(StringUtils.format(
+-                    "%s%s?%s",
+-                    getCurrentKnownLeader(false),
+-                    request.getUrl().getPath(),
+-                    request.getUrl().getQuery()
+-                ))
+-            );
+-          }
+-          continue;
+-        }
+-        catch (MalformedURLException e) {
+-          // Not an IOException; this is our own fault.
+-          throw new ISE(
+-              e,
+-              "failed to build url with path[%] and query string [%s].",
+-              request.getUrl().getPath(),
+-              request.getUrl().getQuery()
+-          );
+-        }
++        request = getNewRequestUrlInvalidatingCache(request);
++        continue;
+       }
+-
+-      if (HttpResponseStatus.TEMPORARY_REDIRECT.equals(fullResponseHolder.getResponse().getStatus())) {
++      HttpResponseStatus responseStatus = fullResponseHolder.getResponse().getStatus();
++      if (HttpResponseStatus.TEMPORARY_REDIRECT.equals(responseStatus)) {
+         String redirectUrlStr = fullResponseHolder.getResponse().headers().get("Location");
+         if (redirectUrlStr == null) {
+           throw new IOE("No redirect location is found in response from url[%s].", request.getUrl());
+@@ -213,6 +203,16 @@ public class DruidLeaderClient
+         ));
+ 
+         request = withUrl(request, redirectUrl);
++      } else if (HttpResponseStatus.SERVICE_UNAVAILABLE.equals(responseStatus)
++                 || HttpResponseStatus.GATEWAY_TIMEOUT.equals(responseStatus)) {
++        log.warn(
++            "Request[%s] received a %s response. Attempt %s/%s",
++            request.getUrl(),
++            responseStatus,
++            counter + 1,
++            MAX_RETRIES
++        );
++        request = getNewRequestUrlInvalidatingCache(request);
+       } else {
+         return fullResponseHolder;
+       }
+@@ -295,4 +295,37 @@ public class DruidLeaderClient
+     }
+     return req;
+   }
++
++  private Request getNewRequestUrlInvalidatingCache(Request oldRequest) throws IOException
++  {
++    try {
++      Request newRequest;
++      if (oldRequest.getUrl().getQuery() == null) {
++        newRequest = withUrl(
++            oldRequest,
++            new URL(StringUtils.format("%s%s", getCurrentKnownLeader(false), oldRequest.getUrl().getPath()))
++        );
++      } else {
++        newRequest = withUrl(
++            oldRequest,
++            new URL(StringUtils.format(
++                "%s%s?%s",
++                getCurrentKnownLeader(false),
++                oldRequest.getUrl().getPath(),
++                oldRequest.getUrl().getQuery()
++            ))
++        );
++      }
++      return newRequest;
++    }
++    catch (MalformedURLException e) {
++      // Not an IOException; this is our own fault.
++      throw new ISE(
++          e,
++          "failed to build url with path[%] and query string [%s].",
++          oldRequest.getUrl().getPath(),
++          oldRequest.getUrl().getQuery()
++      );
++    }
++  }
+ }
++ git checkout 4fffee17761286996a8c43154b72db4bcaafb16d server/src/test/java/org/apache/druid/discovery/DruidLeaderClientTest.java
+Updated 0 paths from 63733d3b0b
++ git apply -v -
+Checking patch server/src/test/java/org/apache/druid/discovery/DruidLeaderClientTest.java...
+Applied patch server/src/test/java/org/apache/druid/discovery/DruidLeaderClientTest.java cleanly.
++ : '>>>>> Start Test Output'
++ mvnd test -B -T 1C -pl server -Dtest=org.apache.druid.discovery.DruidLeaderClientTest#test503ResponseFromServerAndCacheRefresh
++ cat
+Aug 27, 2026 9:16:09 AM org.jline.utils.Log logr
+WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[main] WARNING org.jline - Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[INFO] Processing build on daemon f74549ab
+[INFO] Scanning for projects...
+[INFO] BuildTimeEventSpy is registered.
+[INFO] 
+[INFO] Using the SmartBuilder implementation with a thread count of 28
+[INFO] 
+[INFO] -------------------< org.apache.druid:druid-server >--------------------
+[INFO] Building druid-server 27.0.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] Downloading from apache.snapshots: https://repository.apache.org/snapshots/org/apache/druid/druid-processing/27.0.0-SNAPSHOT/maven-metadata.xml
+[INFO] Downloading from apache.snapshots: https://repository.apache.org/snapshots/org/apache/druid/druid/27.0.0-SNAPSHOT/maven-metadata.xml
+[INFO] Downloading from apache.snapshots: https://repository.apache.org/snapshots/org/apache/druid/druid-aws-common/27.0.0-SNAPSHOT/maven-metadata.xml
+[INFO] Downloading from apache.snapshots: https://repository.apache.org/snapshots/org/apache/druid/druid-gcp-common/27.0.0-SNAPSHOT/maven-metadata.xml
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/zookeeper/zookeeper/3.5.10/zookeeper-3.5.10.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/zookeeper/zookeeper/3.5.10/zookeeper-3.5.10.pom (11 kB at 101 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/zookeeper/parent/3.5.10/parent-3.5.10.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/zookeeper/parent/3.5.10/parent-3.5.10.pom (29 kB at 630 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/zookeeper/zookeeper-jute/3.5.10/zookeeper-jute-3.5.10.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/zookeeper/zookeeper-jute/3.5.10/zookeeper-jute-3.5.10.pom (6.7 kB at 31 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/yetus/audience-annotations/0.5.0/audience-annotations-0.5.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/yetus/audience-annotations/0.5.0/audience-annotations-0.5.0.pom (1.9 kB at 34 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/yetus/yetus-project/0.5.0/yetus-project-0.5.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/yetus/yetus-project/0.5.0/yetus-project-0.5.0.pom (6.8 kB at 205 kB/s)
+[WARNING] 2 problems were encountered while building the effective model for org.apache.yetus:audience-annotations:jar:0.5.0 during dependency collection step for project (use -X to see details)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-framework/5.4.0/curator-framework-5.4.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-framework/5.4.0/curator-framework-5.4.0.pom (4.1 kB at 48 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/curator/apache-curator/5.4.0/apache-curator-5.4.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/curator/apache-curator/5.4.0/apache-curator-5.4.0.pom (45 kB at 781 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-client/5.4.0/curator-client-5.4.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-client/5.4.0/curator-client-5.4.0.pom (5.2 kB at 112 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-x-discovery/5.4.0/curator-x-discovery-5.4.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-x-discovery/5.4.0/curator-x-discovery-5.4.0.pom (2.9 kB at 77 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-recipes/5.4.0/curator-recipes-5.4.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-recipes/5.4.0/curator-recipes-5.4.0.pom (3.8 kB at 69 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/fasterxml/jackson/jaxrs/jackson-jaxrs-json-provider/2.10.5/jackson-jaxrs-json-provider-2.10.5.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/fasterxml/jackson/jaxrs/jackson-jaxrs-json-provider/2.10.5/jackson-jaxrs-json-provider-2.10.5.pom (4.0 kB at 126 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/fasterxml/jackson/jaxrs/jackson-jaxrs-providers/2.10.5/jackson-jaxrs-providers-2.10.5.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/fasterxml/jackson/jaxrs/jackson-jaxrs-providers/2.10.5/jackson-jaxrs-providers-2.10.5.pom (4.8 kB at 145 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/fasterxml/jackson/jaxrs/jackson-jaxrs-base/2.10.5/jackson-jaxrs-base-2.10.5.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/fasterxml/jackson/jaxrs/jackson-jaxrs-base/2.10.5/jackson-jaxrs-base-2.10.5.pom (1.7 kB at 53 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/fasterxml/jackson/module/jackson-module-jaxb-annotations/2.10.5/jackson-module-jaxb-annotations-2.10.5.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/fasterxml/jackson/module/jackson-module-jaxb-annotations/2.10.5/jackson-module-jaxb-annotations-2.10.5.pom (3.5 kB at 107 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/jakarta/xml/bind/jakarta.xml.bind-api/2.3.2/jakarta.xml.bind-api-2.3.2.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/jakarta/xml/bind/jakarta.xml.bind-api/2.3.2/jakarta.xml.bind-api-2.3.2.pom (16 kB at 400 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/jakarta/xml/bind/jakarta.xml.bind-api-parent/2.3.2/jakarta.xml.bind-api-parent-2.3.2.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/jakarta/xml/bind/jakarta.xml.bind-api-parent/2.3.2/jakarta.xml.bind-api-parent-2.3.2.pom (7.7 kB at 196 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/eclipse/ee4j/project/1.0.5/project-1.0.5.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/eclipse/ee4j/project/1.0.5/project-1.0.5.pom (13 kB at 338 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api/1.2.1/jakarta.activation-api-1.2.1.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api/1.2.1/jakarta.activation-api-1.2.1.pom (4.6 kB at 131 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/activation/all/1.2.1/all-1.2.1.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/activation/all/1.2.1/all-1.2.1.pom (18 kB at 464 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/eclipse/ee4j/project/1.0.2/project-1.0.2.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/eclipse/ee4j/project/1.0.2/project-1.0.2.pom (12 kB at 270 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/fasterxml/jackson/jaxrs/jackson-jaxrs-smile-provider/2.10.5/jackson-jaxrs-smile-provider-2.10.5.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/fasterxml/jackson/jaxrs/jackson-jaxrs-smile-provider/2.10.5/jackson-jaxrs-smile-provider-2.10.5.pom (3.4 kB at 15 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-server/1.19.4/jersey-server-1.19.4.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-server/1.19.4/jersey-server-1.19.4.pom (11 kB at 368 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-project/1.19.4/jersey-project-1.19.4.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-project/1.19.4/jersey-project-1.19.4.pom (28 kB at 949 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/net/java/jvnet-parent/4/jvnet-parent-4.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/net/java/jvnet-parent/4/jvnet-parent-4.pom (7.8 kB at 180 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-core/1.19.4/jersey-core-1.19.4.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-core/1.19.4/jersey-core-1.19.4.pom (9.7 kB at 334 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/javax/ws/rs/jsr311-api/1.1.1/jsr311-api-1.1.1.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/javax/ws/rs/jsr311-api/1.1.1/jsr311-api-1.1.1.pom (5.5 kB at 122 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/google/inject/extensions/guice-servlet/4.1.0/guice-servlet-4.1.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/google/inject/extensions/guice-servlet/4.1.0/guice-servlet-4.1.0.pom (917 B at 18 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/contribs/jersey-guice/1.19.4/jersey-guice-1.19.4.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/contribs/jersey-guice/1.19.4/jersey-guice-1.19.4.pom (7.5 kB at 202 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/contribs/jersey-contribs/1.19.4/jersey-contribs-1.19.4.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/contribs/jersey-contribs/1.19.4/jersey-contribs-1.19.4.pom (3.6 kB at 132 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-servlet/1.19.4/jersey-servlet-1.19.4.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-servlet/1.19.4/jersey-servlet-1.19.4.pom (9.6 kB at 309 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-proxy/9.4.48.v20220622/jetty-proxy-9.4.48.v20220622.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-proxy/9.4.48.v20220622/jetty-proxy-9.4.48.v20220622.pom (2.2 kB at 50 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-client/9.4.48.v20220622/jetty-client-9.4.48.v20220622.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-client/9.4.48.v20220622/jetty-client-9.4.48.v20220622.pom (5.1 kB at 170 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-rewrite/9.4.48.v20220622/jetty-rewrite-9.4.48.v20220622.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-rewrite/9.4.48.v20220622/jetty-rewrite-9.4.48.v20220622.pom (1.4 kB at 35 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/io/tesla/aether/tesla-aether/0.0.5/tesla-aether-0.0.5.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/io/tesla/aether/tesla-aether/0.0.5/tesla-aether-0.0.5.pom (8.1 kB at 117 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/io/tesla/tesla/5/tesla-5.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/io/tesla/tesla/5/tesla-5.pom (10.0 kB at 208 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/eclipse/aether/aether-connector-file/0.9.0.M2/aether-connector-file-0.9.0.M2.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/eclipse/aether/aether-connector-file/0.9.0.M2/aether-connector-file-0.9.0.M2.pom (3.0 kB at 52 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/io/tesla/aether/aether-connector-okhttp/0.0.9/aether-connector-okhttp-0.0.9.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/io/tesla/aether/aether-connector-okhttp/0.0.9/aether-connector-okhttp-0.0.9.pom (8.0 kB at 141 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/squareup/okhttp/okhttp/1.0.2/okhttp-1.0.2.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/squareup/okhttp/okhttp/1.0.2/okhttp-1.0.2.pom (1.1 kB at 27 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/squareup/okhttp/parent/1.0.2/parent-1.0.2.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/squareup/okhttp/parent/1.0.2/parent-1.0.2.pom (5.1 kB at 23 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/net/spy/spymemcached/2.12.3/spymemcached-2.12.3.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/net/spy/spymemcached/2.12.3/spymemcached-2.12.3.pom (1.9 kB at 54 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-servlets/9.4.48.v20220622/jetty-servlets-9.4.48.v20220622.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-servlets/9.4.48.v20220622/jetty-servlets-9.4.48.v20220622.pom (2.6 kB at 80 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-continuation/9.4.48.v20220622/jetty-continuation-9.4.48.v20220622.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-continuation/9.4.48.v20220622/jetty-continuation-9.4.48.v20220622.pom (952 B at 18 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/derby/derby/10.14.2.0/derby-10.14.2.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/derby/derby/10.14.2.0/derby-10.14.2.0.pom (2.3 kB at 84 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/derby/derby-project/10.14.2.0/derby-project-10.14.2.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/derby/derby-project/10.14.2.0/derby-project-10.14.2.0.pom (5.9 kB at 220 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/derby/derbynet/10.14.2.0/derbynet-10.14.2.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/derby/derbynet/10.14.2.0/derbynet-10.14.2.0.pom (2.5 kB at 63 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/derby/derbyclient/10.14.2.0/derbyclient-10.14.2.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/derby/derbyclient/10.14.2.0/derbyclient-10.14.2.0.pom (2.3 kB at 73 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/github/ben-manes/caffeine/caffeine/2.8.0/caffeine-2.8.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/github/ben-manes/caffeine/caffeine/2.8.0/caffeine-2.8.0.pom (5.3 kB at 170 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/checkerframework/checker-qual/2.10.0/checker-qual-2.10.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/checkerframework/checker-qual/2.10.0/checker-qual-2.10.0.pom (2.4 kB at 80 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/commons/commons-dbcp2/2.0.1/commons-dbcp2-2.0.1.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/commons/commons-dbcp2/2.0.1/commons-dbcp2-2.0.1.pom (14 kB at 223 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/commons/commons-parent/33/commons-parent-33.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/commons/commons-parent/33/commons-parent-33.pom (53 kB at 1.2 MB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/commons/commons-pool2/2.2/commons-pool2-2.2.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/commons/commons-pool2/2.2/commons-pool2-2.2.pom (12 kB at 332 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/io/github/resilience4j/resilience4j-bulkhead/1.3.1/resilience4j-bulkhead-1.3.1.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/io/github/resilience4j/resilience4j-bulkhead/1.3.1/resilience4j-bulkhead-1.3.1.pom (2.2 kB at 37 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/io/vavr/vavr/0.10.2/vavr-0.10.2.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/io/vavr/vavr/0.10.2/vavr-0.10.2.pom (2.9 kB at 91 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/io/vavr/vavr-parent/0.10.2/vavr-parent-0.10.2.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/io/vavr/vavr-parent/0.10.2/vavr-parent-0.10.2.pom (24 kB at 840 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/io/vavr/vavr-match/0.10.2/vavr-match-0.10.2.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/io/vavr/vavr-match/0.10.2/vavr-match-0.10.2.pom (1.4 kB at 48 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/io/github/resilience4j/resilience4j-core/1.3.1/resilience4j-core-1.3.1.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/io/github/resilience4j/resilience4j-core/1.3.1/resilience4j-core-1.3.1.pom (2.0 kB at 49 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-test/5.4.0/curator-test-5.4.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-test/5.4.0/curator-test-5.4.0.pom (4.9 kB at 111 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/io/dropwizard/metrics/metrics-core/4.0.0/metrics-core-4.0.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/io/dropwizard/metrics/metrics-core/4.0.0/metrics-core-4.0.0.pom (846 B at 4.1 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/io/dropwizard/metrics/metrics-parent/4.0.0/metrics-parent-4.0.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/io/dropwizard/metrics/metrics-parent/4.0.0/metrics-parent-4.0.0.pom (13 kB at 314 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/xerial/snappy/snappy-java/1.1.8.4/snappy-java-1.1.8.4.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/xerial/snappy/snappy-java/1.1.8.4/snappy-java-1.1.8.4.pom (3.5 kB at 126 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-test-framework/jersey-test-framework-core/1.19.4/jersey-test-framework-core-1.19.4.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-test-framework/jersey-test-framework-core/1.19.4/jersey-test-framework-core-1.19.4.pom (6.6 kB at 116 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-test-framework/1.19.4/jersey-test-framework-1.19.4.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-test-framework/1.19.4/jersey-test-framework-1.19.4.pom (3.1 kB at 68 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-client/1.19.4/jersey-client-1.19.4.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-client/1.19.4/jersey-client-1.19.4.pom (6.7 kB at 191 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-test-framework/jersey-test-framework-grizzly2/1.19.4/jersey-test-framework-grizzly2-1.19.4.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-test-framework/jersey-test-framework-grizzly2/1.19.4/jersey-test-framework-grizzly2-1.19.4.pom (6.2 kB at 143 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-grizzly2-servlet/1.19.4/jersey-grizzly2-servlet-1.19.4.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-grizzly2-servlet/1.19.4/jersey-grizzly2-servlet-1.19.4.pom (7.3 kB at 156 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-http-servlet/2.2.16/grizzly-http-servlet-2.2.16.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-http-servlet/2.2.16/grizzly-http-servlet-2.2.16.pom (6.3 kB at 117 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-project/2.2.16/grizzly-project-2.2.16.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-project/2.2.16/grizzly-project-2.2.16.pom (18 kB at 380 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-http-server/2.2.16/grizzly-http-server-2.2.16.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-http-server/2.2.16/grizzly-http-server-2.2.16.pom (5.4 kB at 107 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-http/2.2.16/grizzly-http-2.2.16.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-http/2.2.16/grizzly-http-2.2.16.pom (4.7 kB at 105 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-framework/2.2.16/grizzly-framework-2.2.16.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-framework/2.2.16/grizzly-framework-2.2.16.pom (7.1 kB at 187 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-rcm/2.2.16/grizzly-rcm-2.2.16.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-rcm/2.2.16/grizzly-rcm-2.2.16.pom (3.7 kB at 101 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-grizzly2/1.19.4/jersey-grizzly2-1.19.4.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-grizzly2/1.19.4/jersey-grizzly2-1.19.4.pom (7.2 kB at 171 kB/s)
+[INFO] Downloading from sigar: https://repository.mulesoft.org/nexus/content/repositories/public/junit/junit-dep/maven-metadata.xml
+[INFO] Downloading from apache.snapshots: https://repository.apache.org/snapshots/junit/junit-dep/maven-metadata.xml
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/junit/junit-dep/maven-metadata.xml
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/junit/junit-dep/maven-metadata.xml
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/junit/junit-dep/maven-metadata.xml (563 B at 11 kB/s)
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/junit/junit-dep/maven-metadata.xml (563 B at 6.6 kB/s)
+[INFO] Downloaded from sigar: https://repository.mulesoft.org/nexus/content/repositories/public/junit/junit-dep/maven-metadata.xml (610 B at 721 B/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/assertj/assertj-core/3.19.0/assertj-core-3.19.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/assertj/assertj-core/3.19.0/assertj-core-3.19.0.pom (24 kB at 756 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/assertj/assertj-parent-pom/2.2.10/assertj-parent-pom-2.2.10.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/assertj/assertj-parent-pom/2.2.10/assertj-parent-pom-2.2.10.pom (24 kB at 710 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/junit/junit-bom/5.6.3/junit-bom-5.6.3.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/junit/junit-bom/5.6.3/junit-bom-5.6.3.pom (4.9 kB at 170 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/zookeeper/zookeeper/3.5.10/zookeeper-3.5.10.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/zookeeper/zookeeper/3.5.10/zookeeper-3.5.10.jar (1.0 MB at 13 MB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/yetus/audience-annotations/0.5.0/audience-annotations-0.5.0.jar
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/zookeeper/zookeeper-jute/3.5.10/zookeeper-jute-3.5.10.jar
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-framework/5.4.0/curator-framework-5.4.0.jar
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-x-discovery/5.4.0/curator-x-discovery-5.4.0.jar
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/fasterxml/jackson/jaxrs/jackson-jaxrs-json-provider/2.10.5/jackson-jaxrs-json-provider-2.10.5.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/zookeeper/zookeeper-jute/3.5.10/zookeeper-jute-3.5.10.jar (251 kB at 5.2 MB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/fasterxml/jackson/jaxrs/jackson-jaxrs-base/2.10.5/jackson-jaxrs-base-2.10.5.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/fasterxml/jackson/jaxrs/jackson-jaxrs-json-provider/2.10.5/jackson-jaxrs-json-provider-2.10.5.jar (16 kB at 305 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/fasterxml/jackson/module/jackson-module-jaxb-annotations/2.10.5/jackson-module-jaxb-annotations-2.10.5.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/yetus/audience-annotations/0.5.0/audience-annotations-0.5.0.jar (20 kB at 386 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/jakarta/xml/bind/jakarta.xml.bind-api/2.3.2/jakarta.xml.bind-api-2.3.2.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/fasterxml/jackson/jaxrs/jackson-jaxrs-base/2.10.5/jackson-jaxrs-base-2.10.5.jar (33 kB at 468 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api/1.2.1/jakarta.activation-api-1.2.1.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-x-discovery/5.4.0/curator-x-discovery-5.4.0.jar (62 kB at 799 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/fasterxml/jackson/jaxrs/jackson-jaxrs-smile-provider/2.10.5/jackson-jaxrs-smile-provider-2.10.5.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-framework/5.4.0/curator-framework-5.4.0.jar (336 kB at 4.3 MB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-server/1.19.4/jersey-server-1.19.4.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/fasterxml/jackson/module/jackson-module-jaxb-annotations/2.10.5/jackson-module-jaxb-annotations-2.10.5.jar (35 kB at 432 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-core/1.19.4/jersey-core-1.19.4.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/jakarta/xml/bind/jakarta.xml.bind-api/2.3.2/jakarta.xml.bind-api-2.3.2.jar (115 kB at 1.4 MB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/google/inject/extensions/guice-servlet/4.1.0/guice-servlet-4.1.0.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api/1.2.1/jakarta.activation-api-1.2.1.jar (44 kB at 458 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/contribs/jersey-guice/1.19.4/jersey-guice-1.19.4.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-server/1.19.4/jersey-server-1.19.4.jar (705 kB at 5.9 MB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-proxy/9.4.48.v20220622/jetty-proxy-9.4.48.v20220622.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/contribs/jersey-guice/1.19.4/jersey-guice-1.19.4.jar (16 kB at 131 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-rewrite/9.4.48.v20220622/jetty-rewrite-9.4.48.v20220622.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-core/1.19.4/jersey-core-1.19.4.jar (437 kB at 3.5 MB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/io/tesla/aether/tesla-aether/0.0.5/tesla-aether-0.0.5.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/fasterxml/jackson/jaxrs/jackson-jaxrs-smile-provider/2.10.5/jackson-jaxrs-smile-provider-2.10.5.jar (14 kB at 98 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/eclipse/aether/aether-connector-file/0.9.0.M2/aether-connector-file-0.9.0.M2.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-proxy/9.4.48.v20220622/jetty-proxy-9.4.48.v20220622.jar (97 kB at 624 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/io/tesla/aether/aether-connector-okhttp/0.0.9/aether-connector-okhttp-0.0.9.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-rewrite/9.4.48.v20220622/jetty-rewrite-9.4.48.v20220622.jar (45 kB at 276 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/squareup/okhttp/okhttp/1.0.2/okhttp-1.0.2.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/io/tesla/aether/aether-connector-okhttp/0.0.9/aether-connector-okhttp-0.0.9.jar (52 kB at 275 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/wagon/wagon-provider-api/2.4/wagon-provider-api-2.4.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/wagon/wagon-provider-api/2.4/wagon-provider-api-2.4.jar (52 kB at 244 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/net/spy/spymemcached/2.12.3/spymemcached-2.12.3.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/net/spy/spymemcached/2.12.3/spymemcached-2.12.3.jar (474 kB at 1.8 MB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-servlets/9.4.48.v20220622/jetty-servlets-9.4.48.v20220622.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-servlets/9.4.48.v20220622/jetty-servlets-9.4.48.v20220622.jar (108 kB at 375 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-continuation/9.4.48.v20220622/jetty-continuation-9.4.48.v20220622.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/google/inject/extensions/guice-servlet/4.1.0/guice-servlet-4.1.0.jar (82 kB at 278 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/derby/derby/10.14.2.0/derby-10.14.2.0.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-continuation/9.4.48.v20220622/jetty-continuation-9.4.48.v20220622.jar (25 kB at 78 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/derby/derbynet/10.14.2.0/derbynet-10.14.2.0.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/io/tesla/aether/tesla-aether/0.0.5/tesla-aether-0.0.5.jar (34 kB at 105 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/derby/derbyclient/10.14.2.0/derbyclient-10.14.2.0.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/derby/derbyclient/10.14.2.0/derbyclient-10.14.2.0.jar (588 kB at 1.6 MB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/github/ben-manes/caffeine/caffeine/2.8.0/caffeine-2.8.0.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/derby/derbynet/10.14.2.0/derbynet-10.14.2.0.jar (273 kB at 727 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/commons/commons-dbcp2/2.0.1/commons-dbcp2-2.0.1.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/eclipse/aether/aether-connector-file/0.9.0.M2/aether-connector-file-0.9.0.M2.jar (26 kB at 69 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/commons/commons-pool2/2.2/commons-pool2-2.2.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/github/ben-manes/caffeine/caffeine/2.8.0/caffeine-2.8.0.jar (880 kB at 2.1 MB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-client/5.4.0/curator-client-5.4.0.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/derby/derby/10.14.2.0/derby-10.14.2.0.jar (3.2 MB at 7.9 MB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-recipes/5.4.0/curator-recipes-5.4.0.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/commons/commons-dbcp2/2.0.1/commons-dbcp2-2.0.1.jar (168 kB at 407 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-servlet/1.19.4/jersey-servlet-1.19.4.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/commons/commons-pool2/2.2/commons-pool2-2.2.jar (108 kB at 262 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-client/9.4.48.v20220622/jetty-client-9.4.48.v20220622.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-servlet/1.19.4/jersey-servlet-1.19.4.jar (129 kB at 297 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/javax/ws/rs/jsr311-api/1.1.1/jsr311-api-1.1.1.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-recipes/5.4.0/curator-recipes-5.4.0.jar (318 kB at 707 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/io/github/resilience4j/resilience4j-bulkhead/1.3.1/resilience4j-bulkhead-1.3.1.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/javax/ws/rs/jsr311-api/1.1.1/jsr311-api-1.1.1.jar (46 kB at 100 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/io/vavr/vavr/0.10.2/vavr-0.10.2.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-client/9.4.48.v20220622/jetty-client-9.4.48.v20220622.jar (326 kB at 702 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/io/vavr/vavr-match/0.10.2/vavr-match-0.10.2.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/io/vavr/vavr/0.10.2/vavr-0.10.2.jar (898 kB at 1.8 MB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/io/github/resilience4j/resilience4j-core/1.3.1/resilience4j-core-1.3.1.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/io/github/resilience4j/resilience4j-bulkhead/1.3.1/resilience4j-bulkhead-1.3.1.jar (55 kB at 109 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-test/5.4.0/curator-test-5.4.0.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/io/vavr/vavr-match/0.10.2/vavr-match-0.10.2.jar (3.0 kB at 6.0 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/io/dropwizard/metrics/metrics-core/4.0.0/metrics-core-4.0.0.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/io/github/resilience4j/resilience4j-core/1.3.1/resilience4j-core-1.3.1.jar (52 kB at 96 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/xerial/snappy/snappy-java/1.1.8.4/snappy-java-1.1.8.4.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/squareup/okhttp/okhttp/1.0.2/okhttp-1.0.2.jar (191 kB at 341 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-test-framework/jersey-test-framework-core/1.19.4/jersey-test-framework-core-1.19.4.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/io/dropwizard/metrics/metrics-core/4.0.0/metrics-core-4.0.0.jar (98 kB at 163 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-test-framework/jersey-test-framework-grizzly2/1.19.4/jersey-test-framework-grizzly2-1.19.4.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-test/5.4.0/curator-test-5.4.0.jar (3.2 MB at 5.2 MB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-grizzly2-servlet/1.19.4/jersey-grizzly2-servlet-1.19.4.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/xerial/snappy/snappy-java/1.1.8.4/snappy-java-1.1.8.4.jar (2.0 MB at 3.2 MB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-http-servlet/2.2.16/grizzly-http-servlet-2.2.16.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-http-servlet/2.2.16/grizzly-http-servlet-2.2.16.jar (165 kB at 250 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-grizzly2/1.19.4/jersey-grizzly2-1.19.4.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-test-framework/jersey-test-framework-grizzly2/1.19.4/jersey-test-framework-grizzly2-1.19.4.jar (15 kB at 23 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-http/2.2.16/grizzly-http-2.2.16.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-grizzly2-servlet/1.19.4/jersey-grizzly2-servlet-1.19.4.jar (7.0 kB at 10 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-framework/2.2.16/grizzly-framework-2.2.16.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-grizzly2/1.19.4/jersey-grizzly2-1.19.4.jar (16 kB at 23 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-client/1.19.4/jersey-client-1.19.4.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-http/2.2.16/grizzly-http-2.2.16.jar (262 kB at 360 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-http-server/2.2.16/grizzly-http-server-2.2.16.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-client/1.19.4/jersey-client-1.19.4.jar (134 kB at 183 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-rcm/2.2.16/grizzly-rcm-2.2.16.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-framework/2.2.16/grizzly-framework-2.2.16.jar (737 kB at 983 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/assertj/assertj-core/3.19.0/assertj-core-3.19.0.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/curator/curator-client/5.4.0/curator-client-5.4.0.jar (3.2 MB at 4.2 MB/s)
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-rcm/2.2.16/grizzly-rcm-2.2.16.jar (8.2 kB at 11 kB/s)
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/glassfish/grizzly/grizzly-http-server/2.2.16/grizzly-http-server-2.2.16.jar (215 kB at 273 kB/s)
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/com/sun/jersey/jersey-test-framework/jersey-test-framework-core/1.19.4/jersey-test-framework-core-1.19.4.jar (31 kB at 37 kB/s)
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/assertj/assertj-core/3.19.0/assertj-core-3.19.0.jar (4.8 MB at 5.7 MB/s)
+[INFO] 
+[INFO] --- checkstyle:3.0.0:check (validate) @ druid-server ---
+[INFO] Starting audit...
+Audit done.
+[INFO] 
+[INFO] >>> pmd:3.16.0:check (validate) > :pmd @ druid-server >>>
+[INFO] 
+[INFO] --- pmd:3.16.0:pmd (pmd) @ druid-server ---
+[INFO] PMD version: 6.42.0
+[INFO] 
+[INFO] <<< pmd:3.16.0:check (validate) < :pmd @ druid-server <<<
+[INFO] 
+[INFO] 
+[INFO] --- pmd:3.16.0:check (validate) @ druid-server ---
+[INFO] PMD version: 6.42.0
+[INFO] 
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (enforce-maven-version) @ druid-server ---
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (default-cli) @ druid-server ---
+[INFO] 
+[INFO] --- git-commit-id:4.9.10:revision (default) @ druid-server ---
+[INFO] 
+[INFO] --- jacoco:0.8.7:prepare-agent (prepare-agent) @ druid-server ---
+[INFO] jacocoArgLine set to -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.7/org.jacoco.agent-0.8.7-runtime.jar=destfile=/testbed/server/target/jacoco.exec,excludes=org/apache/druid/metadata/BasicDataSourceExt.class:org/apache/druid/server/QueryResponse.class:org/apache/druid/curator/CuratorModule.class
+[INFO] 
+[INFO] --- remote-resources:1.5:process (process-resource-bundles) @ druid-server ---
+[INFO] artifact junit:junit-dep: checking for updates from maven.org
+[INFO] artifact junit:junit-dep: checking for updates from sigar
+[INFO] artifact junit:junit-dep: checking for updates from central
+[INFO] artifact junit:junit: checking for updates from maven.org
+[INFO] artifact junit:junit: checking for updates from sigar
+[INFO] artifact junit:junit: checking for updates from central
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/junit/junit-bom/5.7.0/junit-bom-5.7.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/junit/junit-bom/5.7.0/junit-bom-5.7.0.pom (5.1 kB at 283 kB/s)
+[INFO] 
+[INFO] --- resources:3.2.0:resources (default-resources) @ druid-server ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] skip non existing resourceDirectory /testbed/server/src/main/resources
+[INFO] Copying 3 resources
+[INFO] 
+[INFO] --- compiler:3.8.1:compile (default-compile) @ druid-server ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 737 source files to /testbed/server/target/classes
+[INFO] /testbed/server/src/main/java/org/apache/druid/server/coordinator/duty/EmitClusterStatsAndMetrics.java: Some input files use or override a deprecated API.
+[INFO] /testbed/server/src/main/java/org/apache/druid/server/coordinator/duty/EmitClusterStatsAndMetrics.java: Recompile with -Xlint:deprecation for details.
+[INFO] /testbed/server/src/main/java/org/apache/druid/server/coordinator/CoordinatorDynamicConfig.java: Some input files use unchecked or unsafe operations.
+[INFO] /testbed/server/src/main/java/org/apache/druid/server/coordinator/CoordinatorDynamicConfig.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- forbiddenapis:3.2:check (compile) @ druid-server ---
+[INFO] Scanning for classes to check...
+[INFO] Reading bundled API signatures: jdk-unsafe-1.8
+[INFO] Reading bundled API signatures: jdk-system-out
+[INFO] Reading API signatures: /testbed/codestyle/joda-time-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/guava16-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/druid-forbidden-apis.txt
+[INFO] Loading classes to check...
+[INFO] Scanning classes for violations...
+[INFO] Scanned 1206 class file(s) for forbidden API invocations (in 1.75s), 0 error(s).
+[INFO] 
+[INFO] --- resources:3.2.0:testResources (default-testResources) @ druid-server ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 8 resources
+[INFO] Copying 3 resources
+[INFO] 
+[INFO] --- compiler:3.8.1:testCompile (default-testCompile) @ druid-server ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 362 source files to /testbed/server/target/test-classes
+[INFO] /testbed/server/src/test/java/org/apache/druid/server/coordinator/DruidCoordinatorTest.java: Some input files use or override a deprecated API.
+[INFO] /testbed/server/src/test/java/org/apache/druid/server/coordinator/DruidCoordinatorTest.java: Recompile with -Xlint:deprecation for details.
+[INFO] /testbed/server/src/test/java/org/apache/druid/segment/realtime/FireDepartmentTest.java: Some input files use unchecked or unsafe operations.
+[INFO] /testbed/server/src/test/java/org/apache/druid/segment/realtime/FireDepartmentTest.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- forbiddenapis:3.2:testCheck (testCompile) @ druid-server ---
+[INFO] Scanning for classes to check...
+[INFO] Reading bundled API signatures: jdk-unsafe-1.8
+[INFO] Reading API signatures: /testbed/codestyle/joda-time-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/guava16-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/druid-forbidden-apis.txt
+[INFO] Loading classes to check...
+[INFO] Scanning classes for violations...
+[INFO] Scanned 862 class file(s) for forbidden API invocations (in 0.80s), 0 error(s).
+[INFO] 
+[INFO] --- surefire:3.0.0-M7:test (default-test) @ druid-server ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junit4.JUnit4Provider
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-junit4/3.0.0-M7/surefire-junit4-3.0.0-M7.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-junit4/3.0.0-M7/surefire-junit4-3.0.0-M7.jar (18 kB at 518 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-junit4/3.0.0-M7/surefire-junit4-3.0.0-M7.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-junit4/3.0.0-M7/surefire-junit4-3.0.0-M7.pom (2.9 kB at 77 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-providers/3.0.0-M7/surefire-providers-3.0.0-M7.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/surefire-providers/3.0.0-M7/surefire-providers-3.0.0-M7.pom (2.5 kB at 91 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/junit/junit/4.0/junit-4.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/junit/junit/4.0/junit-4.0.pom (210 B at 10 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit4/3.0.0-M7/common-junit4-3.0.0-M7.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit4/3.0.0-M7/common-junit4-3.0.0-M7.pom (3.0 kB at 91 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit3/3.0.0-M7/common-junit3-3.0.0-M7.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit3/3.0.0-M7/common-junit3-3.0.0-M7.pom (2.7 kB at 88 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-java5/3.0.0-M7/common-java5-3.0.0-M7.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-java5/3.0.0-M7/common-java5-3.0.0-M7.pom (2.7 kB at 75 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/hamcrest/hamcrest-library/1.3/hamcrest-library-1.3.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/hamcrest/hamcrest-library/1.3/hamcrest-library-1.3.pom (820 B at 23 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/assertj/assertj-core/3.22.0/assertj-core-3.22.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/assertj/assertj-core/3.22.0/assertj-core-3.22.0.pom (31 kB at 1.1 MB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/assertj/assertj-parent-pom/2.2.14/assertj-parent-pom-2.2.14.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/assertj/assertj-parent-pom/2.2.14/assertj-parent-pom-2.2.14.pom (25 kB at 982 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/junit/junit-bom/5.8.0/junit-bom-5.8.0.pom
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/junit/junit-bom/5.8.0/junit-bom-5.8.0.pom (5.6 kB at 194 kB/s)
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit4/3.0.0-M7/common-junit4-3.0.0-M7.jar
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit3/3.0.0-M7/common-junit3-3.0.0-M7.jar
+[INFO] Downloading from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-java5/3.0.0-M7/common-java5-3.0.0-M7.jar
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit3/3.0.0-M7/common-junit3-3.0.0-M7.jar (12 kB at 294 kB/s)
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-junit4/3.0.0-M7/common-junit4-3.0.0-M7.jar (26 kB at 414 kB/s)
+[INFO] Downloaded from maven.org: https://repo1.maven.org/maven2/org/apache/maven/surefire/common-java5/3.0.0-M7/common-java5-3.0.0-M7.jar (17 kB at 271 kB/s)
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running org.apache.druid.discovery.DruidLeaderClientTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 8.168 s - in org.apache.druid.discovery.DruidLeaderClientTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- animal-sniffer:1.17:check (check-java-api) @ druid-server ---
+[INFO] Checking unresolved references to org.codehaus.mojo.signature:java18:1.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  01:06 min (Wall Clock)
+[INFO] Finished at: 2026-08-27T09:17:16Z
+[INFO] ------------------------------------------------------------------------
++ mvnd test -B -T 1C -pl server -Dtest=org.apache.druid.discovery.DruidLeaderClientTest#testServerFailureAndRedirect
+Aug 27, 2026 9:17:17 AM org.jline.utils.Log logr
+WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[main] WARNING org.jline - Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[INFO] Processing build on daemon f74549ab
+[INFO] Scanning for projects...
+[INFO] BuildTimeEventSpy is registered.
+[INFO] 
+[INFO] Using the SmartBuilder implementation with a thread count of 28
+[INFO] 
+[INFO] -------------------< org.apache.druid:druid-server >--------------------
+[INFO] Building druid-server 27.0.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] 2 problems were encountered while building the effective model for org.apache.yetus:audience-annotations:jar:0.5.0 during dependency collection step for project (use -X to see details)
+[INFO] 
+[INFO] --- checkstyle:3.0.0:check (validate) @ druid-server ---
+[INFO] Starting audit...
+Audit done.
+[INFO] 
+[INFO] >>> pmd:3.16.0:check (validate) > :pmd @ druid-server >>>
+[INFO] 
+[INFO] --- pmd:3.16.0:pmd (pmd) @ druid-server ---
+[INFO] PMD version: 6.42.0
+[INFO] 
+[INFO] <<< pmd:3.16.0:check (validate) < :pmd @ druid-server <<<
+[INFO] 
+[INFO] 
+[INFO] --- pmd:3.16.0:check (validate) @ druid-server ---
+[INFO] PMD version: 6.42.0
+[INFO] 
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (enforce-maven-version) @ druid-server ---
+[INFO] 
+[INFO] --- enforcer:3.0.0:enforce (default-cli) @ druid-server ---
+[INFO] 
+[INFO] --- git-commit-id:4.9.10:revision (default) @ druid-server ---
+[INFO] 
+[INFO] --- jacoco:0.8.7:prepare-agent (prepare-agent) @ druid-server ---
+[INFO] jacocoArgLine set to -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.7/org.jacoco.agent-0.8.7-runtime.jar=destfile=/testbed/server/target/jacoco.exec,excludes=org/apache/druid/metadata/BasicDataSourceExt.class:org/apache/druid/server/QueryResponse.class:org/apache/druid/curator/CuratorModule.class
+[INFO] 
+[INFO] --- remote-resources:1.5:process (process-resource-bundles) @ druid-server ---
+[INFO] 
+[INFO] --- resources:3.2.0:resources (default-resources) @ druid-server ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] skip non existing resourceDirectory /testbed/server/src/main/resources
+[INFO] Copying 3 resources
+[INFO] 
+[INFO] --- compiler:3.8.1:compile (default-compile) @ druid-server ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- forbiddenapis:3.2:check (compile) @ druid-server ---
+[INFO] Scanning for classes to check...
+[INFO] Reading bundled API signatures: jdk-unsafe-1.8
+[INFO] Reading bundled API signatures: jdk-system-out
+[INFO] Reading API signatures: /testbed/codestyle/joda-time-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/guava16-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/druid-forbidden-apis.txt
+[INFO] Loading classes to check...
+[INFO] Scanning classes for violations...
+[INFO] Scanned 1206 class file(s) for forbidden API invocations (in 0.34s), 0 error(s).
+[INFO] 
+[INFO] --- resources:3.2.0:testResources (default-testResources) @ druid-server ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 8 resources
+[INFO] Copying 3 resources
+[INFO] 
+[INFO] --- compiler:3.8.1:testCompile (default-testCompile) @ druid-server ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- forbiddenapis:3.2:testCheck (testCompile) @ druid-server ---
+[INFO] Scanning for classes to check...
+[INFO] Reading bundled API signatures: jdk-unsafe-1.8
+[INFO] Reading API signatures: /testbed/codestyle/joda-time-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/guava16-forbidden-apis.txt
+[INFO] Reading API signatures: /testbed/codestyle/druid-forbidden-apis.txt
+[INFO] Loading classes to check...
+[INFO] Scanning classes for violations...
+[INFO] Scanned 862 class file(s) for forbidden API invocations (in 0.43s), 0 error(s).
+[INFO] 
+[INFO] --- surefire:3.0.0-M7:test (default-test) @ druid-server ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junit4.JUnit4Provider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running org.apache.druid.discovery.DruidLeaderClientTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.04 s - in org.apache.druid.discovery.DruidLeaderClientTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- animal-sniffer:1.17:check (check-java-api) @ druid-server ---
+[INFO] Checking unresolved references to org.codehaus.mojo.signature:java18:1.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  15.353 s (Wall Clock)
+[INFO] Finished at: 2026-08-27T09:17:32Z
+[INFO] ------------------------------------------------------------------------
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout 4fffee17761286996a8c43154b72db4bcaafb16d server/src/test/java/org/apache/druid/discovery/DruidLeaderClientTest.java
+Updated 1 path from 63733d3b0b

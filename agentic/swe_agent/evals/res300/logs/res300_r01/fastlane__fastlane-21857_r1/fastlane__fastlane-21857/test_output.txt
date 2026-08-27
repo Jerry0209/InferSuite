@@ -1,0 +1,111 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   fastlane_core/lib/fastlane_core/print_table.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit c18d01c03cf22b82ff5e2e03f01e59f956684708
+Author: Jay Soffian <155970+jaysoffian@users.noreply.github.com>
+Date:   Sat Feb 10 09:06:38 2024 -0500
+
+    [spaceship] create_certificate_signing_request: update from SHA-1 to SHA-256 (#21644)
+    
+    Update the two places where Fastlane creates CSRs to use SHA-256
+    (sha256WithRSAEncryption). This signature algorithm is accepted by
+    Apple and CSRs created using Keychain Access at least since Ventura use
+    SHA-256.
+    
+    SHA-1 is increasingly deprecated by OS vendors which is how I noticed
+    fastlane was still using SHA-1 when attempting to use `fastlane pem`
+    under RedHat 9, which disables SHA-1 by default[^1].
+    
+    [^1]: https://wiki.almalinux.org/release-notes/9.0.html#changelog
+
+diff --git a/spaceship/lib/spaceship/connect_api/models/certificate.rb b/spaceship/lib/spaceship/connect_api/models/certificate.rb
+index dfeaa44f0..13630000a 100644
+--- a/spaceship/lib/spaceship/connect_api/models/certificate.rb
++++ b/spaceship/lib/spaceship/connect_api/models/certificate.rb
+@@ -55,7 +55,7 @@ module Spaceship
+         Time.parse(expiration_date) > Time.now
+       end
+ 
+-      # Create a new code signing request that can be used to
++      # Create a new cert signing request that can be used to
+       # generate a new certificate
+       # @example
+       #  Create a new certificate signing request
+@@ -71,7 +71,7 @@ module Spaceship
+                                                 ['CN', 'PEM', OpenSSL::ASN1::UTF8STRING]
+                                               ])
+         csr.public_key = key.public_key
+-        csr.sign(key, OpenSSL::Digest::SHA1.new)
++        csr.sign(key, OpenSSL::Digest::SHA256.new)
+         return [csr, key]
+       end
+ 
+diff --git a/spaceship/lib/spaceship/portal/certificate.rb b/spaceship/lib/spaceship/portal/certificate.rb
+index 90ac7541c..8cfcdfa18 100644
+--- a/spaceship/lib/spaceship/portal/certificate.rb
++++ b/spaceship/lib/spaceship/portal/certificate.rb
+@@ -205,7 +205,7 @@ module Spaceship
+ 
+       # Class methods
+       class << self
+-        # Create a new code signing request that can be used to
++        # Create a new cert signing request that can be used to
+         # generate a new certificate
+         # @example
+         #  Create a new certificate signing request
+@@ -221,7 +221,7 @@ module Spaceship
+                                                   ['CN', 'PEM', OpenSSL::ASN1::UTF8STRING]
+                                                 ])
+           csr.public_key = key.public_key
+-          csr.sign(key, OpenSSL::Digest::SHA1.new)
++          csr.sign(key, OpenSSL::Digest::SHA256.new)
+           return [csr, key]
+         end
+ 
++ git -c core.fileMode=false diff c18d01c03cf22b82ff5e2e03f01e59f956684708
+diff --git a/fastlane_core/lib/fastlane_core/print_table.rb b/fastlane_core/lib/fastlane_core/print_table.rb
+index 622350d20..3abc97ea2 100644
+--- a/fastlane_core/lib/fastlane_core/print_table.rb
++++ b/fastlane_core/lib/fastlane_core/print_table.rb
+@@ -1,6 +1,22 @@
+ require_relative 'configuration/configuration'
+ require_relative 'helper'
+ 
++# Monkey patch Terminal::Table until this is merged
++# https://github.com/tj/terminal-table/pull/131
++# solves https://github.com/fastlane/fastlane/issues/21852
++# loads Terminal::Table first to be able to monkey patch it.
++require 'terminal-table'
++module Terminal
++  class Table
++    class Cell
++      def lines
++        # @value.to_s.split(/\n/)
++        @value.to_s.encode("utf-8", invalid: :replace).split(/\n/)
++      end
++    end
++  end
++end
++
+ module FastlaneCore
+   class PrintTable
+     class << self
++ rm -f fastlane/spec/lane_manager_base_spec.rb
++ git apply -v -
+Checking patch fastlane/spec/lane_manager_base_spec.rb...
+>>>>> Start Test Output
+Applied patch fastlane/spec/lane_manager_base_spec.rb cleanly.
+prints lane context - ./fastlane/spec/lane_manager_base_spec.rb[1:1:1:1] - passed
+prints lane context - ./fastlane/spec/lane_manager_base_spec.rb[1:1:1:2] - passed
+doesn't crash when lane_context contains non unicode text - ./fastlane/spec/lane_manager_base_spec.rb[1:1:1:3] - passed
+>>>>> End Test Output
+>>>>> Test Exit Code: 0
++ rm -f fastlane/spec/lane_manager_base_spec.rb

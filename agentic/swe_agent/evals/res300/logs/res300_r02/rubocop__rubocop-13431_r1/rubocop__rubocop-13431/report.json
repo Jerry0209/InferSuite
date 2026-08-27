@@ -1,0 +1,37 @@
+{
+    "rubocop__rubocop-13431": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "infra_failure": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "registers an offense for methods with empty lines and arguments spanning multiple lines",
+                    "registers an offense for methods with empty lines, empty arguments spanning multiple lines"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "accepts method body starting with a line with spaces",
+                    "is not fooled by single line methods",
+                    "registers an offense for class method body ending with a blank",
+                    "registers an offense for class method body starting with a blank",
+                    "registers an offense for method body ending with a blank",
+                    "registers an offense for method body starting with a blank"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

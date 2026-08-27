@@ -1,0 +1,1909 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch unstable
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/t_zset.c
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 843a4cdc075a5b251e1b154f8013a9e0abe1038b
+Author: yoav-steinberg <yoav@redislabs.com>
+Date:   Sun May 22 17:10:31 2022 +0300
+
+    Add warning for suspected slow system clocksource setting (#10636)
+    
+    This PR does 2 main things:
+    1) Add warning for suspected slow system clocksource setting. This is Linux specific.
+    2) Add a `--check-system` argument to redis which runs all system checks and prints a report.
+    
+    ## System checks
+    Add a command line option `--check-system` which runs all known system checks and provides
+    a report to stdout of which systems checks have failed with details on how to reconfigure the
+    system for optimized redis performance.
+    The `--system-check` mode exists with an appropriate error code after running all the checks.
+    
+    ## Slow clocksource details
+    We check the system's clocksource performance by running `clock_gettime()` in a loop and then
+    checking how much time was spent in a system call (via `getrusage()`). If we spend more than
+    10% of the time in the kernel then we print a warning. I verified that using the slow clock sources:
+    `acpi_pm` (~90% in the kernel on my laptop) and `xen` (~30% in the kernel on an ec2 `m4.large`)
+    we get this warning.
+    
+    The check runs 5 system ticks so we can detect time spent in kernel at 20% jumps (0%,20%,40%...).
+    Anything more accurate will require the test to run longer. Typically 5 ticks are 50ms. This means
+    running the test on startup will delay startup by 50ms. To avoid this we make sure the test is only
+    executed in the `--check-system` mode.
+    
+    For a quick startup check, we specifically warn if the we see the system is using the `xen` clocksource
+    which we know has bad performance and isn't recommended (at least on ec2). In such a case the
+    user should manually rung redis with `--check-system` to force the slower clocksource test described
+    above.
+    
+    ## Other changes in the PR
+    
+    * All the system checks are now implemented as functions in _syscheck.c_.
+      They are implemented using a standard interface (see details in _syscheck.c_).
+      To do this I moved the checking functions `linuxOvercommitMemoryValue()`,
+      `THPIsEnabled()`, `linuxMadvFreeForkBugCheck()` out of _server.c_ and _latency.c_
+      and into the new _syscheck.c_. When moving these functions I made sure they don't
+      depend on other functionality provided in _server.c_ and made them use a standard
+      "check functions" interface. Specifically:
+      * I removed all logging out of `linuxMadvFreeForkBugCheck()`. In case there's some
+        unexpected error during the check aborts as before, but without any logging.
+        It returns an error code 0 meaning the check didn't not complete.
+      * All these functions now return 1 on success, -1 on failure, 0 in case the check itself
+        cannot be completed.
+      * The `linuxMadvFreeForkBugCheck()` function now internally calls `exit()` and not
+        `exitFromChild()` because the latter is only available in _server.c_ and I wanted to
+        remove that dependency. This isn't an because we don't need to worry about the
+        child process created by the test doing anything related to the rdb/aof files which
+        is why `exitFromChild()` was created.
+    
+    * This also fixes parsing of other /proc/\<pid\>/stat fields to correctly handle spaces
+      in the process name and be more robust in general. Not that before this fix the rss
+      info in `INFO memory` was corrupt in case of spaces in the process name. To
+      recreate just rename `redis-server` to `redis server`, start it, and run `INFO memory`.
+
+diff --git a/src/Makefile b/src/Makefile
+index 278b6afb..e4f7d906 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -316,7 +316,7 @@ endif
+ 
+ REDIS_SERVER_NAME=redis-server$(PROG_SUFFIX)
+ REDIS_SENTINEL_NAME=redis-sentinel$(PROG_SUFFIX)
+-REDIS_SERVER_OBJ=adlist.o quicklist.o ae.o anet.o dict.o server.o sds.o zmalloc.o lzf_c.o lzf_d.o pqsort.o zipmap.o sha1.o ziplist.o release.o networking.o util.o object.o db.o replication.o rdb.o t_string.o t_list.o t_set.o t_zset.o t_hash.o config.o aof.o pubsub.o multi.o debug.o sort.o intset.o syncio.o cluster.o crc16.o endianconv.o slowlog.o eval.o bio.o rio.o rand.o memtest.o crcspeed.o crc64.o bitops.o sentinel.o notify.o setproctitle.o blocked.o hyperloglog.o latency.o sparkline.o redis-check-rdb.o redis-check-aof.o geo.o lazyfree.o module.o evict.o expire.o geohash.o geohash_helper.o childinfo.o defrag.o siphash.o rax.o t_stream.o listpack.o localtime.o lolwut.o lolwut5.o lolwut6.o acl.o tracking.o connection.o tls.o sha256.o timeout.o setcpuaffinity.o monotonic.o mt19937-64.o resp_parser.o call_reply.o script_lua.o script.o functions.o function_lua.o commands.o
++REDIS_SERVER_OBJ=adlist.o quicklist.o ae.o anet.o dict.o server.o sds.o zmalloc.o lzf_c.o lzf_d.o pqsort.o zipmap.o sha1.o ziplist.o release.o networking.o util.o object.o db.o replication.o rdb.o t_string.o t_list.o t_set.o t_zset.o t_hash.o config.o aof.o pubsub.o multi.o debug.o sort.o intset.o syncio.o cluster.o crc16.o endianconv.o slowlog.o eval.o bio.o rio.o rand.o memtest.o syscheck.o crcspeed.o crc64.o bitops.o sentinel.o notify.o setproctitle.o blocked.o hyperloglog.o latency.o sparkline.o redis-check-rdb.o redis-check-aof.o geo.o lazyfree.o module.o evict.o expire.o geohash.o geohash_helper.o childinfo.o defrag.o siphash.o rax.o t_stream.o listpack.o localtime.o lolwut.o lolwut5.o lolwut6.o acl.o tracking.o connection.o tls.o sha256.o timeout.o setcpuaffinity.o monotonic.o mt19937-64.o resp_parser.o call_reply.o script_lua.o script.o functions.o function_lua.o commands.o
+ REDIS_CLI_NAME=redis-cli$(PROG_SUFFIX)
+ REDIS_CLI_OBJ=anet.o adlist.o dict.o redis-cli.o zmalloc.o release.o ae.o redisassert.o crcspeed.o crc64.o siphash.o crc16.o monotonic.o cli_common.o mt19937-64.o
+ REDIS_BENCHMARK_NAME=redis-benchmark$(PROG_SUFFIX)
+diff --git a/src/latency.c b/src/latency.c
+index 95e5a8a1..a784be88 100644
+--- a/src/latency.c
++++ b/src/latency.c
+@@ -59,39 +59,6 @@ dictType latencyTimeSeriesDictType = {
+ 
+ /* ------------------------- Utility functions ------------------------------ */
+ 
+-#ifdef __linux__
+-#include <sys/prctl.h>
+-/* Returns 1 if Transparent Huge Pages support is enabled in the kernel.
+- * Otherwise (or if we are unable to check) 0 is returned. */
+-int THPIsEnabled(void) {
+-    char buf[1024];
+-
+-    FILE *fp = fopen("/sys/kernel/mm/transparent_hugepage/enabled","r");
+-    if (!fp) return 0;
+-    if (fgets(buf,sizeof(buf),fp) == NULL) {
+-        fclose(fp);
+-        return 0;
+-    }
+-    fclose(fp);
+-    return (strstr(buf,"[always]") != NULL) ? 1 : 0;
+-}
+-
+-/* since linux-3.5, kernel supports to set the state of the "THP disable" flag
+- * for the calling thread. PR_SET_THP_DISABLE is defined in linux/prctl.h */
+-int THPDisable(void) {
+-    int ret = -EINVAL;
+-
+-    if (!server.disable_thp)
+-        return ret;
+-
+-#ifdef PR_SET_THP_DISABLE
+-    ret = prctl(PR_SET_THP_DISABLE, 1, 0, 0, 0);
+-#endif
+-
+-    return ret;
+-}
+-#endif
+-
+ /* Report the amount of AnonHugePages in smap, in bytes. If the return
+  * value of the function is non-zero, the process is being targeted by
+  * THP support, and is likely to have memory usage / latency issues. */
+diff --git a/src/latency.h b/src/latency.h
+index b17f403a..6f2a854d 100644
+--- a/src/latency.h
++++ b/src/latency.h
+@@ -63,8 +63,6 @@ struct latencyStats {
+ 
+ void latencyMonitorInit(void);
+ void latencyAddSample(const char *event, mstime_t latency);
+-int THPIsEnabled(void);
+-int THPDisable(void);
+ 
+ /* Latency monitoring macros. */
+ 
+diff --git a/src/server.c b/src/server.c
+index 2296ba39..feba2233 100644
+--- a/src/server.c
++++ b/src/server.c
+@@ -36,6 +36,7 @@
+ #include "atomicvar.h"
+ #include "mt19937-64.h"
+ #include "functions.h"
++#include "syscheck.h"
+ 
+ #include <time.h>
+ #include <signal.h>
+@@ -5969,168 +5970,38 @@ int checkIgnoreWarning(const char *warning) {
+ }
+ 
+ #ifdef __linux__
+-int linuxOvercommitMemoryValue(void) {
+-    FILE *fp = fopen("/proc/sys/vm/overcommit_memory","r");
+-    char buf[64];
++#include <sys/prctl.h>
++/* since linux-3.5, kernel supports to set the state of the "THP disable" flag
++ * for the calling thread. PR_SET_THP_DISABLE is defined in linux/prctl.h */
++static int THPDisable(void) {
++    int ret = -EINVAL;
+ 
+-    if (!fp) return -1;
+-    if (fgets(buf,64,fp) == NULL) {
+-        fclose(fp);
+-        return -1;
+-    }
+-    fclose(fp);
++    if (!server.disable_thp)
++        return ret;
++
++#ifdef PR_SET_THP_DISABLE
++    ret = prctl(PR_SET_THP_DISABLE, 1, 0, 0, 0);
++#endif
+ 
+-    return atoi(buf);
++    return ret;
+ }
+ 
+ void linuxMemoryWarnings(void) {
+-    if (linuxOvercommitMemoryValue() == 0) {
+-        serverLog(LL_WARNING,"WARNING overcommit_memory is set to 0! Background save may fail under low memory condition. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.");
++    sds err_msg;
++    if (checkOvercommit(&err_msg) < 0) {
++        serverLog(LL_WARNING,"WARNING %s", err_msg);
++        sdsfree(err_msg);
+     }
+-    if (THPIsEnabled()) {
++    if (checkTHPEnabled(&err_msg) < 0) {
+         server.thp_enabled = 1;
+         if (THPDisable() == 0) {
+             server.thp_enabled = 0;
+-            return;
+-        }
+-        serverLog(LL_WARNING,"WARNING you have Transparent Huge Pages (THP) support enabled in your kernel. This will create latency and memory usage issues with Redis. To fix this issue run the command 'echo madvise > /sys/kernel/mm/transparent_hugepage/enabled' as root, and add it to your /etc/rc.local in order to retain the setting after a reboot. Redis must be restarted after THP is disabled (set to 'madvise' or 'never').");
+-    }
+-}
+-
+-#ifdef __arm64__
+-
+-/* Get size in kilobytes of the Shared_Dirty pages of the calling process for the
+- * memory map corresponding to the provided address, or -1 on error. */
+-static int smapsGetSharedDirty(unsigned long addr) {
+-    int ret, in_mapping = 0, val = -1;
+-    unsigned long from, to;
+-    char buf[64];
+-    FILE *f;
+-
+-    f = fopen("/proc/self/smaps", "r");
+-    if (!f) return -1;
+-
+-    while (1) {
+-        if (!fgets(buf, sizeof(buf), f))
+-            break;
+-
+-        ret = sscanf(buf, "%lx-%lx", &from, &to);
+-        if (ret == 2)
+-            in_mapping = from <= addr && addr < to;
+-
+-        if (in_mapping && !memcmp(buf, "Shared_Dirty:", 13)) {
+-            sscanf(buf, "%*s %d", &val);
+-            /* If parsing fails, we remain with val == -1 */
+-            break;
+-        }
+-    }
+-
+-    fclose(f);
+-    return val;
+-}
+-
+-/* Older arm64 Linux kernels have a bug that could lead to data corruption
+- * during background save in certain scenarios. This function checks if the
+- * kernel is affected.
+- * The bug was fixed in commit ff1712f953e27f0b0718762ec17d0adb15c9fd0b
+- * titled: "arm64: pgtable: Ensure dirty bit is preserved across pte_wrprotect()"
+- * Return -1 on unexpected test failure, 1 if the kernel seems to be affected,
+- * and 0 otherwise. */
+-int linuxMadvFreeForkBugCheck(void) {
+-    int ret, pipefd[2] = { -1, -1 };
+-    pid_t pid;
+-    char *p = NULL, *q;
+-    int bug_found = 0;
+-    long page_size = sysconf(_SC_PAGESIZE);
+-    long map_size = 3 * page_size;
+-
+-    /* Create a memory map that's in our full control (not one used by the allocator). */
+-    p = mmap(NULL, map_size, PROT_READ, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+-    if (p == MAP_FAILED) {
+-        serverLog(LL_WARNING, "Failed to mmap(): %s", strerror(errno));
+-        return -1;
+-    }
+-
+-    q = p + page_size;
+-
+-    /* Split the memory map in 3 pages by setting their protection as RO|RW|RO to prevent
+-     * Linux from merging this memory map with adjacent VMAs. */
+-    ret = mprotect(q, page_size, PROT_READ | PROT_WRITE);
+-    if (ret < 0) {
+-        serverLog(LL_WARNING, "Failed to mprotect(): %s", strerror(errno));
+-        bug_found = -1;
+-        goto exit;
+-    }
+-
+-    /* Write to the page once to make it resident */
+-    *(volatile char*)q = 0;
+-
+-    /* Tell the kernel that this page is free to be reclaimed. */
+-#ifndef MADV_FREE
+-#define MADV_FREE 8
+-#endif
+-    ret = madvise(q, page_size, MADV_FREE);
+-    if (ret < 0) {
+-        /* MADV_FREE is not available on older kernels that are presumably
+-         * not affected. */
+-        if (errno == EINVAL) goto exit;
+-
+-        serverLog(LL_WARNING, "Failed to madvise(): %s", strerror(errno));
+-        bug_found = -1;
+-        goto exit;
+-    }
+-
+-    /* Write to the page after being marked for freeing, this is supposed to take
+-     * ownership of that page again. */
+-    *(volatile char*)q = 0;
+-
+-    /* Create a pipe for the child to return the info to the parent. */
+-    ret = anetPipe(pipefd, 0, 0);
+-    if (ret < 0) {
+-        serverLog(LL_WARNING, "Failed to create pipe: %s", strerror(errno));
+-        bug_found = -1;
+-        goto exit;
+-    }
+-
+-    /* Fork the process. */
+-    pid = fork();
+-    if (pid < 0) {
+-        serverLog(LL_WARNING, "Failed to fork: %s", strerror(errno));
+-        bug_found = -1;
+-        goto exit;
+-    } else if (!pid) {
+-        /* Child: check if the page is marked as dirty, page_size in kb.
+-         * A value of 0 means the kernel is affected by the bug. */
+-        ret = smapsGetSharedDirty((unsigned long) q);
+-        if (!ret)
+-            bug_found = 1;
+-        else if (ret == -1)     /* Failed to read */
+-            bug_found = -1;
+-
+-        if (write(pipefd[1], &bug_found, sizeof(bug_found)) < 0)
+-            serverLog(LL_WARNING, "Failed to write to parent: %s", strerror(errno));
+-        exitFromChild(0);
+-    } else {
+-        /* Read the result from the child. */
+-        ret = read(pipefd[0], &bug_found, sizeof(bug_found));
+-        if (ret < 0) {
+-            serverLog(LL_WARNING, "Failed to read from child: %s", strerror(errno));
+-            bug_found = -1;
++        } else {
++            serverLog(LL_WARNING, "WARNING %s", err_msg);
+         }
+-
+-        /* Reap the child pid. */
+-        waitpid(pid, NULL, 0);
++        sdsfree(err_msg);
+     }
+-
+-exit:
+-    /* Cleanup */
+-    if (pipefd[0] != -1) close(pipefd[0]);
+-    if (pipefd[1] != -1) close(pipefd[1]);
+-    if (p != NULL) munmap(p, map_size);
+-
+-    return bug_found;
+ }
+-#endif /* __arm64__ */
+ #endif /* __linux__ */
+ 
+ void createPidFile(void) {
+@@ -6949,6 +6820,8 @@ int main(int argc, char **argv) {
+                 fprintf(stderr,"Example: ./redis-server --test-memory 4096\n\n");
+                 exit(1);
+             }
++        } if (strcmp(argv[1], "--check-system") == 0) {
++            exit(syscheck() ? 0 : 1);
+         }
+         /* Parse command line options
+          * Precedence wise, File, stdin, explicit options -- last config is the one that matters.
+@@ -7023,13 +6896,18 @@ int main(int argc, char **argv) {
+         serverLog(LL_WARNING,"Server initialized");
+     #ifdef __linux__
+         linuxMemoryWarnings();
++        sds err_msg;
++        if (checkXenClocksource(&err_msg) < 0) {
++            serverLog(LL_WARNING, "WARNING %s", err_msg);
++            sdsfree(err_msg);
++        }
+     #if defined (__arm64__)
+         int ret;
+-        if ((ret = linuxMadvFreeForkBugCheck())) {
+-            if (ret == 1)
+-                serverLog(LL_WARNING,"WARNING Your kernel has a bug that could lead to data corruption during background save. "
+-                                     "Please upgrade to the latest stable kernel.");
+-            else
++        if ((ret = checkLinuxMadvFreeForkBug(&err_msg)) <= 0) {
++            if (ret < 0) {
++                serverLog(LL_WARNING, "WARNING %s", err_msg);
++                sdsfree(err_msg);
++            } else
+                 serverLog(LL_WARNING, "Failed to test the kernel for a bug that could lead to data corruption during background save. "
+                                       "Your system could be affected, please report this error.");
+             if (!checkIgnoreWarning("ARM64-COW-BUG")) {
+diff --git a/src/syscheck.c b/src/syscheck.c
+new file mode 100644
+index 00000000..9f338b11
+--- /dev/null
++++ b/src/syscheck.c
+@@ -0,0 +1,372 @@
++/*
++ * Copyright (c) 2022, Redis Ltd.
++ * Copyright (c) 2016, Salvatore Sanfilippo <antirez at gmail dot com>
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *
++ *   * Redistributions of source code must retain the above copyright notice,
++ *     this list of conditions and the following disclaimer.
++ *   * Redistributions in binary form must reproduce the above copyright
++ *     notice, this list of conditions and the following disclaimer in the
++ *     documentation and/or other materials provided with the distribution.
++ *   * Neither the name of Redis nor the names of its contributors may be used
++ *     to endorse or promote products derived from this software without
++ *     specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ */
++#include "fmacros.h"
++#include "config.h"
++#include "syscheck.h"
++#include "sds.h"
++#include "anet.h"
++
++#include <time.h>
++#include <sys/resource.h>
++#include <unistd.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <errno.h>
++#include <sys/wait.h>
++
++#ifdef __linux__
++#include <sys/mman.h>
++#endif
++
++
++#ifdef __linux__
++static sds read_sysfs_line(char *path) {
++    char buf[256];
++    FILE *f = fopen(path, "r");
++    if (!f) return NULL;
++    if (!fgets(buf, sizeof(buf), f)) {
++        fclose(f);
++        return NULL;
++    }
++    fclose(f);
++    sds res = sdsnew(buf);
++    res = sdstrim(res, " \n");
++    return res;
++}
++
++/* Verify our clokcsource implementation doesn't go through a system call (uses vdso).
++ * Going through a system call to check the time degrades Redis performance. */
++static int checkClocksource(sds *error_msg) {
++    unsigned long test_time_us, system_hz;
++    struct timespec ts;
++    unsigned long long start_us;
++    struct rusage ru_start, ru_end;
++
++    system_hz = sysconf(_SC_CLK_TCK);
++
++    if (getrusage(RUSAGE_SELF, &ru_start) != 0)
++        return 0;
++    if (clock_gettime(CLOCK_MONOTONIC, &ts) < 0) {
++        return 0;
++    }
++    start_us = (ts.tv_sec * 1000000 + ts.tv_nsec / 1000);
++
++    /* clock_gettime() busy loop of 5 times system tick (for a system_hz of 100 this is 50ms)
++     * Using system_hz is required to ensure accurate measurements from getrusage().
++     * If our clocksource is configured correctly (vdso) this will result in no system calls.
++     * If our clocksource is inefficient it'll waste most of the busy loop in the kernel. */
++    test_time_us = 5 * 1000000 / system_hz;
++    while (1) {
++        unsigned long long d;
++        if (clock_gettime(CLOCK_MONOTONIC, &ts) < 0)
++            return 0;
++        d = (ts.tv_sec * 1000000 + ts.tv_nsec / 1000) - start_us;
++        if (d >= test_time_us) break;
++    }
++    if (getrusage(RUSAGE_SELF, &ru_end) != 0)
++        return 0;
++
++    long long stime_us = (ru_end.ru_stime.tv_sec * 1000000 + ru_end.ru_stime.tv_usec) - (ru_start.ru_stime.tv_sec * 1000000 + ru_start.ru_stime.tv_usec);
++    long long utime_us = (ru_end.ru_utime.tv_sec * 1000000 + ru_end.ru_utime.tv_usec) - (ru_start.ru_utime.tv_sec * 1000000 + ru_start.ru_utime.tv_usec);
++
++    /* If more than 10% of the process time was in system calls we probably have an inefficient clocksource, print a warning */
++    if (stime_us * 10 > stime_us + utime_us) {
++        sds avail = read_sysfs_line("/sys/devices/system/clocksource/clocksource0/available_clocksource");
++        sds curr = read_sysfs_line("/sys/devices/system/clocksource/clocksource0/current_clocksource");
++        *error_msg = sdscatprintf(sdsempty(),
++           "Slow system clocksource detected. This can result in degraded performance. "
++           "Consider changing the system's clocksource. "
++           "Current clocksource: %s. Available clocksources: %s. "
++           "For example: run the command 'echo tsc > /sys/devices/system/clocksource/clocksource0/current_clocksource' as root. "
++           "To permanently change the system's clocksource you'll need to set the 'clocksource=' kernel command line parameter.",
++           curr ? curr : "", avail ? avail : "");
++        sdsfree(avail);
++        sdsfree(curr);
++        return -1;
++    } else {
++        return 1;
++    }
++}
++
++/* Verify we're not using the `xen` clocksource. The xen hypervisor's default clocksource is slow and affects
++ * Redis's performance. This has been measured on ec2 xen based instances. ec2 recommends using the non-default
++ * tsc clock source for these instances. */
++int checkXenClocksource(sds *error_msg) {
++    sds curr = read_sysfs_line("/sys/devices/system/clocksource/clocksource0/current_clocksource");
++    int res = 1;
++    if (curr == NULL) {
++        res = 0;
++    } else if (strcmp(curr, "xen") == 0) {
++        *error_msg = sdsnew(
++            "Your system is configured to use the 'xen' clocksource which might lead to degraded performance. "
++            "Check the result of the [slow-clocksource] system check: run 'redis-server --check-system' to check if "
++            "the system's clocksource isn't degrading performance.");
++        res = -1;
++    }
++    sdsfree(curr);
++    return res;
++}
++
++/* Verify overcommit is enabled.
++ * When overcommit memory is disabled Linux will kill the forked child of a background save
++ * if we don't have enough free memory to satisfy double the current memory usage even though
++ * the forked child uses copy-on-write to reduce its actual memory usage. */
++int checkOvercommit(sds *error_msg) {
++    FILE *fp = fopen("/proc/sys/vm/overcommit_memory","r");
++    char buf[64];
++
++    if (!fp) return -1;
++    if (fgets(buf,64,fp) == NULL) {
++        fclose(fp);
++        return 0;
++    }
++    fclose(fp);
++
++    if (atoi(buf)) {
++        *error_msg = sdsnew(
++            "WARNING overcommit_memory is set to 0! Background save may fail under low memory condition. "
++            "To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the "
++            "command 'sysctl vm.overcommit_memory=1' for this to take effect.");
++        return -1;
++    } else {
++        return 1;
++    }
++}
++
++/* Make sure transparent huge pages aren't always enabled. When they are this can cause copy-on-write logic
++ * to consume much more memory and reduce performance during forks. */
++int checkTHPEnabled(sds *error_msg) {
++    char buf[1024];
++
++    FILE *fp = fopen("/sys/kernel/mm/transparent_hugepage/enabled","r");
++    if (!fp) return 0;
++    if (fgets(buf,sizeof(buf),fp) == NULL) {
++        fclose(fp);
++        return 0;
++    }
++    fclose(fp);
++
++    if (strstr(buf,"[always]") != NULL) {
++        *error_msg = sdsnew(
++            "You have Transparent Huge Pages (THP) support enabled in your kernel. "
++            "This will create latency and memory usage issues with Redis. "
++            "To fix this issue run the command 'echo madvise > /sys/kernel/mm/transparent_hugepage/enabled' as root, "
++            "and add it to your /etc/rc.local in order to retain the setting after a reboot. "
++            "Redis must be restarted after THP is disabled (set to 'madvise' or 'never').");
++        return -1;
++    } else {
++        return 1;
++    }
++}
++
++#ifdef __arm64__
++/* Get size in kilobytes of the Shared_Dirty pages of the calling process for the
++ * memory map corresponding to the provided address, or -1 on error. */
++static int smapsGetSharedDirty(unsigned long addr) {
++    int ret, in_mapping = 0, val = -1;
++    unsigned long from, to;
++    char buf[64];
++    FILE *f;
++
++    f = fopen("/proc/self/smaps", "r");
++    if (!f) return -1;
++
++    while (1) {
++        if (!fgets(buf, sizeof(buf), f))
++            break;
++
++        ret = sscanf(buf, "%lx-%lx", &from, &to);
++        if (ret == 2)
++            in_mapping = from <= addr && addr < to;
++
++        if (in_mapping && !memcmp(buf, "Shared_Dirty:", 13)) {
++            sscanf(buf, "%*s %d", &val);
++            /* If parsing fails, we remain with val == -1 */
++            break;
++        }
++    }
++
++    fclose(f);
++    return val;
++}
++
++/* Older arm64 Linux kernels have a bug that could lead to data corruption
++ * during background save in certain scenarios. This function checks if the
++ * kernel is affected.
++ * The bug was fixed in commit ff1712f953e27f0b0718762ec17d0adb15c9fd0b
++ * titled: "arm64: pgtable: Ensure dirty bit is preserved across pte_wrprotect()"
++ */
++int checkLinuxMadvFreeForkBug(sds *error_msg) {
++    int ret, pipefd[2] = { -1, -1 };
++    pid_t pid;
++    char *p = NULL, *q;
++    int res = 1;
++    long page_size = sysconf(_SC_PAGESIZE);
++    long map_size = 3 * page_size;
++
++    /* Create a memory map that's in our full control (not one used by the allocator). */
++    p = mmap(NULL, map_size, PROT_READ, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
++    if (p == MAP_FAILED) {
++        return 0;
++    }
++
++    q = p + page_size;
++
++    /* Split the memory map in 3 pages by setting their protection as RO|RW|RO to prevent
++     * Linux from merging this memory map with adjacent VMAs. */
++    ret = mprotect(q, page_size, PROT_READ | PROT_WRITE);
++    if (ret < 0) {
++        res = 0;
++        goto exit;
++    }
++
++    /* Write to the page once to make it resident */
++    *(volatile char*)q = 0;
++
++    /* Tell the kernel that this page is free to be reclaimed. */
++#ifndef MADV_FREE
++#define MADV_FREE 8
++#endif
++    ret = madvise(q, page_size, MADV_FREE);
++    if (ret < 0) {
++        /* MADV_FREE is not available on older kernels that are presumably
++         * not affected. */
++        if (errno == EINVAL) goto exit;
++
++        res = 0;
++        goto exit;
++    }
++
++    /* Write to the page after being marked for freeing, this is supposed to take
++     * ownership of that page again. */
++    *(volatile char*)q = 0;
++
++    /* Create a pipe for the child to return the info to the parent. */
++    ret = anetPipe(pipefd, 0, 0);
++    if (ret < 0) {
++        res = 0;
++        goto exit;
++    }
++
++    /* Fork the process. */
++    pid = fork();
++    if (pid < 0) {
++        res = 0;
++        goto exit;
++    } else if (!pid) {
++        /* Child: check if the page is marked as dirty, page_size in kb.
++         * A value of 0 means the kernel is affected by the bug. */
++        ret = smapsGetSharedDirty((unsigned long) q);
++        if (!ret)
++            res = -1;
++        else if (ret == -1)     /* Failed to read */
++            res = 0;
++
++        ret = write(pipefd[1], &res, sizeof(res)); /* Assume success, ignore return value*/
++        exit(0);
++    } else {
++        /* Read the result from the child. */
++        ret = read(pipefd[0], &res, sizeof(res));
++        if (ret < 0) {
++            res = 0;
++        }
++
++        /* Reap the child pid. */
++        waitpid(pid, NULL, 0);
++    }
++
++exit:
++    /* Cleanup */
++    if (pipefd[0] != -1) close(pipefd[0]);
++    if (pipefd[1] != -1) close(pipefd[1]);
++    if (p != NULL) munmap(p, map_size);
++
++    if (res == -1)
++        *error_msg = sdsnew(
++            "Your kernel has a bug that could lead to data corruption during background save. "
++            "Please upgrade to the latest stable kernel.");
++
++    return res;
++}
++#endif /* __arm64__ */
++#endif /* __linux__ */
++
++/*
++ * Standard system check interface:
++ * Each check has a name `name` and a functions pointer `check_fn`.
++ * `check_fn` should return:
++ *   -1 in case the check fails.
++ *   1 in case the check passes.
++ *   0 in case the check could not be completed (usually because of some unexpected failed system call).
++ *   When (and only when) the check fails and -1 is returned and error description is places in a new sds pointer to by
++ *   the single `sds*` argument to `check_fn`. This message should be freed by the caller via `sdsfree()`.
++ */
++typedef struct {
++    const char *name;
++    int (*check_fn)(sds*);
++} check;
++
++check checks[] = {
++#ifdef __linux__
++    {.name = "slow-clocksource", .check_fn = checkClocksource},
++    {.name = "xen-clocksource", .check_fn = checkXenClocksource},
++    {.name = "overcommit", .check_fn = checkOvercommit},
++    {.name = "THP", .check_fn = checkTHPEnabled},
++#ifdef __arm64__
++    {.name = "madvise-free-fork-bug", .check_fn = checkLinuxMadvFreeForkBug},
++#endif
++#endif
++    {.name = NULL, .check_fn = NULL}
++};
++
++/* Performs various system checks, returns 0 if any check fails, 1 otherwise. */
++int syscheck(void) {
++    check *cur_check = checks;
++    int ret = 1;
++    sds err_msg;
++    while (cur_check->check_fn) {
++        int res = cur_check->check_fn(&err_msg);
++        printf("[%s]...", cur_check->name);
++        if (res == 0) {
++            printf("skipped\n");
++        } else if (res == 1) {
++            printf("OK\n");
++        } else {
++            printf("WARNING:\n");
++            printf("%s\n", err_msg);
++            sdsfree(err_msg);
++            ret = 0;
++        }
++        cur_check++;
++    }
++
++    return ret;
++}
+diff --git a/src/syscheck.h b/src/syscheck.h
+new file mode 100644
+index 00000000..096f0f5e
+--- /dev/null
++++ b/src/syscheck.h
+@@ -0,0 +1,46 @@
++/*
++ * Copyright (c) 2022, Redis Ltd.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *
++ *   * Redistributions of source code must retain the above copyright notice,
++ *     this list of conditions and the following disclaimer.
++ *   * Redistributions in binary form must reproduce the above copyright
++ *     notice, this list of conditions and the following disclaimer in the
++ *     documentation and/or other materials provided with the distribution.
++ *   * Neither the name of Redis nor the names of its contributors may be used
++ *     to endorse or promote products derived from this software without
++ *     specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ */
++
++#ifndef __SYSCHECK_H
++#define __SYSCHECK_H
++
++#include "sds.h"
++#include "config.h"
++
++int syscheck(void);
++#ifdef __linux__
++int checkXenClocksource(sds *error_msg);
++int checkTHPEnabled(sds *error_msg);
++int checkOvercommit(sds *error_msg);
++#ifdef __arm64__
++int checkLinuxMadvFreeForkBug(sds *error_msg);
++#endif
++#endif
++
++#endif
+diff --git a/src/zmalloc.c b/src/zmalloc.c
+index d19d87b7..857baa8a 100644
+--- a/src/zmalloc.c
++++ b/src/zmalloc.c
+@@ -55,6 +55,8 @@ void zlibc_free(void *ptr) {
+ #include "zmalloc.h"
+ #include "atomicvar.h"
+ 
++#define UNUSED(x) ((void)(x))
++
+ #ifdef HAVE_MALLOC_SIZE
+ #define PREFIX_SIZE (0)
+ #define ASSERT_NO_SIZE_OVERFLOW(sz)
+@@ -395,35 +397,58 @@ void zmadvise_dontneed(void *ptr) {
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
++#endif
+ 
+-size_t zmalloc_get_rss(void) {
+-    int page = sysconf(_SC_PAGESIZE);
+-    size_t rss;
++/* Get the i'th field from "/proc/self/stats" note i is 1 based as appears in the 'proc' man page */
++int get_proc_stat_ll(int i, long long *res) {
++#if defined(HAVE_PROC_STAT)
+     char buf[4096];
+-    char filename[256];
+-    int fd, count;
++    int fd, l;
+     char *p, *x;
+ 
+-    snprintf(filename,256,"/proc/%ld/stat",(long) getpid());
+-    if ((fd = open(filename,O_RDONLY)) == -1) return 0;
+-    if (read(fd,buf,4096) <= 0) {
++    if ((fd = open("/proc/self/stat",O_RDONLY)) == -1) return 0;
++    if ((l = read(fd,buf,sizeof(buf)-1)) <= 0) {
+         close(fd);
+         return 0;
+     }
+     close(fd);
++    buf[l] = '\0';
++    if (buf[l-1] == '\n') buf[l-1] = '\0';
+ 
+-    p = buf;
+-    count = 23; /* RSS is the 24th field in /proc/<pid>/stat */
+-    while(p && count--) {
+-        p = strchr(p,' ');
++    /* Skip pid and process name (surrounded with parentheses) */
++    p = strrchr(buf, ')');
++    if (!p) return 0;
++    p++;
++    while (*p == ' ') p++;
++    if (*p == '\0') return 0;
++    i -= 3;
++    if (i < 0) return 0;
++
++    while (p && i--) {
++        p = strchr(p, ' ');
+         if (p) p++;
++        else return 0;
+     }
+-    if (!p) return 0;
+     x = strchr(p,' ');
+-    if (!x) return 0;
+-    *x = '\0';
++    if (x) *x = '\0';
+ 
+-    rss = strtoll(p,NULL,10);
++    *res = strtoll(p,&x,10);
++    if (*x != '\0') return 0;
++    return 1;
++#else
++    UNUSED(i);
++    UNUSED(res);
++    return 0;
++#endif
++}
++
++#if defined(HAVE_PROC_STAT)
++size_t zmalloc_get_rss(void) {
++    int page = sysconf(_SC_PAGESIZE);
++    long long rss;
++
++    /* RSS is the 24th field in /proc/<pid>/stat */
++    if (!get_proc_stat_ll(24, &rss)) return 0;
+     rss *= page;
+     return rss;
+ }
+@@ -748,7 +773,6 @@ size_t zmalloc_get_memory_size(void) {
+ }
+ 
+ #ifdef REDIS_TEST
+-#define UNUSED(x) ((void)(x))
+ int zmalloc_test(int argc, char **argv, int flags) {
+     void *ptr;
+ 
+diff --git a/src/zmalloc.h b/src/zmalloc.h
+index fb448f7f..2d133e45 100644
+--- a/src/zmalloc.h
++++ b/src/zmalloc.h
+@@ -136,6 +136,8 @@ size_t zmalloc_usable_size(void *ptr);
+ #define zmalloc_usable_size(p) zmalloc_size(p)
+ #endif
+ 
++int get_proc_stat_ll(int i, long long *res);
++
+ #ifdef REDIS_TEST
+ int zmalloc_test(int argc, char **argv, int flags);
+ #endif
++ git -c core.fileMode=false diff 843a4cdc075a5b251e1b154f8013a9e0abe1038b
+diff --git a/src/t_zset.c b/src/t_zset.c
+index 2efa7393..442e70ac 100644
+--- a/src/t_zset.c
++++ b/src/t_zset.c
+@@ -4041,7 +4041,7 @@ void blockingGenericZpopCommand(client *c, robj **keys, int numkeys, int where,
+ 
+     /* If the keys do not exist we must block */
+     struct blockPos pos = {where};
+-    blockForKeys(c,BLOCKED_ZSET,c->argv+1,c->argc-2,count,timeout,NULL,&pos,NULL);
++    blockForKeys(c,BLOCKED_ZSET,keys,numkeys,count,timeout,NULL,&pos,NULL);
+ }
+ 
+ // BZPOPMIN key [key ...] timeout
++ git checkout 843a4cdc075a5b251e1b154f8013a9e0abe1038b tests/unit/type/zset.tcl
+Updated 0 paths from 92f3ddd1
++ git apply -v -
+Checking patch tests/unit/type/zset.tcl...
+Applied patch tests/unit/type/zset.tcl cleanly.
++ make distclean
+cd src && make distclean
+make[1]: Entering directory '/testbed/src'
+/bin/sh: 1: pkg-config: not found
+rm -rf redis-server redis-sentinel redis-cli redis-benchmark redis-check-rdb redis-check-aof *.o *.gcda *.gcno *.gcov redis.info lcov-html Makefile.dep
+rm -f adlist.d quicklist.d ae.d anet.d dict.d server.d sds.d zmalloc.d lzf_c.d lzf_d.d pqsort.d zipmap.d sha1.d ziplist.d release.d networking.d util.d object.d db.d replication.d rdb.d t_string.d t_list.d t_set.d t_zset.d t_hash.d config.d aof.d pubsub.d multi.d debug.d sort.d intset.d syncio.d cluster.d crc16.d endianconv.d slowlog.d eval.d bio.d rio.d rand.d memtest.d syscheck.d crcspeed.d crc64.d bitops.d sentinel.d notify.d setproctitle.d blocked.d hyperloglog.d latency.d sparkline.d redis-check-rdb.d redis-check-aof.d geo.d lazyfree.d module.d evict.d expire.d geohash.d geohash_helper.d childinfo.d defrag.d siphash.d rax.d t_stream.d listpack.d localtime.d lolwut.d lolwut5.d lolwut6.d acl.d tracking.d connection.d tls.d sha256.d timeout.d setcpuaffinity.d monotonic.d mt19937-64.d resp_parser.d call_reply.d script_lua.d script.d functions.d function_lua.d commands.d anet.d adlist.d dict.d redis-cli.d zmalloc.d release.d ae.d redisassert.d crcspeed.d crc64.d siphash.d crc16.d monotonic.d cli_common.d mt19937-64.d ae.d anet.d redis-benchmark.d adlist.d dict.d zmalloc.d redisassert.d release.d crcspeed.d crc64.d siphash.d crc16.d monotonic.d cli_common.d mt19937-64.d
+(cd ../deps && make distclean)
+make[2]: Entering directory '/testbed/deps'
+(cd hiredis && make clean) > /dev/null || true
+(cd linenoise && make clean) > /dev/null || true
+(cd lua && make clean) > /dev/null || true
+(cd jemalloc && [ -f Makefile ] && make distclean) > /dev/null || true
+(cd hdr_histogram && make clean) > /dev/null || true
+(rm -f .make-*)
+make[2]: Leaving directory '/testbed/deps'
+(cd modules && make clean)
+make[2]: Entering directory '/testbed/src/modules'
+rm -rf *.xo *.so
+make[2]: Leaving directory '/testbed/src/modules'
+(cd ../tests/modules && make clean)
+make[2]: Entering directory '/testbed/tests/modules'
+rm -f commandfilter.so basics.so testrdb.so fork.so infotest.so propagate.so misc.so hooks.so blockonkeys.so blockonbackground.so scan.so datatype.so datatype2.so auth.so keyspace_events.so blockedclient.so getkeys.so getchannels.so test_lazyfree.so timer.so defragtest.so keyspecs.so hash.so zset.so stream.so mallocsize.so aclcheck.so list.so subcommands.so reply.so cmdintrospection.so eventloop.so moduleconfigs.so moduleconfigstwo.so publish.so commandfilter.xo basics.xo testrdb.xo fork.xo infotest.xo propagate.xo misc.xo hooks.xo blockonkeys.xo blockonbackground.xo scan.xo datatype.xo datatype2.xo auth.xo keyspace_events.xo blockedclient.xo getkeys.xo getchannels.xo test_lazyfree.xo timer.xo defragtest.xo keyspecs.xo hash.xo zset.xo stream.xo mallocsize.xo aclcheck.xo list.xo subcommands.xo reply.xo cmdintrospection.xo eventloop.xo moduleconfigs.xo moduleconfigstwo.xo publish.xo
+make[2]: Leaving directory '/testbed/tests/modules'
+(rm -f .make-*)
+make[1]: Leaving directory '/testbed/src'
++ make
+cd src && make all
+make[1]: Entering directory '/testbed/src'
+/bin/sh: 1: pkg-config: not found
+    [34mCC[0m [33mMakefile.dep[0m
+/bin/sh: 1: pkg-config: not found
+rm -rf redis-server redis-sentinel redis-cli redis-benchmark redis-check-rdb redis-check-aof *.o *.gcda *.gcno *.gcov redis.info lcov-html Makefile.dep
+rm -f adlist.d quicklist.d ae.d anet.d dict.d server.d sds.d zmalloc.d lzf_c.d lzf_d.d pqsort.d zipmap.d sha1.d ziplist.d release.d networking.d util.d object.d db.d replication.d rdb.d t_string.d t_list.d t_set.d t_zset.d t_hash.d config.d aof.d pubsub.d multi.d debug.d sort.d intset.d syncio.d cluster.d crc16.d endianconv.d slowlog.d eval.d bio.d rio.d rand.d memtest.d syscheck.d crcspeed.d crc64.d bitops.d sentinel.d notify.d setproctitle.d blocked.d hyperloglog.d latency.d sparkline.d redis-check-rdb.d redis-check-aof.d geo.d lazyfree.d module.d evict.d expire.d geohash.d geohash_helper.d childinfo.d defrag.d siphash.d rax.d t_stream.d listpack.d localtime.d lolwut.d lolwut5.d lolwut6.d acl.d tracking.d connection.d tls.d sha256.d timeout.d setcpuaffinity.d monotonic.d mt19937-64.d resp_parser.d call_reply.d script_lua.d script.d functions.d function_lua.d commands.d anet.d adlist.d dict.d redis-cli.d zmalloc.d release.d ae.d redisassert.d crcspeed.d crc64.d siphash.d crc16.d monotonic.d cli_common.d mt19937-64.d ae.d anet.d redis-benchmark.d adlist.d dict.d zmalloc.d redisassert.d release.d crcspeed.d crc64.d siphash.d crc16.d monotonic.d cli_common.d mt19937-64.d
+(cd ../deps && make distclean)
+make[2]: Entering directory '/testbed/deps'
+(cd hiredis && make clean) > /dev/null || true
+(cd linenoise && make clean) > /dev/null || true
+(cd lua && make clean) > /dev/null || true
+(cd jemalloc && [ -f Makefile ] && make distclean) > /dev/null || true
+(cd hdr_histogram && make clean) > /dev/null || true
+(rm -f .make-*)
+make[2]: Leaving directory '/testbed/deps'
+(cd modules && make clean)
+make[2]: Entering directory '/testbed/src/modules'
+rm -rf *.xo *.so
+make[2]: Leaving directory '/testbed/src/modules'
+(cd ../tests/modules && make clean)
+make[2]: Entering directory '/testbed/tests/modules'
+rm -f commandfilter.so basics.so testrdb.so fork.so infotest.so propagate.so misc.so hooks.so blockonkeys.so blockonbackground.so scan.so datatype.so datatype2.so auth.so keyspace_events.so blockedclient.so getkeys.so getchannels.so test_lazyfree.so timer.so defragtest.so keyspecs.so hash.so zset.so stream.so mallocsize.so aclcheck.so list.so subcommands.so reply.so cmdintrospection.so eventloop.so moduleconfigs.so moduleconfigstwo.so publish.so commandfilter.xo basics.xo testrdb.xo fork.xo infotest.xo propagate.xo misc.xo hooks.xo blockonkeys.xo blockonbackground.xo scan.xo datatype.xo datatype2.xo auth.xo keyspace_events.xo blockedclient.xo getkeys.xo getchannels.xo test_lazyfree.xo timer.xo defragtest.xo keyspecs.xo hash.xo zset.xo stream.xo mallocsize.xo aclcheck.xo list.xo subcommands.xo reply.xo cmdintrospection.xo eventloop.xo moduleconfigs.xo moduleconfigstwo.xo publish.xo
+make[2]: Leaving directory '/testbed/tests/modules'
+(rm -f .make-*)
+echo STD=-pedantic -DREDIS_STATIC='' -std=c11 >> .make-settings
+echo WARN=-Wall -W -Wno-missing-field-initializers >> .make-settings
+echo OPT=-O2 >> .make-settings
+echo MALLOC=jemalloc >> .make-settings
+echo BUILD_TLS= >> .make-settings
+echo USE_SYSTEMD= >> .make-settings
+echo CFLAGS= >> .make-settings
+echo LDFLAGS= >> .make-settings
+echo REDIS_CFLAGS= >> .make-settings
+echo REDIS_LDFLAGS= >> .make-settings
+echo PREV_FINAL_CFLAGS=-pedantic -DREDIS_STATIC='' -std=c11 -Wall -W -Wno-missing-field-initializers -O2 -g -ggdb   -I../deps/hiredis -I../deps/linenoise -I../deps/lua/src -I../deps/hdr_histogram -DUSE_JEMALLOC -I../deps/jemalloc/include >> .make-settings
+echo PREV_FINAL_LDFLAGS=  -g -ggdb -rdynamic >> .make-settings
+(cd ../deps && make hiredis linenoise lua hdr_histogram jemalloc)
+make[2]: Entering directory '/testbed/deps'
+(cd hiredis && make clean) > /dev/null || true
+(cd linenoise && make clean) > /dev/null || true
+(cd lua && make clean) > /dev/null || true
+(cd jemalloc && [ -f Makefile ] && make distclean) > /dev/null || true
+(cd hdr_histogram && make clean) > /dev/null || true
+(rm -f .make-*)
+(echo "" > .make-cflags)
+(echo "" > .make-ldflags)
+[32;1mMAKE[0m [37;1mhiredis[0m
+cd hiredis && make static 
+make[3]: Entering directory '/testbed/deps/hiredis'
+cc -std=c99 -c -O3 -fPIC   -Wall -W -Wstrict-prototypes -Wwrite-strings -Wno-missing-field-initializers -g -ggdb -pedantic alloc.c
+cc -std=c99 -c -O3 -fPIC   -Wall -W -Wstrict-prototypes -Wwrite-strings -Wno-missing-field-initializers -g -ggdb -pedantic net.c
+cc -std=c99 -c -O3 -fPIC   -Wall -W -Wstrict-prototypes -Wwrite-strings -Wno-missing-field-initializers -g -ggdb -pedantic hiredis.c
+cc -std=c99 -c -O3 -fPIC   -Wall -W -Wstrict-prototypes -Wwrite-strings -Wno-missing-field-initializers -g -ggdb -pedantic sds.c
+cc -std=c99 -c -O3 -fPIC   -Wall -W -Wstrict-prototypes -Wwrite-strings -Wno-missing-field-initializers -g -ggdb -pedantic async.c
+cc -std=c99 -c -O3 -fPIC   -Wall -W -Wstrict-prototypes -Wwrite-strings -Wno-missing-field-initializers -g -ggdb -pedantic read.c
+cc -std=c99 -c -O3 -fPIC   -Wall -W -Wstrict-prototypes -Wwrite-strings -Wno-missing-field-initializers -g -ggdb -pedantic sockcompat.c
+ar rcs libhiredis.a alloc.o net.o hiredis.o sds.o async.o read.o sockcompat.o
+make[3]: Leaving directory '/testbed/deps/hiredis'
+[32;1mMAKE[0m [37;1mlinenoise[0m
+cd linenoise && make
+make[3]: Entering directory '/testbed/deps/linenoise'
+cc  -Wall -Os -g  -c linenoise.c
+make[3]: Leaving directory '/testbed/deps/linenoise'
+[32;1mMAKE[0m [37;1mlua[0m
+cd lua/src && make all CFLAGS="-Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2 " MYLDFLAGS="" AR="ar rc"
+make[3]: Entering directory '/testbed/deps/lua/src'
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lapi.o lapi.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lcode.o lcode.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o ldebug.o ldebug.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o ldo.o ldo.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o ldump.o ldump.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lfunc.o lfunc.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lgc.o lgc.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o llex.o llex.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lmem.o lmem.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lobject.o lobject.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lopcodes.o lopcodes.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lparser.o lparser.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lstate.o lstate.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lstring.o lstring.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o ltable.o ltable.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o ltm.o ltm.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lundump.o lundump.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lvm.o lvm.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lzio.o lzio.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o strbuf.o strbuf.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o fpconv.o fpconv.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lauxlib.o lauxlib.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lbaselib.o lbaselib.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o ldblib.o ldblib.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o liolib.o liolib.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lmathlib.o lmathlib.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o loslib.o loslib.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o ltablib.o ltablib.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lstrlib.o lstrlib.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o loadlib.o loadlib.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o linit.o linit.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lua_cjson.o lua_cjson.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lua_struct.o lua_struct.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lua_cmsgpack.o lua_cmsgpack.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lua_bit.o lua_bit.c
+lua_bit.c: In function 'bit_band':
+lua_bit.c:101:5: warning: this 'for' clause does not guard... [-Wmisleading-indentation]
+  101 |     for (i = lua_gettop(L); i > 1; i--) b opr barg(L, i); BRET(b) }
+      |     ^~~
+lua_bit.c:102:1: note: in expansion of macro 'BIT_OP'
+  102 | BIT_OP(bit_band, &=)
+      | ^~~~~~
+lua_bit.c:94:18: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the 'for'
+   94 | #define BRET(b)  lua_pushnumber(L, (lua_Number)(SBits)(b)); return 1;
+      |                  ^~~~~~~~~~~~~~
+lua_bit.c:101:59: note: in expansion of macro 'BRET'
+  101 |     for (i = lua_gettop(L); i > 1; i--) b opr barg(L, i); BRET(b) }
+      |                                                           ^~~~
+lua_bit.c:102:1: note: in expansion of macro 'BIT_OP'
+  102 | BIT_OP(bit_band, &=)
+      | ^~~~~~
+lua_bit.c: In function 'bit_bor':
+lua_bit.c:101:5: warning: this 'for' clause does not guard... [-Wmisleading-indentation]
+  101 |     for (i = lua_gettop(L); i > 1; i--) b opr barg(L, i); BRET(b) }
+      |     ^~~
+lua_bit.c:103:1: note: in expansion of macro 'BIT_OP'
+  103 | BIT_OP(bit_bor, |=)
+      | ^~~~~~
+lua_bit.c:94:18: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the 'for'
+   94 | #define BRET(b)  lua_pushnumber(L, (lua_Number)(SBits)(b)); return 1;
+      |                  ^~~~~~~~~~~~~~
+lua_bit.c:101:59: note: in expansion of macro 'BRET'
+  101 |     for (i = lua_gettop(L); i > 1; i--) b opr barg(L, i); BRET(b) }
+      |                                                           ^~~~
+lua_bit.c:103:1: note: in expansion of macro 'BIT_OP'
+  103 | BIT_OP(bit_bor, |=)
+      | ^~~~~~
+lua_bit.c: In function 'bit_bxor':
+lua_bit.c:101:5: warning: this 'for' clause does not guard... [-Wmisleading-indentation]
+  101 |     for (i = lua_gettop(L); i > 1; i--) b opr barg(L, i); BRET(b) }
+      |     ^~~
+lua_bit.c:104:1: note: in expansion of macro 'BIT_OP'
+  104 | BIT_OP(bit_bxor, ^=)
+      | ^~~~~~
+lua_bit.c:94:18: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the 'for'
+   94 | #define BRET(b)  lua_pushnumber(L, (lua_Number)(SBits)(b)); return 1;
+      |                  ^~~~~~~~~~~~~~
+lua_bit.c:101:59: note: in expansion of macro 'BRET'
+  101 |     for (i = lua_gettop(L); i > 1; i--) b opr barg(L, i); BRET(b) }
+      |                                                           ^~~~
+lua_bit.c:104:1: note: in expansion of macro 'BIT_OP'
+  104 | BIT_OP(bit_bxor, ^=)
+      | ^~~~~~
+ar rc liblua.a lapi.o lcode.o ldebug.o ldo.o ldump.o lfunc.o lgc.o llex.o lmem.o lobject.o lopcodes.o lparser.o lstate.o lstring.o ltable.o ltm.o lundump.o lvm.o lzio.o strbuf.o fpconv.o lauxlib.o lbaselib.o ldblib.o liolib.o lmathlib.o loslib.o ltablib.o lstrlib.o loadlib.o linit.o lua_cjson.o lua_struct.o lua_cmsgpack.o lua_bit.o	# DLL needs all object files
+ranlib liblua.a
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lua.o lua.c
+cc -o lua  lua.o liblua.a -lm 
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o luac.o luac.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o print.o print.c
+cc -o luac  luac.o print.o liblua.a -lm 
+make[3]: Leaving directory '/testbed/deps/lua/src'
+[32;1mMAKE[0m [37;1mhdr_histogram[0m
+cd hdr_histogram && make
+make[3]: Entering directory '/testbed/deps/hdr_histogram'
+cc -std=c99 -Wall -Os -g  -DHDR_MALLOC_INCLUDE=\"hdr_redis_malloc.h\" -c  hdr_histogram.c 
+ar rcs libhdrhistogram.a hdr_histogram.o
+make[3]: Leaving directory '/testbed/deps/hdr_histogram'
+[32;1mMAKE[0m [37;1mjemalloc[0m
+cd jemalloc && ./configure --with-version=5.2.1-0-g0 --with-lg-quantum=3 --with-jemalloc-prefix=je_ CFLAGS="-std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops " LDFLAGS="" 
+checking for xsltproc... false
+checking for gcc... gcc
+checking whether the C compiler works... yes
+checking for C compiler default output file name... a.out
+checking for suffix of executables... 
+checking whether we are cross compiling... no
+checking for suffix of object files... o
+checking whether we are using the GNU C compiler... yes
+checking whether gcc accepts -g... yes
+checking for gcc option to accept ISO C89... none needed
+checking whether compiler is cray... no
+checking whether compiler supports -std=gnu11... yes
+checking whether compiler supports -Wall... yes
+checking whether compiler supports -Wextra... yes
+checking whether compiler supports -Wshorten-64-to-32... no
+checking whether compiler supports -Wsign-compare... yes
+checking whether compiler supports -Wundef... yes
+checking whether compiler supports -Wno-format-zero-length... yes
+checking whether compiler supports -pipe... yes
+checking whether compiler supports -g3... yes
+checking how to run the C preprocessor... gcc -E
+checking for g++... g++
+checking whether we are using the GNU C++ compiler... yes
+checking whether g++ accepts -g... yes
+checking whether g++ supports C++14 features by default... yes
+checking whether compiler supports -Wall... yes
+checking whether compiler supports -Wextra... yes
+checking whether compiler supports -g3... yes
+checking whether libstdc++ linkage is compilable... yes
+checking for grep that handles long lines and -e... /usr/bin/grep
+checking for egrep... /usr/bin/grep -E
+checking for ANSI C header files... yes
+checking for sys/types.h... yes
+checking for sys/stat.h... yes
+checking for stdlib.h... yes
+checking for string.h... yes
+checking for memory.h... yes
+checking for strings.h... yes
+checking for inttypes.h... yes
+checking for stdint.h... yes
+checking for unistd.h... yes
+checking whether byte ordering is bigendian... no
+checking size of void *... 8
+checking size of int... 4
+checking size of long... 8
+checking size of long long... 8
+checking size of intmax_t... 8
+checking build system type... x86_64-pc-linux-gnu
+checking host system type... x86_64-pc-linux-gnu
+checking whether pause instruction is compilable... yes
+checking number of significant virtual address bits... 48
+checking for ar... ar
+checking for nm... nm
+checking for gawk... no
+checking for mawk... mawk
+checking malloc.h usability... yes
+checking malloc.h presence... yes
+checking for malloc.h... yes
+checking whether malloc_usable_size definition can use const argument... no
+checking for library containing log... -lm
+checking whether __attribute__ syntax is compilable... yes
+checking whether compiler supports -fvisibility=hidden... yes
+checking whether compiler supports -fvisibility=hidden... yes
+checking whether compiler supports -Werror... yes
+checking whether compiler supports -herror_on_warning... yes
+checking whether tls_model attribute is compilable... yes
+checking whether compiler supports -Werror... yes
+checking whether compiler supports -herror_on_warning... yes
+checking whether alloc_size attribute is compilable... yes
+checking whether compiler supports -Werror... yes
+checking whether compiler supports -herror_on_warning... yes
+checking whether format(gnu_printf, ...) attribute is compilable... yes
+checking whether compiler supports -Werror... yes
+checking whether compiler supports -herror_on_warning... yes
+checking whether format(printf, ...) attribute is compilable... yes
+checking whether compiler supports -Werror... yes
+checking whether compiler supports -herror_on_warning... yes
+checking whether format(printf, ...) attribute is compilable... yes
+checking for a BSD-compatible install... /usr/bin/install -c
+checking for ranlib... ranlib
+checking for ld... /usr/bin/ld
+checking for autoconf... /usr/bin/autoconf
+checking for memalign... yes
+checking for valloc... yes
+checking whether compiler supports -O3... yes
+checking whether compiler supports -O3... yes
+checking whether compiler supports -funroll-loops... yes
+checking configured backtracing method... N/A
+checking for sbrk... yes
+checking whether utrace(2) is compilable... no
+checking whether a program using __builtin_unreachable is compilable... yes
+checking whether a program using __builtin_ffsl is compilable... yes
+checking whether a program using __builtin_popcountl is compilable... yes
+checking LG_PAGE... 12
+checking pthread.h usability... yes
+checking pthread.h presence... yes
+checking for pthread.h... yes
+checking for pthread_create in -lpthread... yes
+checking dlfcn.h usability... yes
+checking dlfcn.h presence... yes
+checking for dlfcn.h... yes
+checking for dlsym... yes
+checking whether pthread_atfork(3) is compilable... yes
+checking whether pthread_setname_np(3) is compilable... yes
+checking for library containing clock_gettime... none required
+checking whether clock_gettime(CLOCK_MONOTONIC_COARSE, ...) is compilable... yes
+checking whether clock_gettime(CLOCK_MONOTONIC, ...) is compilable... yes
+checking whether mach_absolute_time() is compilable... no
+checking whether compiler supports -Werror... yes
+checking whether syscall(2) is compilable... yes
+checking for secure_getenv... yes
+checking for sched_getcpu... yes
+checking for sched_setaffinity... yes
+checking for issetugid... no
+checking for _malloc_thread_cleanup... no
+checking for _pthread_mutex_init_calloc_cb... no
+checking for TLS... yes
+checking whether C11 atomics is compilable... no
+checking whether GCC __atomic atomics is compilable... yes
+checking whether GCC 8-bit __atomic atomics is compilable... yes
+checking whether GCC __sync atomics is compilable... yes
+checking whether GCC 8-bit __sync atomics is compilable... yes
+checking whether Darwin OSAtomic*() is compilable... no
+checking whether madvise(2) is compilable... yes
+checking whether madvise(..., MADV_FREE) is compilable... yes
+checking whether madvise(..., MADV_DONTNEED) is compilable... yes
+checking whether madvise(..., MADV_DO[NT]DUMP) is compilable... yes
+checking whether madvise(..., MADV_[NO]HUGEPAGE) is compilable... yes
+checking for __builtin_clz... yes
+checking whether Darwin os_unfair_lock_*() is compilable... no
+checking whether glibc malloc hook is compilable... no
+checking whether glibc memalign hook is compilable... no
+checking whether pthreads adaptive mutexes is compilable... yes
+checking whether compiler supports -D_GNU_SOURCE... yes
+checking whether compiler supports -Werror... yes
+checking whether compiler supports -herror_on_warning... yes
+checking whether strerror_r returns char with gnu source is compilable... yes
+checking for stdbool.h that conforms to C99... yes
+checking for _Bool... yes
+configure: creating ./config.status
+config.status: creating Makefile
+config.status: creating jemalloc.pc
+config.status: creating doc/html.xsl
+config.status: creating doc/manpages.xsl
+config.status: creating doc/jemalloc.xml
+config.status: creating include/jemalloc/jemalloc_macros.h
+config.status: creating include/jemalloc/jemalloc_protos.h
+config.status: creating include/jemalloc/jemalloc_typedefs.h
+config.status: creating include/jemalloc/internal/jemalloc_preamble.h
+config.status: creating test/test.sh
+config.status: creating test/include/test/jemalloc_test.h
+config.status: creating config.stamp
+config.status: creating bin/jemalloc-config
+config.status: creating bin/jemalloc.sh
+config.status: creating bin/jeprof
+config.status: creating include/jemalloc/jemalloc_defs.h
+config.status: creating include/jemalloc/internal/jemalloc_internal_defs.h
+config.status: creating test/include/test/jemalloc_test_defs.h
+config.status: executing include/jemalloc/internal/public_symbols.txt commands
+config.status: executing include/jemalloc/internal/private_symbols.awk commands
+config.status: executing include/jemalloc/internal/private_symbols_jet.awk commands
+config.status: executing include/jemalloc/internal/public_namespace.h commands
+config.status: executing include/jemalloc/internal/public_unnamespace.h commands
+config.status: executing include/jemalloc/jemalloc_protos_jet.h commands
+config.status: executing include/jemalloc/jemalloc_rename.h commands
+config.status: executing include/jemalloc/jemalloc_mangle.h commands
+config.status: executing include/jemalloc/jemalloc_mangle_jet.h commands
+config.status: executing include/jemalloc/jemalloc.h commands
+===============================================================================
+jemalloc version   : 5.2.1-0-g0
+library revision   : 2
+
+CONFIG             : --with-version=5.2.1-0-g0 --with-lg-quantum=3 --with-jemalloc-prefix=je_ 'CFLAGS=-std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops ' LDFLAGS=
+CC                 : gcc
+CONFIGURE_CFLAGS   : -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -pipe -g3 -fvisibility=hidden -O3 -funroll-loops
+SPECIFIED_CFLAGS   : -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops 
+EXTRA_CFLAGS       : 
+CPPFLAGS           : -D_GNU_SOURCE -D_REENTRANT
+CXX                : g++
+CONFIGURE_CXXFLAGS : -Wall -Wextra -g3 -fvisibility=hidden -O3
+SPECIFIED_CXXFLAGS : 
+EXTRA_CXXFLAGS     : 
+LDFLAGS            : 
+EXTRA_LDFLAGS      : 
+DSO_LDFLAGS        : -shared -Wl,-soname,$(@F)
+LIBS               : -lm -lstdc++ -pthread
+RPATH_EXTRA        : 
+
+XSLTPROC           : false
+XSLROOT            : 
+
+PREFIX             : /usr/local
+BINDIR             : /usr/local/bin
+DATADIR            : /usr/local/share
+INCLUDEDIR         : /usr/local/include
+LIBDIR             : /usr/local/lib
+MANDIR             : /usr/local/share/man
+
+srcroot            : 
+abs_srcroot        : /testbed/deps/jemalloc/
+objroot            : 
+abs_objroot        : /testbed/deps/jemalloc/
+
+JEMALLOC_PREFIX    : je_
+JEMALLOC_PRIVATE_NAMESPACE
+                   : je_
+install_suffix     : 
+malloc_conf        : 
+documentation      : 1
+shared libs        : 1
+static libs        : 1
+autogen            : 0
+debug              : 0
+stats              : 1
+experimetal_smallocx : 0
+prof               : 0
+prof-libunwind     : 0
+prof-libgcc        : 0
+prof-gcc           : 0
+fill               : 1
+utrace             : 0
+xmalloc            : 0
+log                : 0
+lazy_lock          : 0
+cache-oblivious    : 1
+cxx                : 1
+===============================================================================
+cd jemalloc && make CFLAGS="-std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops " LDFLAGS="" lib/libjemalloc.a
+make[3]: Entering directory '/testbed/deps/jemalloc'
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/jemalloc.sym.o src/jemalloc.c
+nm -a src/jemalloc.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/jemalloc.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/arena.sym.o src/arena.c
+nm -a src/arena.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/arena.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/background_thread.sym.o src/background_thread.c
+nm -a src/background_thread.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/background_thread.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/base.sym.o src/base.c
+nm -a src/base.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/base.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/bin.sym.o src/bin.c
+nm -a src/bin.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/bin.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/bitmap.sym.o src/bitmap.c
+nm -a src/bitmap.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/bitmap.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/ckh.sym.o src/ckh.c
+nm -a src/ckh.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/ckh.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/ctl.sym.o src/ctl.c
+nm -a src/ctl.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/ctl.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/div.sym.o src/div.c
+nm -a src/div.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/div.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/extent.sym.o src/extent.c
+nm -a src/extent.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/extent.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/extent_dss.sym.o src/extent_dss.c
+nm -a src/extent_dss.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/extent_dss.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/extent_mmap.sym.o src/extent_mmap.c
+nm -a src/extent_mmap.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/extent_mmap.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/hash.sym.o src/hash.c
+nm -a src/hash.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/hash.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/hook.sym.o src/hook.c
+nm -a src/hook.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/hook.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/large.sym.o src/large.c
+nm -a src/large.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/large.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/log.sym.o src/log.c
+nm -a src/log.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/log.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/malloc_io.sym.o src/malloc_io.c
+nm -a src/malloc_io.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/malloc_io.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/mutex.sym.o src/mutex.c
+nm -a src/mutex.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/mutex.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/mutex_pool.sym.o src/mutex_pool.c
+nm -a src/mutex_pool.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/mutex_pool.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/nstime.sym.o src/nstime.c
+nm -a src/nstime.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/nstime.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/pages.sym.o src/pages.c
+nm -a src/pages.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/pages.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/prng.sym.o src/prng.c
+nm -a src/prng.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/prng.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/prof.sym.o src/prof.c
+nm -a src/prof.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/prof.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/rtree.sym.o src/rtree.c
+nm -a src/rtree.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/rtree.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/safety_check.sym.o src/safety_check.c
+nm -a src/safety_check.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/safety_check.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/stats.sym.o src/stats.c
+nm -a src/stats.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/stats.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/sc.sym.o src/sc.c
+nm -a src/sc.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/sc.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/sz.sym.o src/sz.c
+nm -a src/sz.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/sz.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/tcache.sym.o src/tcache.c
+nm -a src/tcache.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/tcache.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/test_hooks.sym.o src/test_hooks.c
+nm -a src/test_hooks.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/test_hooks.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/ticker.sym.o src/ticker.c
+nm -a src/ticker.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/ticker.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/tsd.sym.o src/tsd.c
+nm -a src/tsd.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/tsd.sym
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/witness.sym.o src/witness.c
+nm -a src/witness.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/witness.sym
+/bin/sh include/jemalloc/internal/private_namespace.sh src/jemalloc.sym src/arena.sym src/background_thread.sym src/base.sym src/bin.sym src/bitmap.sym src/ckh.sym src/ctl.sym src/div.sym src/extent.sym src/extent_dss.sym src/extent_mmap.sym src/hash.sym src/hook.sym src/large.sym src/log.sym src/malloc_io.sym src/mutex.sym src/mutex_pool.sym src/nstime.sym src/pages.sym src/prng.sym src/prof.sym src/rtree.sym src/safety_check.sym src/stats.sym src/sc.sym src/sz.sym src/tcache.sym src/test_hooks.sym src/ticker.sym src/tsd.sym src/witness.sym > include/jemalloc/internal/private_namespace.gen.h
+cp include/jemalloc/internal/private_namespace.gen.h include/jemalloc/internal/private_namespace.gen.h
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/jemalloc.o src/jemalloc.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/arena.o src/arena.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/background_thread.o src/background_thread.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/base.o src/base.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/bin.o src/bin.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/bitmap.o src/bitmap.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/ckh.o src/ckh.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/ctl.o src/ctl.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/div.o src/div.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/extent.o src/extent.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/extent_dss.o src/extent_dss.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/extent_mmap.o src/extent_mmap.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/hash.o src/hash.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/hook.o src/hook.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/large.o src/large.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/log.o src/log.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/malloc_io.o src/malloc_io.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/mutex.o src/mutex.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/mutex_pool.o src/mutex_pool.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/nstime.o src/nstime.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/pages.o src/pages.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/prng.o src/prng.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/prof.o src/prof.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/rtree.o src/rtree.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/safety_check.o src/safety_check.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/stats.o src/stats.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/sc.o src/sc.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/sz.o src/sz.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/tcache.o src/tcache.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/test_hooks.o src/test_hooks.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/ticker.o src/ticker.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/tsd.o src/tsd.c
+gcc -std=gnu99 -Wall -pipe -g3 -O3 -funroll-loops  -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/witness.o src/witness.c
+g++ -Wall -Wextra -g3 -fvisibility=hidden -O3 -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/jemalloc_cpp.o src/jemalloc_cpp.cpp
+ar crus lib/libjemalloc.a src/jemalloc.o src/arena.o src/background_thread.o src/base.o src/bin.o src/bitmap.o src/ckh.o src/ctl.o src/div.o src/extent.o src/extent_dss.o src/extent_mmap.o src/hash.o src/hook.o src/large.o src/log.o src/malloc_io.o src/mutex.o src/mutex_pool.o src/nstime.o src/pages.o src/prng.o src/prof.o src/rtree.o src/safety_check.o src/stats.o src/sc.o src/sz.o src/tcache.o src/test_hooks.o src/ticker.o src/tsd.o src/witness.o src/jemalloc_cpp.o
+ar: `u' modifier ignored since `D' is the default (see `U')
+make[3]: Leaving directory '/testbed/deps/jemalloc'
+make[2]: Leaving directory '/testbed/deps'
+    [34mCC[0m [33madlist.o[0m
+    [34mCC[0m [33mquicklist.o[0m
+    [34mCC[0m [33mae.o[0m
+    [34mCC[0m [33manet.o[0m
+    [34mCC[0m [33mdict.o[0m
+    [34mCC[0m [33mserver.o[0m
+    [34mCC[0m [33msds.o[0m
+    [34mCC[0m [33mzmalloc.o[0m
+    [34mCC[0m [33mlzf_c.o[0m
+    [34mCC[0m [33mlzf_d.o[0m
+    [34mCC[0m [33mpqsort.o[0m
+    [34mCC[0m [33mzipmap.o[0m
+    [34mCC[0m [33msha1.o[0m
+    [34mCC[0m [33mziplist.o[0m
+    [34mCC[0m [33mrelease.o[0m
+    [34mCC[0m [33mnetworking.o[0m
+    [34mCC[0m [33mutil.o[0m
+    [34mCC[0m [33mobject.o[0m
+    [34mCC[0m [33mdb.o[0m
+    [34mCC[0m [33mreplication.o[0m
+    [34mCC[0m [33mrdb.o[0m
+    [34mCC[0m [33mt_string.o[0m
+    [34mCC[0m [33mt_list.o[0m
+    [34mCC[0m [33mt_set.o[0m
+    [34mCC[0m [33mt_zset.o[0m
+    [34mCC[0m [33mt_hash.o[0m
+    [34mCC[0m [33mconfig.o[0m
+    [34mCC[0m [33maof.o[0m
+    [34mCC[0m [33mpubsub.o[0m
+    [34mCC[0m [33mmulti.o[0m
+    [34mCC[0m [33mdebug.o[0m
+    [34mCC[0m [33msort.o[0m
+    [34mCC[0m [33mintset.o[0m
+    [34mCC[0m [33msyncio.o[0m
+    [34mCC[0m [33mcluster.o[0m
+    [34mCC[0m [33mcrc16.o[0m
+    [34mCC[0m [33mendianconv.o[0m
+    [34mCC[0m [33mslowlog.o[0m
+    [34mCC[0m [33meval.o[0m
+    [34mCC[0m [33mbio.o[0m
+    [34mCC[0m [33mrio.o[0m
+    [34mCC[0m [33mrand.o[0m
+    [34mCC[0m [33mmemtest.o[0m
+    [34mCC[0m [33msyscheck.o[0m
+    [34mCC[0m [33mcrcspeed.o[0m
+    [34mCC[0m [33mcrc64.o[0m
+    [34mCC[0m [33mbitops.o[0m
+    [34mCC[0m [33msentinel.o[0m
+    [34mCC[0m [33mnotify.o[0m
+    [34mCC[0m [33msetproctitle.o[0m
+    [34mCC[0m [33mblocked.o[0m
+    [34mCC[0m [33mhyperloglog.o[0m
+    [34mCC[0m [33mlatency.o[0m
+    [34mCC[0m [33msparkline.o[0m
+    [34mCC[0m [33mredis-check-rdb.o[0m
+    [34mCC[0m [33mredis-check-aof.o[0m
+    [34mCC[0m [33mgeo.o[0m
+    [34mCC[0m [33mlazyfree.o[0m
+    [34mCC[0m [33mmodule.o[0m
+    [34mCC[0m [33mevict.o[0m
+    [34mCC[0m [33mexpire.o[0m
+    [34mCC[0m [33mgeohash.o[0m
+    [34mCC[0m [33mgeohash_helper.o[0m
+    [34mCC[0m [33mchildinfo.o[0m
+    [34mCC[0m [33mdefrag.o[0m
+    [34mCC[0m [33msiphash.o[0m
+    [34mCC[0m [33mrax.o[0m
+    [34mCC[0m [33mt_stream.o[0m
+    [34mCC[0m [33mlistpack.o[0m
+    [34mCC[0m [33mlocaltime.o[0m
+    [34mCC[0m [33mlolwut.o[0m
+    [34mCC[0m [33mlolwut5.o[0m
+    [34mCC[0m [33mlolwut6.o[0m
+    [34mCC[0m [33macl.o[0m
+    [34mCC[0m [33mtracking.o[0m
+    [34mCC[0m [33mconnection.o[0m
+    [34mCC[0m [33mtls.o[0m
+    [34mCC[0m [33msha256.o[0m
+    [34mCC[0m [33mtimeout.o[0m
+    [34mCC[0m [33msetcpuaffinity.o[0m
+    [34mCC[0m [33mmonotonic.o[0m
+    [34mCC[0m [33mmt19937-64.o[0m
+    [34mCC[0m [33mresp_parser.o[0m
+    [34mCC[0m [33mcall_reply.o[0m
+    [34mCC[0m [33mscript_lua.o[0m
+    [34mCC[0m [33mscript.o[0m
+    [34mCC[0m [33mfunctions.o[0m
+    [34mCC[0m [33mfunction_lua.o[0m
+    [34mCC[0m [33mcommands.o[0m
+    [34;1mLINK[0m [37;1mredis-server[0m
+    [34;1mINSTALL[0m [37;1mredis-sentinel[0m
+    [34mCC[0m [33mredis-cli.o[0m
+    [34mCC[0m [33mredisassert.o[0m
+    [34mCC[0m [33mcli_common.o[0m
+    [34;1mLINK[0m [37;1mredis-cli[0m
+    [34mCC[0m [33mredis-benchmark.o[0m
+    [34;1mLINK[0m [37;1mredis-benchmark[0m
+    [34;1mINSTALL[0m [37;1mredis-check-rdb[0m
+    [34;1mINSTALL[0m [37;1mredis-check-aof[0m
+
+Hint: It's a good idea to run 'make test' ;)
+
+make[1]: Leaving directory '/testbed/src'
++ : '>>>>> Start Test Output'
++ TERM=dumb
++ ./runtest --durable --single unit/type/zset --only BZMPOP
++ cat
+Cleanup: may take some time... OK
+Starting test server at port 21079
+[ready]: 4496
+Testing unit/type/zset
+[ready]: 4494
+[ready]: 4495
+[ready]: 4497
+[ready]: 4498
+[ready]: 4501
+[ready]: 4499
+[ready]: 4502
+[ready]: 4500
+[ready]: 4503
+[ready]: 4504
+[ready]: 4507
+[ready]: 4505
+[ready]: 4506
+[ready]: 4509
+[ready]: 4508
+[skip]: Check encoding - listpack
+[skip]: ZSET basic ZADD and score update - listpack
+[skip]: ZSET element can't be set to NaN with ZADD - listpack
+[skip]: ZSET element can't be set to NaN with ZINCRBY - listpack
+[skip]: ZADD with options syntax error with incomplete pair - listpack
+[skip]: ZADD XX option without key - listpack
+[skip]: ZADD XX existing key - listpack
+[skip]: ZADD XX returns the number of elements actually added - listpack
+[skip]: ZADD XX updates existing elements score - listpack
+[skip]: ZADD GT updates existing elements when new scores are greater - listpack
+[skip]: ZADD LT updates existing elements when new scores are lower - listpack
+[skip]: ZADD GT XX updates existing elements when new scores are greater and skips new elements - listpack
+[skip]: ZADD LT XX updates existing elements when new scores are lower and skips new elements - listpack
+[skip]: ZADD XX and NX are not compatible - listpack
+[skip]: ZADD NX with non existing key - listpack
+[skip]: ZADD NX only add new elements without updating old ones - listpack
+[skip]: ZADD GT and NX are not compatible - listpack
+[skip]: ZADD LT and NX are not compatible - listpack
+[skip]: ZADD LT and GT are not compatible - listpack
+[skip]: ZADD INCR LT/GT replies with nill if score not updated - listpack
+[skip]: ZADD INCR LT/GT with inf - listpack
+[skip]: ZADD INCR works like ZINCRBY - listpack
+[skip]: ZADD INCR works with a single score-elemenet pair - listpack
+[skip]: ZADD CH option changes return value to all changed elements - listpack
+[skip]: ZINCRBY calls leading to NaN result in error - listpack
+[skip]: ZADD - Variadic version base case - $encoding
+[skip]: ZADD - Return value is the number of actually added items - $encoding
+[skip]: ZADD - Variadic version does not add nothing on single parsing err - $encoding
+[skip]: ZADD - Variadic version will raise error on missing arg - $encoding
+[skip]: ZINCRBY does not work variadic even if shares ZADD implementation - $encoding
+[skip]: ZCARD basics - listpack
+[skip]: ZREM removes key after last element is removed - listpack
+[skip]: ZREM variadic version - listpack
+[skip]: ZREM variadic version -- remove elements after key deletion - listpack
+[skip]: ZRANGE basics - listpack
+[skip]: ZREVRANGE basics - listpack
+[skip]: ZRANK/ZREVRANK basics - listpack
+[skip]: ZRANK - after deletion - listpack
+[skip]: ZINCRBY - can create a new sorted set - listpack
+[skip]: ZINCRBY - increment and decrement - listpack
+[skip]: ZINCRBY return value - listpack
+[skip]: ZRANGEBYSCORE/ZREVRANGEBYSCORE/ZCOUNT basics - listpack
+[skip]: ZRANGEBYSCORE with WITHSCORES - listpack
+[skip]: ZRANGEBYSCORE with LIMIT - listpack
+[skip]: ZRANGEBYSCORE with LIMIT and WITHSCORES - listpack
+[skip]: ZRANGEBYSCORE with non-value min or max - listpack
+[skip]: ZRANGEBYLEX/ZREVRANGEBYLEX/ZLEXCOUNT basics - listpack
+[skip]: ZLEXCOUNT advanced - listpack
+[skip]: ZRANGEBYSLEX with LIMIT - listpack
+[skip]: ZRANGEBYLEX with invalid lex range specifiers - listpack
+[skip]: ZREMRANGEBYSCORE basics - listpack
+[skip]: ZREMRANGEBYSCORE with non-value min or max - listpack
+[skip]: ZREMRANGEBYRANK basics - listpack
+[skip]: ZUNIONSTORE against non-existing key doesn't set destination - listpack
+[skip]: ZUNION/ZINTER/ZINTERCARD/ZDIFF against non-existing key - listpack
+[skip]: ZUNIONSTORE with empty set - listpack
+[skip]: ZUNION/ZINTER/ZINTERCARD/ZDIFF with empty set - listpack
+[skip]: ZUNIONSTORE basics - listpack
+[skip]: ZUNION/ZINTER/ZINTERCARD/ZDIFF with integer members - listpack
+[skip]: ZUNIONSTORE with weights - listpack
+[skip]: ZUNION with weights - listpack
+[skip]: ZUNIONSTORE with a regular set and weights - listpack
+[skip]: ZUNIONSTORE with AGGREGATE MIN - listpack
+[skip]: ZUNION/ZINTER with AGGREGATE MIN - listpack
+[skip]: ZUNIONSTORE with AGGREGATE MAX - listpack
+[skip]: ZUNION/ZINTER with AGGREGATE MAX - listpack
+[skip]: ZINTERSTORE basics - listpack
+[skip]: ZINTER basics - listpack
+[skip]: ZINTERCARD with illegal arguments
+[skip]: ZINTERCARD basics - listpack
+[skip]: ZINTER RESP3 - listpack
+[skip]: ZINTERSTORE with weights - listpack
+[skip]: ZINTER with weights - listpack
+[skip]: ZINTERSTORE with a regular set and weights - listpack
+[skip]: ZINTERSTORE with AGGREGATE MIN - listpack
+[skip]: ZINTERSTORE with AGGREGATE MAX - listpack
+[skip]: ZUNIONSTORE with +inf/-inf scores - listpack
+[skip]: ZUNIONSTORE with NaN weights - listpack
+[skip]: ZINTERSTORE with +inf/-inf scores - listpack
+[skip]: ZINTERSTORE with NaN weights - listpack
+[skip]: ZDIFFSTORE basics - listpack
+[skip]: ZDIFF basics - listpack
+[skip]: ZDIFFSTORE with a regular set - listpack
+[skip]: ZDIFF subtracting set from itself - listpack
+[skip]: ZDIFF algorithm 1 - listpack
+[skip]: ZDIFF algorithm 2 - listpack
+[skip]: ZDIFF fuzzing - listpack
+[skip]: ZPOPMIN with the count 0 returns an empty array
+[skip]: ZPOPMIN with negative count
+[skip]: ZPOPMAX with the count 0 returns an empty array
+[skip]: ZPOPMAX with negative count
+[skip]: Basic ZPOPMIN/ZPOPMAX with a single key - listpack
+[skip]: ZPOPMIN/ZPOPMAX with count - listpack
+[skip]: Basic ZMPOP_MIN/ZMPOP_MAX with a single key - listpack
+[skip]: ZMPOP_MIN/ZMPOP_MAX with count - listpack
+[skip]: BZPOPMIN/BZPOPMAX with a single existing sorted set - listpack
+[skip]: BZPOPMIN/BZPOPMAX with multiple existing sorted sets - listpack
+[skip]: BZPOPMIN/BZPOPMAX second sorted set has members - listpack
+[ok]: BZMPOP_MIN/BZMPOP_MAX with a single existing sorted set - listpack (1 ms)
+[ok]: BZMPOP_MIN/BZMPOP_MAX with multiple existing sorted sets - listpack (1 ms)
+[ok]: BZMPOP_MIN/BZMPOP_MAX second sorted set has members - listpack (0 ms)
+[skip]: Basic ZPOPMIN/ZPOPMAX - listpack RESP3
+[skip]: ZPOPMIN/ZPOPMAX with count - listpack RESP3
+[skip]: Basic ZMPOP_MIN/ZMPOP_MAX - listpack RESP3
+[skip]: ZMPOP_MIN/ZMPOP_MAX with count - listpack RESP3
+[skip]: BZPOPMIN/BZPOPMAX - listpack RESP3
+[ok]: BZMPOP_MIN/BZMPOP_MAX - listpack RESP3 (0 ms)
+[skip]: Check encoding - skiplist
+[skip]: ZSET basic ZADD and score update - skiplist
+[skip]: ZSET element can't be set to NaN with ZADD - skiplist
+[skip]: ZSET element can't be set to NaN with ZINCRBY - skiplist
+[skip]: ZADD with options syntax error with incomplete pair - skiplist
+[skip]: ZADD XX option without key - skiplist
+[skip]: ZADD XX existing key - skiplist
+[skip]: ZADD XX returns the number of elements actually added - skiplist
+[skip]: ZADD XX updates existing elements score - skiplist
+[skip]: ZADD GT updates existing elements when new scores are greater - skiplist
+[skip]: ZADD LT updates existing elements when new scores are lower - skiplist
+[skip]: ZADD GT XX updates existing elements when new scores are greater and skips new elements - skiplist
+[skip]: ZADD LT XX updates existing elements when new scores are lower and skips new elements - skiplist
+[skip]: ZADD XX and NX are not compatible - skiplist
+[skip]: ZADD NX with non existing key - skiplist
+[skip]: ZADD NX only add new elements without updating old ones - skiplist
+[skip]: ZADD GT and NX are not compatible - skiplist
+[skip]: ZADD LT and NX are not compatible - skiplist
+[skip]: ZADD LT and GT are not compatible - skiplist
+[skip]: ZADD INCR LT/GT replies with nill if score not updated - skiplist
+[skip]: ZADD INCR LT/GT with inf - skiplist
+[skip]: ZADD INCR works like ZINCRBY - skiplist
+[skip]: ZADD INCR works with a single score-elemenet pair - skiplist
+[skip]: ZADD CH option changes return value to all changed elements - skiplist
+[skip]: ZINCRBY calls leading to NaN result in error - skiplist
+[skip]: ZADD - Variadic version base case - $encoding
+[skip]: ZADD - Return value is the number of actually added items - $encoding
+[skip]: ZADD - Variadic version does not add nothing on single parsing err - $encoding
+[skip]: ZADD - Variadic version will raise error on missing arg - $encoding
+[skip]: ZINCRBY does not work variadic even if shares ZADD implementation - $encoding
+[skip]: ZCARD basics - skiplist
+[skip]: ZREM removes key after last element is removed - skiplist
+[skip]: ZREM variadic version - skiplist
+[skip]: ZREM variadic version -- remove elements after key deletion - skiplist
+[skip]: ZRANGE basics - skiplist
+[skip]: ZREVRANGE basics - skiplist
+[skip]: ZRANK/ZREVRANK basics - skiplist
+[skip]: ZRANK - after deletion - skiplist
+[skip]: ZINCRBY - can create a new sorted set - skiplist
+[skip]: ZINCRBY - increment and decrement - skiplist
+[skip]: ZINCRBY return value - skiplist
+[skip]: ZRANGEBYSCORE/ZREVRANGEBYSCORE/ZCOUNT basics - skiplist
+[skip]: ZRANGEBYSCORE with WITHSCORES - skiplist
+[skip]: ZRANGEBYSCORE with LIMIT - skiplist
+[skip]: ZRANGEBYSCORE with LIMIT and WITHSCORES - skiplist
+[skip]: ZRANGEBYSCORE with non-value min or max - skiplist
+[skip]: ZRANGEBYLEX/ZREVRANGEBYLEX/ZLEXCOUNT basics - skiplist
+[skip]: ZLEXCOUNT advanced - skiplist
+[skip]: ZRANGEBYSLEX with LIMIT - skiplist
+[skip]: ZRANGEBYLEX with invalid lex range specifiers - skiplist
+[skip]: ZREMRANGEBYSCORE basics - skiplist
+[skip]: ZREMRANGEBYSCORE with non-value min or max - skiplist
+[skip]: ZREMRANGEBYRANK basics - skiplist
+[skip]: ZUNIONSTORE against non-existing key doesn't set destination - skiplist
+[skip]: ZUNION/ZINTER/ZINTERCARD/ZDIFF against non-existing key - skiplist
+[skip]: ZUNIONSTORE with empty set - skiplist
+[skip]: ZUNION/ZINTER/ZINTERCARD/ZDIFF with empty set - skiplist
+[skip]: ZUNIONSTORE basics - skiplist
+[skip]: ZUNION/ZINTER/ZINTERCARD/ZDIFF with integer members - skiplist
+[skip]: ZUNIONSTORE with weights - skiplist
+[skip]: ZUNION with weights - skiplist
+[skip]: ZUNIONSTORE with a regular set and weights - skiplist
+[skip]: ZUNIONSTORE with AGGREGATE MIN - skiplist
+[skip]: ZUNION/ZINTER with AGGREGATE MIN - skiplist
+[skip]: ZUNIONSTORE with AGGREGATE MAX - skiplist
+[skip]: ZUNION/ZINTER with AGGREGATE MAX - skiplist
+[skip]: ZINTERSTORE basics - skiplist
+[skip]: ZINTER basics - skiplist
+[skip]: ZINTERCARD with illegal arguments
+[skip]: ZINTERCARD basics - skiplist
+[skip]: ZINTER RESP3 - skiplist
+[skip]: ZINTERSTORE with weights - skiplist
+[skip]: ZINTER with weights - skiplist
+[skip]: ZINTERSTORE with a regular set and weights - skiplist
+[skip]: ZINTERSTORE with AGGREGATE MIN - skiplist
+[skip]: ZINTERSTORE with AGGREGATE MAX - skiplist
+[skip]: ZUNIONSTORE with +inf/-inf scores - skiplist
+[skip]: ZUNIONSTORE with NaN weights - skiplist
+[skip]: ZINTERSTORE with +inf/-inf scores - skiplist
+[skip]: ZINTERSTORE with NaN weights - skiplist
+[skip]: ZDIFFSTORE basics - skiplist
+[skip]: ZDIFF basics - skiplist
+[skip]: ZDIFFSTORE with a regular set - skiplist
+[skip]: ZDIFF subtracting set from itself - skiplist
+[skip]: ZDIFF algorithm 1 - skiplist
+[skip]: ZDIFF algorithm 2 - skiplist
+[skip]: ZDIFF fuzzing - skiplist
+[skip]: ZPOPMIN with the count 0 returns an empty array
+[skip]: ZPOPMIN with negative count
+[skip]: ZPOPMAX with the count 0 returns an empty array
+[skip]: ZPOPMAX with negative count
+[skip]: Basic ZPOPMIN/ZPOPMAX with a single key - skiplist
+[skip]: ZPOPMIN/ZPOPMAX with count - skiplist
+[skip]: Basic ZMPOP_MIN/ZMPOP_MAX with a single key - skiplist
+[skip]: ZMPOP_MIN/ZMPOP_MAX with count - skiplist
+[skip]: BZPOPMIN/BZPOPMAX with a single existing sorted set - skiplist
+[skip]: BZPOPMIN/BZPOPMAX with multiple existing sorted sets - skiplist
+[skip]: BZPOPMIN/BZPOPMAX second sorted set has members - skiplist
+[ok]: BZMPOP_MIN/BZMPOP_MAX with a single existing sorted set - skiplist (0 ms)
+[ok]: BZMPOP_MIN/BZMPOP_MAX with multiple existing sorted sets - skiplist (1 ms)
+[ok]: BZMPOP_MIN/BZMPOP_MAX second sorted set has members - skiplist (0 ms)
+[skip]: Basic ZPOPMIN/ZPOPMAX - skiplist RESP3
+[skip]: ZPOPMIN/ZPOPMAX with count - skiplist RESP3
+[skip]: Basic ZMPOP_MIN/ZMPOP_MAX - skiplist RESP3
+[skip]: ZMPOP_MIN/ZMPOP_MAX with count - skiplist RESP3
+[skip]: BZPOPMIN/BZPOPMAX - skiplist RESP3
+[ok]: BZMPOP_MIN/BZMPOP_MAX - skiplist RESP3 (1 ms)
+[skip]: ZPOP/ZMPOP against wrong type
+[skip]: ZMPOP with illegal argument
+[skip]: ZMPOP propagate as pop with count command to replica
+[skip]: ZPOPMIN/ZPOPMAX readraw in RESP3
+[skip]: BZPOPMIN/BZPOPMAX readraw in RESP3
+[skip]: ZMPOP readraw in RESP3
+[ok]: BZMPOP readraw in RESP3 (183 ms)
+[skip]: ZPOPMIN/ZPOPMAX readraw in RESP2
+[skip]: BZPOPMIN/BZPOPMAX readraw in RESP2
+[skip]: ZMPOP readraw in RESP2
+[ok]: BZMPOP readraw in RESP2 (200 ms)
+[skip]: ZINTERSTORE regression with two sets, intset+hashtable
+[skip]: ZUNIONSTORE regression, should not create NaN in scores
+[skip]: ZINTERSTORE #516 regression, mixed sets and ziplist zsets
+[skip]: ZUNIONSTORE result is sorted
+[skip]: ZUNIONSTORE/ZINTERSTORE/ZDIFFSTORE error if using WITHSCORES 
+[skip]: ZMSCORE retrieve
+[skip]: ZMSCORE retrieve from empty set
+[skip]: ZMSCORE retrieve with missing member
+[skip]: ZMSCORE retrieve single member
+[skip]: ZMSCORE retrieve requires one or more members
+[skip]: ZSET commands don't accept the empty strings as valid score
+[skip]: zunionInterDiffGenericCommand at least 1 input key
+[skip]: ZSCORE - listpack
+[skip]: ZMSCORE - listpack
+[skip]: ZSCORE after a DEBUG RELOAD - listpack
+[skip]: ZSET sorting stresser - listpack
+[skip]: ZRANGEBYSCORE fuzzy test, 100 ranges in 128 element sorted set - listpack
+[skip]: ZRANGEBYLEX fuzzy test, 100 ranges in 128 element sorted set - listpack
+[skip]: ZREMRANGEBYLEX fuzzy test, 100 ranges in 128 element sorted set - listpack
+[skip]: ZSETs skiplist implementation backlink consistency test - listpack
+[skip]: ZSETs ZRANK augmented skip list stress testing - listpack
+[skip]: BZPOPMIN, ZADD + DEL should not awake blocked client
+[skip]: BZPOPMIN, ZADD + DEL + SET should not awake blocked client
+[ok]: BZMPOP_MIN, ZADD + DEL should not awake blocked client (0 ms)
+[ok]: BZMPOP_MIN, ZADD + DEL + SET should not awake blocked client (0 ms)
+[skip]: BZPOPMIN with same key multiple times should work
+[skip]: MULTI/EXEC is isolated from the point of view of BZPOPMIN
+[skip]: BZPOPMIN with variadic ZADD
+[skip]: BZPOPMIN with zero timeout should block indefinitely
+[ok]: MULTI/EXEC is isolated from the point of view of BZMPOP_MIN (1 ms)
+[ok]: BZMPOP_MIN with variadic ZADD (0 ms)
+[ok]: BZMPOP_MIN with zero timeout should block indefinitely (1001 ms)
+[skip]: ZSCORE - skiplist
+[skip]: ZMSCORE - skiplist
+[skip]: ZSCORE after a DEBUG RELOAD - skiplist
+[skip]: ZSET sorting stresser - skiplist
+[skip]: ZRANGEBYSCORE fuzzy test, 100 ranges in 100 element sorted set - skiplist
+[skip]: ZRANGEBYLEX fuzzy test, 100 ranges in 100 element sorted set - skiplist
+[skip]: ZREMRANGEBYLEX fuzzy test, 100 ranges in 100 element sorted set - skiplist
+[skip]: ZSETs skiplist implementation backlink consistency test - skiplist
+[skip]: ZSETs ZRANK augmented skip list stress testing - skiplist
+[skip]: BZPOPMIN, ZADD + DEL should not awake blocked client
+[skip]: BZPOPMIN, ZADD + DEL + SET should not awake blocked client
+[ok]: BZMPOP_MIN, ZADD + DEL should not awake blocked client (0 ms)
+[ok]: BZMPOP_MIN, ZADD + DEL + SET should not awake blocked client (0 ms)
+[skip]: BZPOPMIN with same key multiple times should work
+[skip]: MULTI/EXEC is isolated from the point of view of BZPOPMIN
+[skip]: BZPOPMIN with variadic ZADD
+[skip]: BZPOPMIN with zero timeout should block indefinitely
+[ok]: MULTI/EXEC is isolated from the point of view of BZMPOP_MIN (0 ms)
+[ok]: BZMPOP_MIN with variadic ZADD (0 ms)
+[ok]: BZMPOP_MIN with zero timeout should block indefinitely (1002 ms)
+[ok]: BZPOP/BZMPOP against wrong type (0 ms)
+[ok]: BZMPOP with illegal argument (1 ms)
+[ok]: BZMPOP with multiple blocked clients (0 ms)
+[ok]: BZMPOP propagate as pop with count command to replica (198 ms)
+[ok]: BZMPOP should not blocks on non key arguments - #10762 (1 ms)
+[skip]: ZSET skiplist order consistency when elements are moved
+[skip]: ZRANGESTORE basic
+[skip]: ZRANGESTORE RESP3
+[skip]: ZRANGESTORE range
+[skip]: ZRANGESTORE BYLEX
+[skip]: ZRANGESTORE BYSCORE
+[skip]: ZRANGESTORE BYSCORE LIMIT
+[skip]: ZRANGESTORE BYSCORE REV LIMIT
+[skip]: ZRANGE BYSCORE REV LIMIT
+[skip]: ZRANGESTORE - src key missing
+[skip]: ZRANGESTORE - src key wrong type
+[skip]: ZRANGESTORE - empty range
+[skip]: ZRANGESTORE BYLEX - empty range
+[skip]: ZRANGESTORE BYSCORE - empty range
+[skip]: ZRANGE BYLEX
+[skip]: ZRANGESTORE invalid syntax
+[skip]: ZRANGE invalid syntax
+[skip]: ZRANDMEMBER - listpack
+[skip]: ZRANDMEMBER - skiplist
+[skip]: ZRANDMEMBER with RESP3
+[skip]: ZRANDMEMBER count of 0 is handled correctly
+[skip]: ZRANDMEMBER with <count> against non existing key
+[skip]: ZRANDMEMBER count of 0 is handled correctly - emptyarray
+[skip]: ZRANDMEMBER with <count> against non existing key - emptyarray
+[skip]: ZRANDMEMBER with <count> - skiplist
+[skip]: ZRANDMEMBER with <count> - listpack
+[skip]: zset score double range
+[1/1 done]: unit/type/zset (3 seconds)
+
+                   The End
+
+Execution time of different units:
+  3 seconds - unit/type/zset
+
+\o/ All tests passed without errors!
+
+Cleanup: may take some time... OK
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 843a4cdc075a5b251e1b154f8013a9e0abe1038b tests/unit/type/zset.tcl
+Updated 1 path from 92f3ddd1

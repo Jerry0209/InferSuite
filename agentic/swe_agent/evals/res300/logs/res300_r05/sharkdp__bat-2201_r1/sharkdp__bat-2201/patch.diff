@@ -1,0 +1,140 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 923f26ce..7fa516d9 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -7,6 +7,8 @@
+ ## Bugfixes
+ 
+ - Prevent fork nightmare with `PAGER=batcat`. See #2235 (@johnmatthiggins)
++- Make `-P`/`--no-paging` and `-pp` take precedence over `--paging=always` set in
++  the config file or `BAT_OPTS`. See #2264
+ 
+ ## Other
+ 
+diff --git a/src/bin/bat/app.rs b/src/bin/bat/app.rs
+index 78a0df69..0374e8cc 100644
+--- a/src/bin/bat/app.rs
++++ b/src/bin/bat/app.rs
+@@ -79,31 +79,7 @@ impl App {
+     pub fn config(&self, inputs: &[Input]) -> Result<Config> {
+         let style_components = self.style_components()?;
+ 
+-        let paging_mode = match self.matches.value_of("paging") {
+-            Some("always") => PagingMode::Always,
+-            Some("never") => PagingMode::Never,
+-            Some("auto") | None => {
+-                // If we have -pp as an option when in auto mode, the pager should be disabled.
+-                let extra_plain = self.matches.occurrences_of("plain") > 1;
+-                if extra_plain || self.matches.is_present("no-paging") {
+-                    PagingMode::Never
+-                } else if inputs.iter().any(Input::is_stdin) {
+-                    // If we are reading from stdin, only enable paging if we write to an
+-                    // interactive terminal and if we do not *read* from an interactive
+-                    // terminal.
+-                    if self.interactive_output && !atty::is(Stream::Stdin) {
+-                        PagingMode::QuitIfOneScreen
+-                    } else {
+-                        PagingMode::Never
+-                    }
+-                } else if self.interactive_output {
+-                    PagingMode::QuitIfOneScreen
+-                } else {
+-                    PagingMode::Never
+-                }
+-            }
+-            _ => unreachable!("other values for --paging are not allowed"),
+-        };
++        let paging_mode = self.paging_mode(inputs);
+ 
+         let mut syntax_mapping = SyntaxMapping::builtin();
+ 
+@@ -338,4 +314,89 @@ impl App {
+ 
+         Ok(styled_components)
+     }
++
++    fn paging_mode(&self, inputs: &[Input]) -> PagingMode {
++        // The paging behavior can be controlled via three different (possibly
++        // conflicting) command-line options:
++        //   * `--paging=auto|never|always`
++        //   * `-P` / `--no-paging` (alias for `--paging=never`)
++        //   * `-pp` (i.e. `-p` specified twice, alias for `--paging=never`)
++        //
++        // When several of these are specified (e.g. `--paging=always` in the
++        // config file and `-P` on the command line), the one that appears *last*
++        // on the (effective) command line takes precedence. We determine the
++        // winner by comparing the clap indices of the relevant options.
++        //
++        // See https://github.com/sharkdp/bat/issues/2264
++
++        // The index of the last occurrence of `--paging`, but only if it was
++        // explicitly specified by the user (otherwise `index_of` would return the
++        // index of the injected default value, which always comes last).
++        let paging_index = if self.matches.occurrences_of("paging") > 0 {
++            self.matches
++                .indices_of("paging")
++                .and_then(|mut indices| indices.next_back())
++        } else {
++            None
++        };
++
++        // The index of the last `-P` / `--no-paging`.
++        let no_paging_index = self
++            .matches
++            .indices_of("no-paging")
++            .and_then(|mut indices| indices.next_back());
++
++        // The index at which `-p` disables paging, i.e. the index of the *second*
++        // `--plain`/`-p` occurrence. Only relevant if `-p` was given at least twice.
++        let plain_disable_index = if self.matches.occurrences_of("plain") > 1 {
++            self.matches
++                .indices_of("plain")
++                .and_then(|mut indices| indices.nth(1))
++        } else {
++            None
++        };
++
++        // If `--paging` was explicitly specified and it appears *after* every
++        // `-P`/`-pp`, its value wins.
++        let paging_overrides_short_options = paging_index.map_or(false, |paging_index| {
++            paging_index >= no_paging_index.unwrap_or(0)
++                && paging_index >= plain_disable_index.unwrap_or(0)
++        });
++
++        if paging_overrides_short_options {
++            return match self.matches.value_of("paging") {
++                Some("always") => PagingMode::Always,
++                Some("never") => PagingMode::Never,
++                Some("auto") => self.paging_mode_auto(inputs),
++                _ => unreachable!("other values for --paging are not allowed"),
++            };
++        }
++
++        // Otherwise, `-P` or `-pp` (whichever comes last) disables the pager, as
++        // long as one of them was specified at all.
++        if no_paging_index.is_some() || plain_disable_index.is_some() {
++            return PagingMode::Never;
++        }
++
++        // Neither `--paging` nor `-P`/`-pp` were specified, fall back to the
++        // automatic behavior.
++        self.paging_mode_auto(inputs)
++    }
++
++    fn paging_mode_auto(&self, inputs: &[Input]) -> PagingMode {
++        if inputs.iter().any(Input::is_stdin) {
++            // If we are reading from stdin, only enable paging if we write to an
++            // interactive terminal and if we do not *read* from an interactive
++            // terminal.
++            if self.interactive_output && !atty::is(Stream::Stdin) {
++                PagingMode::QuitIfOneScreen
++            } else {
++                PagingMode::Never
++            }
++        } else if self.interactive_output {
++            PagingMode::QuitIfOneScreen
++        } else {
++            PagingMode::Never
++        }
++    }
+ }

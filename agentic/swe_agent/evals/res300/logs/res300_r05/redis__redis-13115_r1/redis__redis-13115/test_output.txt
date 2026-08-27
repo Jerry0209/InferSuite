@@ -1,0 +1,1137 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch unstable
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/script_lua.c
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 4979cf02ff83e90ced80db5111452a4c3e082c3a
+Author: Madelyn Olson <34459052+madolson@users.noreply.github.com>
+Date:   Fri Mar 8 15:50:36 2024 -0800
+
+    Change crc16 slot table to be fixed size character array instead of pointer to strings (#13112)
+    
+    Update the crc16 hash lookup table to use fixed size character arrays instead of pointers
+    to static string addresses. Since the actual values are so short, we can just store them
+    in a uniform array instead. This saves about 128kb of memory and should improve the
+    performance as well since we should have much better memory locality.
+
+diff --git a/src/crc16_slottable.h b/src/crc16_slottable.h
+index 652aea9e1..f25e2412e 100644
+--- a/src/crc16_slottable.h
++++ b/src/crc16_slottable.h
+@@ -7,8 +7,9 @@
+  * The array indexes are slot numbers, so that given a desired slot, this string is guaranteed
+  * to make redis cluster route a request to the shard holding this slot 
+  */
++typedef char crc16_alphastring[4];
+ 
+-const char *crc16_slot_table[] = {
++const crc16_alphastring crc16_slot_table[] = {
+ "06S", "Qi", "5L5", "4Iu", "4gY", "460", "1Y7", "1LV", "0QG", "ru", "7Ok", "4ji", "4DE", "65n", "2JH", "I8", "F9", "SX", "7nF", "4KD", 
+ "4eh", "6PK", "2ke", "1Ng", "0Sv", "4L", "491", "4hX", "4Ft", "5C4", "2Hy", "09R", "021", "0cX", "4Xv", "6mU", "6Cy", "42R", "0Mt", "nF", 
+ "cv", "1Pe", "5kK", "6NI", "74L", "4UF", "0nh", "MZ", "2TJ", "0ai", "4ZG", "6od", "6AH", "40c", "0OE", "lw", "aG", "0Bu", "5iz", "6Lx", 
++ git -c core.fileMode=false diff 4979cf02ff83e90ced80db5111452a4c3e082c3a
+diff --git a/src/script_lua.c b/src/script_lua.c
+index eca21d60c..3587bb277 100644
+--- a/src/script_lua.c
++++ b/src/script_lua.c
+@@ -819,8 +819,17 @@ static robj **luaArgsToRedisArgv(lua_State *lua, int *argc, int *argv_len) {
+             /* We can't use lua_tolstring() for number -> string conversion
+              * since Lua uses a format specifier that loses precision. */
+             lua_Number num = lua_tonumber(lua,j+1);
+-            obj_len = fpconv_dtoa((double)num, dbuf);
+-            dbuf[obj_len] = '\0';
++            /* Integer printing function is much faster, check if we can safely use it.
++             * Since lua_Number is not explicitly an integer or a double, we need to make an effort
++             * to convert it as an integer when that's possible, since the string could later be used
++             * in a context that doesn't support scientific notation (e.g. 1e9 instead of 100000000). */
++            long long lvalue;
++            if (double2ll((double)num, &lvalue))
++                obj_len = ll2string(dbuf, sizeof(dbuf), lvalue);
++            else {
++                obj_len = fpconv_dtoa((double)num, dbuf);
++                dbuf[obj_len] = '\0';
++            }
+             obj_s = dbuf;
+         } else {
+             obj_s = (char*)lua_tolstring(lua,j+1,&obj_len);
++ git checkout 4979cf02ff83e90ced80db5111452a4c3e082c3a tests/unit/scripting.tcl
+Updated 0 paths from 6da56f819
++ git apply -v -
+Checking patch tests/unit/scripting.tcl...
+Applied patch tests/unit/scripting.tcl cleanly.
++ make distclean
+cd src && make distclean
+make[1]: Entering directory '/testbed/src'
+/bin/sh: 1: pkg-config: not found
+/bin/sh: 1: pkg-config: not found
+/bin/sh: 1: pkg-config: not found
+rm -rf redis-server redis-sentinel redis-cli redis-benchmark redis-check-rdb redis-check-aof *.o *.gcda *.gcno *.gcov redis.info lcov-html Makefile.dep *.so
+rm -f threads_mngr.d adlist.d quicklist.d ae.d anet.d dict.d kvstore.d server.d sds.d zmalloc.d lzf_c.d lzf_d.d pqsort.d zipmap.d sha1.d ziplist.d release.d networking.d util.d object.d db.d replication.d rdb.d t_string.d t_list.d t_set.d t_zset.d t_hash.d config.d aof.d pubsub.d multi.d debug.d sort.d intset.d syncio.d cluster.d cluster_legacy.d crc16.d endianconv.d slowlog.d eval.d bio.d rio.d rand.d memtest.d syscheck.d crcspeed.d crc64.d bitops.d sentinel.d notify.d setproctitle.d blocked.d hyperloglog.d latency.d sparkline.d redis-check-rdb.d redis-check-aof.d geo.d lazyfree.d module.d evict.d expire.d geohash.d geohash_helper.d childinfo.d defrag.d siphash.d rax.d t_stream.d listpack.d localtime.d lolwut.d lolwut5.d lolwut6.d acl.d tracking.d socket.d tls.d sha256.d timeout.d setcpuaffinity.d monotonic.d mt19937-64.d resp_parser.d call_reply.d script_lua.d script.d functions.d function_lua.d commands.d strl.d connection.d unix.d logreqres.d anet.d adlist.d dict.d redis-cli.d zmalloc.d release.d ae.d redisassert.d crcspeed.d crc64.d siphash.d crc16.d monotonic.d cli_common.d mt19937-64.d strl.d cli_commands.d ae.d anet.d redis-benchmark.d adlist.d dict.d zmalloc.d redisassert.d release.d crcspeed.d crc64.d siphash.d crc16.d monotonic.d cli_common.d mt19937-64.d strl.d
+(cd ../deps && make distclean)
+make[2]: Entering directory '/testbed/deps'
+(cd hiredis && make clean) > /dev/null || true
+(cd linenoise && make clean) > /dev/null || true
+(cd lua && make clean) > /dev/null || true
+(cd jemalloc && [ -f Makefile ] && make distclean) > /dev/null || true
+(cd hdr_histogram && make clean) > /dev/null || true
+(cd fpconv && make clean) > /dev/null || true
+(rm -f .make-*)
+make[2]: Leaving directory '/testbed/deps'
+(cd modules && make clean)
+make[2]: Entering directory '/testbed/src/modules'
+rm -rf *.xo *.so
+make[2]: Leaving directory '/testbed/src/modules'
+(cd ../tests/modules && make clean)
+make[2]: Entering directory '/testbed/tests/modules'
+rm -f commandfilter.so basics.so testrdb.so fork.so infotest.so propagate.so misc.so hooks.so blockonkeys.so blockonbackground.so scan.so datatype.so datatype2.so auth.so keyspace_events.so blockedclient.so getkeys.so getchannels.so test_lazyfree.so timer.so defragtest.so keyspecs.so hash.so zset.so stream.so mallocsize.so aclcheck.so list.so subcommands.so reply.so cmdintrospection.so eventloop.so moduleconfigs.so moduleconfigstwo.so publish.so usercall.so postnotifications.so moduleauthtwo.so rdbloadsave.so crash.so commandfilter.xo basics.xo testrdb.xo fork.xo infotest.xo propagate.xo misc.xo hooks.xo blockonkeys.xo blockonbackground.xo scan.xo datatype.xo datatype2.xo auth.xo keyspace_events.xo blockedclient.xo getkeys.xo getchannels.xo test_lazyfree.xo timer.xo defragtest.xo keyspecs.xo hash.xo zset.xo stream.xo mallocsize.xo aclcheck.xo list.xo subcommands.xo reply.xo cmdintrospection.xo eventloop.xo moduleconfigs.xo moduleconfigstwo.xo publish.xo usercall.xo postnotifications.xo moduleauthtwo.xo rdbloadsave.xo crash.xo
+make[2]: Leaving directory '/testbed/tests/modules'
+(rm -f .make-*)
+make[1]: Leaving directory '/testbed/src'
++ make
+cd src && make all
+make[1]: Entering directory '/testbed/src'
+/bin/sh: 1: pkg-config: not found
+/bin/sh: 1: pkg-config: not found
+/bin/sh: 1: pkg-config: not found
+    [34mCC[0m [33mMakefile.dep[0m
+/bin/sh: 1: pkg-config: not found
+/bin/sh: 1: pkg-config: not found
+/bin/sh: 1: pkg-config: not found
+rm -rf redis-server redis-sentinel redis-cli redis-benchmark redis-check-rdb redis-check-aof *.o *.gcda *.gcno *.gcov redis.info lcov-html Makefile.dep *.so
+rm -f threads_mngr.d adlist.d quicklist.d ae.d anet.d dict.d kvstore.d server.d sds.d zmalloc.d lzf_c.d lzf_d.d pqsort.d zipmap.d sha1.d ziplist.d release.d networking.d util.d object.d db.d replication.d rdb.d t_string.d t_list.d t_set.d t_zset.d t_hash.d config.d aof.d pubsub.d multi.d debug.d sort.d intset.d syncio.d cluster.d cluster_legacy.d crc16.d endianconv.d slowlog.d eval.d bio.d rio.d rand.d memtest.d syscheck.d crcspeed.d crc64.d bitops.d sentinel.d notify.d setproctitle.d blocked.d hyperloglog.d latency.d sparkline.d redis-check-rdb.d redis-check-aof.d geo.d lazyfree.d module.d evict.d expire.d geohash.d geohash_helper.d childinfo.d defrag.d siphash.d rax.d t_stream.d listpack.d localtime.d lolwut.d lolwut5.d lolwut6.d acl.d tracking.d socket.d tls.d sha256.d timeout.d setcpuaffinity.d monotonic.d mt19937-64.d resp_parser.d call_reply.d script_lua.d script.d functions.d function_lua.d commands.d strl.d connection.d unix.d logreqres.d anet.d adlist.d dict.d redis-cli.d zmalloc.d release.d ae.d redisassert.d crcspeed.d crc64.d siphash.d crc16.d monotonic.d cli_common.d mt19937-64.d strl.d cli_commands.d ae.d anet.d redis-benchmark.d adlist.d dict.d zmalloc.d redisassert.d release.d crcspeed.d crc64.d siphash.d crc16.d monotonic.d cli_common.d mt19937-64.d strl.d
+(cd ../deps && make distclean)
+make[2]: Entering directory '/testbed/deps'
+(cd hiredis && make clean) > /dev/null || true
+(cd linenoise && make clean) > /dev/null || true
+(cd lua && make clean) > /dev/null || true
+(cd jemalloc && [ -f Makefile ] && make distclean) > /dev/null || true
+(cd hdr_histogram && make clean) > /dev/null || true
+(cd fpconv && make clean) > /dev/null || true
+(rm -f .make-*)
+make[2]: Leaving directory '/testbed/deps'
+(cd modules && make clean)
+make[2]: Entering directory '/testbed/src/modules'
+rm -rf *.xo *.so
+make[2]: Leaving directory '/testbed/src/modules'
+(cd ../tests/modules && make clean)
+make[2]: Entering directory '/testbed/tests/modules'
+rm -f commandfilter.so basics.so testrdb.so fork.so infotest.so propagate.so misc.so hooks.so blockonkeys.so blockonbackground.so scan.so datatype.so datatype2.so auth.so keyspace_events.so blockedclient.so getkeys.so getchannels.so test_lazyfree.so timer.so defragtest.so keyspecs.so hash.so zset.so stream.so mallocsize.so aclcheck.so list.so subcommands.so reply.so cmdintrospection.so eventloop.so moduleconfigs.so moduleconfigstwo.so publish.so usercall.so postnotifications.so moduleauthtwo.so rdbloadsave.so crash.so commandfilter.xo basics.xo testrdb.xo fork.xo infotest.xo propagate.xo misc.xo hooks.xo blockonkeys.xo blockonbackground.xo scan.xo datatype.xo datatype2.xo auth.xo keyspace_events.xo blockedclient.xo getkeys.xo getchannels.xo test_lazyfree.xo timer.xo defragtest.xo keyspecs.xo hash.xo zset.xo stream.xo mallocsize.xo aclcheck.xo list.xo subcommands.xo reply.xo cmdintrospection.xo eventloop.xo moduleconfigs.xo moduleconfigstwo.xo publish.xo usercall.xo postnotifications.xo moduleauthtwo.xo rdbloadsave.xo crash.xo
+make[2]: Leaving directory '/testbed/tests/modules'
+(rm -f .make-*)
+echo STD=-pedantic -DREDIS_STATIC='' -std=gnu11 >> .make-settings
+echo WARN=-Wall -W -Wno-missing-field-initializers -Werror=deprecated-declarations -Wstrict-prototypes >> .make-settings
+echo OPT=-O3 >> .make-settings
+echo MALLOC=jemalloc >> .make-settings
+echo BUILD_TLS= >> .make-settings
+echo USE_SYSTEMD= >> .make-settings
+echo CFLAGS= >> .make-settings
+echo LDFLAGS= >> .make-settings
+echo REDIS_CFLAGS=-flto=auto -fno-omit-frame-pointer >> .make-settings
+echo REDIS_LDFLAGS=-O3 -flto >> .make-settings
+echo PREV_FINAL_CFLAGS=-pedantic -DREDIS_STATIC='' -std=gnu11 -Wall -W -Wno-missing-field-initializers -Werror=deprecated-declarations -Wstrict-prototypes -O3 -g -ggdb  -flto=auto -fno-omit-frame-pointer -I../deps/hiredis -I../deps/linenoise -I../deps/lua/src -I../deps/hdr_histogram -I../deps/fpconv -DUSE_JEMALLOC -I../deps/jemalloc/include >> .make-settings
+echo PREV_FINAL_LDFLAGS= -O3 -flto -g -ggdb -rdynamic >> .make-settings
+(cd ../deps && make hiredis linenoise lua hdr_histogram fpconv jemalloc)
+make[2]: Entering directory '/testbed/deps'
+(cd hiredis && make clean) > /dev/null || true
+(cd linenoise && make clean) > /dev/null || true
+(cd lua && make clean) > /dev/null || true
+(cd jemalloc && [ -f Makefile ] && make distclean) > /dev/null || true
+(cd hdr_histogram && make clean) > /dev/null || true
+(cd fpconv && make clean) > /dev/null || true
+(rm -f .make-*)
+(echo "" > .make-cflags)
+(echo "" > .make-ldflags)
+[32;1mMAKE[0m [37;1mhiredis[0m
+cd hiredis && make static 
+make[3]: Entering directory '/testbed/deps/hiredis'
+cc -std=c99 -c -O3 -fPIC   -Wall -Wextra -Werror -Wstrict-prototypes -Wwrite-strings -Wno-missing-field-initializers -g -ggdb  -pedantic alloc.c
+cc -std=c99 -c -O3 -fPIC   -Wall -Wextra -Werror -Wstrict-prototypes -Wwrite-strings -Wno-missing-field-initializers -g -ggdb  -pedantic net.c
+cc -std=c99 -c -O3 -fPIC   -Wall -Wextra -Werror -Wstrict-prototypes -Wwrite-strings -Wno-missing-field-initializers -g -ggdb  -pedantic hiredis.c
+cc -std=c99 -c -O3 -fPIC   -Wall -Wextra -Werror -Wstrict-prototypes -Wwrite-strings -Wno-missing-field-initializers -g -ggdb  -pedantic sds.c
+cc -std=c99 -c -O3 -fPIC   -Wall -Wextra -Werror -Wstrict-prototypes -Wwrite-strings -Wno-missing-field-initializers -g -ggdb  -pedantic async.c
+cc -std=c99 -c -O3 -fPIC   -Wall -Wextra -Werror -Wstrict-prototypes -Wwrite-strings -Wno-missing-field-initializers -g -ggdb  -pedantic read.c
+cc -std=c99 -c -O3 -fPIC   -Wall -Wextra -Werror -Wstrict-prototypes -Wwrite-strings -Wno-missing-field-initializers -g -ggdb  -pedantic sockcompat.c
+ar rcs libhiredis.a alloc.o net.o hiredis.o sds.o async.o read.o sockcompat.o
+make[3]: Leaving directory '/testbed/deps/hiredis'
+[32;1mMAKE[0m [37;1mlinenoise[0m
+cd linenoise && make
+make[3]: Entering directory '/testbed/deps/linenoise'
+cc  -Wall -Os -g  -c linenoise.c
+make[3]: Leaving directory '/testbed/deps/linenoise'
+[32;1mMAKE[0m [37;1mlua[0m
+cd lua/src && make all CFLAGS="-Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2 " MYLDFLAGS="" AR="ar rc"
+make[3]: Entering directory '/testbed/deps/lua/src'
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lapi.o lapi.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lcode.o lcode.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o ldebug.o ldebug.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o ldo.o ldo.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o ldump.o ldump.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lfunc.o lfunc.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lgc.o lgc.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o llex.o llex.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lmem.o lmem.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lobject.o lobject.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lopcodes.o lopcodes.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lparser.o lparser.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lstate.o lstate.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lstring.o lstring.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o ltable.o ltable.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o ltm.o ltm.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lundump.o lundump.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lvm.o lvm.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lzio.o lzio.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o strbuf.o strbuf.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o fpconv.o fpconv.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lauxlib.o lauxlib.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lbaselib.o lbaselib.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o ldblib.o ldblib.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o liolib.o liolib.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lmathlib.o lmathlib.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o loslib.o loslib.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o ltablib.o ltablib.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lstrlib.o lstrlib.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o loadlib.o loadlib.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o linit.o linit.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lua_cjson.o lua_cjson.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lua_struct.o lua_struct.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lua_cmsgpack.o lua_cmsgpack.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lua_bit.o lua_bit.c
+ar rc liblua.a lapi.o lcode.o ldebug.o ldo.o ldump.o lfunc.o lgc.o llex.o lmem.o lobject.o lopcodes.o lparser.o lstate.o lstring.o ltable.o ltm.o lundump.o lvm.o lzio.o strbuf.o fpconv.o lauxlib.o lbaselib.o ldblib.o liolib.o lmathlib.o loslib.o ltablib.o lstrlib.o loadlib.o linit.o lua_cjson.o lua_struct.o lua_cmsgpack.o lua_bit.o	# DLL needs all object files
+ranlib liblua.a
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o lua.o lua.c
+cc -o lua  lua.o liblua.a -lm 
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o luac.o luac.c
+cc -Wall -DLUA_ANSI -DENABLE_CJSON_GLOBAL -DREDIS_STATIC='' -DLUA_USE_MKSTEMP  -O2    -c -o print.o print.c
+cc -o luac  luac.o print.o liblua.a -lm 
+make[3]: Leaving directory '/testbed/deps/lua/src'
+[32;1mMAKE[0m [37;1mhdr_histogram[0m
+cd hdr_histogram && make
+make[3]: Entering directory '/testbed/deps/hdr_histogram'
+cc -std=c99 -Wall -Os -g  -DHDR_MALLOC_INCLUDE=\"hdr_redis_malloc.h\" -c  hdr_histogram.c 
+ar rcs libhdrhistogram.a hdr_histogram.o
+make[3]: Leaving directory '/testbed/deps/hdr_histogram'
+[32;1mMAKE[0m [37;1mfpconv[0m
+cd fpconv && make
+make[3]: Entering directory '/testbed/deps/fpconv'
+cc  -Wall -Os -g  -c  fpconv_dtoa.c 
+ar rcs libfpconv.a fpconv_dtoa.o
+make[3]: Leaving directory '/testbed/deps/fpconv'
+[32;1mMAKE[0m [37;1mjemalloc[0m
+cd jemalloc && ./configure --disable-cxx --with-version=5.3.0-0-g0 --with-lg-quantum=3 --disable-cache-oblivious --with-jemalloc-prefix=je_ CFLAGS="" LDFLAGS="" 
+checking for xsltproc... false
+checking for gcc... gcc
+checking whether the C compiler works... yes
+checking for C compiler default output file name... a.out
+checking for suffix of executables... 
+checking whether we are cross compiling... no
+checking for suffix of object files... o
+checking whether the compiler supports GNU C... yes
+checking whether gcc accepts -g... yes
+checking for gcc option to enable C11 features... none needed
+checking whether compiler is cray... no
+checking whether compiler supports -std=gnu11... yes
+checking whether compiler supports -Werror=unknown-warning-option... no
+checking whether compiler supports -Wall... yes
+checking whether compiler supports -Wextra... yes
+checking whether compiler supports -Wshorten-64-to-32... no
+checking whether compiler supports -Wsign-compare... yes
+checking whether compiler supports -Wundef... yes
+checking whether compiler supports -Wno-format-zero-length... yes
+checking whether compiler supports -Wpointer-arith... yes
+checking whether compiler supports -Wno-missing-braces... yes
+checking whether compiler supports -Wno-missing-field-initializers... yes
+checking whether compiler supports -Wno-missing-attributes... yes
+checking whether compiler supports -pipe... yes
+checking whether compiler supports -g3... yes
+checking how to run the C preprocessor... gcc -E
+checking for stdio.h... yes
+checking for stdlib.h... yes
+checking for string.h... yes
+checking for inttypes.h... yes
+checking for stdint.h... yes
+checking for strings.h... yes
+checking for sys/stat.h... yes
+checking for sys/types.h... yes
+checking for unistd.h... yes
+checking whether byte ordering is bigendian... no
+checking size of void *... 8
+checking size of int... 4
+checking size of long... 8
+checking size of long long... 8
+checking size of intmax_t... 8
+checking build system type... x86_64-pc-linux-gnu
+checking host system type... x86_64-pc-linux-gnu
+checking whether pause instruction is compilable... yes
+checking number of significant virtual address bits... 48
+checking for ar... ar
+checking for nm... nm
+checking for gawk... no
+checking for mawk... mawk
+checking for malloc.h... yes
+checking whether malloc_usable_size definition can use const argument... no
+checking for library containing log... -lm
+checking whether __attribute__ syntax is compilable... yes
+checking whether compiler supports -fvisibility=hidden... yes
+checking whether compiler supports -fvisibility=hidden... no
+checking whether compiler supports -Werror... yes
+checking whether compiler supports -herror_on_warning... yes
+checking whether tls_model attribute is compilable... yes
+checking whether compiler supports -Werror... yes
+checking whether compiler supports -herror_on_warning... yes
+checking whether alloc_size attribute is compilable... yes
+checking whether compiler supports -Werror... yes
+checking whether compiler supports -herror_on_warning... yes
+checking whether format(gnu_printf, ...) attribute is compilable... yes
+checking whether compiler supports -Werror... yes
+checking whether compiler supports -herror_on_warning... yes
+checking whether format(printf, ...) attribute is compilable... yes
+checking whether compiler supports -Werror... yes
+checking whether compiler supports -herror_on_warning... yes
+checking whether format(printf, ...) attribute is compilable... yes
+checking whether compiler supports -Wimplicit-fallthrough... yes
+checking whether fallthrough attribute is compilable... yes
+checking whether compiler supports -Wimplicit-fallthrough... yes
+checking whether compiler supports -Wimplicit-fallthrough... no
+checking whether compiler supports -Werror... yes
+checking whether compiler supports -herror_on_warning... yes
+checking whether cold attribute is compilable... yes
+checking whether vm_make_tag is compilable... no
+checking for a BSD-compatible install... /usr/bin/install -c
+checking for ranlib... ranlib
+checking for ld... /usr/bin/ld
+checking for autoconf... /usr/bin/autoconf
+checking for memalign... yes
+checking for valloc... yes
+checking for malloc_size... no
+checking whether compiler supports -O3... yes
+checking whether compiler supports -O3... no
+checking whether compiler supports -funroll-loops... yes
+checking configured backtracing method... N/A
+checking for sbrk... yes
+checking whether utrace(2) is compilable... no
+checking whether utrace(2) with label is compilable... no
+checking whether a program using __builtin_unreachable is compilable... yes
+checking whether a program using __builtin_ffsl is compilable... yes
+checking whether a program using __builtin_popcountl is compilable... yes
+checking LG_PAGE... 12
+checking for pthread.h... yes
+checking for pthread_create in -lpthread... yes
+checking for dlfcn.h... yes
+checking for dlsym... yes
+checking whether pthread_atfork(3) is compilable... yes
+checking whether pthread_setname_np(3) is compilable... yes
+checking whether pthread_getname_np(3) is compilable... yes
+checking whether pthread_get_name_np(3) is compilable... no
+checking for library containing clock_gettime... none required
+checking whether clock_gettime(CLOCK_MONOTONIC_COARSE, ...) is compilable... yes
+checking whether clock_gettime(CLOCK_MONOTONIC, ...) is compilable... yes
+checking whether mach_absolute_time() is compilable... no
+checking whether clock_gettime(CLOCK_REALTIME, ...) is compilable... yes
+checking whether compiler supports -Werror... yes
+checking whether syscall(2) is compilable... yes
+checking for secure_getenv... yes
+checking for sched_getcpu... yes
+checking for sched_setaffinity... yes
+checking for issetugid... no
+checking for _malloc_thread_cleanup... no
+checking for _pthread_mutex_init_calloc_cb... no
+checking for memcntl... no
+checking for TLS... yes
+checking whether C11 atomics is compilable... yes
+checking whether GCC __atomic atomics is compilable... yes
+checking whether GCC 8-bit __atomic atomics is compilable... yes
+checking whether GCC __sync atomics is compilable... yes
+checking whether GCC 8-bit __sync atomics is compilable... yes
+checking whether Darwin OSAtomic*() is compilable... no
+checking whether madvise(2) is compilable... yes
+checking whether madvise(..., MADV_FREE) is compilable... yes
+checking whether madvise(..., MADV_DONTNEED) is compilable... yes
+checking whether madvise(..., MADV_DO[NT]DUMP) is compilable... yes
+checking whether madvise(..., MADV_[NO]HUGEPAGE) is compilable... yes
+checking whether madvise(..., MADV_[NO]CORE) is compilable... no
+checking whether mprotect(2) is compilable... yes
+checking for __builtin_clz... yes
+checking whether Darwin os_unfair_lock_*() is compilable... no
+checking whether glibc malloc hook is compilable... no
+checking whether glibc memalign hook is compilable... no
+checking whether pthreads adaptive mutexes is compilable... yes
+checking whether compiler supports -D_GNU_SOURCE... yes
+checking whether compiler supports -Werror... yes
+checking whether compiler supports -herror_on_warning... yes
+checking whether strerror_r returns char with gnu source is compilable... yes
+checking for _Bool... yes
+checking for stdbool.h that conforms to C99... yes
+configure: creating ./config.status
+config.status: creating Makefile
+config.status: creating jemalloc.pc
+config.status: creating doc/html.xsl
+config.status: creating doc/manpages.xsl
+config.status: creating doc/jemalloc.xml
+config.status: creating include/jemalloc/jemalloc_macros.h
+config.status: creating include/jemalloc/jemalloc_protos.h
+config.status: creating include/jemalloc/jemalloc_typedefs.h
+config.status: creating include/jemalloc/internal/jemalloc_preamble.h
+config.status: creating test/test.sh
+config.status: creating test/include/test/jemalloc_test.h
+config.status: creating config.stamp
+config.status: creating bin/jemalloc-config
+config.status: creating bin/jemalloc.sh
+config.status: creating bin/jeprof
+config.status: creating include/jemalloc/jemalloc_defs.h
+config.status: creating include/jemalloc/internal/jemalloc_internal_defs.h
+config.status: creating test/include/test/jemalloc_test_defs.h
+config.status: executing include/jemalloc/internal/public_symbols.txt commands
+config.status: executing include/jemalloc/internal/private_symbols.awk commands
+config.status: executing include/jemalloc/internal/private_symbols_jet.awk commands
+config.status: executing include/jemalloc/internal/public_namespace.h commands
+config.status: executing include/jemalloc/internal/public_unnamespace.h commands
+config.status: executing include/jemalloc/jemalloc_protos_jet.h commands
+config.status: executing include/jemalloc/jemalloc_rename.h commands
+config.status: executing include/jemalloc/jemalloc_mangle.h commands
+config.status: executing include/jemalloc/jemalloc_mangle_jet.h commands
+config.status: executing include/jemalloc/jemalloc.h commands
+===============================================================================
+jemalloc version   : 5.3.0-0-g0
+library revision   : 2
+
+CONFIG             : --disable-cxx --with-version=5.3.0-0-g0 --with-lg-quantum=3 --disable-cache-oblivious --with-jemalloc-prefix=je_ CFLAGS= LDFLAGS=
+CC                 : gcc
+CONFIGURE_CFLAGS   : -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops
+SPECIFIED_CFLAGS   : 
+EXTRA_CFLAGS       : 
+CPPFLAGS           : -D_GNU_SOURCE -D_REENTRANT
+CXX                : 
+CONFIGURE_CXXFLAGS : 
+SPECIFIED_CXXFLAGS : 
+EXTRA_CXXFLAGS     : 
+LDFLAGS            : 
+EXTRA_LDFLAGS      : 
+DSO_LDFLAGS        : -shared -Wl,-soname,$(@F)
+LIBS               : -lm  -pthread
+RPATH_EXTRA        : 
+
+XSLTPROC           : false
+XSLROOT            : 
+
+PREFIX             : /usr/local
+BINDIR             : /usr/local/bin
+DATADIR            : /usr/local/share
+INCLUDEDIR         : /usr/local/include
+LIBDIR             : /usr/local/lib
+MANDIR             : /usr/local/share/man
+
+srcroot            : 
+abs_srcroot        : /testbed/deps/jemalloc/
+objroot            : 
+abs_objroot        : /testbed/deps/jemalloc/
+
+JEMALLOC_PREFIX    : je_
+JEMALLOC_PRIVATE_NAMESPACE
+                   : je_
+install_suffix     : 
+malloc_conf        : 
+documentation      : 1
+shared libs        : 1
+static libs        : 1
+autogen            : 0
+debug              : 0
+stats              : 1
+experimental_smallocx : 0
+prof               : 0
+prof-libunwind     : 0
+prof-libgcc        : 0
+prof-gcc           : 0
+fill               : 1
+utrace             : 0
+xmalloc            : 0
+log                : 0
+lazy_lock          : 0
+cache-oblivious    : 0
+cxx                : 0
+===============================================================================
+cd jemalloc && make lib/libjemalloc.a
+make[3]: Entering directory '/testbed/deps/jemalloc'
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/jemalloc.sym.o src/jemalloc.c
+nm -a src/jemalloc.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/jemalloc.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/arena.sym.o src/arena.c
+nm -a src/arena.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/arena.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/background_thread.sym.o src/background_thread.c
+nm -a src/background_thread.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/background_thread.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/base.sym.o src/base.c
+nm -a src/base.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/base.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/bin.sym.o src/bin.c
+nm -a src/bin.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/bin.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/bin_info.sym.o src/bin_info.c
+nm -a src/bin_info.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/bin_info.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/bitmap.sym.o src/bitmap.c
+nm -a src/bitmap.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/bitmap.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/buf_writer.sym.o src/buf_writer.c
+nm -a src/buf_writer.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/buf_writer.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/cache_bin.sym.o src/cache_bin.c
+nm -a src/cache_bin.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/cache_bin.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/ckh.sym.o src/ckh.c
+nm -a src/ckh.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/ckh.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/counter.sym.o src/counter.c
+nm -a src/counter.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/counter.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/ctl.sym.o src/ctl.c
+nm -a src/ctl.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/ctl.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/decay.sym.o src/decay.c
+nm -a src/decay.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/decay.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/div.sym.o src/div.c
+nm -a src/div.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/div.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/ecache.sym.o src/ecache.c
+nm -a src/ecache.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/ecache.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/edata.sym.o src/edata.c
+nm -a src/edata.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/edata.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/edata_cache.sym.o src/edata_cache.c
+nm -a src/edata_cache.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/edata_cache.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/ehooks.sym.o src/ehooks.c
+nm -a src/ehooks.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/ehooks.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/emap.sym.o src/emap.c
+nm -a src/emap.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/emap.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/eset.sym.o src/eset.c
+nm -a src/eset.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/eset.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/exp_grow.sym.o src/exp_grow.c
+nm -a src/exp_grow.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/exp_grow.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/extent.sym.o src/extent.c
+nm -a src/extent.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/extent.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/extent_dss.sym.o src/extent_dss.c
+nm -a src/extent_dss.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/extent_dss.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/extent_mmap.sym.o src/extent_mmap.c
+nm -a src/extent_mmap.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/extent_mmap.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/fxp.sym.o src/fxp.c
+nm -a src/fxp.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/fxp.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/san.sym.o src/san.c
+nm -a src/san.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/san.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/san_bump.sym.o src/san_bump.c
+nm -a src/san_bump.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/san_bump.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/hook.sym.o src/hook.c
+nm -a src/hook.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/hook.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/hpa.sym.o src/hpa.c
+nm -a src/hpa.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/hpa.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/hpa_hooks.sym.o src/hpa_hooks.c
+nm -a src/hpa_hooks.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/hpa_hooks.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/hpdata.sym.o src/hpdata.c
+nm -a src/hpdata.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/hpdata.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/inspect.sym.o src/inspect.c
+nm -a src/inspect.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/inspect.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/large.sym.o src/large.c
+nm -a src/large.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/large.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/log.sym.o src/log.c
+nm -a src/log.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/log.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/malloc_io.sym.o src/malloc_io.c
+nm -a src/malloc_io.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/malloc_io.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/mutex.sym.o src/mutex.c
+nm -a src/mutex.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/mutex.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/nstime.sym.o src/nstime.c
+nm -a src/nstime.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/nstime.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/pa.sym.o src/pa.c
+nm -a src/pa.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/pa.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/pa_extra.sym.o src/pa_extra.c
+nm -a src/pa_extra.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/pa_extra.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/pai.sym.o src/pai.c
+nm -a src/pai.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/pai.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/pac.sym.o src/pac.c
+nm -a src/pac.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/pac.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/pages.sym.o src/pages.c
+nm -a src/pages.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/pages.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/peak_event.sym.o src/peak_event.c
+nm -a src/peak_event.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/peak_event.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/prof.sym.o src/prof.c
+nm -a src/prof.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/prof.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/prof_data.sym.o src/prof_data.c
+nm -a src/prof_data.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/prof_data.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/prof_log.sym.o src/prof_log.c
+nm -a src/prof_log.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/prof_log.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/prof_recent.sym.o src/prof_recent.c
+nm -a src/prof_recent.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/prof_recent.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/prof_stats.sym.o src/prof_stats.c
+nm -a src/prof_stats.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/prof_stats.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/prof_sys.sym.o src/prof_sys.c
+nm -a src/prof_sys.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/prof_sys.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/psset.sym.o src/psset.c
+nm -a src/psset.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/psset.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/rtree.sym.o src/rtree.c
+nm -a src/rtree.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/rtree.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/safety_check.sym.o src/safety_check.c
+nm -a src/safety_check.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/safety_check.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/sc.sym.o src/sc.c
+nm -a src/sc.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/sc.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/sec.sym.o src/sec.c
+nm -a src/sec.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/sec.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/stats.sym.o src/stats.c
+nm -a src/stats.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/stats.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/sz.sym.o src/sz.c
+nm -a src/sz.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/sz.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/tcache.sym.o src/tcache.c
+nm -a src/tcache.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/tcache.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/test_hooks.sym.o src/test_hooks.c
+nm -a src/test_hooks.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/test_hooks.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/thread_event.sym.o src/thread_event.c
+nm -a src/thread_event.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/thread_event.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/ticker.sym.o src/ticker.c
+nm -a src/ticker.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/ticker.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/tsd.sym.o src/tsd.c
+nm -a src/tsd.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/tsd.sym
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -DJEMALLOC_NO_PRIVATE_NAMESPACE -o src/witness.sym.o src/witness.c
+nm -a src/witness.sym.o | mawk -f include/jemalloc/internal/private_symbols.awk > src/witness.sym
+/bin/sh include/jemalloc/internal/private_namespace.sh src/jemalloc.sym src/arena.sym src/background_thread.sym src/base.sym src/bin.sym src/bin_info.sym src/bitmap.sym src/buf_writer.sym src/cache_bin.sym src/ckh.sym src/counter.sym src/ctl.sym src/decay.sym src/div.sym src/ecache.sym src/edata.sym src/edata_cache.sym src/ehooks.sym src/emap.sym src/eset.sym src/exp_grow.sym src/extent.sym src/extent_dss.sym src/extent_mmap.sym src/fxp.sym src/san.sym src/san_bump.sym src/hook.sym src/hpa.sym src/hpa_hooks.sym src/hpdata.sym src/inspect.sym src/large.sym src/log.sym src/malloc_io.sym src/mutex.sym src/nstime.sym src/pa.sym src/pa_extra.sym src/pai.sym src/pac.sym src/pages.sym src/peak_event.sym src/prof.sym src/prof_data.sym src/prof_log.sym src/prof_recent.sym src/prof_stats.sym src/prof_sys.sym src/psset.sym src/rtree.sym src/safety_check.sym src/sc.sym src/sec.sym src/stats.sym src/sz.sym src/tcache.sym src/test_hooks.sym src/thread_event.sym src/ticker.sym src/tsd.sym src/witness.sym > include/jemalloc/internal/private_namespace.gen.h
+cp include/jemalloc/internal/private_namespace.gen.h include/jemalloc/internal/private_namespace.h
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/jemalloc.o src/jemalloc.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/arena.o src/arena.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/background_thread.o src/background_thread.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/base.o src/base.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/bin.o src/bin.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/bin_info.o src/bin_info.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/bitmap.o src/bitmap.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/buf_writer.o src/buf_writer.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/cache_bin.o src/cache_bin.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/ckh.o src/ckh.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/counter.o src/counter.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/ctl.o src/ctl.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/decay.o src/decay.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/div.o src/div.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/ecache.o src/ecache.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/edata.o src/edata.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/edata_cache.o src/edata_cache.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/ehooks.o src/ehooks.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/emap.o src/emap.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/eset.o src/eset.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/exp_grow.o src/exp_grow.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/extent.o src/extent.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/extent_dss.o src/extent_dss.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/extent_mmap.o src/extent_mmap.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/fxp.o src/fxp.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/san.o src/san.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/san_bump.o src/san_bump.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/hook.o src/hook.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/hpa.o src/hpa.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/hpa_hooks.o src/hpa_hooks.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/hpdata.o src/hpdata.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/inspect.o src/inspect.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/large.o src/large.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/log.o src/log.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/malloc_io.o src/malloc_io.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/mutex.o src/mutex.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/nstime.o src/nstime.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/pa.o src/pa.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/pa_extra.o src/pa_extra.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/pai.o src/pai.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/pac.o src/pac.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/pages.o src/pages.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/peak_event.o src/peak_event.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/prof.o src/prof.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/prof_data.o src/prof_data.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/prof_log.o src/prof_log.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/prof_recent.o src/prof_recent.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/prof_stats.o src/prof_stats.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/prof_sys.o src/prof_sys.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/psset.o src/psset.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/rtree.o src/rtree.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/safety_check.o src/safety_check.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/sc.o src/sc.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/sec.o src/sec.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/stats.o src/stats.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/sz.o src/sz.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/tcache.o src/tcache.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/test_hooks.o src/test_hooks.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/thread_event.o src/thread_event.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/ticker.o src/ticker.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/tsd.o src/tsd.c
+gcc -std=gnu11 -Wall -Wextra -Wsign-compare -Wundef -Wno-format-zero-length -Wpointer-arith -Wno-missing-braces -Wno-missing-field-initializers -Wno-missing-attributes -pipe -g3 -fvisibility=hidden -Wimplicit-fallthrough -O3 -funroll-loops -c -D_GNU_SOURCE -D_REENTRANT -Iinclude -Iinclude -o src/witness.o src/witness.c
+ar crs lib/libjemalloc.a src/jemalloc.o src/arena.o src/background_thread.o src/base.o src/bin.o src/bin_info.o src/bitmap.o src/buf_writer.o src/cache_bin.o src/ckh.o src/counter.o src/ctl.o src/decay.o src/div.o src/ecache.o src/edata.o src/edata_cache.o src/ehooks.o src/emap.o src/eset.o src/exp_grow.o src/extent.o src/extent_dss.o src/extent_mmap.o src/fxp.o src/san.o src/san_bump.o src/hook.o src/hpa.o src/hpa_hooks.o src/hpdata.o src/inspect.o src/large.o src/log.o src/malloc_io.o src/mutex.o src/nstime.o src/pa.o src/pa_extra.o src/pai.o src/pac.o src/pages.o src/peak_event.o src/prof.o src/prof_data.o src/prof_log.o src/prof_recent.o src/prof_stats.o src/prof_sys.o src/psset.o src/rtree.o src/safety_check.o src/sc.o src/sec.o src/stats.o src/sz.o src/tcache.o src/test_hooks.o src/thread_event.o src/ticker.o src/tsd.o src/witness.o
+make[3]: Leaving directory '/testbed/deps/jemalloc'
+make[2]: Leaving directory '/testbed/deps'
+    [34mCC[0m [33mthreads_mngr.o[0m
+    [34mCC[0m [33madlist.o[0m
+    [34mCC[0m [33mquicklist.o[0m
+    [34mCC[0m [33mae.o[0m
+    [34mCC[0m [33manet.o[0m
+    [34mCC[0m [33mdict.o[0m
+    [34mCC[0m [33mkvstore.o[0m
+    [34mCC[0m [33mserver.o[0m
+    [34mCC[0m [33msds.o[0m
+    [34mCC[0m [33mzmalloc.o[0m
+    [34mCC[0m [33mlzf_c.o[0m
+    [34mCC[0m [33mlzf_d.o[0m
+    [34mCC[0m [33mpqsort.o[0m
+    [34mCC[0m [33mzipmap.o[0m
+    [34mCC[0m [33msha1.o[0m
+    [34mCC[0m [33mziplist.o[0m
+    [34mCC[0m [33mrelease.o[0m
+    [34mCC[0m [33mnetworking.o[0m
+    [34mCC[0m [33mutil.o[0m
+    [34mCC[0m [33mobject.o[0m
+    [34mCC[0m [33mdb.o[0m
+    [34mCC[0m [33mreplication.o[0m
+    [34mCC[0m [33mrdb.o[0m
+    [34mCC[0m [33mt_string.o[0m
+    [34mCC[0m [33mt_list.o[0m
+    [34mCC[0m [33mt_set.o[0m
+    [34mCC[0m [33mt_zset.o[0m
+    [34mCC[0m [33mt_hash.o[0m
+    [34mCC[0m [33mconfig.o[0m
+    [34mCC[0m [33maof.o[0m
+    [34mCC[0m [33mpubsub.o[0m
+    [34mCC[0m [33mmulti.o[0m
+    [34mCC[0m [33mdebug.o[0m
+    [34mCC[0m [33msort.o[0m
+    [34mCC[0m [33mintset.o[0m
+    [34mCC[0m [33msyncio.o[0m
+    [34mCC[0m [33mcluster.o[0m
+    [34mCC[0m [33mcluster_legacy.o[0m
+    [34mCC[0m [33mcrc16.o[0m
+    [34mCC[0m [33mendianconv.o[0m
+    [34mCC[0m [33mslowlog.o[0m
+    [34mCC[0m [33meval.o[0m
+    [34mCC[0m [33mbio.o[0m
+    [34mCC[0m [33mrio.o[0m
+    [34mCC[0m [33mrand.o[0m
+    [34mCC[0m [33mmemtest.o[0m
+    [34mCC[0m [33msyscheck.o[0m
+    [34mCC[0m [33mcrcspeed.o[0m
+    [34mCC[0m [33mcrc64.o[0m
+    [34mCC[0m [33mbitops.o[0m
+    [34mCC[0m [33msentinel.o[0m
+    [34mCC[0m [33mnotify.o[0m
+    [34mCC[0m [33msetproctitle.o[0m
+    [34mCC[0m [33mblocked.o[0m
+    [34mCC[0m [33mhyperloglog.o[0m
+    [34mCC[0m [33mlatency.o[0m
+    [34mCC[0m [33msparkline.o[0m
+    [34mCC[0m [33mredis-check-rdb.o[0m
+    [34mCC[0m [33mredis-check-aof.o[0m
+    [34mCC[0m [33mgeo.o[0m
+    [34mCC[0m [33mlazyfree.o[0m
+    [34mCC[0m [33mmodule.o[0m
+    [34mCC[0m [33mevict.o[0m
+    [34mCC[0m [33mexpire.o[0m
+    [34mCC[0m [33mgeohash.o[0m
+    [34mCC[0m [33mgeohash_helper.o[0m
+    [34mCC[0m [33mchildinfo.o[0m
+    [34mCC[0m [33mdefrag.o[0m
+    [34mCC[0m [33msiphash.o[0m
+    [34mCC[0m [33mrax.o[0m
+    [34mCC[0m [33mt_stream.o[0m
+    [34mCC[0m [33mlistpack.o[0m
+    [34mCC[0m [33mlocaltime.o[0m
+    [34mCC[0m [33mlolwut.o[0m
+    [34mCC[0m [33mlolwut5.o[0m
+    [34mCC[0m [33mlolwut6.o[0m
+    [34mCC[0m [33macl.o[0m
+    [34mCC[0m [33mtracking.o[0m
+    [34mCC[0m [33msocket.o[0m
+    [34mCC[0m [33mtls.o[0m
+    [34mCC[0m [33msha256.o[0m
+    [34mCC[0m [33mtimeout.o[0m
+    [34mCC[0m [33msetcpuaffinity.o[0m
+    [34mCC[0m [33mmonotonic.o[0m
+    [34mCC[0m [33mmt19937-64.o[0m
+    [34mCC[0m [33mresp_parser.o[0m
+    [34mCC[0m [33mcall_reply.o[0m
+    [34mCC[0m [33mscript_lua.o[0m
+    [34mCC[0m [33mscript.o[0m
+    [34mCC[0m [33mfunctions.o[0m
+    [34mCC[0m [33mfunction_lua.o[0m
+    [34mCC[0m [33mcommands.o[0m
+    [34mCC[0m [33mstrl.o[0m
+    [34mCC[0m [33mconnection.o[0m
+    [34mCC[0m [33munix.o[0m
+    [34mCC[0m [33mlogreqres.o[0m
+    [34;1mLINK[0m [37;1mredis-server[0m
+lto-wrapper: warning: using serial compilation of 31 LTRANS jobs
+    [34;1mINSTALL[0m [37;1mredis-sentinel[0m
+    [34mCC[0m [33mredis-cli.o[0m
+    [34mCC[0m [33mredisassert.o[0m
+    [34mCC[0m [33mcli_common.o[0m
+    [34mCC[0m [33mcli_commands.o[0m
+    [34;1mLINK[0m [37;1mredis-cli[0m
+lto-wrapper: warning: using serial compilation of 5 LTRANS jobs
+    [34mCC[0m [33mredis-benchmark.o[0m
+    [34;1mLINK[0m [37;1mredis-benchmark[0m
+lto-wrapper: warning: using serial compilation of 2 LTRANS jobs
+    [34;1mINSTALL[0m [37;1mredis-check-rdb[0m
+    [34;1mINSTALL[0m [37;1mredis-check-aof[0m
+
+Hint: It's a good idea to run 'make test' ;)
+
+make[1]: Leaving directory '/testbed/src'
++ : '>>>>> Start Test Output'
++ TERM=dumb
++ ./runtest --durable --single unit/scripting
++ cat
+Cleanup: may take some time... OK
+Starting test server at port 21079
+[ready]: 5174
+Testing unit/scripting
+[ready]: 5173
+[ready]: 5176
+[ready]: 5175
+[ready]: 5181
+[ready]: 5177
+[ready]: 5182
+[ready]: 5178
+[ready]: 5183
+[ready]: 5179
+[ready]: 5180
+[ready]: 5184
+[ready]: 5186
+[ready]: 5185
+[ready]: 5188
+[ready]: 5187
+[ok]: EVAL - Does Lua interpreter replies to our requests? (0 ms)
+[ok]: EVAL - Return _G (0 ms)
+[ok]: EVAL - Return table with a metatable that raise error (0 ms)
+[ok]: EVAL - Return table with a metatable that call redis (0 ms)
+[ok]: EVAL - Lua integer -> Redis protocol type conversion (0 ms)
+[ok]: EVAL - Lua string -> Redis protocol type conversion (0 ms)
+[ok]: EVAL - Lua true boolean -> Redis protocol type conversion (0 ms)
+[ok]: EVAL - Lua false boolean -> Redis protocol type conversion (0 ms)
+[ok]: EVAL - Lua status code reply -> Redis protocol type conversion (0 ms)
+[ok]: EVAL - Lua error reply -> Redis protocol type conversion (0 ms)
+[ok]: EVAL - Lua table -> Redis protocol type conversion (0 ms)
+[ok]: EVAL - Are the KEYS and ARGV arrays populated correctly? (1 ms)
+[ok]: EVAL - is Lua able to call Redis API? (0 ms)
+[ok]: EVAL - Redis integer -> Lua type conversion (0 ms)
+[ok]: EVAL - Lua number -> Redis integer conversion (0 ms)
+[ok]: EVAL - Redis bulk -> Lua type conversion (0 ms)
+[ok]: EVAL - Redis multi bulk -> Lua type conversion (1 ms)
+[ok]: EVAL - Redis status reply -> Lua type conversion (0 ms)
+[ok]: EVAL - Redis error reply -> Lua type conversion (0 ms)
+[ok]: EVAL - Redis nil bulk reply -> Lua type conversion (0 ms)
+[ok]: EVAL - Is the Lua client using the currently selected DB? (0 ms)
+[ok]: EVAL - SELECT inside Lua should not affect the caller (1 ms)
+[ok]: EVAL - Scripts do not block on blpop command (0 ms)
+[ok]: EVAL - Scripts do not block on brpop command (0 ms)
+[ok]: EVAL - Scripts do not block on brpoplpush command (0 ms)
+[ok]: EVAL - Scripts do not block on blmove command (0 ms)
+[ok]: EVAL - Scripts do not block on bzpopmin command (1 ms)
+[ok]: EVAL - Scripts do not block on bzpopmax command (0 ms)
+[ok]: EVAL - Scripts do not block on wait (0 ms)
+[ok]: EVAL - Scripts do not block on waitaof (0 ms)
+[ok]: EVAL - Scripts do not block on XREAD with BLOCK option (0 ms)
+[ok]: EVAL - Scripts do not block on XREADGROUP with BLOCK option (1 ms)
+[ok]: EVAL - Scripts do not block on XREAD with BLOCK option -- non empty stream (0 ms)
+[ok]: EVAL - Scripts do not block on XREADGROUP with BLOCK option -- non empty stream (0 ms)
+[ok]: EVAL - Scripts can run non-deterministic commands (0 ms)
+[ok]: EVAL - No arguments to redis.call/pcall is considered an error (0 ms)
+[ok]: EVAL - redis.call variant raises a Lua error on Redis cmd error (1) (0 ms)
+[ok]: EVAL - redis.call variant raises a Lua error on Redis cmd error (1) (0 ms)
+[ok]: EVAL - redis.call variant raises a Lua error on Redis cmd error (1) (0 ms)
+[ignore]: EVAL - JSON string encoding a string larger than 2GB: large memory flag not provided
+[ok]: EVAL - JSON numeric decoding (0 ms)
+[ok]: EVAL - JSON string decoding (0 ms)
+[ok]: EVAL - JSON smoke test (0 ms)
+[ok]: EVAL - cmsgpack can pack double? (0 ms)
+[ok]: EVAL - cmsgpack can pack negative int64? (1 ms)
+[ok]: EVAL - cmsgpack pack/unpack smoke test (72 ms)
+[ok]: EVAL - cmsgpack can pack and unpack circular references? (0 ms)
+[ok]: EVAL - Numerical sanity check from bitop (1 ms)
+[ok]: EVAL - Verify minimal bitop functionality (0 ms)
+[ok]: EVAL - Able to parse trailing comments (0 ms)
+[ok]: EVAL_RO - Successful case (0 ms)
+[ok]: EVAL_RO - Cannot run write commands (0 ms)
+[ok]: redis.sha1hex() implementation (1 ms)
+[ok]: Measures elapsed time os.clock() (1000 ms)
+[ok]: Prohibit dangerous lua methods in sandbox (0 ms)
+[ok]: Verify execution of prohibit dangerous Lua methods will fail (1 ms)
+[ok]: Globals protection reading an undeclared global variable (0 ms)
+[ok]: Globals protection setting an undeclared global* (0 ms)
+[ok]: Test an example script DECR_IF_GT (1 ms)
+[ok]: EVAL does not leak in the Lua stack (236 ms)
+[ok]: Call Redis command with many args from Lua (issue #1764) (1 ms)
+[ok]: Number conversion precision test (issue #1118) (0 ms)
+[ok]: String containing number precision test (regression of issue #1118) (0 ms)
+[ok]: Verify negative arg count is error instead of crash (issue #1842) (0 ms)
+[ok]: Scripts can handle commands with incorrect arity (0 ms)
+[ok]: Correct handling of reused argv (issue #1939) (0 ms)
+[ok]: Functions in the Redis namespace are able to report errors (0 ms)
+[ok]: CLUSTER RESET can not be invoke from within a script (0 ms)
+[ok]: Script with RESP3 map (1 ms)
+[ok]: Script return recursive object (44 ms)
+[ok]: Script check unpack with massive arguments (1 ms)
+[ok]: Script read key with expiration set (0 ms)
+[ok]: Script del key with expiration set (0 ms)
+[ok]: Script ACL check (0 ms)
+[ok]: Binary code loading failed (0 ms)
+[ok]: Try trick global protection 1 (0 ms)
+[ok]: Try trick global protection 2 (0 ms)
+[ok]: Try trick global protection 3 (0 ms)
+[ok]: Try trick global protection 4 (0 ms)
+[ok]: Try trick readonly table on redis table (0 ms)
+[ok]: Try trick readonly table on json table (0 ms)
+[ok]: Try trick readonly table on cmsgpack table (0 ms)
+[ok]: Try trick readonly table on bit table (0 ms)
+[ok]: Test loadfile are not available (0 ms)
+[ok]: Test dofile are not available (0 ms)
+[ok]: Test print are not available (0 ms)
+[ok]: Timedout read-only scripts can be killed by SCRIPT KILL (403 ms)
+[ok]: Timedout read-only scripts can be killed by SCRIPT KILL even when use pcall (24 ms)
+[ok]: Timedout script does not cause a false dead client (25 ms)
+[ok]: Timedout script link is still usable after Lua returns (25 ms)
+[ok]: Timedout scripts and unblocked command (257 ms)
+[ok]: Timedout scripts that modified data can't be killed by SCRIPT KILL (201 ms)
+[ok]: SHUTDOWN NOSAVE can kill a timedout script anyway (6 ms)
+[ok]: Before the replica connects we issue two EVAL commands (0 ms)
+[ok]: Connect a replica to the master instance (102 ms)
+[ok]: Replication of script multiple pushes to list with BLPOP (1 ms)
+[ok]: Lua scripts using SELECT are replicated correctly (0 ms)
+[ok]: Connect a replica to the master instance (101 ms)
+[ok]: Redis.replicate_commands() can be issued anywhere now (1 ms)
+[ok]: Redis.set_repl() can be issued before replicate_commands() now (0 ms)
+[ok]: Redis.set_repl() don't accept invalid values (0 ms)
+[ok]: Test selective replication of certain Redis commands from Lua (1 ms)
+[ok]: PRNG is seeded randomly for command replication (0 ms)
+[ok]: Using side effects is not a problem with command replication (0 ms)
+[ok]: test RESP2/2 big number protocol parsing (0 ms)
+[ok]: test RESP2/2 malformed big number protocol parsing (0 ms)
+[ok]: test RESP2/2 map protocol parsing (1 ms)
+[ok]: test RESP2/2 set protocol parsing (0 ms)
+[ok]: test RESP2/2 double protocol parsing (0 ms)
+[ok]: test RESP2/2 null protocol parsing (0 ms)
+[ok]: test RESP2/2 verbatim protocol parsing (0 ms)
+[ok]: test RESP2/2 true protocol parsing (1 ms)
+[ok]: test RESP2/2 false protocol parsing (0 ms)
+[ok]: test RESP2/3 big number protocol parsing (0 ms)
+[ok]: test RESP2/3 malformed big number protocol parsing (0 ms)
+[ok]: test RESP2/3 map protocol parsing (0 ms)
+[ok]: test RESP2/3 set protocol parsing (0 ms)
+[ok]: test RESP2/3 double protocol parsing (1 ms)
+[ok]: test RESP2/3 null protocol parsing (0 ms)
+[ok]: test RESP2/3 verbatim protocol parsing (0 ms)
+[ok]: test RESP2/3 true protocol parsing (0 ms)
+[ok]: test RESP2/3 false protocol parsing (0 ms)
+[ok]: test RESP3/2 big number protocol parsing (0 ms)
+[ok]: test RESP3/2 malformed big number protocol parsing (1 ms)
+[ok]: test RESP3/2 map protocol parsing (0 ms)
+[ok]: test RESP3/2 set protocol parsing (0 ms)
+[ok]: test RESP3/2 double protocol parsing (0 ms)
+[ok]: test RESP3/2 null protocol parsing (0 ms)
+[ok]: test RESP3/2 verbatim protocol parsing (0 ms)
+[ok]: test RESP3/2 true protocol parsing (0 ms)
+[ok]: test RESP3/2 false protocol parsing (0 ms)
+[ok]: test RESP3/3 big number protocol parsing (0 ms)
+[ok]: test RESP3/3 malformed big number protocol parsing (0 ms)
+[ok]: test RESP3/3 map protocol parsing (0 ms)
+[ok]: test RESP3/3 set protocol parsing (1 ms)
+[ok]: test RESP3/3 double protocol parsing (0 ms)
+[ok]: test RESP3/3 null protocol parsing (0 ms)
+[ok]: test RESP3/3 verbatim protocol parsing (0 ms)
+[ok]: test RESP3/3 true protocol parsing (0 ms)
+[ok]: test RESP3/3 false protocol parsing (0 ms)
+[ok]: test resp3 attribute protocol parsing (0 ms)
+[ok]: Script block the time during execution (10 ms)
+[ok]: Script delete the expired key (2 ms)
+[ok]: TIME command using cached time (11 ms)
+[ok]: Script block the time in some expiration related commands (81 ms)
+[ok]: RESTORE expired keys with expiration time (10 ms)
+[ok]: Script - disallow write on OOM (0 ms)
+[ok]: EVAL - Does Lua interpreter replies to our requests? (0 ms)
+[ok]: EVAL - Return _G (0 ms)
+[ok]: EVAL - Return table with a metatable that raise error (0 ms)
+[ok]: EVAL - Return table with a metatable that call redis (1 ms)
+[ok]: EVAL - Lua integer -> Redis protocol type conversion (0 ms)
+[ok]: EVAL - Lua string -> Redis protocol type conversion (0 ms)
+[ok]: EVAL - Lua true boolean -> Redis protocol type conversion (0 ms)
+[ok]: EVAL - Lua false boolean -> Redis protocol type conversion (0 ms)
+[ok]: EVAL - Lua status code reply -> Redis protocol type conversion (0 ms)
+[ok]: EVAL - Lua error reply -> Redis protocol type conversion (0 ms)
+[ok]: EVAL - Lua table -> Redis protocol type conversion (0 ms)
+[ok]: EVAL - Are the KEYS and ARGV arrays populated correctly? (0 ms)
+[ok]: EVAL - is Lua able to call Redis API? (0 ms)
+[ok]: EVALSHA - Can we call a SHA1 if already defined? (0 ms)
+[ok]: EVALSHA_RO - Can we call a SHA1 if already defined? (0 ms)
+[ok]: EVALSHA - Can we call a SHA1 in uppercase? (1 ms)
+[ok]: EVALSHA - Do we get an error on invalid SHA1? (0 ms)
+[ok]: EVALSHA - Do we get an error on non defined SHA1? (0 ms)
+[ok]: EVAL - Redis integer -> Lua type conversion (0 ms)
+[ok]: EVAL - Lua number -> Redis integer conversion (0 ms)
+[ok]: EVAL - Redis bulk -> Lua type conversion (0 ms)
+[ok]: EVAL - Redis multi bulk -> Lua type conversion (0 ms)
+[ok]: EVAL - Redis status reply -> Lua type conversion (0 ms)
+[ok]: EVAL - Redis error reply -> Lua type conversion (1 ms)
+[ok]: EVAL - Redis nil bulk reply -> Lua type conversion (0 ms)
+[ok]: EVAL - Is the Lua client using the currently selected DB? (0 ms)
+[ok]: EVAL - SELECT inside Lua should not affect the caller (0 ms)
+[ok]: EVAL - Scripts do not block on blpop command (0 ms)
+[ok]: EVAL - Scripts do not block on brpop command (0 ms)
+[ok]: EVAL - Scripts do not block on brpoplpush command (0 ms)
+[ok]: EVAL - Scripts do not block on blmove command (1 ms)
+[ok]: EVAL - Scripts do not block on bzpopmin command (0 ms)
+[ok]: EVAL - Scripts do not block on bzpopmax command (0 ms)
+[ok]: EVAL - Scripts do not block on wait (0 ms)
+[ok]: EVAL - Scripts do not block on waitaof (0 ms)
+[ok]: EVAL - Scripts do not block on XREAD with BLOCK option (0 ms)
+[ok]: EVAL - Scripts do not block on XREADGROUP with BLOCK option (0 ms)
+[ok]: EVAL - Scripts do not block on XREAD with BLOCK option -- non empty stream (1 ms)
+[ok]: EVAL - Scripts do not block on XREADGROUP with BLOCK option -- non empty stream (0 ms)
+[ok]: EVAL - Scripts can run non-deterministic commands (0 ms)
+[ok]: EVAL - No arguments to redis.call/pcall is considered an error (0 ms)
+[ok]: EVAL - redis.call variant raises a Lua error on Redis cmd error (1) (0 ms)
+[ok]: EVAL - redis.call variant raises a Lua error on Redis cmd error (1) (0 ms)
+[ok]: EVAL - redis.call variant raises a Lua error on Redis cmd error (1) (0 ms)
+[ignore]: EVAL - JSON string encoding a string larger than 2GB: large memory flag not provided
+[ok]: EVAL - JSON numeric decoding (0 ms)
+[ok]: EVAL - JSON string decoding (0 ms)
+[ok]: EVAL - JSON smoke test (1 ms)
+[ok]: EVAL - cmsgpack can pack double? (0 ms)
+[ok]: EVAL - cmsgpack can pack negative int64? (0 ms)
+[ok]: EVAL - cmsgpack pack/unpack smoke test (77 ms)
+[ok]: EVAL - cmsgpack can pack and unpack circular references? (0 ms)
+[ok]: EVAL - Numerical sanity check from bitop (0 ms)
+[ok]: EVAL - Verify minimal bitop functionality (0 ms)
+[ok]: EVAL - Able to parse trailing comments (0 ms)
+[ok]: EVAL_RO - Successful case (0 ms)
+[ok]: EVAL_RO - Cannot run write commands (1 ms)
+[ok]: SCRIPTING FLUSH - is able to clear the scripts cache? (4 ms)
+[ok]: SCRIPTING FLUSH ASYNC (2 ms)
+[ok]: SCRIPT EXISTS - can detect already defined scripts? (0 ms)
+[ok]: SCRIPT LOAD - is able to register scripts in the scripting cache (0 ms)
+[ok]: SORT is normally not alpha re-ordered for the scripting engine (1 ms)
+[ok]: SORT BY <constant> output gets ordered for scripting (0 ms)
+[ok]: SORT BY <constant> with GET gets ordered for scripting (0 ms)
+[ok]: redis.sha1hex() implementation (0 ms)
+[ok]: Measures elapsed time os.clock() (1001 ms)
+[ok]: Prohibit dangerous lua methods in sandbox (0 ms)
+[ok]: Verify execution of prohibit dangerous Lua methods will fail (1 ms)
+[ok]: Globals protection reading an undeclared global variable (1 ms)
+[ok]: Globals protection setting an undeclared global* (0 ms)
+[ok]: Test an example script DECR_IF_GT (1 ms)
+[ok]: random numbers are random now (0 ms)
+[ok]: Scripting engine PRNG can be seeded correctly (0 ms)
+[ok]: EVAL does not leak in the Lua stack (290 ms)
+[ok]: SPOP: We can call scripts rewriting client->argv from Lua (8 ms)
+[ok]: MGET: mget shouldn't be propagated in Lua (100 ms)
+[ok]: EXPIRE: We can call scripts rewriting client->argv from Lua (101 ms)
+[ok]: INCRBYFLOAT: We can call scripts expanding client->argv from Lua (326 ms)
+[ok]: Call Redis command with many args from Lua (issue #1764) (0 ms)
+[ok]: Number conversion precision test (issue #1118) (0 ms)
+[ok]: String containing number precision test (regression of issue #1118) (0 ms)
+[ok]: Verify negative arg count is error instead of crash (issue #1842) (0 ms)
+[ok]: Scripts can handle commands with incorrect arity (0 ms)
+[ok]: Correct handling of reused argv (issue #1939) (0 ms)
+[ok]: Functions in the Redis namespace are able to report errors (0 ms)
+[ok]: CLUSTER RESET can not be invoke from within a script (0 ms)
+[ok]: Script with RESP3 map (1 ms)
+[ok]: Script return recursive object (51 ms)
+[ok]: Script check unpack with massive arguments (2 ms)
+[ok]: Script read key with expiration set (0 ms)
+[ok]: Script del key with expiration set (0 ms)
+[ok]: Script ACL check (1 ms)
+[ok]: Binary code loading failed (0 ms)
+[ok]: Try trick global protection 1 (0 ms)
+[ok]: Try trick global protection 2 (0 ms)
+[ok]: Try trick global protection 3 (1 ms)
+[ok]: Try trick global protection 4 (0 ms)
+[ok]: Try trick readonly table on redis table (0 ms)
+[ok]: Try trick readonly table on json table (0 ms)
+[ok]: Try trick readonly table on cmsgpack table (0 ms)
+[ok]: Try trick readonly table on bit table (0 ms)
+[ok]: Test loadfile are not available (1 ms)
+[ok]: Test dofile are not available (0 ms)
+[ok]: Test print are not available (0 ms)
+[ok]: Timedout read-only scripts can be killed by SCRIPT KILL (402 ms)
+[ok]: Timedout read-only scripts can be killed by SCRIPT KILL even when use pcall (32 ms)
+[ok]: Timedout script does not cause a false dead client (30 ms)
+[ok]: Timedout script link is still usable after Lua returns (36 ms)
+[ok]: Timedout scripts and unblocked command (301 ms)
+[ok]: Timedout scripts that modified data can't be killed by SCRIPT KILL (202 ms)
+[ok]: SHUTDOWN NOSAVE can kill a timedout script anyway (3 ms)
+[ok]: Before the replica connects we issue two EVAL commands (0 ms)
+[ok]: Connect a replica to the master instance (102 ms)
+[ok]: Now use EVALSHA against the master, with both SHAs (0 ms)
+[ok]: 'x' should be '4' for EVALSHA being replicated by effects (0 ms)
+[ok]: Replication of script multiple pushes to list with BLPOP (0 ms)
+[ok]: EVALSHA replication when first call is readonly (0 ms)
+[ok]: Lua scripts using SELECT are replicated correctly (0 ms)
+[ok]: Connect a replica to the master instance (101 ms)
+[ok]: Redis.replicate_commands() can be issued anywhere now (1 ms)
+[ok]: Redis.set_repl() can be issued before replicate_commands() now (0 ms)
+[ok]: Redis.set_repl() don't accept invalid values (0 ms)
+[ok]: Test selective replication of certain Redis commands from Lua (1 ms)
+[ok]: PRNG is seeded randomly for command replication (0 ms)
+[ok]: Using side effects is not a problem with command replication (0 ms)
+[ok]: Test scripting debug protocol parsing (0 ms)
+[ok]: Test scripting debug lua stack overflow (0 ms)
+[ok]: test RESP2/2 big number protocol parsing (1 ms)
+[ok]: test RESP2/2 malformed big number protocol parsing (0 ms)
+[ok]: test RESP2/2 map protocol parsing (0 ms)
+[ok]: test RESP2/2 set protocol parsing (0 ms)
+[ok]: test RESP2/2 double protocol parsing (0 ms)
+[ok]: test RESP2/2 null protocol parsing (0 ms)
+[ok]: test RESP2/2 verbatim protocol parsing (0 ms)
+[ok]: test RESP2/2 true protocol parsing (0 ms)
+[ok]: test RESP2/2 false protocol parsing (0 ms)
+[ok]: test RESP2/3 big number protocol parsing (0 ms)
+[ok]: test RESP2/3 malformed big number protocol parsing (0 ms)
+[ok]: test RESP2/3 map protocol parsing (0 ms)
+[ok]: test RESP2/3 set protocol parsing (0 ms)
+[ok]: test RESP2/3 double protocol parsing (0 ms)
+[ok]: test RESP2/3 null protocol parsing (0 ms)
+[ok]: test RESP2/3 verbatim protocol parsing (0 ms)
+[ok]: test RESP2/3 true protocol parsing (0 ms)
+[ok]: test RESP2/3 false protocol parsing (0 ms)
+[ok]: test RESP3/2 big number protocol parsing (0 ms)
+[ok]: test RESP3/2 malformed big number protocol parsing (0 ms)
+[ok]: test RESP3/2 map protocol parsing (0 ms)
+[ok]: test RESP3/2 set protocol parsing (0 ms)
+[ok]: test RESP3/2 double protocol parsing (0 ms)
+[ok]: test RESP3/2 null protocol parsing (0 ms)
+[ok]: test RESP3/2 verbatim protocol parsing (0 ms)
+[ok]: test RESP3/2 true protocol parsing (0 ms)
+[ok]: test RESP3/2 false protocol parsing (0 ms)
+[ok]: test RESP3/3 big number protocol parsing (0 ms)
+[ok]: test RESP3/3 malformed big number protocol parsing (0 ms)
+[ok]: test RESP3/3 map protocol parsing (0 ms)
+[ok]: test RESP3/3 set protocol parsing (0 ms)
+[ok]: test RESP3/3 double protocol parsing (0 ms)
+[ok]: test RESP3/3 null protocol parsing (0 ms)
+[ok]: test RESP3/3 verbatim protocol parsing (0 ms)
+[ok]: test RESP3/3 true protocol parsing (0 ms)
+[ok]: test RESP3/3 false protocol parsing (0 ms)
+[ok]: test resp3 attribute protocol parsing (0 ms)
+[ok]: Script block the time during execution (10 ms)
+[ok]: Script delete the expired key (2 ms)
+[ok]: TIME command using cached time (10 ms)
+[ok]: Script block the time in some expiration related commands (82 ms)
+[ok]: RESTORE expired keys with expiration time (11 ms)
+[ok]: Shebang support for lua engine (0 ms)
+[ok]: Unknown shebang option (0 ms)
+[ok]: Unknown shebang flag (0 ms)
+[ok]: allow-oom shebang flag (1 ms)
+[ok]: no-writes shebang flag (0 ms)
+[ok]: no-writes shebang flag on replica (104 ms)
+[ok]: not enough good replicas (1 ms)
+[ok]: not enough good replicas state change during long script (421 ms)
+[ok]: allow-stale shebang flag (1 ms)
+[ok]: reject script do not cause a Lua stack leak (1 ms)
+[ok]: Consistent eval error reporting (5 ms)
+[ok]: LUA redis.error_reply API (1 ms)
+[ok]: LUA redis.error_reply API with empty string (0 ms)
+[ok]: LUA redis.status_reply API (0 ms)
+[ok]: LUA test pcall (0 ms)
+[ok]: LUA test pcall with error (0 ms)
+[ok]: LUA test pcall with non string/integer arg (0 ms)
+[ok]: LUA test trim string as expected (1 ms)
+[1/1 done]: unit/scripting (12 seconds)
+
+                   The End
+
+Execution time of different units:
+  12 seconds - unit/scripting
+
+\o/ All tests passed without errors!
+
+Cleanup: may take some time... OK
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 4979cf02ff83e90ced80db5111452a4c3e082c3a tests/unit/scripting.tcl
+>>>>> Test Exit Code: 0
+Updated 1 path from 6da56f819

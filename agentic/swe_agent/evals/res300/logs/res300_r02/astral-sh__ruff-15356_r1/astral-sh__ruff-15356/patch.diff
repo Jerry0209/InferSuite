@@ -1,0 +1,21 @@
+diff --git a/crates/ruff_linter/src/rules/pycodestyle/rules/logical_lines/mod.rs b/crates/ruff_linter/src/rules/pycodestyle/rules/logical_lines/mod.rs
+index 9c4e1c0e5..6b738c373 100644
+--- a/crates/ruff_linter/src/rules/pycodestyle/rules/logical_lines/mod.rs
++++ b/crates/ruff_linter/src/rules/pycodestyle/rules/logical_lines/mod.rs
+@@ -524,6 +524,16 @@ impl DefinitionState {
+     }
+ 
+     fn visit_token_kind(&mut self, token_kind: TokenKind) {
++        // In a type alias (`type Name[...] = ...`), the type parameters can only appear
++        // before the `=` sign. Once we reach the `=` (without having seen any type
++        // parameters), the type parameters are over and any subsequent `[...]` belongs to
++        // the type expression on the right-hand side.
++        if let Self::InTypeAlias(type_params_state) = self {
++            if token_kind == TokenKind::Equal && type_params_state.before_type_params() {
++                *type_params_state = TypeParamsState::TypeParamsEnded;
++            }
++        }
++
+         let type_params_state_mut = match self {
+             Self::InClass(type_params_state)
+             | Self::InFunction(type_params_state)

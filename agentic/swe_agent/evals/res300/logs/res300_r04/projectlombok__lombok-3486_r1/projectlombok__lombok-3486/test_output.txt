@@ -1,0 +1,993 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   buildScripts/tests.ant.xml
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	test/transform/resource/before/SuperBuilderJavadoc.java
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 28e5ddb075b61525ba686f3ed6ecbf7f762fc558
+Author: Reinier Zwitserloot <r.zwitserloot@projectlombok.org>
+Date:   Sun Sep 17 12:41:06 2023 +0200
+
+    [#3314] Add line to changelog
+
+diff --git a/doc/changelog.markdown b/doc/changelog.markdown
+index 3e9fc191..5c7e5117 100644
+--- a/doc/changelog.markdown
++++ b/doc/changelog.markdown
+@@ -9,6 +9,7 @@ Lombok Changelog
+ * BUGFIX: Delomboking anything with `@lombok.Singular` in it wouldn't remove that annotation. [Issue #1377](https://github.com/projectlombok/lombok/issues/1377).
+ * BUGFIX: Calling extension methods such that automatic widening is applied (i.e. calling `void ext(long arg)` with an `int`) would fail at runtime. [Issue #3463](https://github.com/projectlombok/lombok/issues/3463).
+ * BUGFIX: Extension methods can now be used in records. [Issue #3450](https://github.com/projectlombok/lombok/issues/3450).
++* BUGFIX: `@Getter(lazy=true)` with complicated initialization expressions would fail on javac. [Issue #3314](https://github.com/projectlombok/lombok/issues/3314).
+ 
+ ### v1.18.28 (May 24th, 2023)
+ * PLATFORM: JDK20 support added. [Issue #3353](https://github.com/projectlombok/lombok/issues/3353).
++ git -c core.fileMode=false diff 28e5ddb075b61525ba686f3ed6ecbf7f762fc558
+diff --git a/buildScripts/tests.ant.xml b/buildScripts/tests.ant.xml
+index 5d8bf11f..49ae2706 100644
+--- a/buildScripts/tests.ant.xml
++++ b/buildScripts/tests.ant.xml
+@@ -295,4 +295,16 @@ This buildfile is part of projectlombok.org. It takes care of compiling and runn
+ 	
+ 	<target name="test" depends="test.javacCurrent, test.eclipse-202212" description="runs the tests against the default JVM, javac, and eclipse" />
+ 	<target name="test.broad" depends="test.javac8, test.javac17, test.javac20, test.eclipse-oxygen, test.eclipse-202212, test.eclipse-202006-jdk8" description="runs the tests against the default JVM, javac, and eclipse" />
++<target name="test.instance" depends="test.compile, test.formatter.compile" description="Runs test cases for the swe-bench instance">
++      <junit printsummary="yes" fork="true" forkmode="once" haltonfailure="no">
++        <formatter classname="lombok.ant.SimpleTestFormatter" usefile="false" unless="tests.quiet" />
++        <classpath location="build/ant" />
++        <classpath refid="cp.test" />
++        <classpath refid="cp.stripe" />
++        <classpath refid="packing.basedirs.path" />
++        <classpath location="build/tests" />
++        <classpath location="build/teststubs" />
++        <test name="lombok.transform.TestWithDelombok" />
++      </junit>
++    </target>
+ </project>
++ rm -f test/transform/resource/after-delombok/SuperBuilderJavadoc.java test/transform/resource/after-ecj/SuperBuilderJavadoc.java test/transform/resource/before/SuperBuilderJavadoc.java
++ git apply -v -
+Checking patch test/transform/resource/after-delombok/SuperBuilderJavadoc.java...
+Checking patch test/transform/resource/after-ecj/SuperBuilderJavadoc.java...
+Checking patch test/transform/resource/before/SuperBuilderJavadoc.java...
+Applied patch test/transform/resource/after-delombok/SuperBuilderJavadoc.java cleanly.
+Applied patch test/transform/resource/after-ecj/SuperBuilderJavadoc.java cleanly.
+Applied patch test/transform/resource/before/SuperBuilderJavadoc.java cleanly.
++ ant test.compile
+Buildfile: /testbed/build.xml
+
+-ipp.download:
+
+-ipp.load:
+
+-ipp.redownload:
+
+ipp.setup:
+
+ivy.config:
+[ivy:configure] :: Apache Ivy 2.5.0 - 20191020104435 :: https://ant.apache.org/ivy/ ::
+[ivy:configure] :: loading settings :: file = /testbed/buildScripts/ivysettings.xml
+
+deps.jdk6-runtime:
+
+deps.jdk8-runtime:
+
+deps.jdk-runtime:
+
+deps:
+[ivy:resolve] :: resolving dependencies :: projectlombok.org#lombok;working@f8822e79c6e4
+[ivy:resolve] 	confs: [javac6, javac8, ecj8, build, eclipse-oxygen, mapstruct, sources, stripe, buildtools, test]
+[ivy:resolve] 	found net.java.openjdk.custom#javac6;1.6.0.18 in projectLocalRepo
+[ivy:resolve] 	found net.java.openjdk.custom#javac8;1.8.0 in projectLocalRepo
+[ivy:resolve] 	found org.eclipse.jdt.core.compiler#ecj;4.4.2 in maven-repo2
+[ivy:resolve] 	found org.projectlombok#lombok.patcher;0.48 in projectLocalRepo
+[ivy:resolve] 	found zwitserloot.com#cmdreader;1.2 in projectLocalRepo
+[ivy:resolve] 	found org.apache.ant#ant;1.10.5 in maven-repo2
+[ivy:resolve] 	found org.apache.ant#ant-launcher;1.10.5 in maven-repo2
+[ivy:resolve] 	found org.apache.ant#ant-junit;1.10.5 in maven-repo2
+[ivy:resolve] 	found junit#junit;4.12 in maven-repo2
+[ivy:resolve] 	found org.hamcrest#hamcrest-core;1.3 in maven-repo2
+[ivy:resolve] 	found org.eclipse.platform#org.eclipse.core.runtime;3.13.0 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jdt#org.eclipse.jdt.core;3.13.102 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jdt#org.eclipse.jdt.ui;3.13.100 in maven-repo2
+[ivy:resolve] 	found org.eclipse.platform#org.eclipse.equinox.common;3.9.0 in maven-repo2
+[ivy:resolve] 	found org.eclipse.platform#org.eclipse.equinox.registry;3.7.0 in maven-repo2
+[ivy:resolve] 	found org.eclipse.platform#org.eclipse.equinox.app;1.3.400 in maven-repo2
+[ivy:resolve] 	found org.eclipse.platform#org.eclipse.core.resources;3.12.0 in maven-repo2
+[ivy:resolve] 	found org.eclipse.platform#org.eclipse.core.contenttype;3.6.0 in maven-repo2
+[ivy:resolve] 	found org.eclipse.platform#org.eclipse.core.jobs;3.9.0 in maven-repo2
+[ivy:resolve] 	found org.eclipse.platform#org.eclipse.osgi;3.12.100 in maven-repo2
+[ivy:resolve] 	found org.eclipse.platform#org.eclipse.text;3.6.100 in maven-repo2
+[ivy:resolve] 	found org.mapstruct#mapstruct-processor;1.3.1.Final in maven-repo2
+[ivy:resolve] 	found junit#junit;4.13.2 in maven-repo2
+[ivy:resolve] 	found log4j#log4j;1.2.17 in maven-repo2
+[ivy:resolve] 	found org.apache.logging.log4j#log4j-api;2.17.1 in maven-repo2
+[ivy:resolve] 	found commons-logging#commons-logging;1.2 in maven-repo2
+[ivy:resolve] 	found org.slf4j#slf4j-api;1.8.0-beta2 in maven-repo2
+[ivy:resolve] 	found org.slf4j#slf4j-ext;1.8.0-beta2 in maven-repo2
+[ivy:resolve] 	found org.jboss.logging#jboss-logging;3.3.0.Final in maven-repo2
+[ivy:resolve] 	found com.google.flogger#flogger;0.2 in maven-repo2
+[ivy:resolve] 	found com.google.guava#guava;18.0 in maven-repo2
+[ivy:resolve] 	found com.hierynomus#sshj;0.26.0 in maven-repo2
+[ivy:resolve] 	found org.slf4j#slf4j-api;1.7.7 in maven-repo2
+[ivy:resolve] 	found org.bouncycastle#bcprov-jdk15on;1.60 in maven-repo2
+[ivy:resolve] 	found org.bouncycastle#bcpkix-jdk15on;1.60 in maven-repo2
+[ivy:resolve] 	found com.jcraft#jzlib;1.1.3 in maven-repo2
+[ivy:resolve] 	found net.i2p.crypto#eddsa;0.2.0 in maven-repo2
+[ivy:resolve] 	found projectlombok.org#markdownj;1.02b4 in projectLocalRepo
+[ivy:resolve] 	found de.java2html#java2html;5.0 in maven-repo2
+[ivy:resolve] 	found org.freemarker#freemarker;2.3.28 in maven-repo2
+[ivy:resolve] 	found com.sparkjava#spark-core;2.9.2 in maven-repo2
+[ivy:resolve] 	found org.slf4j#slf4j-api;1.7.25 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty#jetty-server;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found javax.servlet#javax.servlet-api;3.1.0 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty#jetty-http;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty#jetty-util;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty#jetty-io;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty#jetty-webapp;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty#jetty-xml;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty#jetty-servlet;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty#jetty-security;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty.websocket#websocket-server;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty.websocket#websocket-common;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty.websocket#websocket-api;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty.websocket#websocket-client;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty#jetty-client;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty.websocket#websocket-servlet;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#s3;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#aws-xml-protocol;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#aws-query-protocol;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#protocol-core;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#sdk-core;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#annotations;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#http-client-spi;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#utils;2.19.29 in maven-repo2
+[ivy:resolve] 	found org.reactivestreams#reactive-streams;1.0.3 in maven-repo2
+[ivy:resolve] 	found org.slf4j#slf4j-api;1.7.30 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#metrics-spi;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#endpoints-spi;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#profiles;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#aws-core;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#regions;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#json-utils;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#third-party-jackson-core;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#auth;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.eventstream#eventstream;1.0.1 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#arns;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#apache-client;2.19.29 in maven-repo2
+[ivy:resolve] 	found org.apache.httpcomponents#httpclient;4.5.13 in maven-repo2
+[ivy:resolve] 	found org.apache.httpcomponents#httpcore;4.4.13 in maven-repo2
+[ivy:resolve] 	found commons-codec#commons-codec;1.11 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#netty-nio-client;2.19.29 in maven-repo2
+[ivy:resolve] 	found io.netty#netty-codec-http;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found io.netty#netty-common;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found io.netty#netty-buffer;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found io.netty#netty-transport;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found io.netty#netty-resolver;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found io.netty#netty-codec;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found io.netty#netty-handler;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found io.netty#netty-transport-native-unix-common;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found io.netty#netty-codec-http2;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found io.netty#netty-transport-classes-epoll;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found com.google.code.findbugs#jsr305;3.0.1 in maven-repo2
+[ivy:resolve] 	found com.google.code.findbugs#findbugs;3.0.1 in maven-repo2
+[ivy:resolve] 	found org.springframework#spring-core;5.3.4 in maven-repo2
+[ivy:resolve] 	found com.fasterxml.jackson.core#jackson-databind;2.10.0 in maven-repo2
+[ivy:resolve] 	found com.fasterxml.jackson.core#jackson-annotations;2.10.0 in maven-repo2
+[ivy:resolve] :: resolution report :: resolve 680ms :: artifacts dl 30ms
+[ivy:resolve] 	:: evicted modules:
+[ivy:resolve] 	org.slf4j#slf4j-api;1.7.7 by [org.slf4j#slf4j-api;1.7.25] in [buildtools]
+[ivy:resolve] 	org.slf4j#slf4j-api;1.7.25 by [org.slf4j#slf4j-api;1.7.30] in [buildtools]
+	---------------------------------------------------------------------
+	|                  |            modules            ||   artifacts   |
+	|       conf       | number| search|dwnlded|evicted|| number|dwnlded|
+	---------------------------------------------------------------------
+	|      javac6      |   1   |   0   |   0   |   0   ||   1   |   0   |
+	|      javac8      |   1   |   0   |   0   |   0   ||   1   |   0   |
+	|       ecj8       |   1   |   0   |   0   |   0   ||   1   |   0   |
+	|       build      |   7   |   0   |   0   |   0   ||   7   |   0   |
+	|  eclipse-oxygen  |   11  |   0   |   0   |   0   ||   11  |   0   |
+	|     mapstruct    |   1   |   0   |   0   |   0   ||   1   |   0   |
+	|      sources     |   9   |   0   |   0   |   0   ||   9   |   0   |
+	|      stripe      |   2   |   0   |   0   |   0   ||   2   |   0   |
+	|    buildtools    |   62  |   0   |   0   |   2   ||   60  |   0   |
+	|       test       |   15  |   0   |   0   |   0   ||   15  |   0   |
+	---------------------------------------------------------------------
+[ivy:retrieve] :: retrieving :: projectlombok.org#lombok
+[ivy:retrieve] 	confs: [javac6, javac8, ecj8, build, eclipse-oxygen, mapstruct, sources, stripe, buildtools, test]
+[ivy:retrieve] 	0 artifacts copied, 108 already retrieved (0kB/18ms)
+
+-autoclean.check:
+
+autoclean:
+
+-setup.build:
+
+version:
+     [echo] Lombok version: 1.18.29 (v1.18.29 "Edgy Guinea Pig")
+
+create.spiProcessor:
+      [jar] Building jar: /testbed/dist/spiProcessor.jar
+
+create.mavenEcjBootstrapAgent:
+
+compile:
+   [delete] Deleting: /testbed/build/lombok-main/META-INF/services/javax.annotation.processing.Processor
+[compile:javac] Compiling 2 source files to /testbed/build/lombok-main
+[compile:javac] Compiling 1 source file to /testbed/build/lombok-main8
+
+test.compile:
+
+BUILD SUCCESSFUL
+Total time: 2 seconds
++ : '>>>>> Start Test Output'
++ ant test.instance
++ cat
+Buildfile: /testbed/build.xml
+
+-ipp.download:
+
+-ipp.load:
+
+-ipp.redownload:
+
+ipp.setup:
+
+ivy.config:
+[ivy:configure] :: Apache Ivy 2.5.0 - 20191020104435 :: https://ant.apache.org/ivy/ ::
+[ivy:configure] :: loading settings :: file = /testbed/buildScripts/ivysettings.xml
+
+deps.jdk6-runtime:
+
+deps.jdk8-runtime:
+
+deps.jdk-runtime:
+
+deps:
+[ivy:resolve] :: resolving dependencies :: projectlombok.org#lombok;working@f8822e79c6e4
+[ivy:resolve] 	confs: [javac6, javac8, ecj8, build, eclipse-oxygen, mapstruct, sources, stripe, buildtools, test]
+[ivy:resolve] 	found net.java.openjdk.custom#javac6;1.6.0.18 in projectLocalRepo
+[ivy:resolve] 	found net.java.openjdk.custom#javac8;1.8.0 in projectLocalRepo
+[ivy:resolve] 	found org.eclipse.jdt.core.compiler#ecj;4.4.2 in maven-repo2
+[ivy:resolve] 	found org.projectlombok#lombok.patcher;0.48 in projectLocalRepo
+[ivy:resolve] 	found zwitserloot.com#cmdreader;1.2 in projectLocalRepo
+[ivy:resolve] 	found org.apache.ant#ant;1.10.5 in maven-repo2
+[ivy:resolve] 	found org.apache.ant#ant-launcher;1.10.5 in maven-repo2
+[ivy:resolve] 	found org.apache.ant#ant-junit;1.10.5 in maven-repo2
+[ivy:resolve] 	found junit#junit;4.12 in maven-repo2
+[ivy:resolve] 	found org.hamcrest#hamcrest-core;1.3 in maven-repo2
+[ivy:resolve] 	found org.eclipse.platform#org.eclipse.core.runtime;3.13.0 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jdt#org.eclipse.jdt.core;3.13.102 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jdt#org.eclipse.jdt.ui;3.13.100 in maven-repo2
+[ivy:resolve] 	found org.eclipse.platform#org.eclipse.equinox.common;3.9.0 in maven-repo2
+[ivy:resolve] 	found org.eclipse.platform#org.eclipse.equinox.registry;3.7.0 in maven-repo2
+[ivy:resolve] 	found org.eclipse.platform#org.eclipse.equinox.app;1.3.400 in maven-repo2
+[ivy:resolve] 	found org.eclipse.platform#org.eclipse.core.resources;3.12.0 in maven-repo2
+[ivy:resolve] 	found org.eclipse.platform#org.eclipse.core.contenttype;3.6.0 in maven-repo2
+[ivy:resolve] 	found org.eclipse.platform#org.eclipse.core.jobs;3.9.0 in maven-repo2
+[ivy:resolve] 	found org.eclipse.platform#org.eclipse.osgi;3.12.100 in maven-repo2
+[ivy:resolve] 	found org.eclipse.platform#org.eclipse.text;3.6.100 in maven-repo2
+[ivy:resolve] 	found org.mapstruct#mapstruct-processor;1.3.1.Final in maven-repo2
+[ivy:resolve] 	found junit#junit;4.13.2 in maven-repo2
+[ivy:resolve] 	found log4j#log4j;1.2.17 in maven-repo2
+[ivy:resolve] 	found org.apache.logging.log4j#log4j-api;2.17.1 in maven-repo2
+[ivy:resolve] 	found commons-logging#commons-logging;1.2 in maven-repo2
+[ivy:resolve] 	found org.slf4j#slf4j-api;1.8.0-beta2 in maven-repo2
+[ivy:resolve] 	found org.slf4j#slf4j-ext;1.8.0-beta2 in maven-repo2
+[ivy:resolve] 	found org.jboss.logging#jboss-logging;3.3.0.Final in maven-repo2
+[ivy:resolve] 	found com.google.flogger#flogger;0.2 in maven-repo2
+[ivy:resolve] 	found com.google.guava#guava;18.0 in maven-repo2
+[ivy:resolve] 	found com.hierynomus#sshj;0.26.0 in maven-repo2
+[ivy:resolve] 	found org.slf4j#slf4j-api;1.7.7 in maven-repo2
+[ivy:resolve] 	found org.bouncycastle#bcprov-jdk15on;1.60 in maven-repo2
+[ivy:resolve] 	found org.bouncycastle#bcpkix-jdk15on;1.60 in maven-repo2
+[ivy:resolve] 	found com.jcraft#jzlib;1.1.3 in maven-repo2
+[ivy:resolve] 	found net.i2p.crypto#eddsa;0.2.0 in maven-repo2
+[ivy:resolve] 	found projectlombok.org#markdownj;1.02b4 in projectLocalRepo
+[ivy:resolve] 	found de.java2html#java2html;5.0 in maven-repo2
+[ivy:resolve] 	found org.freemarker#freemarker;2.3.28 in maven-repo2
+[ivy:resolve] 	found com.sparkjava#spark-core;2.9.2 in maven-repo2
+[ivy:resolve] 	found org.slf4j#slf4j-api;1.7.25 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty#jetty-server;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found javax.servlet#javax.servlet-api;3.1.0 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty#jetty-http;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty#jetty-util;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty#jetty-io;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty#jetty-webapp;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty#jetty-xml;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty#jetty-servlet;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty#jetty-security;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty.websocket#websocket-server;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty.websocket#websocket-common;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty.websocket#websocket-api;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty.websocket#websocket-client;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty#jetty-client;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found org.eclipse.jetty.websocket#websocket-servlet;9.4.30.v20200611 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#s3;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#aws-xml-protocol;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#aws-query-protocol;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#protocol-core;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#sdk-core;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#annotations;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#http-client-spi;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#utils;2.19.29 in maven-repo2
+[ivy:resolve] 	found org.reactivestreams#reactive-streams;1.0.3 in maven-repo2
+[ivy:resolve] 	found org.slf4j#slf4j-api;1.7.30 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#metrics-spi;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#endpoints-spi;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#profiles;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#aws-core;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#regions;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#json-utils;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#third-party-jackson-core;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#auth;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.eventstream#eventstream;1.0.1 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#arns;2.19.29 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#apache-client;2.19.29 in maven-repo2
+[ivy:resolve] 	found org.apache.httpcomponents#httpclient;4.5.13 in maven-repo2
+[ivy:resolve] 	found org.apache.httpcomponents#httpcore;4.4.13 in maven-repo2
+[ivy:resolve] 	found commons-codec#commons-codec;1.11 in maven-repo2
+[ivy:resolve] 	found software.amazon.awssdk#netty-nio-client;2.19.29 in maven-repo2
+[ivy:resolve] 	found io.netty#netty-codec-http;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found io.netty#netty-common;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found io.netty#netty-buffer;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found io.netty#netty-transport;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found io.netty#netty-resolver;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found io.netty#netty-codec;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found io.netty#netty-handler;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found io.netty#netty-transport-native-unix-common;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found io.netty#netty-codec-http2;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found io.netty#netty-transport-classes-epoll;4.1.86.Final in maven-repo2
+[ivy:resolve] 	found com.google.code.findbugs#jsr305;3.0.1 in maven-repo2
+[ivy:resolve] 	found com.google.code.findbugs#findbugs;3.0.1 in maven-repo2
+[ivy:resolve] 	found org.springframework#spring-core;5.3.4 in maven-repo2
+[ivy:resolve] 	found com.fasterxml.jackson.core#jackson-databind;2.10.0 in maven-repo2
+[ivy:resolve] 	found com.fasterxml.jackson.core#jackson-annotations;2.10.0 in maven-repo2
+[ivy:resolve] :: resolution report :: resolve 623ms :: artifacts dl 29ms
+[ivy:resolve] 	:: evicted modules:
+[ivy:resolve] 	org.slf4j#slf4j-api;1.7.7 by [org.slf4j#slf4j-api;1.7.25] in [buildtools]
+[ivy:resolve] 	org.slf4j#slf4j-api;1.7.25 by [org.slf4j#slf4j-api;1.7.30] in [buildtools]
+	---------------------------------------------------------------------
+	|                  |            modules            ||   artifacts   |
+	|       conf       | number| search|dwnlded|evicted|| number|dwnlded|
+	---------------------------------------------------------------------
+	|      javac6      |   1   |   0   |   0   |   0   ||   1   |   0   |
+	|      javac8      |   1   |   0   |   0   |   0   ||   1   |   0   |
+	|       ecj8       |   1   |   0   |   0   |   0   ||   1   |   0   |
+	|       build      |   7   |   0   |   0   |   0   ||   7   |   0   |
+	|  eclipse-oxygen  |   11  |   0   |   0   |   0   ||   11  |   0   |
+	|     mapstruct    |   1   |   0   |   0   |   0   ||   1   |   0   |
+	|      sources     |   9   |   0   |   0   |   0   ||   9   |   0   |
+	|      stripe      |   2   |   0   |   0   |   0   ||   2   |   0   |
+	|    buildtools    |   62  |   0   |   0   |   2   ||   60  |   0   |
+	|       test       |   15  |   0   |   0   |   0   ||   15  |   0   |
+	---------------------------------------------------------------------
+[ivy:retrieve] :: retrieving :: projectlombok.org#lombok
+[ivy:retrieve] 	confs: [javac6, javac8, ecj8, build, eclipse-oxygen, mapstruct, sources, stripe, buildtools, test]
+[ivy:retrieve] 	0 artifacts copied, 108 already retrieved (0kB/13ms)
+
+-autoclean.check:
+
+autoclean:
+
+-setup.build:
+
+version:
+     [echo] Lombok version: 1.18.29 (v1.18.29 "Edgy Guinea Pig")
+
+create.spiProcessor:
+      [jar] Building jar: /testbed/dist/spiProcessor.jar
+
+create.mavenEcjBootstrapAgent:
+
+compile:
+   [delete] Deleting: /testbed/build/lombok-main/META-INF/services/javax.annotation.processing.Processor
+[compile:javac] Compiling 2 source files to /testbed/build/lombok-main
+[compile:javac] Compiling 1 source file to /testbed/build/lombok-main8
+
+test.compile:
+
+test.formatter.compile:
+    [mkdir] Created dir: /testbed/build/ant
+[compile:javac] Compiling 1 source file to /testbed/build/ant
+
+test.instance:
+    [junit] Running lombok.transform.TestWithDelombok
+    [junit] [PASS] javac-Accessors.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-AccessorsCascade.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-AccessorsConfiguration.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-AccessorsInAnonymousClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-AccessorsMakeFinal.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-AccessorsMakeFinalLombokConfig.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-AccessorsNoParamWarning.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderAccessWithGetter.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderComplex.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderConstructorJavadoc.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderDefaults.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderDefaultsArray.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderDefaultsGenerics.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderDefaultsTargetTyping.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderDefaultsWarnings.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderGenericMethod.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderInAnonymousClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderInstanceMethod.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderInvalidUse.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderJavadoc.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderNestedInEnum.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSimple.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSimpleWithSetterPrefix.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularAnnotatedTypes.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularAnnotatedTypesWithSetterPrefix.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularGuavaListsSets.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularGuavaMaps.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularLists.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularMaps.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularMapsWithSetterPrefix.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularNoAuto.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularNoAutoWithSetterPrefix.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularNullBehavior1.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularNullBehavior2.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularRedirectToGuava.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularSets.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularSetsWithSetterPrefix.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularToBuilderWithNull.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularToBuilderWithNullWithSetterPrefix.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularWildcardListsWithToBuilder.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularWithPrefixes.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderSingularWithPrefixesWithSetterPrefix.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderTypeAnnos.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderTypeAnnosWithSetterPrefix.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderValueData.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderValueDataWithSetterPrefix.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderWithAccessors.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderWithBadNames.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderWithDeprecated.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderWithDeprecatedAnnOnly.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderWithExistingBuilderClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderWithExistingBuilderClassWithSetterPrefix.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderWithJavaBeansSpecCapitalization.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderWithNoBuilderMethod.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderWithNonNull.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderWithNonNullWithSetterPrefix.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderWithRecursiveGenerics.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderWithToBuilder.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-BuilderWithTolerate.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-CheckerFrameworkBasic.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-CheckerFrameworkBuilder.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-CheckerFrameworkSuperBuilder.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ClassNamedAfterGetter.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-CleanupName.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-CleanupPlain.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-CommentsInterspersed.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ConflictingStaticConstructorNames.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ConstructorInner.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-Constructors.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ConstructorsConfiguration.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ConstructorsInAnonymousClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ConstructorsTypeAnnos.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ConstructorsWithAccessors.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ConstructorsWithBuilderDefaults.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ConstructorsWithBuilderDefaults2.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ConstructorsWithSuperBuilderDefaults.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DataConfiguration.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DataExtended.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DataIgnore.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DataInAnonymousClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DataOnEnum.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DataOnLocalClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DataPlain.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DataWithGetter.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DataWithGetterNone.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DataWithOverrideEqualsAndHashCode.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DelegateAlreadyImplemented.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DelegateFlagUsage.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DelegateGenerics.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DelegateOnGetter.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DelegateOnGetterNone.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DelegateOnMethods.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DelegateOnStatic.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DelegateRecursion.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DelegateTypesAndExcludes.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DelegateWithDeprecated.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DelegateWithVarargs.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-DelegateWithVarargs2.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EncodingUsAscii.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EncodingUtf8.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCode.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeAnnotated.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeAutoExclude.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeCache.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeConfigKeys1.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeConfigKeys2.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeEmpty.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeExplicitInclude.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeInAnonymousClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeNestedShadow.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeNewStyle.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeOfAndExclude.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeOfAndExcludeWarn.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeRank.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeWithExistingMethods.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeWithGenericsOnInners.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeWithGenericsOnInnersInInterfaces.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeWithNonNullByDefault.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeWithOnParam.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-EqualsAndHashCodeWithSomeExistingMethods.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ExtensionMethodAutoboxing.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ExtensionMethodChain.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ExtensionMethodFunctional.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ExtensionMethodGeneric.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ExtensionMethodInLambda.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ExtensionMethodNames.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ExtensionMethodNonStatic.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ExtensionMethodPlain.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ExtensionMethodSuppress.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ExtensionMethodVarargs.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ExtensionMethodWidening.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-FieldDefaults.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-FieldDefaultsNoop.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-FieldDefaultsViaConfig.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-FieldDefaultsViaConfigAndRequiredArgsConstructor.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-FieldNameConstantsBasic.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-FieldNameConstantsConfigKeys.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-FieldNameConstantsEnum.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-FieldNameConstantsHandrolled.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-FieldNameConstantsInAnonymousClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-FieldNameConstantsUppercased.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-FlagUsages.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GenerateSuppressFBWarnings.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GeneratedJavaxJakarta.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GeneratedJavaxOff.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GeneratedJavaxOnLombokOn.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GeneratedOff.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GeneratedOffJavaxOn.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GeneratedOffLombokOn.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GeneratedOn.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterAccessLevel.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterAlreadyExists.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterBoolean.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterDeprecated.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterEnum.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterInAnonymousClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterLazy.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterLazyArguments.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterLazyBoolean.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterLazyEahcToString.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterLazyErrorPosition.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterLazyGenerics.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterLazyInAnonymousClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterLazyInvalid.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterLazyNative.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterLazyTransient.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterNone.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterOnClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterOnMethod.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterOnMethodErrors2.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterOnMethodOnType.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterOnStatic.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterPlain.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterSetterJavadoc.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterTypeAnnos.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterWithDollar.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-GetterWithJavaBeansSpecCapitalization.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-HelperInInitializationBlock.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-HelperInMethod.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-I2335_BuilderMultipleObtainVia.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-InjectField.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-InnerClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-JacksonBuilderSingular.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-JacksonJsonProperty.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-JacksonizedBuilderComplex.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-JacksonizedBuilderSimple.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-JacksonizedSuperBuilderSimple.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-JacksonizedSuperBuilderWithJsonDeserialize.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-JavadocGenerally.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-JavadocMultiline.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-LoggerCommons.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-LoggerConfig.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-LoggerCustom.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-LoggerCustomWithPackage.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-LoggerCustomWithTopicAndName.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-LoggerFlogger.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-LoggerJBossLog.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-LoggerJul.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-LoggerLog4j.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-LoggerLog4j2.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-LoggerSlf4j.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-LoggerSlf4jAlreadyExists.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-LoggerSlf4jInAnonymousClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-LoggerSlf4jOnNonType.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-LoggerSlf4jTypes.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-LoggerSlf4jWithPackage.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-LoggerXSlf4j.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-MultiFieldGetter.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-NoArgsConstructorForce.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-NoPrivateNoArgsConstructor.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-NonNullOnParameter.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-NonNullOnParameterAbstract.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-NonNullOnParameterOfDefaultMethod.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-NonNullPlain.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-NonNullTypeUse.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-NonNullWithAlternateException.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-NonNullWithAssertion.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-NonNullWithGuava.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-NonNullWithJdk.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-NonNullWithSneakyThrows.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-NullAnnotatedCheckerFrameworkSuperBuilder.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-NullLibrary1.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-NullLibrary2.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-NullLibrary3.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-OnXJava8Style.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-PrivateNoArgsConstructor.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SetterAccessLevel.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SetterAlreadyExists.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SetterAndWithMethodJavadoc.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SetterDeprecated.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SetterInAnonymousClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SetterOnClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SetterOnMethodOnParam.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SetterOnStatic.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SetterPlain.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SetterTypeAnnos.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SetterWithDollar.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SetterWithJavaBeansSpecCapitalization.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SimpleTypeResolution.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SingularCleanupForDelombok.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SkipSuppressWarnings.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SneakyThrowsMultiple.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SneakyThrowsPlain.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SneakyThrowsSingle.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-StandardExceptions.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-StaticConstructor.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderAbstract.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderAbstractToBuilder.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderBasic.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderBasicToBuilder.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderCustomName.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderCustomized.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderCustomizedWithSetterPrefix.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderInAnonymousClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderInitializer.java(lombok.transform.TestWithDelombok)
+    [junit] [FAIL] javac-SuperBuilderJavadoc.java(lombok.transform.TestWithDelombok)
+    [junit] Difference in SuperBuilderJavadoc.java on line 6 expected:<	 * @[return tag is removed from] the setter.> but was:<	 * @[param tag is moved to] the setter.>
+    [junit] [PASS] javac-SuperBuilderNameClashes.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderNestedGenericTypes.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderSingularAnnotatedTypes.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderSingularCustomized.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderSingularToBuilderGuava.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderWithCustomBuilderClassName.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderWithCustomBuilderMethod.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderWithDefaults.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderWithDefaultsAndTargetTyping.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderWithExistingConstructor.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderWithGenerics.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderWithGenerics2.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderWithGenerics3.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderWithGenericsAndToBuilder.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderWithNonNull.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderWithOverloadedGeneratedMethods.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderWithPrefixes.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SuperBuilderWithSetterPrefix.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SynchronizedInAnonymousClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SynchronizedName.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SynchronizedNameNoSuchField.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SynchronizedNameStaticToInstanceRef.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SynchronizedOnStatic.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-SynchronizedPlain.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-TestOperators.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ToStringArray.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ToStringArrayTypeAnnotations.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ToStringAutoExclude.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ToStringAutoSuper.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ToStringConfiguration.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ToStringEnum.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ToStringExplicitInclude.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ToStringExplicitIncludeConf.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ToStringInAnonymousClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ToStringInner.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ToStringNewStyle.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ToStringPlain.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ToStringWithConstantRefInOf.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-Tolerate.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-TrickyTypeResolution2.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-TypeUseAnnotations.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-UtilityClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-UtilityClassErrors.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-UtilityClassGeneric.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-UtilityClassInAnonymousClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-UtilityClassInner.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ValToNative.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ValueCallSuper.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ValueInAnonymousClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ValuePlain.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ValueStaticConstructorOf.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ValueStaticField.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-ValueWithJavaBeansSpecCapitalization.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WithAlreadyExists.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WithAndAllArgsConstructor.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WithByInAnonymousClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WithByNullAnnos.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WithByTypes.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WithInAnonymousClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WithInnerAnnotation.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WithMethodAbstract.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WithMethodMarkedDeprecated.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WithMethodMarkedDeprecatedAnnOnly.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WithNested.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WithOnClass.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WithOnStatic.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WithPlain.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WithWithDollar.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WithWithGenerics.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WithWithJavaBeansSpecCapitalization.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WithWithTypeAnnos.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WitherAccessLevel.java(lombok.transform.TestWithDelombok)
+    [junit] [PASS] javac-WitherLegacyStar.java(lombok.transform.TestWithDelombok)
+    [junit] ***** SuperBuilderJavadoc.java *****
+    [junit] Difference in SuperBuilderJavadoc.java on line 6 expected:<	 * @[return tag is removed from] the setter.> but was:<	 * @[param tag is moved to] the setter.>
+    [junit] **** Expected ******
+    [junit] import java.util.List;
+    [junit] 
+    [junit] public abstract class SuperBuilderJavadoc {
+    [junit] 	/**
+    [junit] 	 * basic gets only a builder setter.
+    [junit] 	 * @see #getsetwith
+    [junit] 	 * @return tag is removed from the setter.
+    [junit] 	 */
+    [junit] 	private final int basic;
+    [junit] 	/**
+    [junit] 	 * getsetwith gets a builder setter, an instance getter and setter, and a wither.
+    [junit] 	 */
+    [junit] 	private int getsetwith;
+    [junit] 	/**
+    [junit] 	 * Predef has a predefined builder setter with no javadoc, and the builder setter does not get this one.
+    [junit] 	 * @param tag remains on the field.
+    [junit] 	 * @return tag remains on the field.
+    [junit] 	 */
+    [junit] 	private final int predef;
+    [junit] 	/**
+    [junit] 	 * predefWithJavadoc has a predefined builder setter with javadoc, so it keeps that one untouched.
+    [junit] 	 * @param tag is removed from the field.
+    [junit] 	 * @return tag remains on the field.
+    [junit] 	 */
+    [junit] 	private final int predefWithJavadoc;
+    [junit] 
+    [junit] 
+    [junit] 	public static abstract class SuperBuilderJavadocBuilder<C extends SuperBuilderJavadoc, B extends SuperBuilderJavadocBuilder<C, B>> {
+    [junit] 		@java.lang.SuppressWarnings("all")
+    [junit] 		private int basic;
+    [junit] 		@java.lang.SuppressWarnings("all")
+    [junit] 		private int getsetwith;
+    [junit] 		@java.lang.SuppressWarnings("all")
+    [junit] 		private int predef;
+    [junit] 		@java.lang.SuppressWarnings("all")
+    [junit] 		private int predefWithJavadoc;
+    [junit] 
+    [junit] 		public B predef(final int x) {
+    [junit] 			this.predef = x * 10;
+    [junit] 			return self();
+    [junit] 		}
+    [junit] 
+    [junit] 		/**
+    [junit] 		 * This javadoc remains untouched.
+    [junit] 		 * @param x 1/100 of the thing
+    [junit] 		 * @return the updated builder
+    [junit] 		 */
+    [junit] 		public B predefWithJavadoc(final int x) {
+    [junit] 			this.predefWithJavadoc = x * 100;
+    [junit] 			return self();
+    [junit] 		}
+    [junit] 
+    [junit] 		/**
+    [junit] 		 * basic gets only a builder setter.
+    [junit] 		 * @see #getsetwith
+    [junit] 		 * @param tag is moved to the setter.
+    [junit] 		 * @return {@code this}.
+    [junit] 		 */
+    [junit] 		@java.lang.SuppressWarnings("all")
+    [junit] 		public B basic(final int basic) {
+    [junit] 			this.basic = basic;
+    [junit] 			return self();
+    [junit] 		}
+    [junit] 
+    [junit] 		/**
+    [junit] 		 * getsetwith gets a builder setter, an instance getter and setter, and a wither.
+    [junit] 		 * @param tag is moved to the setters and wither.
+    [junit] 		 * @return {@code this}.
+    [junit] 		 */
+    [junit] 		@java.lang.SuppressWarnings("all")
+    [junit] 		public B getsetwith(final int getsetwith) {
+    [junit] 			this.getsetwith = getsetwith;
+    [junit] 			return self();
+    [junit] 		}
+    [junit] 
+    [junit] 		@java.lang.SuppressWarnings("all")
+    [junit] 		protected abstract B self();
+    [junit] 
+    [junit] 		@java.lang.SuppressWarnings("all")
+    [junit] 		public abstract C build();
+    [junit] 
+    [junit] 		@java.lang.Override
+    [junit] 		@java.lang.SuppressWarnings("all")
+    [junit] 		public java.lang.String toString() {
+    [junit] 			return "SuperBuilderJavadoc.SuperBuilderJavadocBuilder(basic=" + this.basic + ", getsetwith=" + this.getsetwith + ", predef=" + this.predef + ", predefWithJavadoc=" + this.predefWithJavadoc + ")";
+    [junit] 		}
+    [junit] 	}
+    [junit] 
+    [junit] 	@java.lang.SuppressWarnings("all")
+    [junit] 	protected SuperBuilderJavadoc(final SuperBuilderJavadoc.SuperBuilderJavadocBuilder<?, ?> b) {
+    [junit] 		this.basic = b.basic;
+    [junit] 		this.getsetwith = b.getsetwith;
+    [junit] 		this.predef = b.predef;
+    [junit] 		this.predefWithJavadoc = b.predefWithJavadoc;
+    [junit] 	}
+    [junit] 
+    [junit] 	/**
+    [junit] 	 * getsetwith gets a builder setter, an instance getter and setter, and a wither.
+    [junit] 	 * @return tag is moved to the getter.
+    [junit] 	 */
+    [junit] 	@java.lang.SuppressWarnings("all")
+    [junit] 	public int getGetsetwith() {
+    [junit] 		return this.getsetwith;
+    [junit] 	}
+    [junit] 
+    [junit] 	/**
+    [junit] 	 * getsetwith gets a builder setter, an instance getter and setter, and a wither.
+    [junit] 	 * @param tag is moved to the setters and wither.
+    [junit] 	 */
+    [junit] 	@java.lang.SuppressWarnings("all")
+    [junit] 	public void setGetsetwith(final int getsetwith) {
+    [junit] 		this.getsetwith = getsetwith;
+    [junit] 	}
+    [junit] 
+    [junit] 	/**
+    [junit] 	 * getsetwith gets a builder setter, an instance getter and setter, and a wither.
+    [junit] 	 * @param tag is moved to the setters and wither.
+    [junit] 	 * @return a clone of this object, except with this updated property (returns {@code this} if an identical value is passed).
+    [junit] 	 */
+    [junit] 	@java.lang.SuppressWarnings("all")
+    [junit] 	public abstract SuperBuilderJavadoc withGetsetwith(final int getsetwith);
+    [junit] }
+    [junit] 
+    [junit] ****  Actual  ******
+    [junit] // Generated by delombok at Thu Aug 27 09:26:12 UTC 2026
+    [junit] 
+    [junit] import java.util.List;
+    [junit] 
+    [junit] public abstract class SuperBuilderJavadoc {
+    [junit] 	/**
+    [junit] 	 * basic gets only a builder setter.
+    [junit] 	 * @see #getsetwith
+    [junit] 	 * @param tag is moved to the setter.
+    [junit] 	 * @return tag is removed from the setter.
+    [junit] 	 */
+    [junit] 	private final int basic;
+    [junit] 	/**
+    [junit] 	 * getsetwith gets a builder setter, an instance getter and setter, and a wither.
+    [junit] 	 */
+    [junit] 	private int getsetwith;
+    [junit] 	/**
+    [junit] 	 * Predef has a predefined builder setter with no javadoc, and the builder setter does not get this one.
+    [junit] 	 * @param tag remains on the field.
+    [junit] 	 * @return tag remains on the field.
+    [junit] 	 */
+    [junit] 	private final int predef;
+    [junit] 	/**
+    [junit] 	 * predefWithJavadoc has a predefined builder setter with javadoc, so it keeps that one untouched.
+    [junit] 	 * @param tag is removed from the field.
+    [junit] 	 * @return tag remains on the field.
+    [junit] 	 */
+    [junit] 	private final int predefWithJavadoc;
+    [junit] 
+    [junit] 
+    [junit] 	public static abstract class SuperBuilderJavadocBuilder<C extends SuperBuilderJavadoc, B extends SuperBuilderJavadocBuilder<C, B>> {
+    [junit] 		@java.lang.SuppressWarnings("all")
+    [junit] 		private int basic;
+    [junit] 		@java.lang.SuppressWarnings("all")
+    [junit] 		private int getsetwith;
+    [junit] 		@java.lang.SuppressWarnings("all")
+    [junit] 		private int predef;
+    [junit] 		@java.lang.SuppressWarnings("all")
+    [junit] 		private int predefWithJavadoc;
+    [junit] 
+    [junit] 		public B predef(final int x) {
+    [junit] 			this.predef = x * 10;
+    [junit] 			return self();
+    [junit] 		}
+    [junit] 
+    [junit] 		/**
+    [junit] 		 * This javadoc remains untouched.
+    [junit] 		 * @param x 1/100 of the thing
+    [junit] 		 * @return the updated builder
+    [junit] 		 */
+    [junit] 		public B predefWithJavadoc(final int x) {
+    [junit] 			this.predefWithJavadoc = x * 100;
+    [junit] 			return self();
+    [junit] 		}
+    [junit] 
+    [junit] 		/**
+    [junit] 		 * @return {@code this}.
+    [junit] 		 */
+    [junit] 		@java.lang.SuppressWarnings("all")
+    [junit] 		public B basic(final int basic) {
+    [junit] 			this.basic = basic;
+    [junit] 			return self();
+    [junit] 		}
+    [junit] 
+    [junit] 		/**
+    [junit] 		 * @return {@code this}.
+    [junit] 		 */
+    [junit] 		@java.lang.SuppressWarnings("all")
+    [junit] 		public B getsetwith(final int getsetwith) {
+    [junit] 			this.getsetwith = getsetwith;
+    [junit] 			return self();
+    [junit] 		}
+    [junit] 
+    [junit] 		@java.lang.SuppressWarnings("all")
+    [junit] 		protected abstract B self();
+    [junit] 
+    [junit] 		@java.lang.SuppressWarnings("all")
+    [junit] 		public abstract C build();
+    [junit] 
+    [junit] 		@java.lang.Override
+    [junit] 		@java.lang.SuppressWarnings("all")
+    [junit] 		public java.lang.String toString() {
+    [junit] 			return "SuperBuilderJavadoc.SuperBuilderJavadocBuilder(basic=" + this.basic + ", getsetwith=" + this.getsetwith + ", predef=" + this.predef + ", predefWithJavadoc=" + this.predefWithJavadoc + ")";
+    [junit] 		}
+    [junit] 	}
+    [junit] 
+    [junit] 	@java.lang.SuppressWarnings("all")
+    [junit] 	protected SuperBuilderJavadoc(final SuperBuilderJavadoc.SuperBuilderJavadocBuilder<?, ?> b) {
+    [junit] 		this.basic = b.basic;
+    [junit] 		this.getsetwith = b.getsetwith;
+    [junit] 		this.predef = b.predef;
+    [junit] 		this.predefWithJavadoc = b.predefWithJavadoc;
+    [junit] 	}
+    [junit] 
+    [junit] 	/**
+    [junit] 	 * getsetwith gets a builder setter, an instance getter and setter, and a wither.
+    [junit] 	 * @return tag is moved to the getter.
+    [junit] 	 */
+    [junit] 	@java.lang.SuppressWarnings("all")
+    [junit] 	public int getGetsetwith() {
+    [junit] 		return this.getsetwith;
+    [junit] 	}
+    [junit] 
+    [junit] 	/**
+    [junit] 	 * getsetwith gets a builder setter, an instance getter and setter, and a wither.
+    [junit] 	 * @param tag is moved to the setters and wither.
+    [junit] 	 */
+    [junit] 	@java.lang.SuppressWarnings("all")
+    [junit] 	public void setGetsetwith(final int getsetwith) {
+    [junit] 		this.getsetwith = getsetwith;
+    [junit] 	}
+    [junit] 
+    [junit] 	/**
+    [junit] 	 * getsetwith gets a builder setter, an instance getter and setter, and a wither.
+    [junit] 	 * @param tag is moved to the setters and wither.
+    [junit] 	 * @return a clone of this object, except with this updated property (returns {@code this} if an identical value is passed).
+    [junit] 	 */
+    [junit] 	@java.lang.SuppressWarnings("all")
+    [junit] 	public abstract SuperBuilderJavadoc withGetsetwith(final int getsetwith);
+    [junit] }
+    [junit] 
+    [junit] *******************
+    [junit] 
+    [junit] Tests run: 398, Failures: 1, Errors: 0, Skipped: 69, Time elapsed: 9.591 sec
+    [junit] Test lombok.transform.TestWithDelombok FAILED
+
+BUILD SUCCESSFUL
+Total time: 11 seconds
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ rm -f test/transform/resource/after-delombok/SuperBuilderJavadoc.java test/transform/resource/after-ecj/SuperBuilderJavadoc.java test/transform/resource/before/SuperBuilderJavadoc.java

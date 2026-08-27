@@ -1,0 +1,82 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/rubocop/cop/style/dig_chain.rb
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	changelog/fix_dig_chain_safe_navigation_autocorrect.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 5800663c334011cc0fb580498ebc54f5a09187c2
+Merge: c90174d59 2a0815497
+Author: Daniel Vandersluis <daniel.vandersluis@gmail.com>
+Date:   Tue Nov 26 15:58:12 2024 -0500
+
+    Merge pull request #13500 from thestelz/patch-1
+    
+    docs: fix cop name difference in changelog
+
++ git -c core.fileMode=false diff 5800663c334011cc0fb580498ebc54f5a09187c2
+diff --git a/lib/rubocop/cop/style/dig_chain.rb b/lib/rubocop/cop/style/dig_chain.rb
+index 6be9519cc..e5ed505c2 100644
+--- a/lib/rubocop/cop/style/dig_chain.rb
++++ b/lib/rubocop/cop/style/dig_chain.rb
+@@ -52,7 +52,7 @@ module RuboCop
+           end_pos = node.source_range.end_pos
+ 
+           while dig?((node = node.receiver))
+-            begin_pos = node.loc.dot ? node.loc.dot.begin_pos + 1 : 0
++            begin_pos = node.loc.dot ? node.loc.dot.end_pos : 0
+             arguments.unshift(*node.arguments)
+             ignore_node(node)
+           end
++ git checkout 5800663c334011cc0fb580498ebc54f5a09187c2 spec/rubocop/cop/style/dig_chain_spec.rb
+Updated 0 paths from 4297be7bb
++ git apply -v -
+Checking patch spec/rubocop/cop/style/dig_chain_spec.rb...
+Applied patch spec/rubocop/cop/style/dig_chain_spec.rb cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ bundle exec rspec spec/rubocop/cop/style/dig_chain_spec.rb --no-color --format json
++ sed -n '/^{/,$p'
++ jq -r '.examples | group_by(.description) | .[] |
+    if any(select(.status == "failed")) then
+      (.[0] | "\(.description) - failed")
+    else
+      (.[0] | "\(.description) - \(.status)")
+    end'
+does not register an offense for `X::dig` - passed
+does not register an offense for a hash - passed
+does not register an offense for chained dig without arguments - passed
+does not register an offense for dig chained to something else - passed
+does not register an offense for dig without arguments - passed
+does not register an offense for kwargs - passed
+does not register an offense for unchained `dig` without a receiver - passed
+does not register an offense when `dig` is given a forwarded anonymous block - passed
+does not register an offense when combining would add a syntax error - passed
+does not register an offense when the chain is broken up - passed
+does not register an offense with forwarded anonymous kwsplat - passed
+registers an offense and corrects when attached to a chain of non-dig receivers - passed
+registers an offense and corrects when split over multiple lines - passed
+registers an offense and corrects when split over multiple lines with comments - passed
+registers an offense and corrects with `::` instead of dot - passed
+registers an offense and corrects with forwarded anonymous splat - passed
+registers an offense and corrects with forwarded args - passed
+registers an offense and corrects with multiple values - passed
+registers an offense and corrects with safe navigation - passed
+registers an offense and corrects with safe navigation method chain - passed
+registers an offense and corrects with single values - passed
+registers an offense and corrects with splat - passed
+registers an offense and corrects without a receiver - passed
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 5800663c334011cc0fb580498ebc54f5a09187c2 spec/rubocop/cop/style/dig_chain_spec.rb
+Updated 1 path from 4297be7bb

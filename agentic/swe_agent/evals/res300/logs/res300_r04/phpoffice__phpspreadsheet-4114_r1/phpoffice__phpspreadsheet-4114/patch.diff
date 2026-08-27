@@ -1,0 +1,28 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index cd609aed..350e384e 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org).
+ 
+ ### Fixed
+ 
+-- Nothing
++- Add Sheet to Empty Workbook With Specified Index. [Issue #4113](https://github.com/PHPOffice/PhpSpreadsheet/issues/4113)
+ 
+ ## 2024-07-24 - 2.2.0
+ 
+diff --git a/src/PhpSpreadsheet/Spreadsheet.php b/src/PhpSpreadsheet/Spreadsheet.php
+index e571cc4f..4d6297b7 100644
+--- a/src/PhpSpreadsheet/Spreadsheet.php
++++ b/src/PhpSpreadsheet/Spreadsheet.php
+@@ -555,7 +555,9 @@ class Spreadsheet implements JsonSerializable
+             );
+ 
+             // Adjust active sheet index if necessary
+-            if ($this->activeSheetIndex >= $sheetIndex) {
++            if ($this->activeSheetIndex < 0) {
++                $this->activeSheetIndex = 0;
++            } elseif ($this->activeSheetIndex >= $sheetIndex) {
+                 ++$this->activeSheetIndex;
+             }
+         }

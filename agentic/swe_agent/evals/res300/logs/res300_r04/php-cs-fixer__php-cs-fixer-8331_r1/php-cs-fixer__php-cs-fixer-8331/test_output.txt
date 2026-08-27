@@ -1,0 +1,104 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/Fixer/LanguageConstruct/NullableTypeDeclarationFixer.php
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit ae2b729efb3507871ddf501424b1a92db4e5b16a
+Author: Dariusz Rumiński <dariusz.ruminski@gmail.com>
+Date:   Sat Dec 28 15:08:14 2024 +0100
+
+    docs: Tokens - fix docs (#8332)
+
+diff --git a/src/Tokenizer/Tokens.php b/src/Tokenizer/Tokens.php
+index 2b640bf9c..4fcec2598 100644
+--- a/src/Tokenizer/Tokens.php
++++ b/src/Tokenizer/Tokens.php
+@@ -92,7 +92,7 @@ class Tokens extends \SplFixedArray
+      *
+      * When the token kind is present in this set it means that given token kind
+      * was ever seen inside the collection (but may not be part of it any longer).
+-     * The key is token kind and the value is always true.
++     * The key is token kind and the value is the number of occurrences.
+      *
+      * @var array<int|string, int>
+      */
++ git -c core.fileMode=false diff ae2b729efb3507871ddf501424b1a92db4e5b16a
+diff --git a/src/Fixer/LanguageConstruct/NullableTypeDeclarationFixer.php b/src/Fixer/LanguageConstruct/NullableTypeDeclarationFixer.php
+index fd1037205..81446b29c 100644
+--- a/src/Fixer/LanguageConstruct/NullableTypeDeclarationFixer.php
++++ b/src/Fixer/LanguageConstruct/NullableTypeDeclarationFixer.php
+@@ -274,8 +274,10 @@ private function normalizeNullableType(Tokens $tokens, TypeAnalysis $typeAnalysi
+             $this->createTypeDeclarationTokens($normalizedType, $isQuestionMarkSyntax)
+         );
+ 
+-        if (!$tokens[$typeAnalysis->getStartIndex() - 1]->equals('(')) {
+-            $tokens->ensureWhitespaceAtIndex($typeAnalysis->getStartIndex() - 1, 1, ' ');
++        $prevIndex = $typeAnalysis->getStartIndex() - 1;
++
++        if (!$tokens[$prevIndex]->equals('(') && !$tokens[$prevIndex]->isWhitespace()) {
++            $tokens->ensureWhitespaceAtIndex($prevIndex, 1, ' ');
+         }
+     }
+ 
++ git checkout ae2b729efb3507871ddf501424b1a92db4e5b16a tests/Fixer/LanguageConstruct/NullableTypeDeclarationFixerTest.php
+Updated 0 paths from 13833c7e5
++ git apply -v -
+Checking patch tests/Fixer/LanguageConstruct/NullableTypeDeclarationFixerTest.php...
+Applied patch tests/Fixer/LanguageConstruct/NullableTypeDeclarationFixerTest.php cleanly.
++ : '>>>>> Start Test Output'
++ vendor/bin/phpunit --testdox --colors=never tests/Fixer/LanguageConstruct/NullableTypeDeclarationFixerTest.php
++ cat
+PHPUnit 11.5.55 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.3.16
+Configuration: /testbed/phpunit.xml.dist
+
+.............................                                     29 / 29 (100%)
+
+Time: 00:00.424, Memory: 12.00 MB
+
+Nullable Type Declaration Fixer (PhpCsFixer\Tests\Fixer\LanguageConstruct\NullableTypeDeclarationFixer)
+ ✔ Not defining constructor
+ ✔ Is risky
+ ✔ Fixer definitions
+ ✔ Fixers are final
+ ✔ Deprecated fixers have correct summary
+ ✔ Deprecated fixers do not have deprecated successor
+ ✔ Fixer use insert slices when only insertions are performed
+ ✔ Fixer configuration definitions
+ ✔ Proper method naming
+ ✔ Fix with data set "scalar with null"
+ ✔ Fix with data set "class with null"
+ ✔ Fix with data set "static null"
+ ✔ Fix with data set "multiple parameters"
+ ✔ Fix with data set "class properties"
+ ✔ Fix with data set "skips more than two atomic types"
+ ✔ Fix with data set "skips already fixed"
+ ✔ Fix with data set "scalar with null"
+ ✔ Fix with data set "class with null"
+ ✔ Fix with data set "static null"
+ ✔ Fix with data set "multiple parameters"
+ ✔ Fix with data set "class properties"
+ ✔ Fix with data set "space after ?"
+ ✔ Fix with data set "skips already fixed"
+ ✔ Fix with data set "no space before ?"
+ ✔ Fix with data set "multiline function declaration"
+ ✔ Fix with data set "readonly property"
+ ✔ Fix with data set "readonly property with union syntax expected"
+ ✔ Fix with data set "skips DNF types"
+ ✔ Fix with data set "standalone null"
+
+OK, but there were issues!
+Tests: 29, Assertions: 1224, PHPUnit Deprecations: 6.
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout ae2b729efb3507871ddf501424b1a92db4e5b16a tests/Fixer/LanguageConstruct/NullableTypeDeclarationFixerTest.php
+Updated 1 path from 13833c7e5

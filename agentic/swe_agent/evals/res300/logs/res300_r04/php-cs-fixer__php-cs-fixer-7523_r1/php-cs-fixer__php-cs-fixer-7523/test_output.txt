@@ -1,0 +1,361 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/Tokenizer/TokensAnalyzer.php
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 10fb65e3e8b8645f74f6ab099dfa11ce5ac5cfcd
+Author: Kuba Werłos <werlos@gmail.com>
+Date:   Fri Dec 8 09:35:40 2023 +0100
+
+    fix: GlobalNamespaceImportFixer - key in PHPDoc's array shape matching class name (#7522)
+
+diff --git a/src/Fixer/Import/GlobalNamespaceImportFixer.php b/src/Fixer/Import/GlobalNamespaceImportFixer.php
+index adda98289..16447192c 100644
+--- a/src/Fixer/Import/GlobalNamespaceImportFixer.php
++++ b/src/Fixer/Import/GlobalNamespaceImportFixer.php
+@@ -706,7 +706,7 @@ private function traverseDocBlockTypes(DocBlock $doc, callable $callback): bool
+             foreach ($types as $i => $fullType) {
+                 $newFullType = $fullType;
+ 
+-                Preg::matchAll('/[\\\\\w]+/', $fullType, $matches, PREG_OFFSET_CAPTURE);
++                Preg::matchAll('/[\\\\\w]+(?![\\\\\w:])/', $fullType, $matches, PREG_OFFSET_CAPTURE);
+ 
+                 foreach (array_reverse($matches[0]) as [$type, $offset]) {
+                     $newType = $callback($type);
+diff --git a/tests/Fixer/Import/GlobalNamespaceImportFixerTest.php b/tests/Fixer/Import/GlobalNamespaceImportFixerTest.php
+index 70f6b0985..8c8425946 100644
+--- a/tests/Fixer/Import/GlobalNamespaceImportFixerTest.php
++++ b/tests/Fixer/Import/GlobalNamespaceImportFixerTest.php
+@@ -1094,6 +1094,43 @@ function abc($foo, Bar $bar = null) {}
+                 }
+                 INPUT
+         ];
++
++        yield 'key in PHPDoc\'s array shape matching class name' => [
++            '<?php
++                namespace Foo;
++                use Exception;
++                class Bar {
++                    /**
++                     * @return array{code: int, exception: \Exception}
++                     */
++                    public function f1(): array {}
++                    /**
++                     * @return array{exception: \Exception}
++                     */
++                    public function f2(): array {}
++                    /**
++                     * @return array{exceptions: array<\Exception>}
++                     */
++                    public function f3(): array {}
++                }',
++            '<?php
++                namespace Foo;
++                use Exception;
++                class Bar {
++                    /**
++                     * @return array{code: int, exception: Exception}
++                     */
++                    public function f1(): array {}
++                    /**
++                     * @return array{exception: Exception}
++                     */
++                    public function f2(): array {}
++                    /**
++                     * @return array{exceptions: array<Exception>}
++                     */
++                    public function f3(): array {}
++                }',
++        ];
+     }
+ 
+     /**
++ git -c core.fileMode=false diff 10fb65e3e8b8645f74f6ab099dfa11ce5ac5cfcd
+diff --git a/src/Tokenizer/TokensAnalyzer.php b/src/Tokenizer/TokensAnalyzer.php
+index 18ee04071..f76aabaa7 100644
+--- a/src/Tokenizer/TokensAnalyzer.php
++++ b/src/Tokenizer/TokensAnalyzer.php
+@@ -552,13 +552,15 @@ public function isUnaryPredecessorOperator(int $index): bool
+             ';',
+             '{',
+             '}',
++            [T_DOUBLE_ARROW],
++            [T_FN],
+             [T_FUNCTION],
+             [T_OPEN_TAG],
+             [T_OPEN_TAG_WITH_ECHO],
+         ];
+         $prevToken = $tokens[$tokens->getPrevTokenOfKind($index, $searchTokens)];
+ 
+-        return $prevToken->isGivenKind(T_FUNCTION);
++        return $prevToken->isGivenKind([T_FN, T_FUNCTION]);
+     }
+ 
+     /**
++ git checkout 10fb65e3e8b8645f74f6ab099dfa11ce5ac5cfcd tests/Fixer/Operator/BinaryOperatorSpacesFixerTest.php tests/Tokenizer/TokensAnalyzerTest.php
+Updated 0 paths from 3b0306520
++ git apply -v -
+Checking patch tests/Fixer/Operator/BinaryOperatorSpacesFixerTest.php...
+Checking patch tests/Tokenizer/TokensAnalyzerTest.php...
+Applied patch tests/Fixer/Operator/BinaryOperatorSpacesFixerTest.php cleanly.
+Applied patch tests/Tokenizer/TokensAnalyzerTest.php cleanly.
++ : '>>>>> Start Test Output'
++ vendor/bin/phpunit --testdox --colors=never tests/Fixer/Operator/BinaryOperatorSpacesFixerTest.php
++ cat
+PHPUnit 9.6.34 by Sebastian Bergmann and contributors.
+
+Testing PhpCsFixer\Tests\Fixer\Operator\BinaryOperatorSpacesFixerTest
+Binary Operator Spaces Fixer (PhpCsFixer\Tests\Fixer\Operator\BinaryOperatorSpacesFixer)
+ ✔ With tabs with data set #0
+ ✔ With tabs with data set #1
+ ✔ Configured with data set #0
+ ✔ Configured with data set #1
+ ✔ Configured with data set #2
+ ✔ Configured with data set #3
+ ✔ Configured with data set #4
+ ✔ Configured with data set #5
+ ✔ Configured with data set #6
+ ✔ Configured with data set #7
+ ✔ Configured with data set #8
+ ✔ Configured with data set #9
+ ✔ Configured with data set #10
+ ✔ Configured with data set #11
+ ✔ Configured with data set #12
+ ✔ Configured with data set #13
+ ✔ Configured with data set #14
+ ✔ Configured with data set #15
+ ✔ Configured with data set #16
+ ✔ Configured with data set #17
+ ✔ Configured with data set #18
+ ✔ Configured with data set #19
+ ✔ Configured with data set #20
+ ✔ Configured with data set #21
+ ✔ Configured with data set "do not align with nor touch strings"
+ ✔ Configured with data set "do not align with declare"
+ ✔ Configured with data set "do not align with multibyte character in array key"
+ ✔ Configured with data set "align correctly with multibyte characters in array key"
+ ✔ Configured with data set #22
+ ✔ Configured with data set #23
+ ✔ Configured with data set #24
+ ✔ Configured with data set #25
+ ✔ Configured with data set "align array destructuring"
+ ✔ Configured with data set "align array destructuring with assignments"
+ ✔ Configured with data set "multiple exceptions catch, default config"
+ ✔ Configured with data set "multiple exceptions catch, no space config"
+ ✔ Fix defaults with data set #0
+ ✔ Fix defaults with data set #1
+ ✔ Fix defaults with data set #2
+ ✔ Fix defaults with data set #3
+ ✔ Fix defaults with data set #4
+ ✔ Fix defaults with data set #5
+ ✔ Fix defaults with data set #6
+ ✔ Fix defaults with data set #7
+ ✔ Fix defaults with data set #8
+ ✔ Fix defaults with data set #9
+ ✔ Fix defaults with data set #10
+ ✔ Fix defaults with data set #11
+ ✔ Fix defaults with data set #12
+ ✔ Fix defaults with data set #13
+ ✔ Fix defaults with data set #14
+ ✔ Fix defaults with data set #15
+ ✔ Fix defaults with data set #16
+ ✔ Fix defaults with data set #17
+ ✔ Fix defaults with data set #18
+ ✔ Fix defaults with data set #19
+ ✔ Fix defaults with data set #20
+ ✔ Fix defaults with data set #21
+ ✔ Fix defaults with data set #22
+ ✔ Fix defaults with data set #23
+ ✔ Fix defaults with data set #24
+ ✔ Fix defaults with data set #25
+ ✔ Fix defaults with data set #26
+ ✔ Fix defaults with data set #27
+ ✔ Fix defaults with data set #28
+ ✔ Fix defaults with data set #29
+ ✔ Fix defaults with data set #30
+ ✔ Fix defaults with data set #31
+ ✔ Fix defaults with data set #32
+ ✔ Fix defaults with data set #33
+ ✔ Fix defaults with data set #34
+ ✔ Fix defaults with data set #35
+ ✔ Fix defaults with data set #36
+ ✔ Fix defaults with data set #37
+ ✔ Fix defaults with data set #38
+ ✔ Fix defaults with data set #39
+ ✔ Fix defaults with data set #40
+ ✔ Fix defaults with data set "reference in functions declarations"
+ ✔ Unalign equals with data set #0
+ ✔ Unalign equals with data set #1
+ ✔ Unalign equals with data set #2
+ ✔ Unalign equals with data set #3
+ ✔ Unalign equals with data set #4
+ ✔ Unalign equals with data set #5
+ ✔ Wrong config item
+ ✔ Wrong config type for operators
+ ✔ Wrong config type for operators key
+ ✔ Wrong config type for operators key value
+ ✔ Unalign double arrow with data set #0
+ ✔ Unalign double arrow with data set #1
+ ✔ Unalign double arrow with data set #2
+ ✔ Unalign double arrow with data set #3
+ ✔ Unalign double arrow with data set #4
+ ✔ Unalign double arrow with data set #5
+ ✔ Unalign double arrow with data set #6
+ ✔ Unalign double arrow with data set #7
+ ✔ Unalign double arrow with data set #8
+ ✔ Unalign double arrow with data set #9
+ ✔ Unalign double arrow with data set #10
+ ✔ Unalign double arrow with data set #11
+ ✔ Unalign double arrow with data set #12
+ ✔ Unalign double arrow with data set #13
+ ✔ Unalign double arrow with data set #14
+ ✔ Unalign double arrow with data set #15
+ ✔ Unalign double arrow with data set #16
+ ✔ Unalign double arrow with data set #17
+ ✔ Unalign double arrow with data set #18
+ ✔ Unalign double arrow with data set #19
+ ✔ Unalign double arrow with data set #20
+ ✔ Unalign double arrow with data set #21
+ ✔ Unalign double arrow with data set #22
+ ✔ Fix align equals with data set #0
+ ✔ Fix align equals with data set #1
+ ✔ Fix align equals with data set #2
+ ✔ Fix align equals with data set #3
+ ✔ Fix align equals with data set #4
+ ✔ Fix align equals with data set #5
+ ✔ Fix align equals with data set #6
+ ✔ Fix align equals with data set #7
+ ✔ Fix align equals with data set #8
+ ✔ Fix align equals with data set #9
+ ✔ Fix align equals with data set #10
+ ✔ Fix align equals with data set #11
+ ✔ Fix align equals with data set #12
+ ✔ Fix align equals with data set #13
+ ✔ Fix align equals with data set #14
+ ✔ Fix align double arrow with data set #0
+ ✔ Fix align double arrow with data set #1
+ ✔ Fix align double arrow with data set #2
+ ✔ Fix align double arrow with data set #3
+ ✔ Fix align double arrow with data set #4
+ ✔ Fix align double arrow with data set #5
+ ✔ Fix align double arrow with data set #6
+ ✔ Fix align double arrow with data set #7
+ ✔ Fix align double arrow with data set #8
+ ✔ Fix align double arrow with data set #9
+ ✔ Fix align double arrow with data set #10
+ ✔ Fix align double arrow with data set #11
+ ✔ Fix align double arrow with data set #12
+ ✔ Fix align double arrow with data set #13
+ ✔ Fix align double arrow with data set #14
+ ✔ Fix align double arrow with data set #15
+ ✔ Fix align double arrow with data set #16
+ ✔ Fix align double arrow with data set #17
+ ✔ Fix align double arrow with data set #18
+ ✔ Fix align double arrow with data set #19
+ ✔ Fix align double arrow with data set #20
+ ✔ Fix align double arrow with data set #21
+ ✔ Fix align double arrow with data set #22
+ ✔ Fix align double arrow with data set #23
+ ✔ Fix align double arrow with data set #24
+ ✔ Fix align double arrow with data set #25
+ ✔ Fix align double arrow with data set #26
+ ✔ Fix align double arrow with data set #27
+ ✔ Fix align double arrow with data set #28
+ ✔ Fix align double arrow with data set #29
+ ✔ Fix align double arrow with data set #30
+ ✔ Fix align double arrow with data set #31
+ ✔ Fix align double arrow with data set #32
+ ✔ Fix align double arrow with data set #33
+ ✔ Fix align double arrow with data set #34
+ ✔ Fix align double arrow with data set #35
+ ✔ Fix align double arrow with data set #36
+ ✔ Fix align double arrow with data set #37
+ ✔ Fix align double arrow with data set #38
+ ✔ Fix align double arrow with data set #39
+ ✔ Fix align double arrow with data set #40
+ ✔ Fix align double arrow with data set #41
+ ✔ Fix align double arrow with data set #42
+ ✔ Fix align double arrow with data set #43
+ ✔ Fix align double arrow with data set #44
+ ✔ Fix align double arrow with data set #45
+ ✔ Fix align double arrow with data set #46
+ ✔ Fix align double arrow with data set #47
+ ✔ Fix align double arrow with data set #48
+ ✔ Fix align double arrow with data set #49
+ ✔ Fix align scoped double arrow with data set #0
+ ✔ Fix align scoped double arrow with data set #1
+ ✔ Fix align scoped double arrow with data set #2
+ ✔ Fix align scoped double arrow with data set #3
+ ✔ Fix align scoped double arrow with data set #4
+ ✔ Fix align scoped double arrow with data set #5
+ ✔ Fix align scoped double arrow with data set #6
+ ✔ Fix align scoped double arrow with data set #7
+ ✔ Fix align scoped double arrow with data set #8
+ ✔ Fix align scoped double arrow with data set #9
+ ✔ Fix align scoped double arrow with data set #10
+ ✔ Fix align scoped double arrow with data set #11
+ ✔ Fix align scoped double arrow with data set #12
+ ✔ Fix align scoped double arrow with data set #13
+ ✔ Fix align scoped double arrow with data set #14
+ ✔ Fix align scoped double arrow with data set #15
+ ✔ Fix align scoped double arrow with data set #16
+ ✔ Fix align scoped double arrow with data set #17
+ ✔ Fix align scoped double arrow with data set #18
+ ✔ Fix align scoped double arrow with data set #19
+ ✔ Fix align scoped double arrow with data set #20
+ ✔ Fix align scoped double arrow with data set #21
+ ✔ Fix align scoped double arrow with data set #22
+ ✔ Fix align scoped double arrow with data set #23
+ ✔ Fix align scoped double arrow with data set #24
+ ✔ Fix align scoped double arrow with data set #25
+ ✔ Fix align scoped double arrow with data set #26
+ ✔ Fix align scoped double arrow with data set #27
+ ✔ Fix align scoped double arrow with data set #28
+ ✔ Fix align scoped double arrow with data set #29
+ ✔ Fix align scoped double arrow with data set #30
+ ✔ Fix align scoped double arrow with data set #31
+ ✔ Fix align scoped double arrow with data set #32
+ ✔ Fix align scoped double arrow with data set #33
+ ✔ Fix align scoped double arrow with data set #34
+ ✔ Fix align scoped double arrow with data set #35
+ ✔ Fix align scoped double arrow with data set #36
+ ✔ Fix align scoped double arrow with data set #37
+ ✔ Fix align scoped double arrow with data set #38
+ ✔ Fix align scoped double arrow with data set #39
+ ✔ Fix align scoped double arrow with data set #40
+ ✔ Fix align scoped double arrow with data set #41
+ ✔ Fix align scoped double arrow with data set #42
+ ✔ Fix align scoped double arrow with data set #43
+ ✔ Fix align scoped double arrow with data set #44
+ ✔ Fix align scoped double arrow with data set #45
+ ✔ Fix align scoped double arrow with data set #46
+ ✔ Fix align scoped double arrow with data set #47
+ ✔ Fix align scoped double arrow with data set #48
+ ✔ Fix align scoped double arrow with data set #49
+ ✔ Do not touch equals and arrow by config
+ ✔ Fix php 74 with data set #0
+ ✔ Fix php 74 with data set #1
+ ✔ Union types are not changed
+ ✔ Intersection types are not changed
+ ✔ Is risky
+ ✔ Fixer definitions
+ ✔ Fixers are final
+ ✔ Deprecated fixers have correct summary
+ ✔ Fixer use insert slices when only insertions are performed
+ ✔ Fixer configuration definitions
+
+Time: 00:03.637, Memory: 12.00 MB
+
+OK (237 tests, 14601 assertions)
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 10fb65e3e8b8645f74f6ab099dfa11ce5ac5cfcd tests/Fixer/Operator/BinaryOperatorSpacesFixerTest.php tests/Tokenizer/TokensAnalyzerTest.php
+Updated 2 paths from 3b0306520

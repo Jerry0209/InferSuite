@@ -1,0 +1,331 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   crates/ruff_linter/src/rules/pyflakes/rules/strings.rs
+	modified:   crates/ruff_linter/src/rules/pyflakes/snapshots/ruff_linter__rules__pyflakes__tests__F523_F523.py.snap
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 75a24bbc67aa31b825b6326cfb6e6afdf3ca90d5
+Author: Charlie Marsh <charlie.r.marsh@gmail.com>
+Date:   Mon Jan 6 21:51:06 2025 -0500
+
+    Don't enforce `object-without-hash-method` in stubs (#15310)
+    
+    ## Summary
+    
+    Closes https://github.com/astral-sh/ruff/issues/15292.
+
+diff --git a/crates/ruff_linter/src/rules/pylint/rules/eq_without_hash.rs b/crates/ruff_linter/src/rules/pylint/rules/eq_without_hash.rs
+index 616da2095..b0a03cda3 100644
+--- a/crates/ruff_linter/src/rules/pylint/rules/eq_without_hash.rs
++++ b/crates/ruff_linter/src/rules/pylint/rules/eq_without_hash.rs
+@@ -111,6 +111,9 @@ impl Violation for EqWithoutHash {
+ 
+ /// W1641
+ pub(crate) fn object_without_hash_method(checker: &mut Checker, class: &StmtClassDef) {
++    if checker.source_type.is_stub() {
++        return;
++    }
+     let eq_hash = EqHash::from_class(class);
+     if matches!(
+         eq_hash,
++ git -c core.fileMode=false diff 75a24bbc67aa31b825b6326cfb6e6afdf3ca90d5
+diff --git a/crates/ruff_linter/src/rules/pyflakes/rules/strings.rs b/crates/ruff_linter/src/rules/pyflakes/rules/strings.rs
+index 80fe9f307..635052e58 100644
+--- a/crates/ruff_linter/src/rules/pyflakes/rules/strings.rs
++++ b/crates/ruff_linter/src/rules/pyflakes/rules/strings.rs
+@@ -2,9 +2,12 @@ use std::string::ToString;
+ 
+ use rustc_hash::FxHashSet;
+ 
+-use ruff_diagnostics::{AlwaysFixableViolation, Diagnostic, Fix, FixAvailability, Violation};
++use ruff_diagnostics::{
++    AlwaysFixableViolation, Diagnostic, Edit, Fix, FixAvailability, Violation,
++};
+ use ruff_macros::{derive_message_formats, ViolationMetadata};
+ use ruff_python_ast::name::Name;
++use ruff_python_ast::parenthesize::parenthesized_range;
+ use ruff_python_ast::{self as ast, Expr, Keyword};
+ use ruff_text_size::{Ranged, TextRange};
+ 
+@@ -834,6 +837,40 @@ pub(crate) fn string_dot_format_extra_positional_arguments(
+ 
+     if is_contiguous_from_end(&missing, args) {
+         diagnostic.try_set_fix(|| {
++            // If every positional argument is unused, there are no keyword
++            // arguments, and the format string has no placeholders, then the
++            // `.format()` call is a no-op (e.g. `"Hello".format("world")`
++            // evaluates to `"Hello"`). Rather than leaving an empty `.format()`
++            // call behind, remove the call entirely, leaving just the format
++            // string itself.
++            //
++            // We only do this when the format string has no placeholders, as
++            // otherwise the `.format()` call would raise at runtime and removing
++            // it would change the program's behavior.
++            if missing.len() == args.len()
++                && call.arguments.keywords.is_empty()
++                && summary.autos.is_empty()
++                && summary.indices.is_empty()
++                && summary.keywords.is_empty()
++            {
++                if let ast::Expr::Attribute(attribute) = call.func.as_ref() {
++                    // The format string may be parenthesized (e.g.
++                    // `("Hello").format(...)`), so delete from the end of the
++                    // format string (including any surrounding parentheses) to
++                    // the end of the call.
++                    let value_end = parenthesized_range(
++                        attribute.value.as_ref().into(),
++                        attribute.into(),
++                        checker.comment_ranges(),
++                        checker.locator().contents(),
++                    )
++                    .unwrap_or_else(|| attribute.value.range())
++                    .end();
++                    let edit = Edit::deletion(value_end, call.end());
++                    return Ok(Fix::safe_edit(edit));
++                }
++            }
++
+             let edit = remove_unused_positional_arguments_from_format_call(
+                 &missing,
+                 call,
+diff --git a/crates/ruff_linter/src/rules/pyflakes/snapshots/ruff_linter__rules__pyflakes__tests__F523_F523.py.snap b/crates/ruff_linter/src/rules/pyflakes/snapshots/ruff_linter__rules__pyflakes__tests__F523_F523.py.snap
+index 081ae9bf0..f7cf934d4 100644
+--- a/crates/ruff_linter/src/rules/pyflakes/snapshots/ruff_linter__rules__pyflakes__tests__F523_F523.py.snap
++++ b/crates/ruff_linter/src/rules/pyflakes/snapshots/ruff_linter__rules__pyflakes__tests__F523_F523.py.snap
+@@ -259,8 +259,9 @@ F523.py:32:2: F523 [*] `.format` call has unused arguments at position(s): 0
+    = help: Remove extra positional arguments at position(s): 0
+ 
+ ℹ Safe fix
++29 29 | "{1} {8}".format(0, 1)  # F523, # F524
+ 30 30 | 
+ 31 31 | # Multiline
+-32 32 | (''
++32    |-(''
+ 33    |-.format(2))
+-   33 |+.format())
++   32 |+('')
++ git checkout 75a24bbc67aa31b825b6326cfb6e6afdf3ca90d5 crates/ruff_linter/resources/test/fixtures/pyflakes/F523.py crates/ruff_linter/src/rules/pyflakes/snapshots/ruff_linter__rules__pyflakes__tests__F523_F523.py.snap
+Updated 1 path from 1be872037
++ git apply -v -
+<stdin>:28: trailing whitespace.
+34 |   
+<stdin>:42: trailing whitespace.
+34 33 | 
+<stdin>:57: trailing whitespace.
+34 34 | 
+<stdin>:73: trailing whitespace.
+34 34 | 
+Checking patch crates/ruff_linter/resources/test/fixtures/pyflakes/F523.py...
+Checking patch crates/ruff_linter/src/rules/pyflakes/snapshots/ruff_linter__rules__pyflakes__tests__F523_F523.py.snap...
+Applied patch crates/ruff_linter/resources/test/fixtures/pyflakes/F523.py cleanly.
+Applied patch crates/ruff_linter/src/rules/pyflakes/snapshots/ruff_linter__rules__pyflakes__tests__F523_F523.py.snap cleanly.
+warning: 4 lines add whitespace errors.
++ : '>>>>> Start Test Output'
++ cargo test --package ruff_linter f52
++ cat
+   Compiling unicode-ident v1.0.14
+   Compiling proc-macro2 v1.0.92
+   Compiling memchr v2.7.4
+   Compiling cfg-if v1.0.0
+   Compiling serde v1.0.217
+   Compiling libc v0.2.169
+   Compiling ppv-lite86 v0.2.17
+   Compiling either v1.11.0
+   Compiling regex-syntax v0.8.5
+   Compiling stable_deref_trait v1.2.0
+   Compiling siphasher v0.3.11
+   Compiling rustversion v1.0.15
+   Compiling log v0.4.22
+   Compiling once_cell v1.20.2
+   Compiling heck v0.5.0
+   Compiling ruff_text_size v0.0.0 (/testbed/crates/ruff_text_size)
+   Compiling thiserror v1.0.67
+   Compiling litemap v0.7.3
+   Compiling writeable v0.5.5
+   Compiling unicode-width v0.1.13
+   Compiling smallvec v1.13.2
+   Compiling ryu v1.0.17
+   Compiling itoa v1.0.11
+   Compiling rustc-hash v2.1.0
+   Compiling icu_locid_transform_data v1.5.0
+   Compiling seahash v4.1.0
+   Compiling glob v0.3.2
+   Compiling static_assertions v1.1.0
+   Compiling icu_properties_data v1.5.0
+   Compiling getopts v0.2.21
+   Compiling bitflags v2.6.0
+   Compiling utf16_iter v1.0.5
+   Compiling hashbrown v0.15.2
+   Compiling phf_shared v0.11.2
+   Compiling write16 v1.0.0
+   Compiling fnv v1.0.7
+   Compiling icu_normalizer_data v1.5.0
+   Compiling strsim v0.10.0
+   Compiling itertools v0.14.0
+   Compiling ident_case v1.0.1
+   Compiling utf8_iter v1.0.4
+   Compiling equivalent v1.0.1
+   Compiling tinyvec_macros v0.1.1
+   Compiling autocfg v1.2.0
+   Compiling ucd-trie v0.1.6
+   Compiling unic-char-range v0.9.0
+   Compiling unic-common v0.9.0
+   Compiling anyhow v1.0.95
+   Compiling tinyvec v1.6.0
+   Compiling phf v0.11.2
+   Compiling thiserror v2.0.9
+   Compiling percent-encoding v2.3.1
+   Compiling version-ranges v0.1.1
+   Compiling unic-ucd-version v0.9.0
+   Compiling unicode-width v0.2.0
+   Compiling utf8parse v0.2.1
+   Compiling unic-char-property v0.9.0
+   Compiling winnow v0.6.18
+   Compiling peg-runtime v0.8.3
+   Compiling newtype-uuid v1.1.3
+   Compiling unscanny v0.1.0
+   Compiling form_urlencoded v1.2.1
+   Compiling lazy_static v1.4.0
+   Compiling serde_json v1.0.134
+   Compiling paste v1.0.15
+   Compiling matches v0.1.10
+   Compiling itertools v0.13.0
+   Compiling urlencoding v2.1.3
+   Compiling unic-ucd-category v0.9.0
+   Compiling boxcar v0.2.7
+   Compiling annotate-snippets v0.6.1
+   Compiling iana-time-zone v0.1.60
+   Compiling ruff_python_stdlib v0.0.0 (/testbed/crates/ruff_python_stdlib)
+   Compiling is-docker v0.2.0
+   Compiling aho-corasick v1.1.3
+   Compiling ruff_source_file v0.0.0 (/testbed/crates/ruff_source_file)
+   Compiling quick-xml v0.37.1
+   Compiling path-dedot v3.1.1
+   Compiling linked-hash-map v0.5.6
+   Compiling similar v2.6.0
+   Compiling num-traits v0.2.18
+   Compiling yansi-term v0.1.2
+   Compiling chic v1.2.2
+   Compiling is-wsl v0.4.0
+   Compiling annotate-snippets v0.9.2
+   Compiling path-absolutize v3.1.1
+   Compiling colored v2.2.0
+   Compiling fern v0.7.1
+   Compiling typed-arena v2.0.2
+   Compiling natord v1.0.9
+   Compiling pathdiff v0.2.3
+   Compiling quote v1.0.38
+   Compiling castaway v0.2.3
+   Compiling getrandom v0.2.14
+   Compiling syn v2.0.95
+   Compiling filetime v0.2.25
+   Compiling console v0.15.8
+   Compiling vte_generate_state_changes v0.1.1
+   Compiling peg-macros v0.8.4
+   Compiling rand_core v0.6.4
+   Compiling unicode-normalization v0.1.24
+   Compiling rand_chacha v0.3.1
+   Compiling rand v0.8.5
+   Compiling vte v0.11.1
+   Compiling chrono v0.4.39
+   Compiling ruff_python_trivia v0.0.0 (/testbed/crates/ruff_python_trivia)
+   Compiling regex-automata v0.4.8
+   Compiling phf_generator v0.11.2
+   Compiling phf_codegen v0.11.2
+   Compiling strip-ansi-escapes v0.2.0
+   Compiling unicode_names2_generator v1.3.0
+   Compiling peg v0.8.4
+   Compiling unicode_names2 v1.3.0
+   Compiling regex v1.11.1
+   Compiling bstr v1.11.3
+   Compiling synstructure v0.13.1
+   Compiling darling_core v0.20.8
+   Compiling test-case-core v3.3.1
+   Compiling globset v0.4.15
+   Compiling serde_derive v1.0.217
+   Compiling zerofrom-derive v0.1.4
+   Compiling yoke-derive v0.7.4
+   Compiling zerovec-derive v0.10.3
+   Compiling displaydoc v0.2.5
+   Compiling icu_provider_macros v1.5.0
+   Compiling thiserror-impl v1.0.67
+   Compiling is-macro v0.3.7
+   Compiling ruff_macros v0.0.0 (/testbed/crates/ruff_macros)
+   Compiling uuid-macro-internal v1.11.0
+   Compiling thiserror-impl v2.0.9
+   Compiling strum_macros v0.26.4
+   Compiling libcst_derive v1.4.0
+   Compiling ruff_cache v0.0.0 (/testbed/crates/ruff_cache)
+   Compiling test-case-macros v3.3.1
+   Compiling uuid v1.11.0
+   Compiling test-case v3.3.1
+   Compiling darling_macro v0.20.8
+   Compiling zerofrom v0.1.4
+   Compiling yoke v0.7.4
+   Compiling pest v2.7.11
+   Compiling libcst v1.5.1
+   Compiling zerovec v0.10.4
+   Compiling darling v0.20.8
+   Compiling serde_with_macros v3.12.0
+   Compiling strum v0.26.3
+   Compiling ruff_index v0.0.0 (/testbed/crates/ruff_index)
+   Compiling tinystr v0.7.6
+   Compiling icu_collections v1.5.0
+   Compiling icu_locid v1.5.0
+   Compiling pest_meta v2.7.11
+   Compiling icu_provider v1.5.0
+   Compiling pest_generator v2.7.11
+   Compiling icu_locid_transform v1.5.0
+   Compiling icu_properties v1.5.1
+   Compiling pest_derive v2.7.11
+   Compiling compact_str v0.8.1
+   Compiling indexmap v2.7.0
+   Compiling toml_datetime v0.6.8
+   Compiling serde_spanned v0.6.7
+   Compiling serde_with v3.12.0
+   Compiling rust-stemmers v1.2.0
+   Compiling insta v1.42.0
+   Compiling pep440_rs v0.7.3
+   Compiling ruff_diagnostics v0.0.0 (/testbed/crates/ruff_diagnostics)
+   Compiling toml_edit v0.22.20
+   Compiling quick-junit v0.5.1
+   Compiling imperative v1.0.6
+   Compiling ruff_notebook v0.0.0 (/testbed/crates/ruff_notebook)
+   Compiling icu_normalizer v1.5.0
+   Compiling ruff_python_ast v0.0.0 (/testbed/crates/ruff_python_ast)
+   Compiling idna_adapter v1.2.0
+   Compiling idna v1.0.3
+   Compiling url v2.5.4
+   Compiling toml v0.8.19
+   Compiling pep508_rs v0.9.1
+   Compiling pyproject-toml v0.13.4
+   Compiling ruff_python_parser v0.0.0 (/testbed/crates/ruff_python_parser)
+   Compiling ruff_python_literal v0.0.0 (/testbed/crates/ruff_python_literal)
+   Compiling ruff_python_codegen v0.0.0 (/testbed/crates/ruff_python_codegen)
+   Compiling ruff_python_semantic v0.0.0 (/testbed/crates/ruff_python_semantic)
+   Compiling ruff_python_index v0.0.0 (/testbed/crates/ruff_python_index)
+   Compiling ruff_linter v0.8.6 (/testbed/crates/ruff_linter)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 44.48s
+     Running unittests src/lib.rs (target/debug/deps/ruff_linter-119595aefd4f99b1)
+
+running 5 tests
+test rules::pyflakes::tests::rules::rule_stringdotformatmixingautomatic_path_new_f525_py_expects ... ok
+test rules::pyflakes::tests::rules::rule_stringdotformatextranamedarguments_path_new_f522_py_expects ... ok
+test rules::pyflakes::tests::rules::rule_stringdotformatmissingarguments_path_new_f524_py_expects ... ok
+test rules::pyflakes::tests::rules::rule_stringdotformatinvalidformat_path_new_f521_py_expects ... ok
+test rules::pyflakes::tests::rules::rule_stringdotformatextrapositionalarguments_path_new_f523_py_expects ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 2214 filtered out; finished in 0.04s
+
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 75a24bbc67aa31b825b6326cfb6e6afdf3ca90d5 crates/ruff_linter/resources/test/fixtures/pyflakes/F523.py crates/ruff_linter/src/rules/pyflakes/snapshots/ruff_linter__rules__pyflakes__tests__F523_F523.py.snap
+Updated 2 paths from 1be872037

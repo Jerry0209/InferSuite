@@ -903,4 +903,108 @@ S/M-cell fences.
 Evidence banked at `agentic/swe_agent/evals/iso36res/` (harness report JSON, the 33
 predictions, per-instance eval logs), next to the earlier GLM-era eval proofs.
 
+# Full-census resolution + resolution-clean revision of the 36 (2026-08-27)
+
+Following the 36-pick evaluation, I ran the official harness over the **whole census** — one
+banked prediction per instance (the same live episode the classification used; for the 15
+pre-census tasks, their banked campaign episode) — 236 predictions evaluated, plus 64
+episodes that never submitted a patch. Every instance lands in exactly one bucket:
+
+| | count | share |
+| --- | --- | --- |
+| **resolved** (patch passes FAIL_TO_PASS + PASS_TO_PASS) | **211** | 70.3 % |
+| unresolved — patch fails the tests | 25 | 8.3 % |
+| unresolved — no patch ever submitted | 64 | 21.3 % |
+
+Per language (resolved / fails / no-patch): C 22/1/7 · C++ 10/1/1 · Go 22/6/14 ·
+Java 28/3/12 · JavaScript 26/4/1 · PHP 26/2/15 · Ruby 33/4/7 · Rust 35/4/4 ·
+TypeScript 9/0/3. Two observations worth a slide caption: the dominant failure mode is
+**not submitting** (64) rather than submitting wrong (25) — and the no-patch column is
+where the loop-degenerate episodes live, so "resolution rate" and "episode viability" are
+largely the same phenomenon. Go and PHP carry the largest no-patch counts (14, 15).
+
+**The 36-set revision.** Per instruction, the four picks whose episodes are not officially
+resolved were replaced, keeping the other 32 (and their banked P7 profiles) fixed and
+re-applying the original within-cell ranking over resolved candidates only:
+
+| slot | out (reason) | in | note |
+| --- | --- | --- | --- |
+| C×M | valkey-1499 (no patch) | **redis-10068** | closest resolved to cell median; runner-up redis-10764 |
+| Ruby×S | rubocop-13396 (no patch) | **fluentd-3328** (T top-up) | Ruby×S has NO resolvable candidate (only other member is E7-excluded) → slot converted to Ruby's majority category T per the selection's own rule; fresh repo, at the 29-candidate median |
+| TS×S | vuejs-core-11589 (no patch) | **core-11870** | same repo (TS×S is vuejs-only); at cell median |
+| JS×T top-up | axios-6539 (fails F2P) | **axios-5892** | fresh-repo rule keeps axios; runner-up axios-4731 |
+
+Files updated: `selection_36_count.tsv` (rows + summary: 36 picks, now 26 cells, 31 repos,
+Σ fence 4,728 core-s) and the ML_iso36 README layout table. Consequences to schedule: the
+**four replacements need P7 replay profiling**; the four dropped tasks' banked profiles stay
+valid data but leave the 36-set figures, and the Ruby×S cell is now honestly reported as
+"no resolvable profilable candidate". Caveat as before: 211/300 is GLM-5.2 under *this*
+harness/config at temp 0.6, one episode per task — not a leaderboard number (single seed,
+loop guard active, 40-min drain cap). Evidence: `agentic/swe_agent/evals/res300/`
+(per-instance reports + predictions + verdict summary).
+
+## The revised realized matrix (resolution-clean, 2026-08-27)
+
+Replacements in **bold**; every pick is officially resolved. Column sums B 11 / T 13 / S 4 /
+M 8 = 36; 26 cells, 31 repos, Σ tool-fence 4,728 core-s (16 → 655 per task).
+
+| language | B | T | S | M | top-ups |
+| --- | --- | --- | --- | --- | --- |
+| C | redis-12272 | micropython-13039 | jq-2598 | **redis-10068** | — |
+| C++ | nlohmann-4237 | *empty* | *empty* | *empty* | + fmt-3750, fmt-3901, fmt-2457 (B) |
+| Rust | nushell-13831 | ripgrep-2209 | *empty* | bat-2835 | + axum-1730 (B) |
+| Go | caddy-4774 | gin-2121 | *empty* | prometheus-10720 | + hugo-12579 (M) |
+| Java | gson-1093 | gson-2134 | lombok-3479 | javaparser-4538 | — |
+| PHP | laravel-52684 | php-cs-fixer-8064 | carbon-2752 | phpspreadsheet-3463 | — |
+| Ruby | fpm-1829 | fastlane-20958 | *(no resolvable candidate)* | rubocop-13560 | + **fluentd-3328** (T) |
+| JavaScript | *empty* | babel-15649 | *(n=1, unprofilable)* | preact-3763 | + **axios-5892**, three.js-26589 (T) |
+| TypeScript | *empty* | docusaurus-9897 | **vuejs-core-11870** | *empty* | + immutable-js-2006, docusaurus-10130 (T) |
+
+The selection-matrix figure was regenerated from the revised TSV
+(`local_agents/ML_iso36/plots/iso36_selection_matrix.png`, footer now states the resolution
+filter; `plot_iso36_selection.py` and `build_deck.py` were made machine-portable in the
+process). **Deck slide 37 still shows the old figure**: the deck can only be rebuilt on the
+P7 — 9 of its embedded figures derive from the gitignored `superseded_40min/data` tree that
+exists only there — so after pulling this commit, on the P7:
+`python3 local_agents/kit/plot/build_deck.py` (figures auto-refresh from the repo) and
+republish the artifact to the same URL, then move the share pin.
+
+## Why the 89 are unresolved — cause taxonomy (2026-08-27)
+
+Every unresolved task was diagnosed from its own evidence: the 25 test-failures from their
+official eval reports (`agentic/swe_agent/evals/res300/logs/`), the 64 no-patch episodes
+from their census ledger rows (exit status, E7 flags, wall clock).
+
+**A. The 25 that submitted a patch that fails (evidence: per-instance `report.json`):**
+
+| cause | n | reading |
+| --- | --- | --- |
+| bug not fixed — FAIL_TO_PASS still failing, zero regressions | 21 | the patch applies cleanly and breaks nothing; it just doesn't fix the bug as the hidden tests define it (often a partial fix: 3 rows pass *some* F2P tests) |
+| patch does not apply to the pristine tree | 3 | axios-4738, axios-5316, php-cs-fixer-7635 — the submitted diff no longer matches upstream files (context drift in the sandbox) |
+| regression — F2P passes but P2P breaks | 1 | apache-lucene-12626, the corpus's **only** case of a fix that breaks other tests |
+
+The striking asymmetry: agent patches essentially never regress (1 of 236). Wrong patches
+fail by *under-fixing*, not by collateral damage. Note prometheus-9248 — one of the July
+banked reference episodes — is among the 21: a profiled, composition-confirmed episode whose
+patch nonetheless fails the official tests. Profiling validity and resolution are
+independent axes.
+
+**B. The 64 that never submitted (evidence: ledger exit status + E7 flags + wall):**
+
+| cause | n | reading |
+| --- | --- | --- |
+| loop-degenerate (E7 flags) | 38 | the agent locked into repeated/cyclic actions and the loop guard (or its own spiral) ended the episode before any submit; concentrated in PHP (12) and Go (11) |
+| drain-killed at the 40-min episode cap | 17 | still working when the wall hit — Java/lucene-heavy (slow JVM verify loops); includes the re-run apache-lucene-13704. Some of these are likely convertible by a longer cap |
+| harness stop with no exit status | 5 | includes valkey-1499 and rubocop-13396 (two of the replaced picks) |
+| per-command timeout (exit_command_timeout) | 2 | lombok-3571/-3674 — one tool command exceeded the command timeout and the episode aborted |
+| pre-census parked/probe episodes | 2 | carbon-2813 (degenerate, 2026-07) and phpspreadsheet-3940 (the July probe: 217 steps, composition-confirmed, never submitted) |
+
+Cross-corpus reading: **loop degeneracy is the single largest cause of non-resolution
+(38/89 = 43 %)**, dwarfing wrong answers (25/89); the drain cap is second (17/89 = 19 %) and
+is a *harness budget choice*, not an agent failure — a follow-up worth one experiment is
+re-running the 17 drain-kills at a longer cap to see how many convert. Together with the
+resolution table this sharpens the earlier caption: GLM-5.2's ceiling on this corpus is set
+less by patch quality than by episode viability — staying out of loops and finishing in
+budget.
+
 

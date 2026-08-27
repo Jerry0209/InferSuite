@@ -1,0 +1,278 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   CHANGELOG.md
+	modified:   src/bin/bat/app.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 02a9d191ed06e6e37d4e352f12e25e65e8037dd0
+Author: David Peter <mail@david-peter.de>
+Date:   Sun Aug 14 16:04:34 2022 +0200
+
+    Bump MSRV to 1.58
+
+diff --git a/.github/workflows/CICD.yml b/.github/workflows/CICD.yml
+index 46f8dc6..97c2348 100644
+--- a/.github/workflows/CICD.yml
++++ b/.github/workflows/CICD.yml
+@@ -1,7 +1,7 @@
+ name: CICD
+ 
+ env:
+-  MIN_SUPPORTED_RUST_VERSION: "1.56.1"
++  MIN_SUPPORTED_RUST_VERSION: "1.58.0"
+   CICD_INTERMEDIATES_DIR: "_cicd-intermediates"
+ 
+ on:
+diff --git a/README.md b/README.md
+index a6bc9a1..7cc654b 100644
+--- a/README.md
++++ b/README.md
+@@ -418,7 +418,7 @@ binaries are also available: look for archives with `musl` in the file name.
+ 
+ ### From source
+ 
+-If you want to build `bat` from source, you need Rust 1.56.1 or
++If you want to build `bat` from source, you need Rust 1.58.0 or
+ higher. You can then use `cargo` to build everything:
+ 
+ ```bash
+diff --git a/doc/README-ja.md b/doc/README-ja.md
+index 83d8cca..ef179c3 100644
+--- a/doc/README-ja.md
++++ b/doc/README-ja.md
+@@ -366,7 +366,7 @@ ansible-galaxy install aeimer.install_bat
+ ### From source
+ 
+ 
+-`bat` をソースからビルドしたいならば、Rust 1.56.1 以上の環境が必要です。
++`bat` をソースからビルドしたいならば、Rust 1.58.0 以上の環境が必要です。
+ `cargo` を使用してビルドすることができます:
+ 
+ ```bash
+diff --git a/doc/README-ko.md b/doc/README-ko.md
+index 34e766b..5395821 100644
+--- a/doc/README-ko.md
++++ b/doc/README-ko.md
+@@ -416,7 +416,7 @@ scoop install bat
+ 
+ ### 소스에서
+ 
+-`bat`의 소스를 빌드하기 위해서는, Rust 1.56.1 이상이 필요합니다.
++`bat`의 소스를 빌드하기 위해서는, Rust 1.58.0 이상이 필요합니다.
+ `cargo`를 이용해 전부 빌드할 수 있습니다:
+ 
+ ```bash
+diff --git a/doc/README-ru.md b/doc/README-ru.md
+index b3c8998..2ac1b3d 100644
+--- a/doc/README-ru.md
++++ b/doc/README-ru.md
+@@ -344,7 +344,7 @@ ansible-galaxy install aeimer.install_bat
+ 
+ ### Из исходников
+ 
+-Если вы желаете установить `bat` из исходников, вам понадобится Rust 1.56.1 или выше. После этого используйте `cargo`, чтобы все скомпилировать:
++Если вы желаете установить `bat` из исходников, вам понадобится Rust 1.58.0 или выше. После этого используйте `cargo`, чтобы все скомпилировать:
+ 
+ ```bash
+ cargo install --locked bat
+diff --git a/doc/README-zh.md b/doc/README-zh.md
+index 01a3089..cbc901a 100644
+--- a/doc/README-zh.md
++++ b/doc/README-zh.md
+@@ -372,7 +372,7 @@ scoop install bat
+ 
+ ### 从源码编译
+ 
+-如果你想要自己构建`bat`，那么你需要安装有高于1.56.1版本的 Rust。
++如果你想要自己构建`bat`，那么你需要安装有高于1.58.0版本的 Rust。
+ 
+ 使用以下命令编译。
+ 
++ git -c core.fileMode=false diff 02a9d191ed06e6e37d4e352f12e25e65e8037dd0
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 923f26c..7fa516d 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -7,6 +7,8 @@
+ ## Bugfixes
+ 
+ - Prevent fork nightmare with `PAGER=batcat`. See #2235 (@johnmatthiggins)
++- Make `-P`/`--no-paging` and `-pp` take precedence over `--paging=always` set in
++  the config file or `BAT_OPTS`. See #2264
+ 
+ ## Other
+ 
+diff --git a/src/bin/bat/app.rs b/src/bin/bat/app.rs
+index 78a0df6..0374e8c 100644
+--- a/src/bin/bat/app.rs
++++ b/src/bin/bat/app.rs
+@@ -79,31 +79,7 @@ impl App {
+     pub fn config(&self, inputs: &[Input]) -> Result<Config> {
+         let style_components = self.style_components()?;
+ 
+-        let paging_mode = match self.matches.value_of("paging") {
+-            Some("always") => PagingMode::Always,
+-            Some("never") => PagingMode::Never,
+-            Some("auto") | None => {
+-                // If we have -pp as an option when in auto mode, the pager should be disabled.
+-                let extra_plain = self.matches.occurrences_of("plain") > 1;
+-                if extra_plain || self.matches.is_present("no-paging") {
+-                    PagingMode::Never
+-                } else if inputs.iter().any(Input::is_stdin) {
+-                    // If we are reading from stdin, only enable paging if we write to an
+-                    // interactive terminal and if we do not *read* from an interactive
+-                    // terminal.
+-                    if self.interactive_output && !atty::is(Stream::Stdin) {
+-                        PagingMode::QuitIfOneScreen
+-                    } else {
+-                        PagingMode::Never
+-                    }
+-                } else if self.interactive_output {
+-                    PagingMode::QuitIfOneScreen
+-                } else {
+-                    PagingMode::Never
+-                }
+-            }
+-            _ => unreachable!("other values for --paging are not allowed"),
+-        };
++        let paging_mode = self.paging_mode(inputs);
+ 
+         let mut syntax_mapping = SyntaxMapping::builtin();
+ 
+@@ -338,4 +314,89 @@ impl App {
+ 
+         Ok(styled_components)
+     }
++
++    fn paging_mode(&self, inputs: &[Input]) -> PagingMode {
++        // The paging behavior can be controlled via three different (possibly
++        // conflicting) command-line options:
++        //   * `--paging=auto|never|always`
++        //   * `-P` / `--no-paging` (alias for `--paging=never`)
++        //   * `-pp` (i.e. `-p` specified twice, alias for `--paging=never`)
++        //
++        // When several of these are specified (e.g. `--paging=always` in the
++        // config file and `-P` on the command line), the one that appears *last*
++        // on the (effective) command line takes precedence. We determine the
++        // winner by comparing the clap indices of the relevant options.
++        //
++        // See https://github.com/sharkdp/bat/issues/2264
++
++        // The index of the last occurrence of `--paging`, but only if it was
++        // explicitly specified by the user (otherwise `index_of` would return the
++        // index of the injected default value, which always comes last).
++        let paging_index = if self.matches.occurrences_of("paging") > 0 {
++            self.matches
++                .indices_of("paging")
++                .and_then(|mut indices| indices.next_back())
++        } else {
++            None
++        };
++
++        // The index of the last `-P` / `--no-paging`.
++        let no_paging_index = self
++            .matches
++            .indices_of("no-paging")
++            .and_then(|mut indices| indices.next_back());
++
++        // The index at which `-p` disables paging, i.e. the index of the *second*
++        // `--plain`/`-p` occurrence. Only relevant if `-p` was given at least twice.
++        let plain_disable_index = if self.matches.occurrences_of("plain") > 1 {
++            self.matches
++                .indices_of("plain")
++                .and_then(|mut indices| indices.nth(1))
++        } else {
++            None
++        };
++
++        // If `--paging` was explicitly specified and it appears *after* every
++        // `-P`/`-pp`, its value wins.
++        let paging_overrides_short_options = paging_index.map_or(false, |paging_index| {
++            paging_index >= no_paging_index.unwrap_or(0)
++                && paging_index >= plain_disable_index.unwrap_or(0)
++        });
++
++        if paging_overrides_short_options {
++            return match self.matches.value_of("paging") {
++                Some("always") => PagingMode::Always,
++                Some("never") => PagingMode::Never,
++                Some("auto") => self.paging_mode_auto(inputs),
++                _ => unreachable!("other values for --paging are not allowed"),
++            };
++        }
++
++        // Otherwise, `-P` or `-pp` (whichever comes last) disables the pager, as
++        // long as one of them was specified at all.
++        if no_paging_index.is_some() || plain_disable_index.is_some() {
++            return PagingMode::Never;
++        }
++
++        // Neither `--paging` nor `-P`/`-pp` were specified, fall back to the
++        // automatic behavior.
++        self.paging_mode_auto(inputs)
++    }
++
++    fn paging_mode_auto(&self, inputs: &[Input]) -> PagingMode {
++        if inputs.iter().any(Input::is_stdin) {
++            // If we are reading from stdin, only enable paging if we write to an
++            // interactive terminal and if we do not *read* from an interactive
++            // terminal.
++            if self.interactive_output && !atty::is(Stream::Stdin) {
++                PagingMode::QuitIfOneScreen
++            } else {
++                PagingMode::Never
++            }
++        } else if self.interactive_output {
++            PagingMode::QuitIfOneScreen
++        } else {
++            PagingMode::Never
++        }
++    }
+ }
++ git checkout 02a9d191ed06e6e37d4e352f12e25e65e8037dd0 tests/integration_tests.rs
+Updated 0 paths from e2b970a
++ git apply -v -
+Checking patch tests/integration_tests.rs...
+Applied patch tests/integration_tests.rs cleanly.
++ : '>>>>> Start Test Output'
++ RUSTFLAGS=-Awarnings
++ cargo test --package bat --test integration_tests pag
++ cat
+   Compiling bat v0.21.0 (/testbed)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.44s
+     Running tests/integration_tests.rs (target/debug/deps/integration_tests-459fc11e9631cff0)
+
+running 18 tests
+test alias_pager_disable ... ok
+test alias_pager_disable_long_overrides_short ... ok
+test pager_basic ... ok
+test pager_value_bat ... ok
+test pager_overwrite ... ok
+test no_pager_arg ... ok
+test no_paging_short_arg ... ok
+test disable_pager_if_disable_paging_flag_comes_after_paging ... ok
+test env_var_bat_pager_value_bat ... ok
+test no_paging_arg ... ok
+test env_var_pager_value_bat ... ok
+test pager_failed_to_parse ... ok
+test pager_disable ... ok
+test pager_most_from_pager_arg ... ok
+test pager_more ... ok
+test pager_most_from_bat_pager_env_var ... ok
+test pager_most_from_pager_env_var ... ok
+test pager_most_with_arg ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 76 filtered out; finished in 0.08s
+
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout 02a9d191ed06e6e37d4e352f12e25e65e8037dd0 tests/integration_tests.rs
+Updated 1 path from e2b970a

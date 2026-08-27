@@ -1,0 +1,176 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/fpm/package/empty.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 809c7269442f6b6e4be7c3d480bb4489caa281c5
+Author: Jordan Sissel <jls@semicomplete.com>
+Date:   Tue Nov 9 16:42:31 2021 -0800
+
+    Use correct constant name
+
+diff --git a/spec/fpm/package/snap_spec.rb b/spec/fpm/package/snap_spec.rb
+index cbbcf5f..1e0c37b 100644
+--- a/spec/fpm/package/snap_spec.rb
++++ b/spec/fpm/package/snap_spec.rb
+@@ -25,7 +25,7 @@ describe FPM::Package::Snap do
+     end
+ 
+     it "should have a default output usable as a filename" do
+-      pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if is_old_ruby
++      pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if IS_OLD_RUBY
+       # This is the default filename commonly produced by snapcraft
+       insist { subject.to_s } == "name_123-100_all.snap"
+     end
+@@ -36,7 +36,7 @@ describe FPM::Package::Snap do
+       end
+ 
+       it "should not include iteration if it is nil" do
+-        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if is_old_ruby
++        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if IS_OLD_RUBY
+       # This is the default filename commonly produced by snapcraft
+         expect(subject.to_s).to(be == "name_123_all.snap")
+       end
+@@ -93,32 +93,32 @@ describe FPM::Package::Snap do
+       end
+ 
+       it "should have the correct name" do
+-        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if is_old_ruby
++        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if IS_OLD_RUBY
+         insist { input.name } == original.name
+       end
+ 
+       it "should have the correct version" do
+-        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if is_old_ruby
++        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if IS_OLD_RUBY
+         insist { input.version } == original.version
+       end
+ 
+       it "should have the correct description" do
+-        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if is_old_ruby
++        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if IS_OLD_RUBY
+         insist { input.description } == original.description
+       end
+ 
+       it "should have the correct architecture" do
+-        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if is_old_ruby
++        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if IS_OLD_RUBY
+         insist { input.architecture } == original.architecture
+       end
+ 
+       it "should have the correct apps" do
+-        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if is_old_ruby
++        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if IS_OLD_RUBY
+         insist { input.attributes[:snap_apps] } == original.attributes[:snap_apps]
+       end
+ 
+       it "should have the correct hooks" do
+-        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if is_old_ruby
++        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if IS_OLD_RUBY
+         insist { input.attributes[:snap_hooks] } == original.attributes[:snap_hooks]
+       end
+     end
+@@ -147,38 +147,38 @@ describe FPM::Package::Snap do
+       end
+ 
+       it "should have the custom name" do
+-        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if is_old_ruby
++        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if IS_OLD_RUBY
+         insist { input.name } == "custom-name"
+       end
+ 
+       it "should have the custom version" do
+-        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if is_old_ruby
++        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if IS_OLD_RUBY
+         insist { input.version } == "custom-version"
+       end
+ 
+       it "should have the custom description" do
+-        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if is_old_ruby
++        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if IS_OLD_RUBY
+         insist { input.description } == "custom-summary\ncustom-description"
+       end
+ 
+       it "should have the custom architecture" do
+-        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if is_old_ruby
++        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if IS_OLD_RUBY
+         insist { input.architecture } == "custom-architecture"
+       end
+ 
+       it "should have the custom apps" do
+-        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if is_old_ruby
++        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if IS_OLD_RUBY
+         insist { input.attributes[:snap_apps] } == []
+       end
+ 
+       it "should have the custom hooks" do
+-        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if is_old_ruby
++        pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if IS_OLD_RUBY
+         insist { input.attributes[:snap_hooks] } == []
+       end
+     end
+ 
+     it "should support specifying confinement" do
+-      pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if is_old_ruby
++      pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if IS_OLD_RUBY
+       original.attributes[:snap_confinement] = "test-confinement"
+ 
+       original.output(target)
+@@ -188,7 +188,7 @@ describe FPM::Package::Snap do
+     end
+ 
+     it "should support specifying grade" do
+-      pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if is_old_ruby
++      pending("Ruby 1.x and 2.0.x are unsupported for Snap because it lacks Psych::safe_load") if IS_OLD_RUBY
+       original.attributes[:snap_grade] = "test-grade"
+ 
+       original.output(target)
++ git -c core.fileMode=false diff 809c7269442f6b6e4be7c3d480bb4489caa281c5
+diff --git a/lib/fpm/package/empty.rb b/lib/fpm/package/empty.rb
+index 29c2529..443dc99 100644
+--- a/lib/fpm/package/empty.rb
++++ b/lib/fpm/package/empty.rb
+@@ -4,6 +4,18 @@ require "backports/latest"
+ # Empty Package type. For strict/meta/virtual package creation
+ 
+ class FPM::Package::Empty < FPM::Package
++  def initialize(*args)
++    super(*args)
++
++    # Override FPM::Package's default "native" architecture value
++    # This feels like the right default because an empty package has no
++    # architecture-specific files, and in most cases an empty package should be
++    # installable anywhere.
++    #
++    # https://github.com/jordansissel/fpm/issues/1846
++    @architecture = "all"
++  end
++
+   def output(output_path)
+     logger.warn("Your package has gone into the void.")
+   end
++ git checkout 809c7269442f6b6e4be7c3d480bb4489caa281c5 spec/fpm/package/empty_spec.rb
+Updated 0 paths from 958964a
++ git apply -v -
+Checking patch spec/fpm/package/empty_spec.rb...
+Applied patch spec/fpm/package/empty_spec.rb cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ bundle exec rspec spec/fpm/package/empty_spec.rb --no-color --format json
++ sed -n '/^{/,$p'
++ jq -r '.examples[] | "\(.description) - \(.status)"'
+should always return the empty string - passed
+should default to 'all' - passed
+should accept changing the architecture - passed
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout 809c7269442f6b6e4be7c3d480bb4489caa281c5 spec/fpm/package/empty_spec.rb
+Updated 1 path from 958964a

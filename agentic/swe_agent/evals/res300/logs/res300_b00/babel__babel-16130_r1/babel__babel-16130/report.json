@@ -1,0 +1,41 @@
+{
+    "babel__babel-16130": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "infra_failure": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "declaration name conflict helper entrypoint"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "get with falsy receiver",
+                    "get without receiver",
+                    "basic",
+                    "deep",
+                    "missing",
+                    "multiple",
+                    "rename binding equal",
+                    "rename deep global",
+                    "reuse dependency",
+                    "variable same name dependency",
+                    "9496"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

@@ -1,0 +1,834 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   gradle/testing/defaults-tests.gradle
+	modified:   lucene/CHANGES.txt
+	modified:   lucene/queryparser/src/java/org/apache/lucene/queryparser/classic/MultiFieldQueryParser.java
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 0651d25713dde144df6541663b18accbc93cdc64
+Author: Greg Miller <gsmiller@gmail.com>
+Date:   Mon Mar 6 18:13:03 2023 -0800
+
+    Fixup TestLongValueFacetCounts after GITHUB#11744. (#12192)
+    
+    GH#11744 deprecated LongValueFacetCounts#getTopChildrenSortByCount in favor
+    of the standard Facets#getTopChildren. The issue is that #getTopChildrenSortByCount
+    didn't do any input validation and allowed for topN == 0, while #getTopChildren
+    does input validation. Randomized testing could produce topN values of 0, which
+    resulted in falied tests. This addresses the tests.
+
+diff --git a/lucene/facet/src/test/org/apache/lucene/facet/TestLongValueFacetCounts.java b/lucene/facet/src/test/org/apache/lucene/facet/TestLongValueFacetCounts.java
+index 58c232c8c6..a35b76ff1d 100644
+--- a/lucene/facet/src/test/org/apache/lucene/facet/TestLongValueFacetCounts.java
++++ b/lucene/facet/src/test/org/apache/lucene/facet/TestLongValueFacetCounts.java
+@@ -394,7 +394,7 @@ public class TestLongValueFacetCounts extends FacetTestCase {
+       if (random().nextBoolean()) {
+         topN = docCount;
+       } else {
+-        topN = random().nextInt(docCount);
++        topN = random().nextInt(1, docCount);
+       }
+       if (VERBOSE) {
+         System.out.println("  topN=" + topN);
+@@ -486,7 +486,7 @@ public class TestLongValueFacetCounts extends FacetTestCase {
+       if (random().nextBoolean()) {
+         topN = docCount;
+       } else {
+-        topN = random().nextInt(docCount);
++        topN = random().nextInt(1, docCount);
+       }
+       actual = facetCounts.getTopChildren(topN, "field");
+       assertSame(
+@@ -657,7 +657,7 @@ public class TestLongValueFacetCounts extends FacetTestCase {
+       if (random().nextBoolean()) {
+         topN = docCount;
+       } else {
+-        topN = random().nextInt(docCount);
++        topN = random().nextInt(1, docCount);
+       }
+       if (VERBOSE) {
+         System.out.println("  topN=" + topN);
+@@ -727,7 +727,7 @@ public class TestLongValueFacetCounts extends FacetTestCase {
+       if (random().nextBoolean()) {
+         topN = docCount;
+       } else {
+-        topN = random().nextInt(docCount);
++        topN = random().nextInt(1, docCount);
+       }
+       actual = facetCounts.getTopChildren(topN, "field");
+       assertSame(
++ git -c core.fileMode=false diff 0651d25713dde144df6541663b18accbc93cdc64
+diff --git a/gradle/testing/defaults-tests.gradle b/gradle/testing/defaults-tests.gradle
+index 9f50cda8ca..84817ae110 100644
+--- a/gradle/testing/defaults-tests.gradle
++++ b/gradle/testing/defaults-tests.gradle
+@@ -162,15 +162,40 @@ allprojects {
+       reports.html.required = false
+ 
+       // Set up logging.
+-      testLogging {
+-        events TestLogEvent.FAILED
+-        exceptionFormat TestExceptionFormat.FULL
+-        showExceptions true
+-        showCauses true
+-        showStackTraces true
+-        stackTraceFilters.clear()
+-        showStandardStreams false
++testLogging {
++  showStandardStreams = true
++  // set options for log level LIFECYCLE
++  events TestLogEvent.FAILED,
++         TestLogEvent.PASSED,
++         TestLogEvent.SKIPPED,
++         TestLogEvent.STANDARD_OUT
++  exceptionFormat TestExceptionFormat.FULL
++  showExceptions true
++  showCauses true
++  showStackTraces true
++
++  // set options for log level DEBUG and INFO
++  debug {
++      events TestLogEvent.STARTED,
++             TestLogEvent.FAILED,
++             TestLogEvent.PASSED,
++             TestLogEvent.SKIPPED,
++             TestLogEvent.STANDARD_ERROR,
++             TestLogEvent.STANDARD_OUT
++      exceptionFormat TestExceptionFormat.FULL
++  }
++  info.events = debug.events
++  info.exceptionFormat = debug.exceptionFormat
++
++  afterSuite { desc, result ->
++      if (!desc.parent) { // will match the outermost suite
++          def output = "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
++          def startItem = '|  ', endItem = '  |'
++          def repeatLength = startItem.length() + output.length() + endItem.length()
++          println('\n' + ('-' * repeatLength) + '\n' + startItem + output + endItem + '\n' + ('-' * repeatLength))
+       }
++  }
++}
+ 
+       // Disable automatic test class detection, rely on class names only. This is needed for testing
+       // against JDKs where the bytecode is unparseable by Gradle, for example.
+diff --git a/lucene/CHANGES.txt b/lucene/CHANGES.txt
+index 7391f26875..0a0a265c8b 100644
+--- a/lucene/CHANGES.txt
++++ b/lucene/CHANGES.txt
+@@ -162,6 +162,8 @@ Bug Fixes
+ 
+ * GITHUB#12158: KeywordField#newSetQuery should clone input BytesRef[] to avoid modifying provided array. (Greg Miller)
+ 
++* GITHUB#12196: Fix MultiFieldQueryParser to handle both query boost and phrase slop at the same time.  (Jasir KT)
++
+ Build
+ ---------------------
+ 
+diff --git a/lucene/queryparser/src/java/org/apache/lucene/queryparser/classic/MultiFieldQueryParser.java b/lucene/queryparser/src/java/org/apache/lucene/queryparser/classic/MultiFieldQueryParser.java
+index a269901bb4..eb9abad781 100644
+--- a/lucene/queryparser/src/java/org/apache/lucene/queryparser/classic/MultiFieldQueryParser.java
++++ b/lucene/queryparser/src/java/org/apache/lucene/queryparser/classic/MultiFieldQueryParser.java
+@@ -124,6 +124,10 @@ public class MultiFieldQueryParser extends QueryParser {
+       if (slop != mpq.getSlop()) {
+         q = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
+       }
++    } else if (q instanceof BoostQuery boostQuery) {
++      Query subQuery = boostQuery.getQuery();
++      subQuery = applySlop(subQuery, slop);
++      q = new BoostQuery(subQuery, boostQuery.getBoost());
+     }
+     return q;
+   }
++ git checkout 0651d25713dde144df6541663b18accbc93cdc64 lucene/queryparser/src/test/org/apache/lucene/queryparser/classic/TestMultiFieldQueryParser.java
+Updated 0 paths from b6dccbfa89
++ git apply -v -
+Checking patch lucene/queryparser/src/test/org/apache/lucene/queryparser/classic/TestMultiFieldQueryParser.java...
+Applied patch lucene/queryparser/src/test/org/apache/lucene/queryparser/classic/TestMultiFieldQueryParser.java cleanly.
++ : '>>>>> Start Test Output'
++ ./gradlew test --tests org.apache.lucene.queryparser.classic.TestMultiFieldQueryParser
++ cat
+Downloading gradle-wrapper.jar from https://raw.githubusercontent.com/gradle/gradle/v7.6.0/gradle/wrapper/gradle-wrapper.jar
+Generating gradle.properties
+Downloading https://services.gradle.org/distributions/gradle-7.6-bin.zip
+...........10%............20%...........30%............40%............50%...........60%............70%............80%...........90%............100%
+
+Welcome to Gradle 7.6!
+
+Here are the highlights of this release:
+ - Added support for Java 19.
+ - Introduced `--rerun` flag for individual task rerun.
+ - Improved dependency block for test suites to be strongly typed.
+ - Added a pluggable system for Java toolchains provisioning.
+
+For more details see https://docs.gradle.org/7.6/release-notes.html
+
+Starting a Gradle Daemon (subsequent builds will be faster)
+> Task :buildSrc:compileJava
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:processResources NO-SOURCE
+> Task :buildSrc:classes
+> Task :buildSrc:jar
+> Task :buildSrc:assemble
+> Task :buildSrc:compileTestJava NO-SOURCE
+> Task :buildSrc:compileTestGroovy NO-SOURCE
+> Task :buildSrc:processTestResources NO-SOURCE
+> Task :buildSrc:testClasses UP-TO-DATE
+> Task :buildSrc:test NO-SOURCE
+> Task :buildSrc:check UP-TO-DATE
+> Task :buildSrc:build
+
+> Task :randomizationInfo
+Running tests with randomization seed: tests.seed=5E6CDF71FACBFBC8
+
+> Task :errorProneSkipped
+WARNING: errorprone disabled (skipped on builds not running inside CI environments, pass -Pvalidation.errorprone=true to enable)
+
+> Task :lucene:analysis:opennlp:processResources
+> Task :lucene:core:processResources
+> Task :lucene:analysis:common:processResources
+> Task :lucene:analysis:morfologik:processResources
+> Task :lucene:analysis:icu:processResources
+> Task :lucene:facet:processResources NO-SOURCE
+> Task :lucene:memory:processResources NO-SOURCE
+> Task :lucene:test-framework:processResources
+> Task :lucene:highlighter:processResources NO-SOURCE
+> Task :lucene:analysis:kuromoji:processResources
+> Task :lucene:codecs:processResources
+> Task :lucene:spatial3d:processResources NO-SOURCE
+> Task :lucene:backward-codecs:processResources
+> Task :lucene:spatial-extras:processResources NO-SOURCE
+> Task :lucene:queryparser:processResources
+> Task :lucene:grouping:processResources NO-SOURCE
+> Task :lucene:classification:processResources NO-SOURCE
+> Task :lucene:queries:processResources NO-SOURCE
+> Task :lucene:benchmark:processResources NO-SOURCE
+> Task :lucene:analysis:phonetic:processResources
+> Task :lucene:sandbox:processResources
+> Task :lucene:analysis:stempel:processResources
+> Task :lucene:codecs:processTestResources
+> Task :lucene:join:processResources NO-SOURCE
+> Task :lucene:misc:processResources NO-SOURCE
+> Task :lucene:analysis:smartcn:processResources
+> Task :lucene:demo:processResources NO-SOURCE
+> Task :lucene:classification:processTestResources
+> Task :lucene:monitor:processResources NO-SOURCE
+> Task :lucene:analysis.tests:processTestResources
+> Task :lucene:distribution.tests:compileJava NO-SOURCE
+> Task :lucene:distribution.tests:processResources NO-SOURCE
+> Task :lucene:distribution.tests:classes UP-TO-DATE
+> Task :lucene:replicator:processResources NO-SOURCE
+> Task :lucene:expressions:processResources
+> Task :lucene:expressions:processTestResources
+> Task :lucene:luke:processResources
+> Task :lucene:highlighter:processTestResources
+> Task :lucene:analysis:nori:processResources
+> Task :lucene:suggest:processResources
+> Task :lucene:core.tests:compileJava
+> Task :lucene:join:processTestResources
+> Task :lucene:core.tests:processResources NO-SOURCE
+> Task :lucene:core.tests:classes
+> Task :lucene:grouping:processTestResources
+> Task :lucene:memory:processTestResources
+> Task :lucene:facet:processTestResources
+> Task :lucene:benchmark:processTestResources
+> Task :lucene:monitor:processTestResources
+> Task :lucene:sandbox:processTestResources
+> Task :lucene:demo:processTestResources
+> Task :lucene:spatial-test-fixtures:processResources NO-SOURCE
+> Task :lucene:spatial-test-fixtures:processTestResources NO-SOURCE
+> Task :lucene:spatial3d:processTestResources
+> Task :lucene:spatial-extras:processTestResources
+> Task :lucene:backward-codecs:processTestResources
+> Task :lucene:luke:processTestResources
+> Task :lucene:replicator:processTestResources
+> Task :lucene:core.tests:processTestResources
+> Task :lucene:queries:processTestResources
+> Task :lucene:misc:processTestResources
+> Task :lucene:suggest:processTestResources
+> Task :lucene:queryparser:processTestResources
+> Task :lucene:analysis:icu:processTestResources
+> Task :lucene:analysis:phonetic:processTestResources
+> Task :lucene:analysis:kuromoji:processTestResources
+> Task :lucene:test-framework:processTestResources
+> Task :lucene:analysis:morfologik.tests:processTestResources
+> Task :lucene:analysis:smartcn:processTestResources
+> Task :lucene:analysis:nori:processTestResources
+> Task :lucene:analysis:morfologik:processTestResources
+> Task :lucene:analysis:opennlp:processTestResources
+> Task :lucene:analysis:stempel:processTestResources
+> Task :lucene:analysis:common:processTestResources
+> Task :lucene:distribution.tests:compileTestJava
+> Task :lucene:distribution.tests:processTestResources
+> Task :lucene:distribution.tests:testClasses
+> Task :gitStatus
+> Task :lucene:core.tests:jar
+
+> Task :lucene:core:compileJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:core:classes
+> Task :lucene:core:compileMain19Java
+> Task :lucene:core:processMain19Resources NO-SOURCE
+> Task :lucene:core:main19Classes
+> Task :lucene:core:jar
+> Task :lucene:core:processTestResources
+> Task :lucene:replicator:compileJava
+> Task :lucene:replicator:classes
+> Task :lucene:replicator:jar
+> Task :lucene:memory:compileJava
+> Task :lucene:memory:classes
+> Task :lucene:memory:jar
+> Task :lucene:misc:compileJava
+> Task :lucene:misc:classes
+> Task :lucene:misc:jar
+> Task :lucene:join:compileJava
+> Task :lucene:join:classes
+> Task :lucene:join:jar
+
+> Task :lucene:facet:compileJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:spatial3d:compileJava
+> Task :lucene:spatial3d:classes
+
+> Task :lucene:queries:compileJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:spatial3d:jar
+> Task :lucene:codecs:compileJava
+> Task :lucene:codecs:classes
+> Task :lucene:backward-codecs:compileJava
+> Task :lucene:backward-codecs:classes
+> Task :lucene:queries:classes
+> Task :lucene:codecs:jar
+> Task :lucene:backward-codecs:jar
+> Task :lucene:queries:jar
+> Task :lucene:facet:classes
+> Task :lucene:facet:jar
+> Task :lucene:grouping:compileJava
+> Task :lucene:grouping:classes
+> Task :lucene:grouping:jar
+> Task :lucene:spatial-extras:compileJava
+> Task :lucene:spatial-extras:classes
+
+> Task :lucene:expressions:compileJava
+
+> Task :lucene:expressions:classes
+> Task :lucene:spatial-extras:jar
+> Task :lucene:expressions:jar
+Note: /testbed/lucene/expressions/src/java/org/apache/lucene/expressions/js/JavascriptCompiler.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+> Task :lucene:classification:compileJava
+> Task :lucene:classification:classes
+> Task :lucene:classification:jar
+
+> Task :lucene:sandbox:compileJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:sandbox:classes
+> Task :lucene:sandbox:jar
+> Task :lucene:highlighter:compileJava
+> Task :lucene:highlighter:classes
+> Task :lucene:highlighter:jar
+> Task :lucene:queryparser:compileJava
+> Task :lucene:queryparser:classes
+
+> Task :lucene:analysis:common:compileJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:queryparser:jar
+> Task :lucene:analysis:common:classes
+> Task :lucene:analysis:common:jar
+> Task :lucene:analysis:smartcn:compileJava
+> Task :lucene:analysis:smartcn:classes
+> Task :lucene:analysis:stempel:compileJava
+> Task :lucene:analysis:phonetic:compileJava
+> Task :lucene:analysis:phonetic:classes
+> Task :lucene:analysis:stempel:classes
+> Task :lucene:analysis:nori:compileJava
+> Task :lucene:analysis:nori:classes
+> Task :lucene:analysis:phonetic:jar
+> Task :lucene:demo:compileJava
+> Task :lucene:demo:classes
+> Task :lucene:demo:jar
+> Task :lucene:analysis:kuromoji:compileJava
+> Task :lucene:analysis:kuromoji:classes
+> Task :lucene:analysis:stempel:jar
+> Task :lucene:analysis:opennlp:compileJava
+> Task :lucene:analysis:opennlp:classes
+> Task :lucene:analysis:morfologik:compileJava
+> Task :lucene:analysis:morfologik:classes
+> Task :lucene:analysis:opennlp:jar
+> Task :lucene:analysis:morfologik:jar
+> Task :lucene:suggest:compileJava
+> Task :lucene:suggest:classes
+> Task :lucene:analysis:smartcn:jar
+> Task :lucene:suggest:jar
+> Task :lucene:monitor:compileJava
+> Task :lucene:monitor:classes
+> Task :lucene:monitor:jar
+> Task :lucene:analysis:kuromoji:jar
+> Task :lucene:test-framework:compileJava
+> Task :lucene:test-framework:classes
+> Task :lucene:analysis:nori:jar
+> Task :lucene:test-framework:jar
+> Task :lucene:analysis:icu:compileJava
+> Task :lucene:analysis:icu:classes
+> Task :lucene:analysis:icu:jar
+> Task :lucene:demo:compileTestJava
+> Task :lucene:demo:testClasses
+> Task :lucene:core.tests:compileTestJava
+> Task :lucene:core.tests:testClasses
+> Task :lucene:benchmark:compileJava
+> Task :lucene:benchmark:classes
+> Task :lucene:expressions:compileTestJava
+> Task :lucene:core.tests:testJar
+> Task :lucene:classification:compileTestJava
+> Task :lucene:classification:testClasses
+> Task :lucene:benchmark:jar
+
+> Task :lucene:classification:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:demo:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:core.tests:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:core.tests:wipeTaskTemp
+> Task :lucene:expressions:testClasses
+> Task :lucene:demo:wipeTaskTemp
+> Task :lucene:classification:wipeTaskTemp
+
+> Task :lucene:expressions:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:expressions:wipeTaskTemp
+> Task :lucene:analysis.tests:compileTestJava
+> Task :lucene:analysis.tests:testClasses
+> Task :lucene:analysis.tests:testJar
+> Task :lucene:grouping:compileTestJava
+> Task :lucene:grouping:testClasses
+
+> Task :lucene:analysis.tests:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis.tests:wipeTaskTemp
+
+> Task :lucene:grouping:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:grouping:wipeTaskTemp
+
+> Task :lucene:memory:compileTestJava
+
+> Task :lucene:memory:testClasses
+
+> Task :lucene:memory:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+---------------------------------------------------------------
+
+> Task :lucene:memory:wipeTaskTemp
+> Task :lucene:codecs:compileTestJava
+> Task :lucene:codecs:testClasses
+> Task :lucene:join:compileTestJava
+> Task :lucene:join:testClasses
+
+> Task :lucene:join:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:join:wipeTaskTemp
+> Task :lucene:misc:compileTestJava
+> Task :lucene:misc:testClasses
+
+> Task :lucene:misc:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:benchmark:compileTestJava
+> Task :lucene:benchmark:testClasses
+> Task :lucene:misc:wipeTaskTemp
+
+> Task :lucene:benchmark:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:benchmark:wipeTaskTemp
+
+> Task :lucene:codecs:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:codecs:wipeTaskTemp
+> Task :lucene:spatial-test-fixtures:compileJava
+> Task :lucene:spatial-test-fixtures:classes
+> Task :lucene:spatial-test-fixtures:jar
+
+> Task :lucene:monitor:compileTestJava
+
+> Task :lucene:monitor:testClasses
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:monitor:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:monitor:wipeTaskTemp
+> Task :lucene:spatial-test-fixtures:compileTestJava NO-SOURCE
+> Task :lucene:spatial-test-fixtures:testClasses UP-TO-DATE
+> Task :lucene:spatial-test-fixtures:test NO-SOURCE
+> Task :lucene:spatial-test-fixtures:wipeTaskTemp
+
+> Task :lucene:replicator:compileTestJava
+
+> Task :lucene:replicator:testClasses
+
+> Task :lucene:replicator:test
+
+Note: /testbed/lucene/replicator/src/test/org/apache/lucene/replicator/nrt/SimpleTransLog.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:replicator:wipeTaskTemp
+
+> Task :lucene:facet:compileTestJava
+Note: /testbed/lucene/facet/src/test/org/apache/lucene/facet/taxonomy/TestTaxonomyFacetAssociations.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:backward-codecs:compileTestJava
+> Task :lucene:backward-codecs:testClasses
+> Task :lucene:facet:testClasses
+
+> Task :lucene:queries:compileTestJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:facet:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:facet:wipeTaskTemp
+
+> Task :lucene:highlighter:compileTestJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:highlighter:testClasses
+> Task :lucene:queryparser:compileTestJava
+> Task :lucene:queryparser:testClasses
+> Task :lucene:queries:testClasses
+
+> Task :lucene:highlighter:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:highlighter:wipeTaskTemp
+
+> Task :lucene:queries:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:queries:wipeTaskTemp
+> Task :lucene:sandbox:compileTestJava
+> Task :lucene:sandbox:testClasses
+
+> Task :lucene:sandbox:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:sandbox:wipeTaskTemp
+
+> Task :lucene:backward-codecs:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:backward-codecs:wipeTaskTemp
+> Task :lucene:analysis:morfologik:compileTestJava
+> Task :lucene:analysis:morfologik:testClasses
+
+> Task :lucene:spatial-extras:compileTestJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:analysis:morfologik:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:morfologik:wipeTaskTemp
+> Task :lucene:analysis:morfologik.tests:compileTestJava
+> Task :lucene:analysis:morfologik.tests:testClasses
+> Task :lucene:analysis:morfologik.tests:testJar
+> Task :lucene:analysis:icu:compileTestJava
+> Task :lucene:analysis:icu:testClasses
+
+> Task :lucene:analysis:icu:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:icu:wipeTaskTemp
+
+> Task :lucene:analysis:morfologik.tests:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:morfologik.tests:wipeTaskTemp
+
+> Task :lucene:test-framework:compileTestJava
+Note: /testbed/lucene/test-framework/src/test/org/apache/lucene/tests/util/TestReproduceMessage.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:test-framework:testClasses
+
+> Task :lucene:test-framework:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:test-framework:wipeTaskTemp
+> Task :lucene:analysis:kuromoji:compileTestJava
+> Task :lucene:analysis:kuromoji:testClasses
+
+> Task :lucene:analysis:kuromoji:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:kuromoji:wipeTaskTemp
+> Task :lucene:analysis:opennlp:compileTestJava
+> Task :lucene:analysis:opennlp:testClasses
+
+> Task :lucene:analysis:opennlp:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:opennlp:wipeTaskTemp
+> Task :lucene:spatial3d:compileTestJava
+> Task :lucene:spatial3d:testClasses
+
+> Task :lucene:spatial3d:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:spatial3d:wipeTaskTemp
+> Task :lucene:analysis:phonetic:compileTestJava
+> Task :lucene:analysis:phonetic:testClasses
+> Task :lucene:analysis:smartcn:compileTestJava
+> Task :lucene:analysis:smartcn:testClasses
+
+> Task :lucene:analysis:smartcn:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:phonetic:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:phonetic:wipeTaskTemp
+> Task :lucene:analysis:smartcn:wipeTaskTemp
+> Task :lucene:luke:compileJava
+> Task :lucene:luke:classes
+> Task :lucene:analysis:nori:compileTestJava
+> Task :lucene:analysis:nori:testClasses
+> Task :lucene:analysis:stempel:compileTestJava
+> Task :lucene:analysis:stempel:testClasses
+
+> Task :lucene:analysis:nori:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:stempel:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:stempel:wipeTaskTemp
+> Task :lucene:analysis:nori:wipeTaskTemp
+> Task :lucene:spatial-extras:testClasses
+
+> Task :lucene:spatial-extras:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:spatial-extras:wipeTaskTemp
+> Task :lucene:luke:jar
+
+> Task :lucene:queryparser:test
+
+org.apache.lucene.queryparser.classic.TestMultiFieldQueryParser > testStaticMethod1 PASSED
+
+org.apache.lucene.queryparser.classic.TestMultiFieldQueryParser > testStaticMethod2Old PASSED
+
+org.apache.lucene.queryparser.classic.TestMultiFieldQueryParser > testStopWordSearching PASSED
+
+org.apache.lucene.queryparser.classic.TestMultiFieldQueryParser > testStaticMethod3Old PASSED
+
+org.apache.lucene.queryparser.classic.TestMultiFieldQueryParser > testStopwordsParsing PASSED
+
+org.apache.lucene.queryparser.classic.TestMultiFieldQueryParser > testStaticMethod3 PASSED
+
+org.apache.lucene.queryparser.classic.TestMultiFieldQueryParser > testBoostsSimple PASSED
+
+org.apache.lucene.queryparser.classic.TestMultiFieldQueryParser > testSynonyms PASSED
+
+org.apache.lucene.queryparser.classic.TestMultiFieldQueryParser > testSimpleRegex PASSED
+
+org.apache.lucene.queryparser.classic.TestMultiFieldQueryParser > testStaticMethod2 PASSED
+
+org.apache.lucene.queryparser.classic.TestMultiFieldQueryParser > testAnalyzerReturningNull PASSED
+
+org.apache.lucene.queryparser.classic.TestMultiFieldQueryParser > testSimple PASSED
+:lucene:queryparser:test (SUCCESS): 12 test(s)
+
+-----------------------------------------------------------------
+|  Results: SUCCESS (12 tests, 12 passed, 0 failed, 0 skipped)  |
+-----------------------------------------------------------------
+
+> Task :lucene:queryparser:wipeTaskTemp
+
+> Task :lucene:suggest:compileTestJava
+WARNING: A command line option has enabled the Security Manager
+WARNING: The Security Manager is deprecated and will be removed in a future release
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:distribution:assembleBinaryDirForTests
+> Task :lucene:suggest:testClasses
+
+> Task :lucene:suggest:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:suggest:wipeTaskTemp
+
+> Task :lucene:distribution.tests:test
+Testing binary distribution at: /testbed/lucene/distribution/build/packages/lucene-10.0.0-SNAPSHOT-itests
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:distribution.tests:wipeTaskTemp
+> Task :lucene:luke:compileTestJava
+> Task :lucene:luke:testClasses
+
+> Task :lucene:luke:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:luke:wipeTaskTemp
+> Task :lucene:analysis:common:compileTestJava
+> Task :lucene:analysis:common:testClasses
+
+> Task :lucene:analysis:common:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:analysis:common:wipeTaskTemp
+
+> Task :lucene:core:compileTestJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :lucene:core:testClasses
+
+> Task :lucene:core:test
+
+---------------------------------------------------------------
+|  Results: SUCCESS (0 tests, 0 passed, 0 failed, 0 skipped)  |
+---------------------------------------------------------------
+
+> Task :lucene:core:wipeTaskTemp
+
+BUILD SUCCESSFUL in 2m 27s
+241 actionable tasks: 241 executed
+>>>>> Test Exit Code: 0
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 0651d25713dde144df6541663b18accbc93cdc64 lucene/queryparser/src/test/org/apache/lucene/queryparser/classic/TestMultiFieldQueryParser.java
+Updated 1 path from b6dccbfa89

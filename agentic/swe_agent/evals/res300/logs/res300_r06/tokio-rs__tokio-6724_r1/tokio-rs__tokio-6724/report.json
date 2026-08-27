@@ -1,0 +1,32 @@
+{
+    "tokio-rs__tokio-6724": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "infra_failure": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "write_all_buf_vectored"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "write_all_buf",
+                    "write_buf_err"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

@@ -1,0 +1,34 @@
+{
+    "jekyll__jekyll-9141": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "infra_failure": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "TestSite#test_: static files in a collection should not be revisited in `Site#each_site_file`"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "TestSite#test_: creating sites should write static files if not modified but missing in destination",
+                    "TestSite#test_: creating sites should write only modified static files",
+                    "TestSite#test_: creating sites should expose list of static files to site payload",
+                    "TestSite#test_: static files in a collection should be exposed via site instance"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

@@ -1,0 +1,75 @@
+diff --git a/crates/ruff_linter/src/rules/pyflakes/rules/strings.rs b/crates/ruff_linter/src/rules/pyflakes/rules/strings.rs
+index 80fe9f307..635052e58 100644
+--- a/crates/ruff_linter/src/rules/pyflakes/rules/strings.rs
++++ b/crates/ruff_linter/src/rules/pyflakes/rules/strings.rs
+@@ -2,9 +2,12 @@ use std::string::ToString;
+ 
+ use rustc_hash::FxHashSet;
+ 
+-use ruff_diagnostics::{AlwaysFixableViolation, Diagnostic, Fix, FixAvailability, Violation};
++use ruff_diagnostics::{
++    AlwaysFixableViolation, Diagnostic, Edit, Fix, FixAvailability, Violation,
++};
+ use ruff_macros::{derive_message_formats, ViolationMetadata};
+ use ruff_python_ast::name::Name;
++use ruff_python_ast::parenthesize::parenthesized_range;
+ use ruff_python_ast::{self as ast, Expr, Keyword};
+ use ruff_text_size::{Ranged, TextRange};
+ 
+@@ -834,6 +837,40 @@ pub(crate) fn string_dot_format_extra_positional_arguments(
+ 
+     if is_contiguous_from_end(&missing, args) {
+         diagnostic.try_set_fix(|| {
++            // If every positional argument is unused, there are no keyword
++            // arguments, and the format string has no placeholders, then the
++            // `.format()` call is a no-op (e.g. `"Hello".format("world")`
++            // evaluates to `"Hello"`). Rather than leaving an empty `.format()`
++            // call behind, remove the call entirely, leaving just the format
++            // string itself.
++            //
++            // We only do this when the format string has no placeholders, as
++            // otherwise the `.format()` call would raise at runtime and removing
++            // it would change the program's behavior.
++            if missing.len() == args.len()
++                && call.arguments.keywords.is_empty()
++                && summary.autos.is_empty()
++                && summary.indices.is_empty()
++                && summary.keywords.is_empty()
++            {
++                if let ast::Expr::Attribute(attribute) = call.func.as_ref() {
++                    // The format string may be parenthesized (e.g.
++                    // `("Hello").format(...)`), so delete from the end of the
++                    // format string (including any surrounding parentheses) to
++                    // the end of the call.
++                    let value_end = parenthesized_range(
++                        attribute.value.as_ref().into(),
++                        attribute.into(),
++                        checker.comment_ranges(),
++                        checker.locator().contents(),
++                    )
++                    .unwrap_or_else(|| attribute.value.range())
++                    .end();
++                    let edit = Edit::deletion(value_end, call.end());
++                    return Ok(Fix::safe_edit(edit));
++                }
++            }
++
+             let edit = remove_unused_positional_arguments_from_format_call(
+                 &missing,
+                 call,
+diff --git a/crates/ruff_linter/src/rules/pyflakes/snapshots/ruff_linter__rules__pyflakes__tests__F523_F523.py.snap b/crates/ruff_linter/src/rules/pyflakes/snapshots/ruff_linter__rules__pyflakes__tests__F523_F523.py.snap
+index 081ae9bf0..f7cf934d4 100644
+--- a/crates/ruff_linter/src/rules/pyflakes/snapshots/ruff_linter__rules__pyflakes__tests__F523_F523.py.snap
++++ b/crates/ruff_linter/src/rules/pyflakes/snapshots/ruff_linter__rules__pyflakes__tests__F523_F523.py.snap
+@@ -259,8 +259,9 @@ F523.py:32:2: F523 [*] `.format` call has unused arguments at position(s): 0
+    = help: Remove extra positional arguments at position(s): 0
+ 
+ ℹ Safe fix
++29 29 | "{1} {8}".format(0, 1)  # F523, # F524
+ 30 30 | 
+ 31 31 | # Multiline
+-32 32 | (''
++32    |-(''
+ 33    |-.format(2))
+-   33 |+.format())
++   32 |+('')

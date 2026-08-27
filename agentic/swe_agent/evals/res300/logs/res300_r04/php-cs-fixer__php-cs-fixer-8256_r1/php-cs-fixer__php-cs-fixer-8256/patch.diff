@@ -1,0 +1,21 @@
+diff --git a/src/Fixer/PhpTag/BlankLineAfterOpeningTagFixer.php b/src/Fixer/PhpTag/BlankLineAfterOpeningTagFixer.php
+index d4af8196e..04b99c9a2 100644
+--- a/src/Fixer/PhpTag/BlankLineAfterOpeningTagFixer.php
++++ b/src/Fixer/PhpTag/BlankLineAfterOpeningTagFixer.php
+@@ -77,12 +77,10 @@ protected function applyFix(\SplFileInfo $file, Tokens $tokens): void
+         }
+ 
+         $newLineIndex = $openTagIndex + 1;
+-        if (isset($tokens[$newLineIndex]) && !str_contains($tokens[$newLineIndex]->getContent(), "\n")) {
+-            if ($tokens[$newLineIndex]->isWhitespace()) {
+-                $tokens[$newLineIndex] = new Token([T_WHITESPACE, $lineEnding.$tokens[$newLineIndex]->getContent()]);
+-            } else {
+-                $tokens->insertAt($newLineIndex, new Token([T_WHITESPACE, $lineEnding]));
+-            }
++        if (isset($tokens[$newLineIndex]) && !$tokens[$newLineIndex]->isWhitespace()) {
++            $tokens->insertAt($newLineIndex, new Token([T_WHITESPACE, $lineEnding]));
++        } elseif (isset($tokens[$newLineIndex]) && !str_contains($tokens[$newLineIndex]->getContent(), "\n")) {
++            $tokens[$newLineIndex] = new Token([T_WHITESPACE, $lineEnding.$tokens[$newLineIndex]->getContent()]);
+         }
+     }
+ }
