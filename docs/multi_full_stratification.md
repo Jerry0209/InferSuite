@@ -824,14 +824,14 @@ back (the skill's verifier reports WARN, not FAIL).
 **Agent deck** (updated in place, now **41 slides**):
 <https://claude.ai/code/artifact/e93ebcb7-015d-4f40-8f83-62fe21777e62>
 
-Slides 37–47 carry this campaign: the selection matrix (37); **the replay-invalid gate with
+Slides 37–48 carry this campaign: the selection matrix (37); **the replay-invalid gate with
 per-row causes** (38, added 2026-08-25 — the fig. 9 scatter of replay vs live fence with the
 three diagnosed cause families); **CPU work by fence over the 36 tasks** (39, added
 2026-08-25 — slide 2's core-seconds split rebuilt on the replays: median 89% tools, but
-53–66% on the small-fence tasks); **fence busy time in seconds** (40, added 2026-08-25 — the core-seconds companion in wall units, grouped never stacked, each tool bar annotated with its implied parallelism core-s ÷ busy-s: median ×1.2, up to ×3.6 on parallel builds); TMA Level 1 of the 36 tasks (41: tool and harness fences,
-SPEC CPU 2026 INT/FP closing panel); **TMA Level 1 with both fences combined** (42, added
+53–66% on the small-fence tasks); **fence busy time in seconds** (40, added 2026-08-25 — the core-seconds companion in wall units, grouped never stacked, each tool bar annotated with its implied parallelism core-s ÷ busy-s: median ×1.2, up to ×3.6 on parallel builds); **the 4-panel live-episode overview** (41, added 2026-08-27 — the section above, in the ggplot house style); TMA Level 1 of the 36 tasks (42: tool and harness fences,
+SPEC CPU 2026 INT/FP closing panel); **TMA Level 1 with both fences combined** (43, added
 2026-08-26 — census counts summed across the two fences, slot-weighted, one bar per task,
-with each task's tool-slot share in the margin); **the live-vs-replay validation** (43,
+with each task's tool-slot share in the margin); **the live-vs-replay validation** (44,
 added 2026-08-27 — the 36 tasks' live census runs carry no counters by design, so the
 validation rides the 12 same-trajectory pairs of the matched capture: per metric, the live
 rotation distribution as a violin+box beside the dedicated-replay distribution, with one
@@ -842,12 +842,12 @@ the **final format (2026-08-25, mentor spec)** — one metric per full-width row
 groups ordered **SPEC-int (14 benchmarks) → SPEC-fp (12) → one group per language**, each
 language's 4 tasks as per-window boxes in the language's color — covering the mentor's 16
 metrics **including the three fe_miss metrics** plus DRAM read bandwidth and context switches
-(18 rows; slides 44–45); the **aggregated comparison view** (46, added 2026-08-25) — SPEC
+(18 rows; slides 45–46); the **aggregated comparison view** (47, added 2026-08-25) — SPEC
 collapsed to two suite boxes (SPEC-int / SPEC-fp, each a box over per-benchmark
 window-medians so every benchmark votes once) plus a **Python group** (scikit-learn, astropy,
 sympy from the matched-configuration replays; the three fe_miss metrics carry a "to be
 measured" mark there and a fourth Python slot is reserved — no new profiling was run); and
-the gallery index (47). The SPEC side's per-window derivations were extended so all 18
+the gallery index (48). The SPEC side's per-window derivations were extended so all 18
 metrics exist there too; the earlier compact 18-panel grids (count-cell-type coloring) remain
 banked beside the new figures. Note: the deck's share link
 is version-pinned — viewers of an existing share see the new slides only after the share pin
@@ -855,7 +855,7 @@ is moved to the new version.
 
 **Per-task per-window galleries** (one artifact per task, modeled on the SPEC gallery: every
 metric with the tag-split tool-fence distribution, the harness-fence distribution, and both
-episode timelines at 100 ms; links also on deck slide 47 and banked in
+episode timelines at 100 ms; links also on deck slide 48 and banked in
 `local_agents/ML_iso36/gallery_links.json`):
 
 ### C

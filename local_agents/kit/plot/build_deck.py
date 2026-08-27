@@ -95,6 +95,7 @@ IMG = {k: uri(v) for k, v in {
     "iso36_repinv": "/home/thu/InferSuite/docs/figures/typeid_cpu/09_replay_invalid_causes.png",
     "iso36_cpuwork": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_cpu_work.png",
     "iso36_wall": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_active_wall.png",
+    "iso36_overview": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_live_overview_gg.png",
     "iso36_tma_comb": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_tma_l1_combined.png",
     "lvr_example": "/home/thu/InferSuite/local_agents/SWE_iso8/plots/live_vs_replay/lvr_google.png",
     "iso36_tma_t": "/home/thu/InferSuite/local_agents/ML_iso36/plots/iso36_tma_l1_tool.png",
@@ -223,7 +224,7 @@ update();
 
 BODY = """
 <div class="progress"></div>
-<div class="counter">01 / 47</div>
+<div class="counter">01 / 48</div>
 <div class="hint">↓ / space · arrow keys to navigate</div>
 <div class="deck">
 
@@ -1149,6 +1150,30 @@ BODY = """
 
   <section class="slide">
     <div class="wrap">
+      <p class="eyebrow">Count-view campaign · the live episodes at a glance</p>
+      <h2>Four questions per task: time, work, calls, cost per call</h2>
+      <p class="lead">The LIVE census episodes of all 36 picks (zero exclusions — a replay could
+      not draw this: panel (a)'s stall is dominated by the model round-trip). (a) share of the
+      episode wall with at least one fence active above the burst floors, on a 0.2 s union grid
+      — a <b>time</b> split; (b) the fences' <b>core-second work</b> split; (c) every trajectory
+      action counted, failed/errored calls and the final submit included; (d) the per-task
+      median of SWE-agent's own per-action execution_time. AVG bars are unweighted per-task
+      means (panel d: mean of medians).</p>
+      <div class="figcard"><img alt="4-panel live overview: CPU working vs stall, tool vs harness, tool calls, median call duration, 36 tasks by language with AVG" src="__ISO36OVERVIEW__"></div>
+      <div class="take">
+        <div class="chip wait">the CPU works <b>15%</b> of the wall and waits <b>85%</b> — the slide-1 story, now across 36 tasks and 9 languages</div>
+        <div class="chip tool">the work splits <b>79% tool / 21% harness</b>, with the interpreter languages (PHP, Ruby) visibly harness-heavier</div>
+        <div class="chip harness"><b>105 calls</b> per episode on average, median call just <b>0.12 s</b> — most calls are cheap reads; the expensive build/test calls live in the tail</div>
+      </div>
+      <p class="note">Rendered in the mentor's ggplot house style (colors tied to series names,
+      numbers-CSV behind the chart, cairo vector export). Full methodology incl. the counting
+      rule and a worked example: docs/multi_full_stratification.md, "The 4-panel live
+      overview"; values in iso36_live_overview_values.json.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="wrap">
       <p class="eyebrow">Count-view campaign · TMA Level 1, 36 tasks</p>
       <h2>One TMA shape across nine languages</h2>
       <p class="lead">Nine dedicated-group replay passes per task (the shared eight plus fe_miss),
@@ -1350,6 +1375,7 @@ BODY = (BODY.replace("__SPLIT__", IMG["split"]).replace("__CPU__", IMG["cpu"])
             .replace("__ISO36REPINV__", IMG["iso36_repinv"])
             .replace("__ISO36CPUWORK__", IMG["iso36_cpuwork"])
             .replace("__ISO36WALL__", IMG["iso36_wall"])
+            .replace("__ISO36OVERVIEW__", IMG["iso36_overview"])
             .replace("__ISO36TMACOMB__", IMG["iso36_tma_comb"])
             .replace("__LVREXAMPLE__", IMG["lvr_example"])
             .replace("__ISO36TMAT__", IMG["iso36_tma_t"]).replace("__ISO36TMAH__", IMG["iso36_tma_h"])
