@@ -1,0 +1,192 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   include/fmt/ranges.h
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 4b8bda25c05d9f959ffed9a0580f0ded623177e5
+Author: owent <admin@owent.net>
+Date:   Mon Aug 23 12:15:05 2021 +0800
+
+    Fix 2462
+    
+    Signed-off-by: owent <admin@owent.net>
+
+diff --git a/include/fmt/core.h b/include/fmt/core.h
+index dbbf42c8..2f0cfb0b 100644
+--- a/include/fmt/core.h
++++ b/include/fmt/core.h
+@@ -2970,7 +2970,7 @@ auto vformat_to_n(OutputIt out, size_t n, string_view fmt, format_args args)
+ template <typename OutputIt, typename... T,
+           FMT_ENABLE_IF(detail::is_output_iterator<OutputIt, char>::value)>
+ FMT_INLINE auto format_to_n(OutputIt out, size_t n, format_string<T...> fmt,
+-                            const T&... args) -> format_to_n_result<OutputIt> {
++                            T&&... args) -> format_to_n_result<OutputIt> {
+   return vformat_to_n(out, n, fmt, fmt::make_format_args(args...));
+ }
+ 
++ git -c core.fileMode=false diff 4b8bda25c05d9f959ffed9a0580f0ded623177e5
+diff --git a/include/fmt/ranges.h b/include/fmt/ranges.h
+index a35c0664..64f635bd 100644
+--- a/include/fmt/ranges.h
++++ b/include/fmt/ranges.h
+@@ -629,7 +629,24 @@ template <typename Char, typename... T>
+ struct formatter<tuple_join_view<Char, T...>, Char> {
+   template <typename ParseContext>
+   FMT_CONSTEXPR auto parse(ParseContext& ctx) -> decltype(ctx.begin()) {
+-    return ctx.begin();
++    auto it = ctx.begin();
++    auto end = ctx.end();
++    // Find the end of the format spec to capture it. The spec may contain
++    // nested replacement fields (e.g. dynamic width/precision like "{1}"), so
++    // the closing '}' is the one that balances the (top-level) braces.
++    int brace_depth = 0;
++    for (; it != end; ++it) {
++      if (*it == '{') {
++        ++brace_depth;
++      } else if (*it == '}') {
++        if (brace_depth == 0) break;
++        --brace_depth;
++      }
++    }
++    // Store the spec without the trailing '}'.
++    format_str_ = basic_string_view<Char>(ctx.begin(),
++                                          detail::to_unsigned(it - ctx.begin()));
++    return it;
+   }
+ 
+   template <typename FormatContext>
+@@ -660,7 +677,10 @@ struct formatter<tuple_join_view<Char, T...>, Char> {
+                    const Arg& arg, const Args&... args) ->
+       typename FormatContext::iterator {
+     using base = formatter<typename std::decay<Arg>::type, Char>;
+-    auto out = base().format(arg, ctx);
++    auto parse_ctx = basic_format_parse_context<Char>(format_str_);
++    base f;
++    f.parse(parse_ctx);
++    auto out = f.format(arg, ctx);
+     if (sizeof...(Args) > 0) {
+       out = std::copy(value.sep.begin(), value.sep.end(), out);
+       ctx.advance_to(out);
+@@ -668,6 +688,8 @@ struct formatter<tuple_join_view<Char, T...>, Char> {
+     }
+     return out;
+   }
++
++  basic_string_view<Char> format_str_;
+ };
+ 
+ FMT_MODULE_EXPORT_BEGIN
++ git checkout 4b8bda25c05d9f959ffed9a0580f0ded623177e5 test/ranges-test.cc
+Updated 0 paths from 4eb3f69f
++ git apply -v -
+Checking patch test/ranges-test.cc...
+Applied patch test/ranges-test.cc cleanly.
++ mkdir -p build
++ cmake -B build -S .
+-- CMake version: 3.22.1
+-- Module support is disabled.
+-- Version: 8.0.1
+-- Build type: Release
+-- CXX_STANDARD: 11
+-- Required features: cxx_variadic_templates
+-- Target 'doc' disabled (requires doxygen)
+-- FMT_PEDANTIC: OFF
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /testbed/build
+++ nproc
++ cmake --build build --parallel 16 --target ranges-test
+Consolidate compiler generated dependencies of target gtest
+Consolidate compiler generated dependencies of target fmt
+[ 18%] Built target gtest
+[ 45%] Built target fmt
+Consolidate compiler generated dependencies of target test-main
+[ 81%] Built target test-main
+Consolidate compiler generated dependencies of target ranges-test
+[ 90%] Building CXX object test/CMakeFiles/ranges-test.dir/ranges-test.cc.o
+[100%] Linking CXX executable ../bin/ranges-test
+[100%] Built target ranges-test
++ : '>>>>> Start Test Output'
++ ctest --test-dir build -V -R ranges-test
++ cat
+Internal ctest changing into directory: /testbed/build
+UpdateCTestConfiguration  from :/testbed/build/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/testbed/build/DartConfiguration.tcl
+Test project /testbed/build
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 12
+    Start 12: ranges-test
+
+12: Test command: /testbed/build/bin/ranges-test
+12: Test timeout computed to be: 10000000
+12: [==========] Running 19 tests from 1 test suite.
+12: [----------] Global test environment set-up.
+12: [----------] 19 tests from ranges_test
+12: [ RUN      ] ranges_test.format_array
+12: [       OK ] ranges_test.format_array (0 ms)
+12: [ RUN      ] ranges_test.format_2d_array
+12: [       OK ] ranges_test.format_2d_array (0 ms)
+12: [ RUN      ] ranges_test.format_array_of_literals
+12: [       OK ] ranges_test.format_array_of_literals (0 ms)
+12: [ RUN      ] ranges_test.format_vector
+12: [       OK ] ranges_test.format_vector (0 ms)
+12: [ RUN      ] ranges_test.format_vector2
+12: [       OK ] ranges_test.format_vector2 (0 ms)
+12: [ RUN      ] ranges_test.format_map
+12: [       OK ] ranges_test.format_map (0 ms)
+12: [ RUN      ] ranges_test.format_pair
+12: [       OK ] ranges_test.format_pair (0 ms)
+12: [ RUN      ] ranges_test.format_tuple
+12: [       OK ] ranges_test.format_tuple (0 ms)
+12: [ RUN      ] ranges_test.format_struct
+12: [       OK ] ranges_test.format_struct (0 ms)
+12: [ RUN      ] ranges_test.format_to
+12: [       OK ] ranges_test.format_to (0 ms)
+12: [ RUN      ] ranges_test.path_like
+12: [       OK ] ranges_test.path_like (0 ms)
+12: [ RUN      ] ranges_test.range
+12: [       OK ] ranges_test.range (0 ms)
+12: [ RUN      ] ranges_test.unformattable_range
+12: [       OK ] ranges_test.unformattable_range (0 ms)
+12: [ RUN      ] ranges_test.join_tuple
+12: [       OK ] ranges_test.join_tuple (0 ms)
+12: [ RUN      ] ranges_test.join_initializer_list
+12: [       OK ] ranges_test.join_initializer_list (0 ms)
+12: [ RUN      ] ranges_test.join_sentinel
+12: [       OK ] ranges_test.join_sentinel (0 ms)
+12: [ RUN      ] ranges_test.join_range
+12: [       OK ] ranges_test.join_range (0 ms)
+12: [ RUN      ] ranges_test.is_printable
+12: [       OK ] ranges_test.is_printable (0 ms)
+12: [ RUN      ] ranges_test.escape_string
+12: [       OK ] ranges_test.escape_string (0 ms)
+12: [----------] 19 tests from ranges_test (0 ms total)
+12: 
+12: [----------] Global test environment tear-down
+12: [==========] 19 tests from 1 test suite ran. (0 ms total)
+12: [  PASSED  ] 19 tests.
+1/1 Test #12: ranges-test ......................   Passed    0.00 sec
+
+The following tests passed:
+	ranges-test
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.01 sec
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout 4b8bda25c05d9f959ffed9a0580f0ded623177e5 test/ranges-test.cc
+Updated 1 path from 4eb3f69f

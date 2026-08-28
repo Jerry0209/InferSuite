@@ -1,0 +1,30 @@
+diff --git a/packages/babel-traverse/src/scope/lib/renamer.ts b/packages/babel-traverse/src/scope/lib/renamer.ts
+index 67663c6717..cff41051ff 100644
+--- a/packages/babel-traverse/src/scope/lib/renamer.ts
++++ b/packages/babel-traverse/src/scope/lib/renamer.ts
+@@ -38,6 +38,25 @@ const renameVisitor: Visitor<Renamer> = {
+       if (name === state.oldName) ids[name].name = state.newName;
+     }
+   },
++
++  ObjectProperty({ node }, state) {
++    if (
++      node.shorthand &&
++      t.isIdentifier(node.key) &&
++      node.key.name === state.oldName
++    ) {
++      // We are renaming the value of a shorthand object property, e.g.
++      //   { oldName }
++      // becomes
++      //   { oldName: newName }
++      // Since the key and the value are no longer the same identifier, the
++      // property is no longer a shorthand.
++      node.shorthand = false;
++      if (node.extra?.shorthand) {
++        node.extra.shorthand = false;
++      }
++    }
++  },
+ };
+ 
+ export default class Renamer {

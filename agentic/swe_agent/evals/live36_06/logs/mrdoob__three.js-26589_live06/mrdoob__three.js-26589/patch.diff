@@ -1,0 +1,78 @@
+diff --git a/src/objects/Line.js b/src/objects/Line.js
+index e359bcfb29..ddc0e016c3 100644
+--- a/src/objects/Line.js
++++ b/src/objects/Line.js
+@@ -35,6 +35,21 @@ class Line extends Object3D {
+ 		super.copy( source, recursive );
+ 
+ 		this.material = source.material;
++
++		if ( Array.isArray( source.material ) ) {
++
++			const materials = [];
++
++			for ( let i = 0, l = source.material.length; i < l; i ++ ) {
++
++				materials.push( source.material[ i ] );
++
++			}
++
++			this.material = materials;
++
++		}
++
+ 		this.geometry = source.geometry;
+ 
+ 		return this;
+diff --git a/src/objects/Mesh.js b/src/objects/Mesh.js
+index 03f5290243..2288bbd9ec 100644
+--- a/src/objects/Mesh.js
++++ b/src/objects/Mesh.js
+@@ -66,6 +66,21 @@ class Mesh extends Object3D {
+ 		}
+ 
+ 		this.material = source.material;
++
++		if ( Array.isArray( source.material ) ) {
++
++			const materials = [];
++
++			for ( let i = 0, l = source.material.length; i < l; i ++ ) {
++
++				materials.push( source.material[ i ] );
++
++			}
++
++			this.material = materials;
++
++		}
++
+ 		this.geometry = source.geometry;
+ 
+ 		return this;
+diff --git a/src/objects/Points.js b/src/objects/Points.js
+index 8da688140b..215cb1c022 100644
+--- a/src/objects/Points.js
++++ b/src/objects/Points.js
+@@ -33,6 +33,21 @@ class Points extends Object3D {
+ 		super.copy( source, recursive );
+ 
+ 		this.material = source.material;
++
++		if ( Array.isArray( source.material ) ) {
++
++			const materials = [];
++
++			for ( let i = 0, l = source.material.length; i < l; i ++ ) {
++
++				materials.push( source.material[ i ] );
++
++			}
++
++			this.material = materials;
++
++		}
++
+ 		this.geometry = source.geometry;
+ 
+ 		return this;

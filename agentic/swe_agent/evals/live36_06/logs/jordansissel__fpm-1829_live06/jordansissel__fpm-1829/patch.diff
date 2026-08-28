@@ -1,0 +1,47 @@
+diff --git a/CHANGELOG.rst b/CHANGELOG.rst
+index 9737e7b..cf54087 100644
+--- a/CHANGELOG.rst
++++ b/CHANGELOG.rst
+@@ -1,6 +1,14 @@
+ Release Notes and Change Log
+ ============================
+ 
++1.13.2 (unreleased)
++^^^^^^^^^^^^^^^^^^^
++* deb: Validate the `Provides` field. Debian policy only allows exact version
++  (`=`) matches in the `Provides` field. fpm now fails at build time, rather
++  than letting `dpkg` fail at install time, when a `--provides` entry uses an
++  invalid version comparison operator (such as `<<`, `<=`, `>=`, `>>`, `<`,
++  `>` or `!=`).
++
+ 1.13.1 (July 6, 2021)
+ ^^^^^^^^^^^^^^^^^^^^^
+ * deb: The `--provides` flag now allows for versions. Previously, fpm would
+diff --git a/lib/fpm/package/deb.rb b/lib/fpm/package/deb.rb
+index 93d9e4d..912f93f 100644
+--- a/lib/fpm/package/deb.rb
++++ b/lib/fpm/package/deb.rb
+@@ -793,6 +793,23 @@ class FPM::Package::Deb < FPM::Package
+       logger.warn("Replacing 'provides' entry #{provides} with syntax 'name (= version)'")
+       provides = "#{m[1]} (= #{m[2]})"
+     end
++
++    # Debian policy only allows exact version (`=`) matches in the Provides
++    # field. Any other version comparison operator (`<<`, `<=`, `>=`, `>>`,
++    # `<`, `>`, `!=`, etc.) is invalid and will be rejected by dpkg at install
++    # time. Fail at build time so the error is caught early.
++    # See: https://www.debian.org/doc/debian-policy/ch-relationships.html#s7.6
++    if m = provides.match(/\(\s*(\S+)\s+\S/)
++      op = m[1]
++      if op != "="
++        raise FPM::InvalidPackageConfiguration,
++          "Debian policy only allows exact version (`=`) matches in the " \
++          "`Provides` field, but `#{provides}` uses the `#{op}` operator. " \
++          "Only `=` is permitted. See " \
++          "https://www.debian.org/doc/debian-policy/ch-relationships.html#s7.6"
++      end
++    end
++
+     return provides.rstrip
+   end
+ 

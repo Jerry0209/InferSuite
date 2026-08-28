@@ -1,0 +1,143 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   CHANGELOG.md
+	modified:   crates/printer/src/util.rs
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 4dc6c73c5a9203c5a8a89ce2161feca542329812
+Author: Keith Smiley <keithbsmiley@gmail.com>
+Date:   Mon May 9 08:50:34 2022 -0700
+
+    ignore/types: improve Bazel globs
+    
+    MODULE.bazel is a new file, and WORKSPACE.bazel was always supported
+    similar to BUILD.bazel vs BUILD.
+    
+    PR #2203
+
+diff --git a/crates/ignore/src/default_types.rs b/crates/ignore/src/default_types.rs
+index 0cd9b12..47da7f7 100644
+--- a/crates/ignore/src/default_types.rs
++++ b/crates/ignore/src/default_types.rs
+@@ -23,7 +23,8 @@ pub const DEFAULT_TYPES: &[(&str, &[&str])] = &[
+     ("avro", &["*.avdl", "*.avpr", "*.avsc"]),
+     ("awk", &["*.awk"]),
+     ("bazel", &[
+-        "*.bazel", "*.bzl", "*.BUILD", "*.bazelrc", "BUILD", "WORKSPACE",
++        "*.bazel", "*.bzl", "*.BUILD", "*.bazelrc", "BUILD", "MODULE.bazel",
++        "WORKSPACE", "WORKSPACE.bazel",
+     ]),
+     ("bitbake", &["*.bb", "*.bbappend", "*.bbclass", "*.conf", "*.inc"]),
+     ("brotli", &["*.br"]),
++ git -c core.fileMode=false diff 4dc6c73c5a9203c5a8a89ce2161feca542329812
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index ba427f9..5752070 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -8,6 +8,9 @@ Bug fixes:
+   Fix bug when using `-w` with a regex that can match the empty string.
+ * [BUG #1911](https://github.com/BurntSushi/ripgrep/issues/1911):
+   Disable mmap searching in all non-64-bit environments.
++* [BUG #1893](https://github.com/BurntSushi/ripgrep/issues/1893):
++  Fix bug where `--replace` in a `--multiline` search could cause the
++  replacement to include content beyond what was actually matched.
+ 
+ 
+ 13.0.0 (2021-06-12)
+diff --git a/crates/printer/src/util.rs b/crates/printer/src/util.rs
+index 434deec..d125837 100644
+--- a/crates/printer/src/util.rs
++++ b/crates/printer/src/util.rs
+@@ -82,13 +82,37 @@ impl<M: Matcher> Replacer<M> {
+             dst.clear();
+             matches.clear();
+ 
++            // The replacement logic here is copied (and adapted) from the
++            // default `Matcher::replace_with_captures_at` implementation. We
++            // can't use that method directly because it has no way of
++            // expressing an end bound for the search. In multi-line mode, we
++            // let the regex engine search a little beyond the end of the match
++            // (see above) to account for look-around. But we don't want matches
++            // that begin at or beyond the end of the range to be reported, nor
++            // do we want the content beyond the end of the range to be copied
++            // into the replacement. Otherwise, the replacement can wind up
++            // containing content that was never part of the original match.
++            //
++            // See: https://github.com/BurntSushi/ripgrep/issues/1893
++            //
++            // Note that in the single line (non-multi-line) case, the subject
++            // may have been trimmed above to remove a trailing line terminator,
++            // in which case the subject can be shorter than the end of the
++            // range. So we cap the end of the final copy at the subject length.
++            let end = range.end.min(subject.len());
++            let mut last_match = range.start;
+             matcher
+-                .replace_with_captures_at(
++                .captures_iter_at(
+                     subject,
+                     range.start,
+                     caps,
+-                    dst,
+-                    |caps, dst| {
++                    |caps| {
++                        let m = caps.get(0).unwrap();
++                        if m.start() >= end {
++                            return false;
++                        }
++                        dst.extend(&subject[last_match..m.start()]);
++                        last_match = m.end();
+                         let start = dst.len();
+                         caps.interpolate(
+                             |name| matcher.capture_index(name),
+@@ -96,12 +120,17 @@ impl<M: Matcher> Replacer<M> {
+                             replacement,
+                             dst,
+                         );
+-                        let end = dst.len();
+-                        matches.push(Match::new(start, end));
++                        let match_end = dst.len();
++                        matches.push(Match::new(start, match_end));
+                         true
+                     },
+                 )
+                 .map_err(io::Error::error_message)?;
++            // A match found above (e.g., because of look-around extending the
++            // match beyond the range) can push `last_match` past `end`. Cap it
++            // so that we never copy content beyond the end of the range.
++            let last_match = last_match.min(end);
++            dst.extend(&subject[last_match..end]);
+         }
+         Ok(())
+     }
++ git checkout 4dc6c73c5a9203c5a8a89ce2161feca542329812 tests/regression.rs
+Updated 0 paths from 971467d
++ git apply -v -
+Checking patch tests/regression.rs...
+Applied patch tests/regression.rs cleanly.
++ : '>>>>> Start Test Output'
++ RUSTFLAGS=-Awarnings
++ cargo test --package ripgrep --test integration -- regression::r2208 --exact
++ cat
+   Compiling ripgrep v13.0.0 (/testbed)
+   Compiling grep-printer v0.1.6 (/testbed/crates/printer)
+   Compiling grep v0.2.8 (/testbed/crates/grep)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.22s
+     Running tests/tests.rs (target/debug/deps/integration-592263f78281b3a3)
+
+running 1 test
+test regression::r2208 ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 273 filtered out; finished in 0.01s
+
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 4dc6c73c5a9203c5a8a89ce2161feca542329812 tests/regression.rs
+>>>>> Test Exit Code: 0
+Updated 1 path from 971467d

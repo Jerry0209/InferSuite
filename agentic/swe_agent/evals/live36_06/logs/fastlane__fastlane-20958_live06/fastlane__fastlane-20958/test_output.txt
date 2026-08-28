@@ -1,0 +1,339 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   fastlane/lib/fastlane/fast_file.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 6ff1c49bd90bdc29a94b6f99f568cf86fffc376d
+Author: Vitalii Budnik <nekrich@users.noreply.github.com>
+Date:   Fri Dec 16 19:09:51 2022 +0300
+
+    [spaceship] add methods to rename and disable/enable devices (#20928)
+    
+    * [spaceship] add methods to rename and disable/enable devices
+    
+    * Update spaceship/lib/spaceship/connect_api/models/device.rb
+    
+    Co-authored-by: Aaron Brager <getaaron@gmail.com>
+    
+    * chore: remove redundant platform parameter
+    
+    Co-authored-by: Aaron Brager <getaaron@gmail.com>
+
+diff --git a/spaceship/lib/spaceship/connect_api/models/device.rb b/spaceship/lib/spaceship/connect_api/models/device.rb
+index db3bb89ad..cdc26e788 100644
+--- a/spaceship/lib/spaceship/connect_api/models/device.rb
++++ b/spaceship/lib/spaceship/connect_api/models/device.rb
+@@ -87,6 +87,47 @@ module Spaceship
+         resp = client.post_device(name: name, platform: platform, udid: udid)
+         return resp.to_models.first
+       end
++
++      # @param device_udid [String] Device Provisioning UDID that needs to be modified.
++      # @param client [ConnectAPI] ConnectAPI client.
++      # @param enabled [Boolean] New enabled value. true - if device must be enabled, `false` - to disable device. nil if no status change needed.
++      # @param new_name [String] A new name for the device. nil if no name change needed.
++      # @return (Device) Modified device based on the UDID of the device. nil if no device was found.
++      def self.modify(device_udid, client: nil, enabled: nil, new_name: nil)
++        client ||= Spaceship::ConnectAPI
++        existing = self.find_by_udid(device_udid, client: client, include_disabled: true)
++        return nil if existing.nil?
++
++        enabled = existing.enabled? if enabled.nil?
++        new_name ||= existing.name
++        return existing if existing.name == new_name && existing.enabled? == enabled
++        new_status = enabled ? Status::ENABLED : Status::DISABLED
++
++        resp = client.patch_device(id: existing.id, new_name: new_name, status: new_status)
++        return resp.to_models.first
++      end
++
++      # @param device_udid [String] Device Provisioning UDID that needs to be enabled.
++      # @param client [ConnectAPI] ConnectAPI client.
++      # @return (Device) Modified device based on the UDID of the device. nil if no device was found.
++      def self.enable(device_udid, client: nil)
++        self.modify(device_udid, client: client, enabled: true)
++      end
++
++      # @param device_udid [String] Device Provisioning UDID that needs to be disabled.
++      # @param client [ConnectAPI] ConnectAPI client.
++      # @return (Device) Modified device based on the UDID of the device. nil if no device was found.
++      def self.disable(device_udid, client: nil)
++        self.modify(device_udid, client: client, enabled: false)
++      end
++
++      # @param device_udid [String] Device Provisioning UDID that needs to be renamed.
++      # @param new_name [String] A new name for the device.
++      # @param client [ConnectAPI] ConnectAPI client.
++      # @return (Device) Modified device based on the UDID of the device. nil if no device was found.
++      def self.rename(device_udid, new_name, client: nil)
++        self.modify(device_udid, client: client, new_name: new_name)
++      end
+     end
+   end
+ end
+diff --git a/spaceship/lib/spaceship/connect_api/provisioning/provisioning.rb b/spaceship/lib/spaceship/connect_api/provisioning/provisioning.rb
+index d56e5c412..c3d53f68f 100644
+--- a/spaceship/lib/spaceship/connect_api/provisioning/provisioning.rb
++++ b/spaceship/lib/spaceship/connect_api/provisioning/provisioning.rb
+@@ -190,6 +190,25 @@ module Spaceship
+           provisioning_request_client.post("devices", body)
+         end
+ 
++        def patch_device(id: nil, status: nil, new_name: nil)
++          raise "Device id is nil" if id.nil?
++
++          attributes = {
++            name: new_name,
++            status: status
++          }
++
++          body = {
++            data: {
++              attributes: attributes,
++              id: id,
++              type: "devices"
++            }
++          }
++
++          provisioning_request_client.patch("devices/#{id}", body)
++        end
++
+         #
+         # profiles
+         #
+diff --git a/spaceship/spec/connect_api/fixtures/provisioning/device_disable.json b/spaceship/spec/connect_api/fixtures/provisioning/device_disable.json
+new file mode 100644
+index 000000000..6a2ddf793
+--- /dev/null
++++ b/spaceship/spec/connect_api/fixtures/provisioning/device_disable.json
+@@ -0,0 +1,26 @@
++{
++    "data" : {
++      "id": "123456789",
++      "type": "devices",
++      "attributes": {
++        "addedDate" : "2018-10-10T01:43:27.000+0000",
++        "serialNumber" : null,
++        "description" : null,
++        "platform" : "IOS",
++        "name" : "Josh's iPhone",
++        "deviceClass" : "IPHONE",
++        "model" : "iPhone 8",
++        "udid" : "184098239048390489012849018",
++        "platformName" : "iOS",
++        "responseId" : "03514686-0a76-401e-80d5-7f23845fcd16",
++        "status" : "DISABLED",
++        "devicePlatformLabel" : "iPhone"
++      },
++      "links": {
++        "self": "https://developer.apple.com:443/services-account/v1/devices/123456789"
++      }
++    },
++    "links": {
++      "self": "https://developer.apple.com:443/services-account/v1/devices/123456789"
++    }
++}
+diff --git a/spaceship/spec/connect_api/fixtures/provisioning/device_enable.json b/spaceship/spec/connect_api/fixtures/provisioning/device_enable.json
+new file mode 100644
+index 000000000..221fbdc19
+--- /dev/null
++++ b/spaceship/spec/connect_api/fixtures/provisioning/device_enable.json
+@@ -0,0 +1,26 @@
++{
++    "data" : {
++      "id": "13371337",
++      "type": "devices",
++      "attributes": {
++        "addedDate" : "2020-12-14T11:46:42.000+0000",
++        "serialNumber" : null,
++        "description" : null,
++        "platform" : "IOS",
++        "name" : "Roger's iPhone",
++        "deviceClass" : "IPHONE",
++        "model" : "iPhone XS",
++        "udid" : "5233342324433534345354534",
++        "platformName" : "iOS",
++        "responseId" : "91ad3a67-c3c5-4ec2-b31d-879f683badbd",
++        "status" : "ENABLED",
++        "devicePlatformLabel" : "iPhone"
++      },
++      "links": {
++        "self": "https://developer.apple.com:443/services-account/v1/devices/13371337"
++      }
++    },
++    "links": {
++      "self": "https://developer.apple.com:443/services-account/v1/devices/13371337"
++    }
++}
+diff --git a/spaceship/spec/connect_api/fixtures/provisioning/device_rename.json b/spaceship/spec/connect_api/fixtures/provisioning/device_rename.json
+new file mode 100644
+index 000000000..d3b1f44b8
+--- /dev/null
++++ b/spaceship/spec/connect_api/fixtures/provisioning/device_rename.json
+@@ -0,0 +1,26 @@
++{
++    "data" : {
++      "id": "987654321",
++      "type": "devices",
++      "attributes": {
++        "addedDate" : "2018-11-23T16:22:00.000+0000",
++        "serialNumber" : null,
++        "description" : null,
++        "platform" : "IOS",
++        "name" : "renamed device",
++        "deviceClass" : "APPLE_TV",
++        "model" : "Apple TV (4th generation)",
++        "udid" : "5843758273957239847298374982",
++        "platformName" : "iOS",
++        "responseId" : "03514686-0a76-401e-80d5-7f23845fcd16",
++        "status" : "ENABLED",
++        "devicePlatformLabel" : "Apple TV"
++      },
++      "links": {
++        "self": "https://developer.apple.com:443/services-account/v1/devices/987654321"
++      }
++    },
++    "links": {
++      "self": "https://developer.apple.com:443/services-account/v1/devices/987654321"
++    }
++}
+diff --git a/spaceship/spec/connect_api/models/device_spec.rb b/spaceship/spec/connect_api/models/device_spec.rb
+index e9628000c..9b3c5475c 100644
+--- a/spaceship/spec/connect_api/models/device_spec.rb
++++ b/spaceship/spec/connect_api/models/device_spec.rb
+@@ -51,5 +51,27 @@ describe Spaceship::ConnectAPI::Device do
+       expect(existing_device.enabled?).to eq(false)
+       expect(existing_device.udid).to eq(udid)
+     end
++
++    it '#enable an existing disabled udid' do
++      udid = "5233342324433534345354534"
++      existing_device = Spaceship::ConnectAPI::Device.enable(udid)
++      expect(existing_device.enabled?).to eq(true)
++      expect(existing_device.udid).to eq(udid)
++    end
++
++    it '#disable an existing disabled udid' do
++      udid = "184098239048390489012849018"
++      existing_device = Spaceship::ConnectAPI::Device.disable(udid)
++      expect(existing_device.enabled?).to eq(false)
++      expect(existing_device.udid).to eq(udid)
++    end
++
++    it '#rename an existing disabled udid' do
++      udid = "5843758273957239847298374982"
++      new_name = "renamed device"
++      existing_device = Spaceship::ConnectAPI::Device.rename(udid, new_name)
++      expect(existing_device.name).to eq(new_name)
++      expect(existing_device.udid).to eq(udid)
++    end
+   end
+ end
+diff --git a/spaceship/spec/connect_api/provisioning/provisioning_stubbing.rb b/spaceship/spec/connect_api/provisioning/provisioning_stubbing.rb
+index 09d3d8eb4..c62787769 100644
+--- a/spaceship/spec/connect_api/provisioning/provisioning_stubbing.rb
++++ b/spaceship/spec/connect_api/provisioning/provisioning_stubbing.rb
+@@ -91,6 +91,15 @@ class ConnectAPIStubbing
+       def stub_devices
+         stub_request(:post, "https://developer.apple.com/services-account/v1/devices").
+           to_return(status: 200, body: read_fixture_file('devices.json'), headers: { 'Content-Type' => 'application/vnd.api+json' })
++
++        stub_request(:patch, "https://developer.apple.com/services-account/v1/devices/13371337").
++          to_return(status: 200, body: read_fixture_file('device_enable.json'), headers: { 'Content-Type' => 'application/vnd.api+json' })
++
++        stub_request(:patch, "https://developer.apple.com/services-account/v1/devices/123456789").
++          to_return(status: 200, body: read_fixture_file('device_disable.json'), headers: { 'Content-Type' => 'application/vnd.api+json' })
++
++        stub_request(:patch, "https://developer.apple.com/services-account/v1/devices/987654321").
++          to_return(status: 200, body: read_fixture_file('device_rename.json'), headers: { 'Content-Type' => 'application/vnd.api+json' })
+       end
+ 
+       def stub_profiles
++ git -c core.fileMode=false diff 6ff1c49bd90bdc29a94b6f99f568cf86fffc376d
+diff --git a/fastlane/lib/fastlane/fast_file.rb b/fastlane/lib/fastlane/fast_file.rb
+index 3a65ed8bb..a12521541 100644
+--- a/fastlane/lib/fastlane/fast_file.rb
++++ b/fastlane/lib/fastlane/fast_file.rb
+@@ -304,7 +304,13 @@ module Fastlane
+           # `path` and `dependencies`.
+           checkout_path = is_eligible_for_caching ? "" : "#{path.shellescape} #{checkout_dependencies}"
+ 
+-          if Dir[clone_folder].empty?
++          # Whether the repository was just cloned in this call. This is used to
++          # know if the working directory has no files checked out yet (since we
++          # clone with `--no-checkout`), in which case a `git checkout` is
++          # always needed, regardless of the requested version.
++          repo_was_cloned = Dir[clone_folder].empty?
++
++          if repo_was_cloned
+             UI.message("Cloning remote git repo...")
+             Helper.with_env_values('GIT_TERMINAL_PROMPT' => '0') do
+               # When using cached clones, we need the entire repository history
+@@ -344,7 +350,13 @@ module Fastlane
+             Helper.with_env_values('GIT_TERMINAL_PROMPT' => '0') do
+               Actions.sh("cd #{clone_folder.shellescape} && git fetch --all --quiet && git checkout #{checkout_param.shellescape} #{checkout_path} && git reset --hard && git rebase")
+             end
+-          else
++          elsif is_eligible_for_caching && !version.nil? && !repo_was_cloned
++            # When using cached clones, the repository is not cloned on every
++            # call, so the requested version might already be checked out, in
++            # which case we can skip the `git checkout` to avoid superfluous
++            # work. This only applies when the repository was not just cloned,
++            # since a fresh clone is done with `--no-checkout`, meaning no files
++            # are present in the working directory yet.
+             begin
+               # https://stackoverflow.com/a/1593574/865175
+               current_tag = Actions.sh("cd #{clone_folder.shellescape} && git describe --exact-match --tags HEAD").strip
+@@ -352,9 +364,15 @@ module Fastlane
+               current_tag = nil
+             end
+ 
+-            if !version.nil? && current_tag != version
++            if current_tag != version
+               Actions.sh("cd #{clone_folder.shellescape} && git checkout #{checkout_param.shellescape} #{checkout_path}")
+             end
++          else
++            # When not using cached clones, or when the repository was just
++            # cloned, the working directory has no files checked out yet (since
++            # we clone with `--no-checkout`), which means we always need to
++            # check out the requested `path` and `dependencies`.
++            Actions.sh("cd #{clone_folder.shellescape} && git checkout #{checkout_param.shellescape} #{checkout_path}")
+           end
+ 
+           # Knowing that we check out all the files and directories when the
++ git checkout 6ff1c49bd90bdc29a94b6f99f568cf86fffc376d fastlane/spec/actions_specs/import_from_git_spec.rb
+Updated 0 paths from fb5ca7b6b
++ git apply -v -
+Checking patch fastlane/spec/actions_specs/import_from_git_spec.rb...
+Applied patch fastlane/spec/actions_specs/import_from_git_spec.rb cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ FASTLANE_SKIP_UPDATE_CHECK=1
++ bundle exec rspec ./fastlane/spec/actions_specs/import_from_git_spec.rb --no-color --format json
++ tail -n +2
++ jq -r '.examples[] | "\(.description) - \(.id) - \(.status)"'
+raises an exception when no path is given - ./fastlane/spec/actions_specs/import_from_git_spec.rb[1:1:1:1] - passed
+works with version - ./fastlane/spec/actions_specs/import_from_git_spec.rb[1:1:1:2:1] - passed
+works with dependencies and version - ./fastlane/spec/actions_specs/import_from_git_spec.rb[1:1:1:2:2] - passed
+works with path and version - ./fastlane/spec/actions_specs/import_from_git_spec.rb[1:1:1:2:3] - passed
+works with actions - ./fastlane/spec/actions_specs/import_from_git_spec.rb[1:1:1:2:4] - passed
+works with older version - ./fastlane/spec/actions_specs/import_from_git_spec.rb[1:1:1:2:5] - passed
+works with new tags - ./fastlane/spec/actions_specs/import_from_git_spec.rb[1:1:1:2:6] - passed
+works with inexistent paths - ./fastlane/spec/actions_specs/import_from_git_spec.rb[1:1:1:2:7] - passed
+works with branch - ./fastlane/spec/actions_specs/import_from_git_spec.rb[1:1:1:2:8] - passed
+works with updated branch - ./fastlane/spec/actions_specs/import_from_git_spec.rb[1:1:1:2:9] - passed
+works with new tags and branch - ./fastlane/spec/actions_specs/import_from_git_spec.rb[1:1:1:2:10] - passed
+doesn't superfluously execute checkout - ./fastlane/spec/actions_specs/import_from_git_spec.rb[1:1:1:2:11] - passed
+works when no cache is provided - ./fastlane/spec/actions_specs/import_from_git_spec.rb[1:1:1:3:1] - passed
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 6ff1c49bd90bdc29a94b6f99f568cf86fffc376d fastlane/spec/actions_specs/import_from_git_spec.rb
+>>>>> Test Exit Code: 0
+Updated 1 path from fb5ca7b6b

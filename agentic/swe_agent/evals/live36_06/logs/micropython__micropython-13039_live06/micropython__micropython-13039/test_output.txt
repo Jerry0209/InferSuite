@@ -1,0 +1,374 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   py/objslice.c
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.venv/
+	tests/unix/ffi_lib.so
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit fce8d9fd55409ab1027beee5671bc653fb5beb97
+Author: Angus Gratton <angus@redyak.com.au>
+Date:   Thu Nov 9 10:30:23 2023 +1100
+
+    esp32/modsocket: Try garbage collection if the socket limit is reached.
+    
+    If the hard socket limit (default 16) is reached then it's possible that
+    socket allocation fails but garbage collection would allow it to succeed.
+    
+    Perform a GC pass and try again before giving up, similar to the logic
+    elsewhere in MicroPython that tries a GC pass before raising MemoryError.
+    
+    This work was funded through GitHub Sponsors.
+    
+    Signed-off-by: Angus Gratton <angus@redyak.com.au>
+
+diff --git a/ports/esp32/modsocket.c b/ports/esp32/modsocket.c
+index cacc52dec..ca8c63030 100644
+--- a/ports/esp32/modsocket.c
++++ b/ports/esp32/modsocket.c
+@@ -36,6 +36,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
++#include "py/gc.h"
+ #include "py/runtime0.h"
+ #include "py/nlr.h"
+ #include "py/objlist.h"
+@@ -274,6 +275,13 @@ STATIC mp_obj_t socket_make_new(const mp_obj_type_t *type_in, size_t n_args, siz
+     sock->state = sock->type == SOCK_STREAM ? SOCKET_STATE_NEW : SOCKET_STATE_CONNECTED;
+ 
+     sock->fd = lwip_socket(sock->domain, sock->type, sock->proto);
++    if (sock->fd < 0 && errno == ENFILE) {
++        // ESP32 LWIP has a hard socket limit, ENFILE is returned when this is
++        // reached. Similar to the logic elsewhere for MemoryError, try running
++        // GC before failing outright.
++        gc_collect();
++        sock->fd = lwip_socket(sock->domain, sock->type, sock->proto);
++    }
+     if (sock->fd < 0) {
+         mp_raise_OSError(errno);
+     }
++ git -c core.fileMode=false diff fce8d9fd55409ab1027beee5671bc653fb5beb97
+diff --git a/py/objslice.c b/py/objslice.c
+index 75fa3bc3f..8e1b0dd62 100644
+--- a/py/objslice.c
++++ b/py/objslice.c
+@@ -54,7 +54,17 @@ STATIC mp_obj_t slice_unary_op(mp_unary_op_t op, mp_obj_t o_in) {
+ 
+ #if MICROPY_PY_BUILTINS_SLICE_INDICES
+ STATIC mp_obj_t slice_indices(mp_obj_t self_in, mp_obj_t length_obj) {
+-    mp_int_t length = mp_obj_int_get_checked(length_obj);
++    mp_int_t length;
++    if (!mp_obj_get_int_maybe(length_obj, &length)) {
++        // Not an integer type, e.g. a float, which cannot be used as a length.
++        #if MICROPY_ERROR_REPORTING <= MICROPY_ERROR_REPORTING_TERSE
++        mp_raise_TypeError(MP_ERROR_TEXT("length argument must be an integer"));
++        #else
++        mp_raise_msg_varg(&mp_type_TypeError,
++            MP_ERROR_TEXT("'%s' object cannot be interpreted as an integer"),
++            mp_obj_get_type_str(length_obj));
++        #endif
++    }
+     mp_bound_slice_t bound_indices;
+     mp_obj_slice_indices(self_in, length, &bound_indices);
+ 
++ git checkout fce8d9fd55409ab1027beee5671bc653fb5beb97 tests/basics/slice_indices.py
+Updated 0 paths from 3fa0aa6cc
++ git apply -v -
+Checking patch tests/basics/slice_indices.py...
+Applied patch tests/basics/slice_indices.py cleanly.
++ source ./tools/ci.sh
+++ which nproc
++++ nproc
+++ MAKEOPTS=-j16
+++ CI_UNIX_OPTS_SYS_SETTRACE=(MICROPY_PY_BTREE=0 MICROPY_PY_FFI=0 MICROPY_PY_SSL=0 CFLAGS_EXTRA="-DMICROPY_PY_SYS_SETTRACE=1")
+++ CI_UNIX_OPTS_SYS_SETTRACE_STACKLESS=(MICROPY_PY_BTREE=0 MICROPY_PY_FFI=0 MICROPY_PY_SSL=0 CFLAGS_EXTRA="-DMICROPY_STACKLESS=1 -DMICROPY_STACKLESS_STRICT=1 -DMICROPY_PY_SYS_SETTRACE=1")
+++ CI_UNIX_OPTS_QEMU_MIPS=(CROSS_COMPILE=mips-linux-gnu- VARIANT=coverage MICROPY_STANDALONE=1 LDFLAGS_EXTRA="-static")
+++ CI_UNIX_OPTS_QEMU_ARM=(CROSS_COMPILE=arm-linux-gnueabi- VARIANT=coverage MICROPY_STANDALONE=1)
+++ ZEPHYR_DOCKER_VERSION=v0.21.0
+++ ZEPHYR_SDK_VERSION=0.13.2
+++ ZEPHYR_VERSION=v3.1.0
++ ci_unix_build_helper VARIANT=standard
++ make -j16 -C mpy-cross
+make: Entering directory '/testbed/mpy-cross'
+Use make V=1 or set BUILD_VERBOSE in your environment to increase build verbosity.
+GEN build/genhdr/mpversion.h
+GEN build/genhdr/qstr.i.last
+GEN build/genhdr/qstr.split
+GEN build/genhdr/moduledefs.split
+GEN build/genhdr/root_pointers.split
+GEN build/genhdr/moduledefs.collected
+GEN build/genhdr/root_pointers.collected
+GEN build/genhdr/qstrdefs.collected.h
+Module registrations not updated
+Root pointer registrations not updated
+QSTR not updated
+CC ../py/objslice.c
+CC ../py/modsys.c
+CC main.c
+LINK build/mpy-cross
+   text	   data	    bss	    dec	    hex	filename
+ 326557	  13784	    872	 341213	  534dd	build/mpy-cross
+make: Leaving directory '/testbed/mpy-cross'
++ make -j16 -C ports/unix VARIANT=standard submodules
+make: Entering directory '/testbed/ports/unix'
+Use make V=1 or set BUILD_VERBOSE in your environment to increase build verbosity.
+Updating submodules: lib/mbedtls lib/berkeley-db-1.xx lib/micropython-lib
+Synchronizing submodule url for '../../lib/berkeley-db-1.xx'
+Synchronizing submodule url for '../../lib/mbedtls'
+Synchronizing submodule url for '../../lib/micropython-lib'
+make: Leaving directory '/testbed/ports/unix'
++ make -j16 -C ports/unix VARIANT=standard deplibs
+make: Entering directory '/testbed/ports/unix'
+Use make V=1 or set BUILD_VERBOSE in your environment to increase build verbosity.
+make: Nothing to be done for 'deplibs'.
+make: Leaving directory '/testbed/ports/unix'
++ make -j16 -C ports/unix VARIANT=standard
+make: Entering directory '/testbed/ports/unix'
+Use make V=1 or set BUILD_VERBOSE in your environment to increase build verbosity.
+GEN build-standard/genhdr/mpversion.h
+GEN build-standard/genhdr/qstr.i.last
+GEN build-standard/genhdr/moduledefs.split
+GEN build-standard/genhdr/root_pointers.split
+GEN build-standard/genhdr/qstr.split
+GEN build-standard/genhdr/compressed.split
+GEN build-standard/genhdr/moduledefs.collected
+GEN build-standard/genhdr/root_pointers.collected
+GEN build-standard/genhdr/qstrdefs.collected.h
+GEN build-standard/genhdr/compressed.collected
+Module registrations not updated
+Root pointer registrations not updated
+QSTR not updated
+Compressed data updated
+GEN build-standard/genhdr/compressed.data.h
+CC ../../py/mpstate.c
+CC ../../py/nlrx86.c
+CC ../../py/nlr.c
+CC ../../py/nlrx64.c
+CC ../../py/nlraarch64.c
+CC ../../py/nlrmips.c
+CC ../../py/nlrthumb.c
+CC ../../py/nlrpowerpc.c
+CC ../../py/nlrxtensa.c
+CC ../../py/nlrsetjmp.c
+CC ../../py/malloc.c
+CC ../../py/gc.c
+CC ../../py/pystack.c
+CC ../../py/qstr.c
+CC ../../py/vstr.c
+CC ../../py/mpprint.c
+CC ../../py/unicode.c
+CC ../../py/mpz.c
+CC ../../py/reader.c
+CC ../../py/lexer.c
+CC ../../py/parse.c
+CC ../../py/scope.c
+CC ../../py/compile.c
+CC ../../py/emitcommon.c
+CC ../../py/emitbc.c
+CC ../../py/asmbase.c
+CC ../../py/asmx64.c
+GEN build-standard/frozen_content.c
+CC ../../py/emitnx64.c
+CC ../../py/emitnx86.c
+CC ../../py/emitinlinethumb.c
+CC ../../py/asmxtensa.c
+CC ../../py/emitinlinextensa.c
+CC ../../py/formatfloat.c
+CC ../../py/parsenumbase.c
+CC ../../py/parsenum.c
+CC ../../py/emitglue.c
+CC ../../py/persistentcode.c
+CC ../../py/runtime.c
+CC ../../py/runtime_utils.c
+CC ../../py/scheduler.c
+CC ../../py/nativeglue.c
+CC ../../py/pairheap.c
+CC ../../py/stackctrl.c
+CC ../../py/argcheck.c
+CC ../../py/warning.c
+CC ../../py/profile.c
+CC ../../py/map.c
+CC ../../py/obj.c
+CC ../../py/objarray.c
+CC ../../py/objattrtuple.c
+CC ../../py/objbool.c
+CC ../../py/objboundmeth.c
+CC ../../py/objcell.c
+CC ../../py/objclosure.c
+CC ../../py/objcomplex.c
+CC ../../py/objdeque.c
+CC ../../py/objdict.c
+CC ../../py/objenumerate.c
+CC ../../py/objexcept.c
+CC ../../py/objfilter.c
+CC ../../py/objfloat.c
+CC ../../py/objfun.c
+CC ../../py/objgenerator.c
+CC ../../py/objgetitemiter.c
+CC ../../py/objint.c
+CC ../../py/objint_longlong.c
+CC ../../py/objint_mpz.c
+CC ../../py/objlist.c
+CC ../../py/objmap.c
+CC ../../py/objmodule.c
+CC ../../py/objobject.c
+CC ../../py/objpolyiter.c
+CC ../../py/objproperty.c
+CC ../../py/objnone.c
+CC ../../py/objnamedtuple.c
+CC ../../py/objrange.c
+CC ../../py/objreversed.c
+CC ../../py/objset.c
+CC ../../py/objsingleton.c
+CC ../../py/objslice.c
+CC ../../py/objstr.c
+CC ../../py/objstrunicode.c
+CC ../../py/objstringio.c
+CC ../../py/objtuple.c
+CC ../../py/objtype.c
+CC ../../py/objzip.c
+CC ../../py/opmethods.c
+CC ../../py/sequence.c
+CC ../../py/stream.c
+CC ../../py/binary.c
+CC ../../py/builtinimport.c
+CC ../../py/builtinevex.c
+CC ../../py/builtinhelp.c
+CC ../../py/modarray.c
+CC ../../py/modbuiltins.c
+CC ../../py/modcollections.c
+CC ../../py/modgc.c
+CC ../../py/modio.c
+CC ../../py/modmath.c
+CC ../../py/modcmath.c
+CC ../../py/modmicropython.c
+CC ../../py/modstruct.c
+CC ../../py/modsys.c
+CC ../../py/moderrno.c
+CC ../../py/modthread.c
+CC ../../py/vm.c
+CC ../../py/bc.c
+CC ../../py/showbc.c
+CC ../../py/repl.c
+CC ../../py/smallint.c
+CC build-standard/frozen_content.c
+CC ../../py/frozenmod.c
+CC ../../extmod/machine_adc.c
+CC ../../extmod/machine_adc_block.c
+CC ../../extmod/machine_bitstream.c
+CC ../../extmod/machine_i2c.c
+CC ../../extmod/machine_i2s.c
+CC ../../extmod/machine_mem.c
+CC ../../extmod/machine_pinbase.c
+CC ../../extmod/machine_pulse.c
+CC ../../extmod/machine_pwm.c
+CC ../../extmod/machine_signal.c
+CC ../../extmod/machine_spi.c
+CC ../../extmod/machine_timer.c
+CC ../../extmod/machine_uart.c
+CC ../../extmod/machine_wdt.c
+CC ../../extmod/modasyncio.c
+CC ../../extmod/modbinascii.c
+CC ../../extmod/modbluetooth.c
+CC ../../extmod/modbtree.c
+CC ../../extmod/modcryptolib.c
+CC ../../extmod/moddeflate.c
+CC ../../extmod/modframebuf.c
+CC ../../extmod/modhashlib.c
+CC ../../extmod/modheapq.c
+CC ../../extmod/modjson.c
+CC ../../extmod/modlwip.c
+CC ../../extmod/modnetwork.c
+CC ../../extmod/modonewire.c
+CC ../../extmod/modos.c
+CC ../../extmod/modplatform.c
+CC ../../extmod/modrandom.c
+CC ../../extmod/modre.c
+CC ../../extmod/modselect.c
+CC ../../extmod/modsocket.c
+CC ../../extmod/modssl_axtls.c
+CC ../../extmod/modssl_mbedtls.c
+CC ../../extmod/modtime.c
+CC ../../extmod/moductypes.c
+CC ../../extmod/modwebrepl.c
+CC ../../extmod/modwebsocket.c
+CC ../../extmod/network_cyw43.c
+CC ../../extmod/network_esp_hosted.c
+CC ../../extmod/network_lwip.c
+CC ../../extmod/network_ninaw10.c
+CC ../../extmod/network_wiznet5k.c
+CC ../../extmod/os_dupterm.c
+CC ../../extmod/vfs.c
+CC ../../extmod/vfs_blockdev.c
+CC ../../extmod/vfs_fat.c
+CC ../../extmod/vfs_fat_diskio.c
+CC ../../extmod/vfs_fat_file.c
+CC ../../extmod/vfs_lfs.c
+CC ../../extmod/vfs_posix.c
+CC ../../extmod/vfs_posix_file.c
+CC ../../extmod/vfs_reader.c
+CC ../../extmod/virtpin.c
+CC ../../shared/libc/abort_.c
+CC ../../shared/libc/printf.c
+CC main.c
+CC gccollect.c
+CC unix_mphal.c
+CC mpthreadport.c
+CC input.c
+CC modmachine.c
+CC alloc.c
+CC mpbthciport.c
+CC mpbtstackport_common.c
+CC mpbtstackport_h4.c
+CC mpbtstackport_usb.c
+CC mpnimbleport.c
+CC modtermios.c
+CC modsocket.c
+CC modffi.c
+CC modjni.c
+CC ../../shared/runtime/gchelper_generic.c
+CC ../../shared/timeutils/timeutils.c
+CC ../../shared/readline/readline.c
+LINK build-standard/micropython
+   text	   data	    bss	    dec	    hex	filename
+ 729946	  67928	   7120	 804994	  c4882	build-standard/micropython
+make: Leaving directory '/testbed/ports/unix'
++ gcc -shared -o tests/unix/ffi_lib.so tests/unix/ffi_lib.c
++ : '>>>>> Start Test Output'
++ cd tests
++ MICROPY_CPYTHON3=python3
++ MICROPY_MICROPYTHON=../ports/unix/build-standard/micropython
++ ./run-tests.py -i slice
++ cat
+pass  basics/bytearray_slice_assign.py
+pass  basics/builtin_slice.py
+pass  basics/list_slice.py
+pass  unicode/unicode_slice.py
+pass  basics/slice_intbig.py
+pass  basics/tuple_slice.py
+pass  basics/slice_attrs.py
+pass  basics/string_slice.py
+pass  basics/memoryview_slice_assign.py
+pass  basics/list_slice_3arg.py
+pass  basics/memoryview_slice_size.py
+pass  basics/slice_op.py
+pass  basics/slice_indices.py
+pass  basics/list_slice_assign.py
+pass  basics/list_slice_assign_grow.py
+15 tests performed (153 individual testcases)
+15 tests passed
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout fce8d9fd55409ab1027beee5671bc653fb5beb97 tests/basics/slice_indices.py
+Updated 1 path from 3fa0aa6cc

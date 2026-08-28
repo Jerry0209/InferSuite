@@ -1,0 +1,3084 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+  (commit or discard the untracked or modified content in submodules)
+	modified:   modules/oniguruma (modified content)
+	modified:   src/parser.c
+	modified:   src/parser.y
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 4dc2a2fb9df94ec45d107b798173c7db9c695a7f
+Author: itchyny <itchyny@cybozu.co.jp>
+Date:   Tue Jul 4 07:48:29 2023 +0900
+
+    Implement scan/2 filter (#1961)
+
+diff --git a/src/builtin.jq b/src/builtin.jq
+index 0966351..c608555 100644
+--- a/src/builtin.jq
++++ b/src/builtin.jq
+@@ -90,12 +90,13 @@ def capture($val): ($val|type) as $vt | if $vt == "string" then capture($val; nu
+    elif $vt == "array" and ($val | length) > 1 then capture($val[0]; $val[1])
+    elif $vt == "array" and ($val | length) > 0 then capture($val[0]; null)
+    else error( $vt + " not a string or array") end;
+-def scan(re):
+-  match(re; "g")
+-  |  if (.captures|length > 0)
++def scan($re; $flags):
++  match($re; "g" + $flags)
++    | if (.captures|length > 0)
+       then [ .captures | .[] | .string ]
+       else .string
+-      end ;
++      end;
++def scan($re): scan($re; null);
+ #
+ # If input is an array, then emit a stream of successive subarrays of length n (or less),
+ # and similarly for strings.
+diff --git a/tests/onig.test b/tests/onig.test
+index 805efab..d49391f 100644
+--- a/tests/onig.test
++++ b/tests/onig.test
+@@ -126,6 +126,10 @@ gsub("^.*?a"; "b")
+ ["a,b, c, d, e,f",", a,b, c, d, e,f, "]
+ [[["a,b:c, d, e,f"],["a,b:c:d:e,f"],[", ",", ",", "]],[[":a,b, c, d, e,f, "],[":a,b:c:d:e,f:"],[", ",", ",", ",", ",", "]]]
+ 
++[.[] | scan("b+"; "i")]
++["","bBb","abcABBBCabbbc"]
++["bBb","b","BBB","bbb"]
++
+ # reference to named captures
+ gsub("(?<x>.)[^a]*"; "+\(.x)-")
+ "Abcabc"
++ git -c core.fileMode=false diff 4dc2a2fb9df94ec45d107b798173c7db9c695a7f
+diff --git a/modules/oniguruma b/modules/oniguruma
+--- a/modules/oniguruma
++++ b/modules/oniguruma
+@@ -1 +1 @@
+-Subproject commit 660f097dff67e331cef864d70abc96dc3332a37f
++Subproject commit 660f097dff67e331cef864d70abc96dc3332a37f-dirty
+diff --git a/src/parser.c b/src/parser.c
+index 28d47c5..1b08027 100644
+--- a/src/parser.c
++++ b/src/parser.c
+@@ -900,9 +900,9 @@ union yyalloc
+ /* YYNNTS -- Number of nonterminals.  */
+ #define YYNNTS  30
+ /* YYNRULES -- Number of rules.  */
+-#define YYNRULES  170
++#define YYNRULES  171
+ /* YYNSTATES -- Number of states.  */
+-#define YYNSTATES  326
++#define YYNSTATES  327
+ 
+ /* YYMAXUTOK -- Last valid token kind.  */
+ #define YYMAXUTOK   302
+@@ -963,17 +963,17 @@ static const yytype_int16 yyrline[] =
+      474,   478,   482,   486,   490,   494,   498,   502,   506,   511,
+      514,   531,   540,   547,   555,   566,   571,   577,   580,   585,
+      589,   593,   600,   600,   604,   604,   611,   614,   617,   623,
+-     626,   631,   634,   637,   643,   646,   649,   657,   661,   664,
+-     667,   670,   673,   676,   679,   682,   685,   689,   695,   698,
++     626,   629,   634,   637,   640,   646,   649,   652,   660,   664,
++     667,   670,   673,   676,   679,   682,   685,   688,   692,   698,
+      701,   704,   707,   710,   713,   716,   719,   722,   725,   728,
+-     731,   734,   737,   740,   743,   746,   749,   771,   775,   779,
+-     788,   800,   805,   806,   807,   808,   811,   814,   819,   824,
+-     827,   832,   835,   840,   844,   847,   852,   855,   860,   863,
+-     868,   871,   874,   877,   880,   883,   891,   897,   900,   903,
++     731,   734,   737,   740,   743,   746,   749,   752,   774,   778,
++     782,   791,   803,   808,   809,   810,   811,   814,   817,   822,
++     827,   830,   835,   838,   843,   847,   850,   855,   858,   863,
++     866,   871,   874,   877,   880,   883,   886,   894,   900,   903,
+      906,   909,   912,   915,   918,   921,   924,   927,   930,   933,
+-     936,   939,   942,   945,   948,   951,   956,   959,   960,   961,
+-     964,   967,   970,   973,   977,   981,   985,   989,   993,   997,
+-    1005
++     936,   939,   942,   945,   948,   951,   954,   959,   962,   963,
++     964,   967,   970,   973,   976,   980,   984,   988,   992,   996,
++    1000,  1008
+ };
+ #endif
+ 
+@@ -1019,7 +1019,7 @@ yysymbol_name (yysymbol_kind_t yysymbol)
+ #define yypact_value_is_default(Yyn) \
+   ((Yyn) == YYPACT_NINF)
+ 
+-#define YYTABLE_NINF (-157)
++#define YYTABLE_NINF (-158)
+ 
+ #define yytable_value_is_error(Yyn) \
+   ((Yyn) == YYTABLE_NINF)
+@@ -1060,7 +1060,7 @@ static const yytype_int16 yypact[] =
+     1544,  1595,  -120,   119,   119,  -120,  -120,  -120,   140,   -20,
+     -120,  -120,  -120,  -120,  -120,  -120,   143,  1646,  -120,   775,
+      775,   775,   -20,  -120,  -120,  -120,  1747,  1323,  1168,  -120,
+-    -120,  -120,   775,  -120,  1357,  -120
++    -120,  -120,  -120,   775,  -120,  1357,  -120
+ };
+ 
+ /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
+@@ -1068,39 +1068,39 @@ static const yytype_int16 yypact[] =
+    means the default is an error.  */
+ static const yytype_uint8 yydefact[] =
+ {
+-       4,     0,     0,     6,   110,    83,   100,   102,    75,     0,
++       4,     0,     0,     6,   111,    84,   101,   103,    76,     0,
+        0,     0,     0,     0,     0,     0,    62,     0,     0,     0,
+-       0,     0,     0,     0,     0,   101,    48,     1,     0,     0,
+-       8,     6,     0,     0,    79,    64,     0,     0,     0,     0,
+-      19,     0,    77,     0,    66,    33,     0,     0,   108,   137,
+-     138,   139,   140,   141,   142,   143,   144,   145,   146,   147,
+-     148,   149,   150,   151,   152,   153,   154,   155,     0,   109,
+-      86,     0,     0,    85,     0,   105,     0,     0,   167,     0,
+-       0,   163,   168,     0,   157,     0,     0,     0,     0,     0,
++       0,     0,     0,     0,     0,   102,    48,     1,     0,     0,
++       8,     6,     0,     0,    80,    64,     0,     0,     0,     0,
++      19,     0,    78,     0,    66,    33,     0,     0,   109,   138,
++     139,   140,   141,   142,   143,   144,   145,   146,   147,   148,
++     149,   150,   151,   152,   153,   154,   155,   156,     0,   110,
++      87,     0,     0,    86,     0,   106,     0,     0,   168,     0,
++       0,   164,   169,     0,   158,     0,     0,     0,     0,     0,
+        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+        0,     0,     0,     0,     0,     0,     0,     0,     0,    22,
+-       5,    10,    82,     0,     0,     0,     0,    54,    53,     3,
+-       2,     8,     7,    49,     0,   118,     0,   116,    66,     0,
+-       0,     0,     0,     0,     0,     0,    76,     0,   112,   103,
+-       0,    87,    81,   113,   104,     0,     0,   115,     0,     0,
+-     165,   166,     0,     0,   106,     0,    41,    42,    43,    26,
++       5,    10,    83,     0,     0,     0,     0,    54,    53,     3,
++       2,     8,     7,    49,     0,   119,     0,   117,    66,     0,
++       0,     0,     0,     0,     0,     0,    77,     0,   113,   104,
++       0,    88,    82,   114,   105,     0,     0,   116,     0,     0,
++     166,   167,     0,     0,   107,     0,    41,    42,    43,    26,
+       25,    24,    28,    32,    35,    37,    40,    27,    46,    47,
+       29,    30,    23,    44,    45,    31,    34,    36,    38,    39,
+-      78,     0,     0,     0,     0,     0,   122,     0,    84,     0,
+-       0,    93,     0,     0,     9,    50,     0,   111,     0,    61,
++      79,     0,     0,     0,     0,     0,   123,     0,    85,     0,
++       0,    94,     0,     0,     9,    50,     0,   112,     0,    61,
+        0,     0,    57,     0,    17,     0,     0,     0,    20,    18,
+-       0,    67,     0,    63,     0,     0,   159,     0,   170,    73,
+-     160,     0,     0,   162,   161,   158,   123,   126,     0,     0,
+-       0,     0,     0,     0,     0,   128,     0,     0,     0,     0,
+-      80,   114,     0,    92,     0,    89,    52,     0,   117,    65,
++       0,    67,     0,    63,     0,     0,   160,     0,   171,    74,
++     161,     0,     0,   163,   162,   159,   124,   127,     0,     0,
++       0,     0,     0,     0,     0,   129,     0,     0,     0,     0,
++      81,   115,     0,    93,     0,    90,    52,     0,   118,    65,
+       59,    60,     0,     0,    55,     0,     0,    16,    15,     0,
+-       0,    21,     0,   107,    72,     0,     0,   164,     0,   124,
+-       0,     0,     0,   130,     0,     0,   125,     0,   121,    11,
+-      91,    99,    98,     0,    88,    51,    58,     0,     0,     0,
+-       0,     0,    68,    71,   169,   127,   136,   132,     0,     0,
+-     134,   129,   133,    90,    96,    95,    97,     0,    70,     0,
+-       0,     0,     0,   131,    94,    56,     0,     0,     0,   135,
+-      69,    12,     0,    14,     0,    13
++       0,    21,     0,   108,    73,     0,     0,   165,     0,   125,
++       0,     0,     0,   131,     0,     0,   126,     0,   122,    11,
++      92,   100,    99,     0,    89,    51,    58,     0,     0,     0,
++       0,     0,    68,    72,   170,   128,   137,   133,     0,     0,
++     135,   130,   134,    91,    97,    96,    98,     0,    70,     0,
++       0,     0,     0,   132,    95,    56,     0,     0,     0,   136,
++      71,    69,    12,     0,    14,     0,    13
+ };
+ 
+ /* YYPGOTO[NTERM-NUM].  */
+@@ -1139,13 +1139,13 @@ static const yytype_int16 yytable[] =
+      106,   107,   108,   140,   109,   141,   142,   148,   143,   203,
+      205,   154,   152,   209,   153,   155,   180,   210,   193,   214,
+      109,   219,   226,   219,   222,   237,   238,   219,   219,   295,
+-      81,   296,   297,  -120,   240,   300,   293,   294,   302,   241,
++      81,   296,   297,  -121,   240,   300,   293,   294,   302,   241,
+       81,   243,   259,   263,   260,   236,   265,   273,   284,   285,
+      189,   266,   270,     4,     5,     6,     7,     8,   271,   274,
+      313,   277,   251,     9,   287,   299,   239,    10,   233,   242,
+-    -119,    11,    12,   319,   303,   125,    13,   304,    14,    15,
++    -120,    11,    12,   319,   303,   125,    13,   304,    14,    15,
+      305,   314,   122,   312,   194,   118,   286,   301,   198,   261,
+-      16,   262,   219,   320,     0,     0,     0,   219,   248,     0,
++      16,   262,   219,   321,     0,     0,     0,   219,   248,     0,
+        0,     0,    17,    85,    86,    87,    88,     0,     0,    18,
+      272,    19,   190,    20,    21,   191,    22,   279,     0,    89,
+       90,     0,     0,   283,     0,     0,    91,    92,    93,    94,
+@@ -1153,26 +1153,26 @@ static const yytype_int16 yytable[] =
+      219,   219,     0,   101,   102,   103,   104,   105,   106,   107,
+      108,     0,   109,     0,     0,     0,     0,     0,     0,     0,
+      233,     0,     0,     0,     0,     0,   307,     0,     0,     0,
+-       0,     0,   -74,    70,     0,     0,    71,   -74,     0,    72,
+-       0,   -74,   -74,   -74,   -74,   -74,     0,     0,   316,   317,
+-     318,   -74,   -74,   -74,     0,     0,   -74,   -74,   -74,     0,
+-     -74,   324,     0,     0,   -74,   -74,   -74,   -74,   -74,   -74,
+-     -74,   -74,     0,    16,     0,     0,   -74,     0,     0,   -74,
+-     -74,   -74,   -74,   -74,   -74,   -74,   -74,   -74,   -74,     0,
+-     -74,   -74,     0,   -74,     0,   -74,   -74,   -74,   -74,    77,
+-     -74,     0,    78,  -157,  -157,    72,     0,     0,     0,     0,
++       0,     0,   -75,    70,     0,     0,    71,   -75,     0,    72,
++       0,   -75,   -75,   -75,   -75,   -75,     0,     0,   316,   317,
++     318,   -75,   -75,   -75,     0,     0,   -75,   -75,   -75,     0,
++     -75,     0,   325,     0,   -75,   -75,   -75,   -75,   -75,   -75,
++     -75,   -75,     0,    16,     0,     0,   -75,     0,     0,   -75,
++     -75,   -75,   -75,   -75,   -75,   -75,   -75,   -75,   -75,     0,
++     -75,   -75,     0,   -75,     0,   -75,   -75,   -75,   -75,    77,
++     -75,     0,    78,  -158,  -158,    72,     0,     0,     0,     0,
+        0,    49,    50,    51,    52,    53,    54,    55,    56,    57,
+       58,    59,    60,    61,    62,    63,    64,    65,    66,    67,
+-       0,  -157,  -157,     0,     0,     0,     0,     0,     0,    16,
+-       0,     0,     0,  -157,  -157,   104,   105,   106,   107,   108,
++       0,  -158,  -158,     0,     0,     0,     0,     0,     0,    16,
++       0,     0,     0,  -158,  -158,   104,   105,   106,   107,   108,
+        0,   109,     0,     0,     0,     0,   215,     0,    79,    78,
+-      80,     0,    72,     0,     0,     0,  -156,     0,    49,    50,
++      80,     0,    72,     0,     0,     0,  -157,     0,    49,    50,
+       51,    52,    53,    54,    55,    56,    57,    58,    59,    60,
+       61,    62,    63,    64,    65,    66,    67,     4,     5,     6,
+        7,     8,     0,     0,     0,     0,    16,     0,     0,    74,
+        0,     0,     4,     5,     6,     7,     8,     0,     0,     0,
+        0,     0,     9,    15,     0,    79,    10,    80,     0,     0,
+-      11,    12,     0,  -156,    16,    13,     0,    14,    15,     0,
++      11,    12,     0,  -157,    16,    13,     0,    14,    15,     0,
+        0,     0,     0,     0,     0,     0,   217,     0,     0,    16,
+        0,     0,     0,    18,     0,    19,     0,    20,    21,     0,
+       22,    17,     4,     5,     6,     7,     8,     0,    18,     0,
+@@ -1246,7 +1246,7 @@ static const yytype_int16 yytable[] =
+        0,     0,     0,    89,    90,     0,     0,     0,     0,     0,
+       91,    92,    93,    94,    95,    96,    97,    98,     0,     0,
+        0,     0,     0,     0,     0,    99,   100,   101,   102,   103,
+-     104,   105,   106,   107,   108,     0,   109,   322,     0,   323,
++     104,   105,   106,   107,   108,     0,   109,   323,     0,   324,
+       85,    86,    87,    88,     0,     0,     0,     0,     0,     0,
+        0,     0,     0,     0,     0,     0,    89,    90,     0,     0,
+        0,     0,     0,    91,    92,    93,    94,    95,    96,    97,
+@@ -1262,10 +1262,10 @@ static const yytype_int16 yytable[] =
+      298,     0,     0,     0,     0,    91,    92,    93,    94,    95,
+       96,    97,    98,     0,     0,     0,    85,    86,    87,    88,
+       99,   100,   101,   102,   103,   104,   105,   106,   107,   108,
+-       0,   109,    89,    90,   321,     0,     0,     0,     0,    91,
++       0,   109,    89,    90,   322,     0,     0,     0,     0,    91,
+       92,    93,    94,    95,    96,    97,    98,     0,     0,     0,
+       85,    86,    87,    88,    99,   100,   101,   102,   103,   104,
+-     105,   106,   107,   108,     0,   109,    89,    90,   325,     0,
++     105,   106,   107,   108,     0,   109,    89,    90,   326,     0,
+        0,     0,     0,    91,    92,    93,    94,    95,    96,    97,
+       98,     0,     0,     0,     0,     0,     0,     0,    99,   100,
+      101,   102,   103,   104,   105,   106,   107,   108,     0,   109,
+@@ -1301,7 +1301,7 @@ static const yytype_int16 yytable[] =
+        0,     0,     0,     0,    99,   100,   101,   102,   103,   104,
+      105,   106,   107,   108,     0,   109,    85,    86,    87,    88,
+        0,     0,     0,     0,     0,     0,     0,   255,   256,     0,
+-       0,     0,    89,    90,     0,     0,     0,     0,     0,    91,
++       0,   320,    89,    90,     0,     0,     0,     0,     0,    91,
+       92,    93,    94,    95,    96,    97,    98,     0,     0,     0,
+        0,     0,     0,     0,    99,   100,   101,   102,   103,   104,
+      105,   106,   107,   108,     0,   109,    85,    86,    87,    88,
+@@ -1324,11 +1324,11 @@ static const yytype_int16 yytable[] =
+       98,     0,     0,     0,    85,    86,    87,    88,    99,   100,
+      101,   102,   103,   104,   105,   106,   107,   108,     0,   109,
+       89,    90,     0,     0,     0,     0,     0,    91,    92,    93,
+-      94,    95,    96,    97,    98,     0,     0,     0,  -157,    86,
++      94,    95,    96,    97,    98,     0,     0,     0,  -158,    86,
+       87,     0,    99,   100,   101,   102,   103,   104,   105,   106,
+      107,   108,     0,   109,    89,    90,     0,     0,     0,     0,
+-       0,  -157,  -157,  -157,  -157,  -157,  -157,    97,    98,     0,
+-       0,    86,    87,     0,     0,     0,     0,     0,  -157,   102,
++       0,  -158,  -158,  -158,  -158,  -158,  -158,    97,    98,     0,
++       0,    86,    87,     0,     0,     0,     0,     0,  -158,   102,
+      103,   104,   105,   106,   107,   108,    89,   109,     0,     0,
+        0,     0,     0,     0,     0,     0,     0,     0,     0,    97,
+       98,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+@@ -1375,7 +1375,7 @@ static const yytype_int16 yycheck[] =
+       -1,    -1,     0,     1,    -1,    -1,     4,     5,    -1,     7,
+       -1,     9,    10,    11,    12,    13,    -1,    -1,   309,   310,
+      311,    19,    20,    21,    -1,    -1,    24,    25,    26,    -1,
+-      28,   322,    -1,    -1,    32,    33,    34,    35,    36,    37,
++      28,    -1,   323,    -1,    32,    33,    34,    35,    36,    37,
+       38,    39,    -1,    41,    -1,    -1,    44,    -1,    -1,    47,
+       48,    49,    50,    51,    52,    53,    54,    55,    56,    -1,
+       58,    59,    -1,    61,    -1,    63,    64,    65,    66,     1,
+@@ -1520,7 +1520,7 @@ static const yytype_int16 yycheck[] =
+       -1,    -1,    -1,    -1,    47,    48,    49,    50,    51,    52,
+       53,    54,    55,    56,    -1,    58,     9,    10,    11,    12,
+       -1,    -1,    -1,    -1,    -1,    -1,    -1,    20,    21,    -1,
+-      -1,    -1,    25,    26,    -1,    -1,    -1,    -1,    -1,    32,
++      -1,    24,    25,    26,    -1,    -1,    -1,    -1,    -1,    32,
+       33,    34,    35,    36,    37,    38,    39,    -1,    -1,    -1,
+       -1,    -1,    -1,    -1,    47,    48,    49,    50,    51,    52,
+       53,    54,    55,    56,    -1,    58,     9,    10,    11,    12,
+@@ -1596,7 +1596,7 @@ static const yytype_int8 yystos[] =
+       74,    74,    44,    86,    86,    92,    92,    92,    61,    63,
+       92,    95,    92,    58,    58,    58,    66,    74,    24,    19,
+       59,    59,    63,    92,    58,    59,    74,    74,    74,    92,
+-      85,    61,    59,    61,    74,    61
++      24,    85,    61,    59,    61,    74,    61
+ };
+ 
+ /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
+@@ -1609,17 +1609,17 @@ static const yytype_int8 yyr1[] =
+       74,    74,    74,    74,    74,    74,    74,    74,    74,    75,
+       75,    76,    76,    76,    77,    78,    78,    79,    79,    80,
+       80,    80,    82,    81,    83,    81,    84,    84,    84,    85,
+-      85,    86,    86,    86,    87,    87,    87,    87,    87,    87,
++      85,    85,    86,    86,    86,    87,    87,    87,    87,    87,
+       87,    87,    87,    87,    87,    87,    87,    87,    87,    87,
+       87,    87,    87,    87,    87,    87,    87,    87,    87,    87,
+       87,    87,    87,    87,    87,    87,    87,    87,    87,    87,
+-      87,    87,    87,    87,    87,    87,    88,    88,    89,    90,
+-      90,    91,    91,    92,    92,    92,    93,    93,    94,    94,
+-      95,    95,    95,    95,    95,    95,    95,    96,    96,    96,
++      87,    87,    87,    87,    87,    87,    87,    88,    88,    89,
++      90,    90,    91,    91,    92,    92,    92,    93,    93,    94,
++      94,    95,    95,    95,    95,    95,    95,    95,    96,    96,
+       96,    96,    96,    96,    96,    96,    96,    96,    96,    96,
+-      96,    96,    96,    96,    96,    96,    97,    97,    97,    97,
+-      98,    98,    98,    98,    98,    98,    98,    98,    98,    98,
+-      98
++      96,    96,    96,    96,    96,    96,    96,    97,    97,    97,
++      97,    98,    98,    98,    98,    98,    98,    98,    98,    98,
++      98,    98
+ };
+ 
+ /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
+@@ -1632,17 +1632,17 @@ static const yytype_int8 yyr2[] =
+        3,     3,     3,     3,     3,     3,     3,     3,     1,     2,
+        3,     5,     4,     2,     1,     5,     8,     1,     3,     2,
+        2,     1,     0,     4,     0,     5,     0,     2,     4,     5,
+-       3,     3,     2,     1,     1,     1,     3,     2,     3,     2,
+-       4,     3,     2,     1,     3,     2,     2,     3,     5,     4,
+-       6,     5,     4,     3,     7,     6,     6,     6,     5,     5,
+-       1,     1,     1,     3,     3,     2,     3,     5,     2,     2,
+-       1,     4,     3,     3,     4,     3,     1,     3,     1,     3,
+-       1,     3,     1,     2,     3,     3,     1,     3,     1,     3,
+-       2,     4,     3,     3,     3,     5,     3,     1,     1,     1,
++       3,     5,     3,     2,     1,     1,     1,     3,     2,     3,
++       2,     4,     3,     2,     1,     3,     2,     2,     3,     5,
++       4,     6,     5,     4,     3,     7,     6,     6,     6,     5,
++       5,     1,     1,     1,     3,     3,     2,     3,     5,     2,
++       2,     1,     4,     3,     3,     4,     3,     1,     3,     1,
++       3,     1,     3,     1,     2,     3,     3,     1,     3,     1,
++       3,     2,     4,     3,     3,     3,     5,     3,     1,     1,
+        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
+-       1,     1,     1,     1,     1,     1,     0,     1,     3,     3,
+-       3,     3,     3,     1,     4,     2,     2,     1,     1,     5,
+-       3
++       1,     1,     1,     1,     1,     1,     1,     0,     1,     3,
++       3,     3,     3,     3,     1,     4,     2,     2,     1,     1,
++       5,     3
+ };
+ 
+ 
+@@ -3302,48 +3302,56 @@ yyreduce:
+ #line 3303 "src/parser.c"
+     break;
+ 
+-  case 71: /* ExpD: ExpD '|' ExpD  */
+-#line 631 "src/parser.y"
+-              {
+-  (yyval.blk) = block_join((yyvsp[-2].blk), (yyvsp[0].blk));
++  case 71: /* ElseBody: "elif" Exp "then" Exp "end"  */
++#line 629 "src/parser.y"
++                            {
++  (yyval.blk) = gen_cond((yyvsp[-3].blk), (yyvsp[-1].blk), gen_noop());
+ }
+ #line 3311 "src/parser.c"
+     break;
+ 
+-  case 72: /* ExpD: '-' ExpD  */
++  case 72: /* ExpD: ExpD '|' ExpD  */
+ #line 634 "src/parser.y"
+-         {
+-  (yyval.blk) = BLOCK((yyvsp[0].blk), gen_call("_negate", gen_noop()));
++              {
++  (yyval.blk) = block_join((yyvsp[-2].blk), (yyvsp[0].blk));
+ }
+ #line 3319 "src/parser.c"
+     break;
+ 
+-  case 73: /* ExpD: Term  */
++  case 73: /* ExpD: '-' ExpD  */
+ #line 637 "src/parser.y"
+-     {
+-  (yyval.blk) = (yyvsp[0].blk);
++         {
++  (yyval.blk) = BLOCK((yyvsp[0].blk), gen_call("_negate", gen_noop()));
+ }
+ #line 3327 "src/parser.c"
+     break;
+ 
+-  case 74: /* Term: '.'  */
+-#line 643 "src/parser.y"
+-    {
+-  (yyval.blk) = gen_noop();
++  case 74: /* ExpD: Term  */
++#line 640 "src/parser.y"
++     {
++  (yyval.blk) = (yyvsp[0].blk);
+ }
+ #line 3335 "src/parser.c"
+     break;
+ 
+-  case 75: /* Term: ".."  */
++  case 75: /* Term: '.'  */
+ #line 646 "src/parser.y"
+     {
+-  (yyval.blk) = gen_call("recurse", gen_noop());
++  (yyval.blk) = gen_noop();
+ }
+ #line 3343 "src/parser.c"
+     break;
+ 
+-  case 76: /* Term: "break" '$' IDENT  */
++  case 76: /* Term: ".."  */
+ #line 649 "src/parser.y"
++    {
++  (yyval.blk) = gen_call("recurse", gen_noop());
++}
++#line 3351 "src/parser.c"
++    break;
++
++  case 77: /* Term: "break" '$' IDENT  */
++#line 652 "src/parser.y"
+                 {
+   jv v = jv_string_fmt("*label-%s", jv_string_value((yyvsp[0].literal)));     // impossible symbol
+   (yyval.blk) = gen_location((yyloc), locations,
+@@ -3352,247 +3360,247 @@ yyreduce:
+   jv_free(v);
+   jv_free((yyvsp[0].literal));
+ }
+-#line 3356 "src/parser.c"
++#line 3364 "src/parser.c"
+     break;
+ 
+-  case 77: /* Term: "break" error  */
+-#line 657 "src/parser.y"
++  case 78: /* Term: "break" error  */
++#line 660 "src/parser.y"
+             {
+   FAIL((yyloc), "break requires a label to break to");
+   (yyval.blk) = gen_noop();
+ }
+-#line 3365 "src/parser.c"
++#line 3373 "src/parser.c"
+     break;
+ 
+-  case 78: /* Term: Term FIELD '?'  */
+-#line 661 "src/parser.y"
++  case 79: /* Term: Term FIELD '?'  */
++#line 664 "src/parser.y"
+                {
+   (yyval.blk) = gen_index_opt((yyvsp[-2].blk), gen_const((yyvsp[-1].literal)));
+ }
+-#line 3373 "src/parser.c"
++#line 3381 "src/parser.c"
+     break;
+ 
+-  case 79: /* Term: FIELD '?'  */
+-#line 664 "src/parser.y"
++  case 80: /* Term: FIELD '?'  */
++#line 667 "src/parser.y"
+           {
+   (yyval.blk) = gen_index_opt(gen_noop(), gen_const((yyvsp[-1].literal)));
+ }
+-#line 3381 "src/parser.c"
++#line 3389 "src/parser.c"
+     break;
+ 
+-  case 80: /* Term: Term '.' String '?'  */
+-#line 667 "src/parser.y"
++  case 81: /* Term: Term '.' String '?'  */
++#line 670 "src/parser.y"
+                     {
+   (yyval.blk) = gen_index_opt((yyvsp[-3].blk), (yyvsp[-1].blk));
+ }
+-#line 3389 "src/parser.c"
++#line 3397 "src/parser.c"
+     break;
+ 
+-  case 81: /* Term: '.' String '?'  */
+-#line 670 "src/parser.y"
++  case 82: /* Term: '.' String '?'  */
++#line 673 "src/parser.y"
+                {
+   (yyval.blk) = gen_index_opt(gen_noop(), (yyvsp[-1].blk));
+ }
+-#line 3397 "src/parser.c"
++#line 3405 "src/parser.c"
+     break;
+ 
+-  case 82: /* Term: Term FIELD  */
+-#line 673 "src/parser.y"
++  case 83: /* Term: Term FIELD  */
++#line 676 "src/parser.y"
+                         {
+   (yyval.blk) = gen_index((yyvsp[-1].blk), gen_const((yyvsp[0].literal)));
+ }
+-#line 3405 "src/parser.c"
++#line 3413 "src/parser.c"
+     break;
+ 
+-  case 83: /* Term: FIELD  */
+-#line 676 "src/parser.y"
++  case 84: /* Term: FIELD  */
++#line 679 "src/parser.y"
+                    {
+   (yyval.blk) = gen_index(gen_noop(), gen_const((yyvsp[0].literal)));
+ }
+-#line 3413 "src/parser.c"
++#line 3421 "src/parser.c"
+     break;
+ 
+-  case 84: /* Term: Term '.' String  */
+-#line 679 "src/parser.y"
++  case 85: /* Term: Term '.' String  */
++#line 682 "src/parser.y"
+                              {
+   (yyval.blk) = gen_index((yyvsp[-2].blk), (yyvsp[0].blk));
+ }
+-#line 3421 "src/parser.c"
++#line 3429 "src/parser.c"
+     break;
+ 
+-  case 85: /* Term: '.' String  */
+-#line 682 "src/parser.y"
++  case 86: /* Term: '.' String  */
++#line 685 "src/parser.y"
+                         {
+   (yyval.blk) = gen_index(gen_noop(), (yyvsp[0].blk));
+ }
+-#line 3429 "src/parser.c"
++#line 3437 "src/parser.c"
+     break;
+ 
+-  case 86: /* Term: '.' error  */
+-#line 685 "src/parser.y"
++  case 87: /* Term: '.' error  */
++#line 688 "src/parser.y"
+           {
+   FAIL((yyloc), "try .[\"field\"] instead of .field for unusually named fields");
+   (yyval.blk) = gen_noop();
+ }
+-#line 3438 "src/parser.c"
++#line 3446 "src/parser.c"
+     break;
+ 
+-  case 87: /* Term: '.' IDENT error  */
+-#line 689 "src/parser.y"
++  case 88: /* Term: '.' IDENT error  */
++#line 692 "src/parser.y"
+                 {
+   jv_free((yyvsp[-1].literal));
+   FAIL((yyloc), "try .[\"field\"] instead of .field for unusually named fields");
+   (yyval.blk) = gen_noop();
+ }
+-#line 3448 "src/parser.c"
+-    break;
+-
+-  case 88: /* Term: Term '[' Exp ']' '?'  */
+-#line 695 "src/parser.y"
+-                     {
+-  (yyval.blk) = gen_index_opt((yyvsp[-4].blk), (yyvsp[-2].blk));
+-}
+ #line 3456 "src/parser.c"
+     break;
+ 
+-  case 89: /* Term: Term '[' Exp ']'  */
++  case 89: /* Term: Term '[' Exp ']' '?'  */
+ #line 698 "src/parser.y"
+-                              {
+-  (yyval.blk) = gen_index((yyvsp[-3].blk), (yyvsp[-1].blk));
++                     {
++  (yyval.blk) = gen_index_opt((yyvsp[-4].blk), (yyvsp[-2].blk));
+ }
+ #line 3464 "src/parser.c"
+     break;
+ 
+-  case 90: /* Term: Term '.' '[' Exp ']' '?'  */
++  case 90: /* Term: Term '[' Exp ']'  */
+ #line 701 "src/parser.y"
+-                         {
+-  (yyval.blk) = gen_index_opt((yyvsp[-5].blk), (yyvsp[-2].blk));
++                              {
++  (yyval.blk) = gen_index((yyvsp[-3].blk), (yyvsp[-1].blk));
+ }
+ #line 3472 "src/parser.c"
+     break;
+ 
+-  case 91: /* Term: Term '.' '[' Exp ']'  */
++  case 91: /* Term: Term '.' '[' Exp ']' '?'  */
+ #line 704 "src/parser.y"
+-                                  {
+-  (yyval.blk) = gen_index((yyvsp[-4].blk), (yyvsp[-1].blk));
++                         {
++  (yyval.blk) = gen_index_opt((yyvsp[-5].blk), (yyvsp[-2].blk));
+ }
+ #line 3480 "src/parser.c"
+     break;
+ 
+-  case 92: /* Term: Term '[' ']' '?'  */
++  case 92: /* Term: Term '.' '[' Exp ']'  */
+ #line 707 "src/parser.y"
+-                 {
+-  (yyval.blk) = block_join((yyvsp[-3].blk), gen_op_simple(EACH_OPT));
++                                  {
++  (yyval.blk) = gen_index((yyvsp[-4].blk), (yyvsp[-1].blk));
+ }
+ #line 3488 "src/parser.c"
+     break;
+ 
+-  case 93: /* Term: Term '[' ']'  */
++  case 93: /* Term: Term '[' ']' '?'  */
+ #line 710 "src/parser.y"
+-                          {
+-  (yyval.blk) = block_join((yyvsp[-2].blk), gen_op_simple(EACH));
++                 {
++  (yyval.blk) = block_join((yyvsp[-3].blk), gen_op_simple(EACH_OPT));
+ }
+ #line 3496 "src/parser.c"
+     break;
+ 
+-  case 94: /* Term: Term '[' Exp ':' Exp ']' '?'  */
++  case 94: /* Term: Term '[' ']'  */
+ #line 713 "src/parser.y"
+-                             {
+-  (yyval.blk) = gen_slice_index((yyvsp[-6].blk), (yyvsp[-4].blk), (yyvsp[-2].blk), INDEX_OPT);
++                          {
++  (yyval.blk) = block_join((yyvsp[-2].blk), gen_op_simple(EACH));
+ }
+ #line 3504 "src/parser.c"
+     break;
+ 
+-  case 95: /* Term: Term '[' Exp ':' ']' '?'  */
++  case 95: /* Term: Term '[' Exp ':' Exp ']' '?'  */
+ #line 716 "src/parser.y"
+-                         {
+-  (yyval.blk) = gen_slice_index((yyvsp[-5].blk), (yyvsp[-3].blk), gen_const(jv_null()), INDEX_OPT);
++                             {
++  (yyval.blk) = gen_slice_index((yyvsp[-6].blk), (yyvsp[-4].blk), (yyvsp[-2].blk), INDEX_OPT);
+ }
+ #line 3512 "src/parser.c"
+     break;
+ 
+-  case 96: /* Term: Term '[' ':' Exp ']' '?'  */
++  case 96: /* Term: Term '[' Exp ':' ']' '?'  */
+ #line 719 "src/parser.y"
+                          {
+-  (yyval.blk) = gen_slice_index((yyvsp[-5].blk), gen_const(jv_null()), (yyvsp[-2].blk), INDEX_OPT);
++  (yyval.blk) = gen_slice_index((yyvsp[-5].blk), (yyvsp[-3].blk), gen_const(jv_null()), INDEX_OPT);
+ }
+ #line 3520 "src/parser.c"
+     break;
+ 
+-  case 97: /* Term: Term '[' Exp ':' Exp ']'  */
++  case 97: /* Term: Term '[' ':' Exp ']' '?'  */
+ #line 722 "src/parser.y"
+-                                      {
+-  (yyval.blk) = gen_slice_index((yyvsp[-5].blk), (yyvsp[-3].blk), (yyvsp[-1].blk), INDEX);
++                         {
++  (yyval.blk) = gen_slice_index((yyvsp[-5].blk), gen_const(jv_null()), (yyvsp[-2].blk), INDEX_OPT);
+ }
+ #line 3528 "src/parser.c"
+     break;
+ 
+-  case 98: /* Term: Term '[' Exp ':' ']'  */
++  case 98: /* Term: Term '[' Exp ':' Exp ']'  */
+ #line 725 "src/parser.y"
+-                                  {
+-  (yyval.blk) = gen_slice_index((yyvsp[-4].blk), (yyvsp[-2].blk), gen_const(jv_null()), INDEX);
++                                      {
++  (yyval.blk) = gen_slice_index((yyvsp[-5].blk), (yyvsp[-3].blk), (yyvsp[-1].blk), INDEX);
+ }
+ #line 3536 "src/parser.c"
+     break;
+ 
+-  case 99: /* Term: Term '[' ':' Exp ']'  */
++  case 99: /* Term: Term '[' Exp ':' ']'  */
+ #line 728 "src/parser.y"
+                                   {
+-  (yyval.blk) = gen_slice_index((yyvsp[-4].blk), gen_const(jv_null()), (yyvsp[-1].blk), INDEX);
++  (yyval.blk) = gen_slice_index((yyvsp[-4].blk), (yyvsp[-2].blk), gen_const(jv_null()), INDEX);
+ }
+ #line 3544 "src/parser.c"
+     break;
+ 
+-  case 100: /* Term: LITERAL  */
++  case 100: /* Term: Term '[' ':' Exp ']'  */
+ #line 731 "src/parser.y"
+-        {
+-  (yyval.blk) = gen_const((yyvsp[0].literal));
++                                  {
++  (yyval.blk) = gen_slice_index((yyvsp[-4].blk), gen_const(jv_null()), (yyvsp[-1].blk), INDEX);
+ }
+ #line 3552 "src/parser.c"
+     break;
+ 
+-  case 101: /* Term: String  */
++  case 101: /* Term: LITERAL  */
+ #line 734 "src/parser.y"
+-       {
+-  (yyval.blk) = (yyvsp[0].blk);
++        {
++  (yyval.blk) = gen_const((yyvsp[0].literal));
+ }
+ #line 3560 "src/parser.c"
+     break;
+ 
+-  case 102: /* Term: FORMAT  */
++  case 102: /* Term: String  */
+ #line 737 "src/parser.y"
+        {
+-  (yyval.blk) = gen_format(gen_noop(), (yyvsp[0].literal));
++  (yyval.blk) = (yyvsp[0].blk);
+ }
+ #line 3568 "src/parser.c"
+     break;
+ 
+-  case 103: /* Term: '(' Exp ')'  */
++  case 103: /* Term: FORMAT  */
+ #line 740 "src/parser.y"
+-            {
+-  (yyval.blk) = (yyvsp[-1].blk);
++       {
++  (yyval.blk) = gen_format(gen_noop(), (yyvsp[0].literal));
+ }
+ #line 3576 "src/parser.c"
+     break;
+ 
+-  case 104: /* Term: '[' Exp ']'  */
++  case 104: /* Term: '(' Exp ')'  */
+ #line 743 "src/parser.y"
+             {
+-  (yyval.blk) = gen_collect((yyvsp[-1].blk));
++  (yyval.blk) = (yyvsp[-1].blk);
+ }
+ #line 3584 "src/parser.c"
+     break;
+ 
+-  case 105: /* Term: '[' ']'  */
++  case 105: /* Term: '[' Exp ']'  */
+ #line 746 "src/parser.y"
+-        {
+-  (yyval.blk) = gen_const(jv_array());
++            {
++  (yyval.blk) = gen_collect((yyvsp[-1].blk));
+ }
+ #line 3592 "src/parser.c"
+     break;
+ 
+-  case 106: /* Term: '{' MkDict '}'  */
++  case 106: /* Term: '[' ']'  */
+ #line 749 "src/parser.y"
++        {
++  (yyval.blk) = gen_const(jv_array());
++}
++#line 3600 "src/parser.c"
++    break;
++
++  case 107: /* Term: '{' MkDict '}'  */
++#line 752 "src/parser.y"
+                {
+   block o = gen_const_object((yyvsp[-1].blk));
+   if (o.first != NULL)
+@@ -3600,29 +3608,29 @@ yyreduce:
+   else
+     (yyval.blk) = BLOCK(gen_subexp(gen_const(jv_object())), (yyvsp[-1].blk), gen_op_simple(POP));
+ }
+-#line 3604 "src/parser.c"
++#line 3612 "src/parser.c"
+     break;
+ 
+-  case 107: /* Term: '$' '$' '$' '$' IDENT  */
+-#line 771 "src/parser.y"
++  case 108: /* Term: '$' '$' '$' '$' IDENT  */
++#line 774 "src/parser.y"
+                       {
+   (yyval.blk) = gen_location((yyloc), locations, gen_op_unbound(LOADVN, jv_string_value((yyvsp[0].literal))));
+   jv_free((yyvsp[0].literal));
+ }
+-#line 3613 "src/parser.c"
++#line 3621 "src/parser.c"
+     break;
+ 
+-  case 108: /* Term: '$' IDENT  */
+-#line 775 "src/parser.y"
++  case 109: /* Term: '$' IDENT  */
++#line 778 "src/parser.y"
+           {
+   (yyval.blk) = gen_location((yyloc), locations, gen_op_unbound(LOADV, jv_string_value((yyvsp[0].literal))));
+   jv_free((yyvsp[0].literal));
+ }
+-#line 3622 "src/parser.c"
++#line 3630 "src/parser.c"
+     break;
+ 
+-  case 109: /* Term: '$' Keyword  */
+-#line 779 "src/parser.y"
++  case 110: /* Term: '$' Keyword  */
++#line 782 "src/parser.y"
+             {
+   if (strcmp(jv_string_value((yyvsp[0].literal)), "__loc__") == 0) {
+     (yyval.blk) = gen_const(JV_OBJECT(jv_string("file"), jv_copy(locations->fname),
+@@ -3632,11 +3640,11 @@ yyreduce:
+   }
+   jv_free((yyvsp[0].literal));
+ }
+-#line 3636 "src/parser.c"
++#line 3644 "src/parser.c"
+     break;
+ 
+-  case 110: /* Term: IDENT  */
+-#line 788 "src/parser.y"
++  case 111: /* Term: IDENT  */
++#line 791 "src/parser.y"
+       {
+   const char *s = jv_string_value((yyvsp[0].literal));
+   if (strcmp(s, "false") == 0)
+@@ -3649,198 +3657,198 @@ yyreduce:
+     (yyval.blk) = gen_location((yyloc), locations, gen_call(s, gen_noop()));
+   jv_free((yyvsp[0].literal));
+ }
+-#line 3653 "src/parser.c"
++#line 3661 "src/parser.c"
+     break;
+ 
+-  case 111: /* Term: IDENT '(' Args ')'  */
+-#line 800 "src/parser.y"
++  case 112: /* Term: IDENT '(' Args ')'  */
++#line 803 "src/parser.y"
+                    {
+   (yyval.blk) = gen_call(jv_string_value((yyvsp[-3].literal)), (yyvsp[-1].blk));
+   (yyval.blk) = gen_location((yylsp[-3]), locations, (yyval.blk));
+   jv_free((yyvsp[-3].literal));
+ }
+-#line 3663 "src/parser.c"
++#line 3671 "src/parser.c"
+     break;
+ 
+-  case 112: /* Term: '(' error ')'  */
+-#line 805 "src/parser.y"
++  case 113: /* Term: '(' error ')'  */
++#line 808 "src/parser.y"
+               { (yyval.blk) = gen_noop(); }
+-#line 3669 "src/parser.c"
++#line 3677 "src/parser.c"
+     break;
+ 
+-  case 113: /* Term: '[' error ']'  */
+-#line 806 "src/parser.y"
++  case 114: /* Term: '[' error ']'  */
++#line 809 "src/parser.y"
+               { (yyval.blk) = gen_noop(); }
+-#line 3675 "src/parser.c"
++#line 3683 "src/parser.c"
+     break;
+ 
+-  case 114: /* Term: Term '[' error ']'  */
+-#line 807 "src/parser.y"
++  case 115: /* Term: Term '[' error ']'  */
++#line 810 "src/parser.y"
+                    { (yyval.blk) = (yyvsp[-3].blk); }
+-#line 3681 "src/parser.c"
++#line 3689 "src/parser.c"
+     break;
+ 
+-  case 115: /* Term: '{' error '}'  */
+-#line 808 "src/parser.y"
++  case 116: /* Term: '{' error '}'  */
++#line 811 "src/parser.y"
+               { (yyval.blk) = gen_noop(); }
+-#line 3687 "src/parser.c"
++#line 3695 "src/parser.c"
+     break;
+ 
+-  case 116: /* Args: Arg  */
+-#line 811 "src/parser.y"
++  case 117: /* Args: Arg  */
++#line 814 "src/parser.y"
+     {
+   (yyval.blk) = (yyvsp[0].blk);
+ }
+-#line 3695 "src/parser.c"
++#line 3703 "src/parser.c"
+     break;
+ 
+-  case 117: /* Args: Args ';' Arg  */
+-#line 814 "src/parser.y"
++  case 118: /* Args: Args ';' Arg  */
++#line 817 "src/parser.y"
+              {
+   (yyval.blk) = BLOCK((yyvsp[-2].blk), (yyvsp[0].blk));
+ }
+-#line 3703 "src/parser.c"
++#line 3711 "src/parser.c"
+     break;
+ 
+-  case 118: /* Arg: Exp  */
+-#line 819 "src/parser.y"
++  case 119: /* Arg: Exp  */
++#line 822 "src/parser.y"
+     {
+   (yyval.blk) = gen_lambda((yyvsp[0].blk));
+ }
+-#line 3711 "src/parser.c"
++#line 3719 "src/parser.c"
+     break;
+ 
+-  case 119: /* RepPatterns: RepPatterns "?//" Pattern  */
+-#line 824 "src/parser.y"
++  case 120: /* RepPatterns: RepPatterns "?//" Pattern  */
++#line 827 "src/parser.y"
+                           {
+   (yyval.blk) = BLOCK((yyvsp[-2].blk), gen_destructure_alt((yyvsp[0].blk)));
+ }
+-#line 3719 "src/parser.c"
++#line 3727 "src/parser.c"
+     break;
+ 
+-  case 120: /* RepPatterns: Pattern  */
+-#line 827 "src/parser.y"
++  case 121: /* RepPatterns: Pattern  */
++#line 830 "src/parser.y"
+         {
+   (yyval.blk) = gen_destructure_alt((yyvsp[0].blk));
+ }
+-#line 3727 "src/parser.c"
++#line 3735 "src/parser.c"
+     break;
+ 
+-  case 121: /* Patterns: RepPatterns "?//" Pattern  */
+-#line 832 "src/parser.y"
++  case 122: /* Patterns: RepPatterns "?//" Pattern  */
++#line 835 "src/parser.y"
+                           {
+   (yyval.blk) = BLOCK((yyvsp[-2].blk), (yyvsp[0].blk));
+ }
+-#line 3735 "src/parser.c"
++#line 3743 "src/parser.c"
+     break;
+ 
+-  case 122: /* Patterns: Pattern  */
+-#line 835 "src/parser.y"
++  case 123: /* Patterns: Pattern  */
++#line 838 "src/parser.y"
+         {
+   (yyval.blk) = (yyvsp[0].blk);
+ }
+-#line 3743 "src/parser.c"
++#line 3751 "src/parser.c"
+     break;
+ 
+-  case 123: /* Pattern: '$' IDENT  */
+-#line 840 "src/parser.y"
++  case 124: /* Pattern: '$' IDENT  */
++#line 843 "src/parser.y"
+           {
+   (yyval.blk) = gen_op_unbound(STOREV, jv_string_value((yyvsp[0].literal)));
+   jv_free((yyvsp[0].literal));
+ }
+-#line 3752 "src/parser.c"
++#line 3760 "src/parser.c"
+     break;
+ 
+-  case 124: /* Pattern: '[' ArrayPats ']'  */
+-#line 844 "src/parser.y"
++  case 125: /* Pattern: '[' ArrayPats ']'  */
++#line 847 "src/parser.y"
+                   {
+   (yyval.blk) = BLOCK((yyvsp[-1].blk), gen_op_simple(POP));
+ }
+-#line 3760 "src/parser.c"
++#line 3768 "src/parser.c"
+     break;
+ 
+-  case 125: /* Pattern: '{' ObjPats '}'  */
+-#line 847 "src/parser.y"
++  case 126: /* Pattern: '{' ObjPats '}'  */
++#line 850 "src/parser.y"
+                 {
+   (yyval.blk) = BLOCK((yyvsp[-1].blk), gen_op_simple(POP));
+ }
+-#line 3768 "src/parser.c"
++#line 3776 "src/parser.c"
+     break;
+ 
+-  case 126: /* ArrayPats: Pattern  */
+-#line 852 "src/parser.y"
++  case 127: /* ArrayPats: Pattern  */
++#line 855 "src/parser.y"
+         {
+   (yyval.blk) = gen_array_matcher(gen_noop(), (yyvsp[0].blk));
+ }
+-#line 3776 "src/parser.c"
++#line 3784 "src/parser.c"
+     break;
+ 
+-  case 127: /* ArrayPats: ArrayPats ',' Pattern  */
+-#line 855 "src/parser.y"
++  case 128: /* ArrayPats: ArrayPats ',' Pattern  */
++#line 858 "src/parser.y"
+                       {
+   (yyval.blk) = gen_array_matcher((yyvsp[-2].blk), (yyvsp[0].blk));
+ }
+-#line 3784 "src/parser.c"
++#line 3792 "src/parser.c"
+     break;
+ 
+-  case 128: /* ObjPats: ObjPat  */
+-#line 860 "src/parser.y"
++  case 129: /* ObjPats: ObjPat  */
++#line 863 "src/parser.y"
+        {
+   (yyval.blk) = (yyvsp[0].blk);
+ }
+-#line 3792 "src/parser.c"
++#line 3800 "src/parser.c"
+     break;
+ 
+-  case 129: /* ObjPats: ObjPats ',' ObjPat  */
+-#line 863 "src/parser.y"
++  case 130: /* ObjPats: ObjPats ',' ObjPat  */
++#line 866 "src/parser.y"
+                    {
+   (yyval.blk) = BLOCK((yyvsp[-2].blk), (yyvsp[0].blk));
+ }
+-#line 3800 "src/parser.c"
++#line 3808 "src/parser.c"
+     break;
+ 
+-  case 130: /* ObjPat: '$' IDENT  */
+-#line 868 "src/parser.y"
++  case 131: /* ObjPat: '$' IDENT  */
++#line 871 "src/parser.y"
+           {
+   (yyval.blk) = gen_object_matcher(gen_const((yyvsp[0].literal)), gen_op_unbound(STOREV, jv_string_value((yyvsp[0].literal))));
+ }
+-#line 3808 "src/parser.c"
++#line 3816 "src/parser.c"
+     break;
+ 
+-  case 131: /* ObjPat: '$' IDENT ':' Pattern  */
+-#line 871 "src/parser.y"
++  case 132: /* ObjPat: '$' IDENT ':' Pattern  */
++#line 874 "src/parser.y"
+                       {
+   (yyval.blk) = gen_object_matcher(gen_const((yyvsp[-2].literal)), BLOCK(gen_op_simple(DUP), gen_op_unbound(STOREV, jv_string_value((yyvsp[-2].literal))), (yyvsp[0].blk)));
+ }
+-#line 3816 "src/parser.c"
++#line 3824 "src/parser.c"
+     break;
+ 
+-  case 132: /* ObjPat: IDENT ':' Pattern  */
+-#line 874 "src/parser.y"
++  case 133: /* ObjPat: IDENT ':' Pattern  */
++#line 877 "src/parser.y"
+                   {
+   (yyval.blk) = gen_object_matcher(gen_const((yyvsp[-2].literal)), (yyvsp[0].blk));
+ }
+-#line 3824 "src/parser.c"
++#line 3832 "src/parser.c"
+     break;
+ 
+-  case 133: /* ObjPat: Keyword ':' Pattern  */
+-#line 877 "src/parser.y"
++  case 134: /* ObjPat: Keyword ':' Pattern  */
++#line 880 "src/parser.y"
+                     {
+   (yyval.blk) = gen_object_matcher(gen_const((yyvsp[-2].literal)), (yyvsp[0].blk));
+ }
+-#line 3832 "src/parser.c"
++#line 3840 "src/parser.c"
+     break;
+ 
+-  case 134: /* ObjPat: String ':' Pattern  */
+-#line 880 "src/parser.y"
++  case 135: /* ObjPat: String ':' Pattern  */
++#line 883 "src/parser.y"
+                    {
+   (yyval.blk) = gen_object_matcher((yyvsp[-2].blk), (yyvsp[0].blk));
+ }
+-#line 3840 "src/parser.c"
++#line 3848 "src/parser.c"
+     break;
+ 
+-  case 135: /* ObjPat: '(' Exp ')' ':' Pattern  */
+-#line 883 "src/parser.y"
++  case 136: /* ObjPat: '(' Exp ')' ':' Pattern  */
++#line 886 "src/parser.y"
+                         {
+   jv msg = check_object_key((yyvsp[-3].blk));
+   if (jv_is_valid(msg)) {
+@@ -3849,276 +3857,276 @@ yyreduce:
+   jv_free(msg);
+   (yyval.blk) = gen_object_matcher((yyvsp[-3].blk), (yyvsp[0].blk));
+ }
+-#line 3853 "src/parser.c"
++#line 3861 "src/parser.c"
+     break;
+ 
+-  case 136: /* ObjPat: error ':' Pattern  */
+-#line 891 "src/parser.y"
++  case 137: /* ObjPat: error ':' Pattern  */
++#line 894 "src/parser.y"
+                   {
+   FAIL((yyloc), "May need parentheses around object key expression");
+   (yyval.blk) = (yyvsp[0].blk);
+ }
+-#line 3862 "src/parser.c"
+-    break;
+-
+-  case 137: /* Keyword: "as"  */
+-#line 897 "src/parser.y"
+-     {
+-  (yyval.literal) = jv_string("as");
+-}
+ #line 3870 "src/parser.c"
+     break;
+ 
+-  case 138: /* Keyword: "def"  */
++  case 138: /* Keyword: "as"  */
+ #line 900 "src/parser.y"
+-      {
+-  (yyval.literal) = jv_string("def");
++     {
++  (yyval.literal) = jv_string("as");
+ }
+ #line 3878 "src/parser.c"
+     break;
+ 
+-  case 139: /* Keyword: "module"  */
++  case 139: /* Keyword: "def"  */
+ #line 903 "src/parser.y"
+-         {
+-  (yyval.literal) = jv_string("module");
++      {
++  (yyval.literal) = jv_string("def");
+ }
+ #line 3886 "src/parser.c"
+     break;
+ 
+-  case 140: /* Keyword: "import"  */
++  case 140: /* Keyword: "module"  */
+ #line 906 "src/parser.y"
+          {
+-  (yyval.literal) = jv_string("import");
++  (yyval.literal) = jv_string("module");
+ }
+ #line 3894 "src/parser.c"
+     break;
+ 
+-  case 141: /* Keyword: "include"  */
++  case 141: /* Keyword: "import"  */
+ #line 909 "src/parser.y"
+-          {
+-  (yyval.literal) = jv_string("include");
++         {
++  (yyval.literal) = jv_string("import");
+ }
+ #line 3902 "src/parser.c"
+     break;
+ 
+-  case 142: /* Keyword: "if"  */
++  case 142: /* Keyword: "include"  */
+ #line 912 "src/parser.y"
+-     {
+-  (yyval.literal) = jv_string("if");
++          {
++  (yyval.literal) = jv_string("include");
+ }
+ #line 3910 "src/parser.c"
+     break;
+ 
+-  case 143: /* Keyword: "then"  */
++  case 143: /* Keyword: "if"  */
+ #line 915 "src/parser.y"
+-       {
+-  (yyval.literal) = jv_string("then");
++     {
++  (yyval.literal) = jv_string("if");
+ }
+ #line 3918 "src/parser.c"
+     break;
+ 
+-  case 144: /* Keyword: "else"  */
++  case 144: /* Keyword: "then"  */
+ #line 918 "src/parser.y"
+        {
+-  (yyval.literal) = jv_string("else");
++  (yyval.literal) = jv_string("then");
+ }
+ #line 3926 "src/parser.c"
+     break;
+ 
+-  case 145: /* Keyword: "elif"  */
++  case 145: /* Keyword: "else"  */
+ #line 921 "src/parser.y"
+        {
+-  (yyval.literal) = jv_string("elif");
++  (yyval.literal) = jv_string("else");
+ }
+ #line 3934 "src/parser.c"
+     break;
+ 
+-  case 146: /* Keyword: "reduce"  */
++  case 146: /* Keyword: "elif"  */
+ #line 924 "src/parser.y"
+-         {
+-  (yyval.literal) = jv_string("reduce");
++       {
++  (yyval.literal) = jv_string("elif");
+ }
+ #line 3942 "src/parser.c"
+     break;
+ 
+-  case 147: /* Keyword: "foreach"  */
++  case 147: /* Keyword: "reduce"  */
+ #line 927 "src/parser.y"
+-          {
+-  (yyval.literal) = jv_string("foreach");
++         {
++  (yyval.literal) = jv_string("reduce");
+ }
+ #line 3950 "src/parser.c"
+     break;
+ 
+-  case 148: /* Keyword: "end"  */
++  case 148: /* Keyword: "foreach"  */
+ #line 930 "src/parser.y"
+-      {
+-  (yyval.literal) = jv_string("end");
++          {
++  (yyval.literal) = jv_string("foreach");
+ }
+ #line 3958 "src/parser.c"
+     break;
+ 
+-  case 149: /* Keyword: "and"  */
++  case 149: /* Keyword: "end"  */
+ #line 933 "src/parser.y"
+       {
+-  (yyval.literal) = jv_string("and");
++  (yyval.literal) = jv_string("end");
+ }
+ #line 3966 "src/parser.c"
+     break;
+ 
+-  case 150: /* Keyword: "or"  */
++  case 150: /* Keyword: "and"  */
+ #line 936 "src/parser.y"
+-     {
+-  (yyval.literal) = jv_string("or");
++      {
++  (yyval.literal) = jv_string("and");
+ }
+ #line 3974 "src/parser.c"
+     break;
+ 
+-  case 151: /* Keyword: "try"  */
++  case 151: /* Keyword: "or"  */
+ #line 939 "src/parser.y"
+-      {
+-  (yyval.literal) = jv_string("try");
++     {
++  (yyval.literal) = jv_string("or");
+ }
+ #line 3982 "src/parser.c"
+     break;
+ 
+-  case 152: /* Keyword: "catch"  */
++  case 152: /* Keyword: "try"  */
+ #line 942 "src/parser.y"
+-        {
+-  (yyval.literal) = jv_string("catch");
++      {
++  (yyval.literal) = jv_string("try");
+ }
+ #line 3990 "src/parser.c"
+     break;
+ 
+-  case 153: /* Keyword: "label"  */
++  case 153: /* Keyword: "catch"  */
+ #line 945 "src/parser.y"
+         {
+-  (yyval.literal) = jv_string("label");
++  (yyval.literal) = jv_string("catch");
+ }
+ #line 3998 "src/parser.c"
+     break;
+ 
+-  case 154: /* Keyword: "break"  */
++  case 154: /* Keyword: "label"  */
+ #line 948 "src/parser.y"
+         {
+-  (yyval.literal) = jv_string("break");
++  (yyval.literal) = jv_string("label");
+ }
+ #line 4006 "src/parser.c"
+     break;
+ 
+-  case 155: /* Keyword: "__loc__"  */
++  case 155: /* Keyword: "break"  */
+ #line 951 "src/parser.y"
++        {
++  (yyval.literal) = jv_string("break");
++}
++#line 4014 "src/parser.c"
++    break;
++
++  case 156: /* Keyword: "__loc__"  */
++#line 954 "src/parser.y"
+           {
+   (yyval.literal) = jv_string("__loc__");
+ }
+-#line 4014 "src/parser.c"
++#line 4022 "src/parser.c"
+     break;
+ 
+-  case 156: /* MkDict: %empty  */
+-#line 956 "src/parser.y"
++  case 157: /* MkDict: %empty  */
++#line 959 "src/parser.y"
+        {
+   (yyval.blk)=gen_noop();
+ }
+-#line 4022 "src/parser.c"
++#line 4030 "src/parser.c"
+     break;
+ 
+-  case 157: /* MkDict: MkDictPair  */
+-#line 959 "src/parser.y"
++  case 158: /* MkDict: MkDictPair  */
++#line 962 "src/parser.y"
+             { (yyval.blk) = (yyvsp[0].blk); }
+-#line 4028 "src/parser.c"
++#line 4036 "src/parser.c"
+     break;
+ 
+-  case 158: /* MkDict: MkDictPair ',' MkDict  */
+-#line 960 "src/parser.y"
++  case 159: /* MkDict: MkDictPair ',' MkDict  */
++#line 963 "src/parser.y"
+                         { (yyval.blk)=block_join((yyvsp[-2].blk), (yyvsp[0].blk)); }
+-#line 4034 "src/parser.c"
++#line 4042 "src/parser.c"
+     break;
+ 
+-  case 159: /* MkDict: error ',' MkDict  */
+-#line 961 "src/parser.y"
++  case 160: /* MkDict: error ',' MkDict  */
++#line 964 "src/parser.y"
+                    { (yyval.blk) = (yyvsp[0].blk); }
+-#line 4040 "src/parser.c"
++#line 4048 "src/parser.c"
+     break;
+ 
+-  case 160: /* MkDictPair: IDENT ':' ExpD  */
+-#line 964 "src/parser.y"
++  case 161: /* MkDictPair: IDENT ':' ExpD  */
++#line 967 "src/parser.y"
+                {
+   (yyval.blk) = gen_dictpair(gen_const((yyvsp[-2].literal)), (yyvsp[0].blk));
+  }
+-#line 4048 "src/parser.c"
++#line 4056 "src/parser.c"
+     break;
+ 
+-  case 161: /* MkDictPair: Keyword ':' ExpD  */
+-#line 967 "src/parser.y"
++  case 162: /* MkDictPair: Keyword ':' ExpD  */
++#line 970 "src/parser.y"
+                    {
+   (yyval.blk) = gen_dictpair(gen_const((yyvsp[-2].literal)), (yyvsp[0].blk));
+   }
+-#line 4056 "src/parser.c"
++#line 4064 "src/parser.c"
+     break;
+ 
+-  case 162: /* MkDictPair: String ':' ExpD  */
+-#line 970 "src/parser.y"
++  case 163: /* MkDictPair: String ':' ExpD  */
++#line 973 "src/parser.y"
+                   {
+   (yyval.blk) = gen_dictpair((yyvsp[-2].blk), (yyvsp[0].blk));
+   }
+-#line 4064 "src/parser.c"
++#line 4072 "src/parser.c"
+     break;
+ 
+-  case 163: /* MkDictPair: String  */
+-#line 973 "src/parser.y"
++  case 164: /* MkDictPair: String  */
++#line 976 "src/parser.y"
+          {
+   (yyval.blk) = gen_dictpair((yyvsp[0].blk), BLOCK(gen_op_simple(POP), gen_op_simple(DUP2),
+                               gen_op_simple(DUP2), gen_op_simple(INDEX)));
+   }
+-#line 4073 "src/parser.c"
++#line 4081 "src/parser.c"
+     break;
+ 
+-  case 164: /* MkDictPair: '$' IDENT ':' ExpD  */
+-#line 977 "src/parser.y"
++  case 165: /* MkDictPair: '$' IDENT ':' ExpD  */
++#line 980 "src/parser.y"
+                      {
+   (yyval.blk) = gen_dictpair(gen_location((yyloc), locations, gen_op_unbound(LOADV, jv_string_value((yyvsp[-2].literal)))),
+                     (yyvsp[0].blk));
+   }
+-#line 4082 "src/parser.c"
++#line 4090 "src/parser.c"
+     break;
+ 
+-  case 165: /* MkDictPair: '$' IDENT  */
+-#line 981 "src/parser.y"
++  case 166: /* MkDictPair: '$' IDENT  */
++#line 984 "src/parser.y"
+             {
+   (yyval.blk) = gen_dictpair(gen_const((yyvsp[0].literal)),
+                     gen_location((yyloc), locations, gen_op_unbound(LOADV, jv_string_value((yyvsp[0].literal)))));
+   }
+-#line 4091 "src/parser.c"
++#line 4099 "src/parser.c"
+     break;
+ 
+-  case 166: /* MkDictPair: '$' Keyword  */
+-#line 985 "src/parser.y"
++  case 167: /* MkDictPair: '$' Keyword  */
++#line 988 "src/parser.y"
+               {
+   (yyval.blk) = gen_dictpair(gen_const((yyvsp[0].literal)),
+                     gen_location((yyloc), locations, gen_op_unbound(LOADV, jv_string_value((yyvsp[0].literal)))));
+   }
+-#line 4100 "src/parser.c"
++#line 4108 "src/parser.c"
+     break;
+ 
+-  case 167: /* MkDictPair: IDENT  */
+-#line 989 "src/parser.y"
++  case 168: /* MkDictPair: IDENT  */
++#line 992 "src/parser.y"
+         {
+   (yyval.blk) = gen_dictpair(gen_const(jv_copy((yyvsp[0].literal))),
+                     gen_index(gen_noop(), gen_const((yyvsp[0].literal))));
+   }
+-#line 4109 "src/parser.c"
++#line 4117 "src/parser.c"
+     break;
+ 
+-  case 168: /* MkDictPair: Keyword  */
+-#line 993 "src/parser.y"
++  case 169: /* MkDictPair: Keyword  */
++#line 996 "src/parser.y"
+           {
+   (yyval.blk) = gen_dictpair(gen_const(jv_copy((yyvsp[0].literal))),
+                     gen_index(gen_noop(), gen_const((yyvsp[0].literal))));
+   }
+-#line 4118 "src/parser.c"
++#line 4126 "src/parser.c"
+     break;
+ 
+-  case 169: /* MkDictPair: '(' Exp ')' ':' ExpD  */
+-#line 997 "src/parser.y"
++  case 170: /* MkDictPair: '(' Exp ')' ':' ExpD  */
++#line 1000 "src/parser.y"
+                        {
+   jv msg = check_object_key((yyvsp[-3].blk));
+   if (jv_is_valid(msg)) {
+@@ -4127,20 +4135,20 @@ yyreduce:
+   jv_free(msg);
+   (yyval.blk) = gen_dictpair((yyvsp[-3].blk), (yyvsp[0].blk));
+   }
+-#line 4131 "src/parser.c"
++#line 4139 "src/parser.c"
+     break;
+ 
+-  case 170: /* MkDictPair: error ':' ExpD  */
+-#line 1005 "src/parser.y"
++  case 171: /* MkDictPair: error ':' ExpD  */
++#line 1008 "src/parser.y"
+                  {
+   FAIL((yyloc), "May need parentheses around object key expression");
+   (yyval.blk) = (yyvsp[0].blk);
+   }
+-#line 4140 "src/parser.c"
++#line 4148 "src/parser.c"
+     break;
+ 
+ 
+-#line 4144 "src/parser.c"
++#line 4152 "src/parser.c"
+ 
+       default: break;
+     }
+@@ -4369,7 +4377,7 @@ yyreturnlab:
+   return yyresult;
+ }
+ 
+-#line 1009 "src/parser.y"
++#line 1012 "src/parser.y"
+ 
+ 
+ int jq_parse(struct locfile* locations, block* answer) {
+diff --git a/src/parser.y b/src/parser.y
+index a5fc9da..2bcc95b 100644
+--- a/src/parser.y
++++ b/src/parser.y
+@@ -625,6 +625,9 @@ ElseBody:
+ } |
+ "else" Exp "end" {
+   $$ = $2;
++} |
++"elif" Exp "then" Exp "end" {
++  $$ = gen_cond($2, $4, gen_noop());
+ }
+ 
+ ExpD:
++ git checkout 4dc2a2fb9df94ec45d107b798173c7db9c695a7f tests/jq.test
+Updated 0 paths from dafbfe8
++ git apply -v -
+Checking patch tests/jq.test...
+Applied patch tests/jq.test cleanly.
++ git submodule update --init
++ autoreconf -fi
+libtoolize: putting auxiliary files in '.'.
+libtoolize: copying file './ltmain.sh'
+libtoolize: putting macros in AC_CONFIG_MACRO_DIRS, 'm4'.
+libtoolize: copying file 'm4/libtool.m4'
+libtoolize: copying file 'm4/ltoptions.m4'
+libtoolize: copying file 'm4/ltsugar.m4'
+libtoolize: copying file 'm4/ltversion.m4'
+libtoolize: copying file 'm4/lt~obsolete.m4'
+configure.ac:55: installing './compile'
+configure.ac:6: installing './missing'
+sample/Makefile.am: installing './depcomp'
+libtoolize: putting auxiliary files in AC_CONFIG_AUX_DIR, 'config'.
+libtoolize: copying file 'config/ltmain.sh'
+libtoolize: putting macros in AC_CONFIG_MACRO_DIRS, 'config/m4'.
+libtoolize: copying file 'config/m4/libtool.m4'
+libtoolize: copying file 'config/m4/ltoptions.m4'
+libtoolize: copying file 'config/m4/ltsugar.m4'
+libtoolize: copying file 'config/m4/ltversion.m4'
+libtoolize: copying file 'config/m4/lt~obsolete.m4'
+configure.ac:14: warning: The macro `AC_PROG_CC_STDC' is obsolete.
+configure.ac:14: You should run autoupdate.
+./lib/autoconf/c.m4:1666: AC_PROG_CC_STDC is expanded from...
+configure.ac:14: the top level
+configure.ac:19: warning: AC_COMPILE_IFELSE was called before AC_USE_SYSTEM_EXTENSIONS
+./lib/autoconf/specific.m4:364: AC_USE_SYSTEM_EXTENSIONS is expanded from...
+configure.ac:19: the top level
+configure.ac:59: warning: The macro `AC_HELP_STRING' is obsolete.
+configure.ac:59: You should run autoupdate.
+./lib/autoconf/general.m4:204: AC_HELP_STRING is expanded from...
+configure.ac:59: the top level
+configure.ac:64: warning: The macro `AC_HELP_STRING' is obsolete.
+configure.ac:64: You should run autoupdate.
+./lib/autoconf/general.m4:204: AC_HELP_STRING is expanded from...
+configure.ac:64: the top level
+configure.ac:68: warning: The macro `AC_HELP_STRING' is obsolete.
+configure.ac:68: You should run autoupdate.
+./lib/autoconf/general.m4:204: AC_HELP_STRING is expanded from...
+configure.ac:68: the top level
+configure.ac:72: warning: The macro `AC_HELP_STRING' is obsolete.
+configure.ac:72: You should run autoupdate.
+./lib/autoconf/general.m4:204: AC_HELP_STRING is expanded from...
+configure.ac:72: the top level
+configure.ac:76: warning: The macro `AC_HELP_STRING' is obsolete.
+configure.ac:76: You should run autoupdate.
+./lib/autoconf/general.m4:204: AC_HELP_STRING is expanded from...
+configure.ac:76: the top level
+configure.ac:80: warning: The macro `AC_HELP_STRING' is obsolete.
+configure.ac:80: You should run autoupdate.
+./lib/autoconf/general.m4:204: AC_HELP_STRING is expanded from...
+configure.ac:80: the top level
+configure.ac:84: warning: The macro `AC_HELP_STRING' is obsolete.
+configure.ac:84: You should run autoupdate.
+./lib/autoconf/general.m4:204: AC_HELP_STRING is expanded from...
+configure.ac:84: the top level
+configure.ac:113: warning: The macro `AC_HELP_STRING' is obsolete.
+configure.ac:113: You should run autoupdate.
+./lib/autoconf/general.m4:204: AC_HELP_STRING is expanded from...
+configure.ac:113: the top level
+configure.ac:129: warning: $as_echo is obsolete; use AS_ECHO(["message"]) instead
+lib/m4sugar/m4sh.m4:692: _AS_IF_ELSE is expanded from...
+lib/m4sugar/m4sh.m4:699: AS_IF is expanded from...
+./lib/autoconf/general.m4:2249: AC_CACHE_VAL is expanded from...
+./lib/autoconf/general.m4:2270: AC_CACHE_CHECK is expanded from...
+m4/ax_pthread.m4:89: AX_PTHREAD is expanded from...
+configure.ac:129: the top level
+configure.ac:11: installing 'config/compile'
+configure.ac:9: installing 'config/missing'
+Makefile.am: installing 'config/depcomp'
++ ./configure --with-oniguruma=builtin
+checking for a BSD-compatible install... /usr/bin/install -c
+checking whether build environment is sane... yes
+checking for a race-free mkdir -p... /usr/bin/mkdir -p
+checking for gawk... no
+checking for mawk... mawk
+checking whether make sets $(MAKE)... yes
+checking whether make supports nested variables... yes
+checking whether make supports nested variables... (cached) yes
+checking whether make supports the include directive... yes (GNU style)
+checking for gcc... gcc
+checking whether the C compiler works... yes
+checking for C compiler default output file name... a.out
+checking for suffix of executables... 
+checking whether we are cross compiling... no
+checking for suffix of object files... o
+checking whether the compiler supports GNU C... yes
+checking whether gcc accepts -g... yes
+checking for gcc option to enable C11 features... none needed
+checking whether gcc understands -c and -o together... yes
+checking dependency style of gcc... gcc3
+checking for ar... ar
+checking the archiver (ar) interface... ar
+checking whether to enable maintainer-specific portions of Makefiles... yes
+checking for gcc... (cached) gcc
+checking whether the compiler supports GNU C... (cached) yes
+checking whether gcc accepts -g... (cached) yes
+checking for gcc option to enable C11 features... (cached) none needed
+checking whether gcc understands -c and -o together... (cached) yes
+checking dependency style of gcc... (cached) gcc3
+checking how to run the C preprocessor... gcc -E
+checking for bison... bison -y
+checking for stdio.h... yes
+checking for stdlib.h... yes
+checking for string.h... yes
+checking for inttypes.h... yes
+checking for stdint.h... yes
+checking for strings.h... yes
+checking for sys/stat.h... yes
+checking for sys/types.h... yes
+checking for unistd.h... yes
+checking for wchar.h... yes
+checking for minix/config.h... no
+checking whether it is safe to define __EXTENSIONS__... yes
+checking whether _XOPEN_SOURCE should be defined... no
+checking build system type... x86_64-pc-linux-gnu
+checking host system type... x86_64-pc-linux-gnu
+checking how to print strings... printf
+checking for a sed that does not truncate output... /usr/bin/sed
+checking for grep that handles long lines and -e... /usr/bin/grep
+checking for egrep... /usr/bin/grep -E
+checking for fgrep... /usr/bin/grep -F
+checking for ld used by gcc... /usr/bin/ld
+checking if the linker (/usr/bin/ld) is GNU ld... yes
+checking for BSD- or MS-compatible name lister (nm)... /usr/bin/nm -B
+checking the name lister (/usr/bin/nm -B) interface... BSD nm
+checking whether ln -s works... yes
+checking the maximum length of command line arguments... 1572864
+checking how to convert x86_64-pc-linux-gnu file names to x86_64-pc-linux-gnu format... func_convert_file_noop
+checking how to convert x86_64-pc-linux-gnu file names to toolchain format... func_convert_file_noop
+checking for /usr/bin/ld option to reload object files... -r
+checking for objdump... objdump
+checking how to recognize dependent libraries... pass_all
+checking for dlltool... no
+checking how to associate runtime and link libraries... printf %s\n
+checking for archiver @FILE support... @
+checking for strip... strip
+checking for ranlib... ranlib
+checking command to parse /usr/bin/nm -B output from gcc object... ok
+checking for sysroot... no
+checking for a working dd... /usr/bin/dd
+checking how to truncate binary pipes... /usr/bin/dd bs=4096 count=1
+checking for mt... no
+checking if : is a manifest tool... no
+checking for dlfcn.h... yes
+checking for objdir... .libs
+checking if gcc supports -fno-rtti -fno-exceptions... no
+checking for gcc option to produce PIC... -fPIC -DPIC
+checking if gcc PIC flag -fPIC -DPIC works... yes
+checking if gcc static flag -static works... yes
+checking if gcc supports -c -o file.o... yes
+checking if gcc supports -c -o file.o... (cached) yes
+checking whether the gcc linker (/usr/bin/ld -m elf_x86_64) supports shared libraries... yes
+checking whether -lc should be explicitly linked in... no
+checking dynamic linker characteristics... GNU/Linux ld.so
+checking how to hardcode library paths into programs... immediate
+checking whether stripping libraries is possible... yes
+checking if libtool supports shared libraries... yes
+checking whether to build shared libraries... yes
+checking whether to build static libraries... yes
+checking for special C compiler options needed for large files... no
+checking for _FILE_OFFSET_BITS value needed for large files... no
+checking for bison version... 3.8.2
+checking for flex... flex
+checking for valgrind... no
+configure: WARNING: valgrind is required to test jq.
+checking for memmem... yes
+checking for mkstemp... yes
+checking for sys/cygwin.h... no
+checking for shlwapi.h... no
+checking for pipenv... no
+checking for Python dependencies... no
+configure: WARNING: Error checking python dependencies: 
+*****************************************************************
+*  Python dependencies for building jq documentation not found. *
+*  You can still build, install and hack on jq, but the manpage *
+*  will not be rebuilt and new manpage tests will not be run.   *
+*  See docs/README.md for how to install the docs dependencies. *
+*****************************************************************
+checking whether gcc is Clang... no
+checking whether pthreads work with "-pthread" and "-lpthread"... yes
+checking for joinable pthread attribute... PTHREAD_CREATE_JOINABLE
+checking whether more special flags are required for pthreads... no
+checking for PTHREAD_PRIO_INHERIT... yes
+checking for size_t... yes
+checking for working alloca.h... yes
+checking for alloca... yes
+checking for isatty... yes
+checking for _isatty... no
+checking for strptime... yes
+checking for strftime... yes
+checking for setenv... yes
+checking for timegm... yes
+checking for gmtime_r... yes
+checking for gmtime... yes
+checking for localtime_r... yes
+checking for localtime... yes
+checking for gettimeofday... yes
+checking for struct tm.tm_gmtoff... yes
+checking for struct tm.__tm_gmtoff... no
+checking for pthread_key_create... yes
+checking for pthread_once... yes
+checking for atexit... yes
+checking for acos in -lm... yes
+checking for acosh in -lm... yes
+checking for asin in -lm... yes
+checking for asinh in -lm... yes
+checking for atan2 in -lm... yes
+checking for atan in -lm... yes
+checking for atanh in -lm... yes
+checking for cbrt in -lm... yes
+checking for ceil in -lm... yes
+checking for copysign in -lm... yes
+checking for cos in -lm... yes
+checking for cosh in -lm... yes
+checking for drem in -lm... yes
+checking for erf in -lm... yes
+checking for erfc in -lm... yes
+checking for exp10 in -lm... yes
+checking for __exp10 in -lm... no
+checking for exp2 in -lm... yes
+checking for exp in -lm... yes
+checking for expm1 in -lm... yes
+checking for fabs in -lm... yes
+checking for fdim in -lm... yes
+checking for floor in -lm... yes
+checking for fma in -lm... yes
+checking for fmax in -lm... yes
+checking for fmin in -lm... yes
+checking for fmod in -lm... yes
+checking for frexp in -lm... yes
+checking for gamma in -lm... yes
+checking for hypot in -lm... yes
+checking for j0 in -lm... yes
+checking for j1 in -lm... yes
+checking for jn in -lm... yes
+checking for ldexp in -lm... yes
+checking for lgamma in -lm... yes
+checking for log10 in -lm... yes
+checking for log1p in -lm... yes
+checking for log2 in -lm... yes
+checking for log in -lm... yes
+checking for logb in -lm... yes
+checking for modf in -lm... yes
+checking for lgamma_r in -lm... yes
+checking for nearbyint in -lm... yes
+checking for nextafter in -lm... yes
+checking for nexttoward in -lm... yes
+checking for pow10 in -lm... no
+checking for pow in -lm... yes
+checking for remainder in -lm... yes
+checking for rint in -lm... yes
+checking for round in -lm... yes
+checking for scalb in -lm... yes
+checking for scalbln in -lm... yes
+checking for significand in -lm... yes
+checking for scalbn in -lm... yes
+checking for ilogb in -lm... yes
+checking for sin in -lm... yes
+checking for sinh in -lm... yes
+checking for sqrt in -lm... yes
+checking for tan in -lm... yes
+checking for tanh in -lm... yes
+checking for tgamma in -lm... yes
+checking for trunc in -lm... yes
+checking for y0 in -lm... yes
+checking for y1 in -lm... yes
+checking for yn in -lm... yes
+checking for thread-local storage... yes
+checking whether byte ordering is bigendian... no
+checking that generated files are newer than configure... done
+configure: creating ./config.status
+config.status: creating Makefile
+config.status: creating libjq.pc
+config.status: executing depfiles commands
+config.status: executing libtool commands
+=== configuring in modules/oniguruma (/testbed/modules/oniguruma)
+configure: running /bin/bash ./configure --disable-option-checking '--prefix=/usr/local'  '--with-oniguruma=builtin' --cache-file=/dev/null --srcdir=.
+checking for a BSD-compatible install... /usr/bin/install -c
+checking whether build environment is sane... yes
+checking for a race-free mkdir -p... /usr/bin/mkdir -p
+checking for gawk... no
+checking for mawk... mawk
+checking whether make sets $(MAKE)... yes
+checking whether make supports nested variables... yes
+checking for gcc... gcc
+checking whether the C compiler works... yes
+checking for C compiler default output file name... a.out
+checking for suffix of executables... 
+checking whether we are cross compiling... no
+checking for suffix of object files... o
+checking whether the compiler supports GNU C... yes
+checking whether gcc accepts -g... yes
+checking for gcc option to enable C11 features... none needed
+checking whether gcc understands -c and -o together... yes
+checking whether make supports the include directive... yes (GNU style)
+checking dependency style of gcc... gcc3
+checking build system type... x86_64-pc-linux-gnu
+checking host system type... x86_64-pc-linux-gnu
+checking how to print strings... printf
+checking for a sed that does not truncate output... /usr/bin/sed
+checking for grep that handles long lines and -e... /usr/bin/grep
+checking for egrep... /usr/bin/grep -E
+checking for fgrep... /usr/bin/grep -F
+checking for ld used by gcc... /usr/bin/ld
+checking if the linker (/usr/bin/ld) is GNU ld... yes
+checking for BSD- or MS-compatible name lister (nm)... /usr/bin/nm -B
+checking the name lister (/usr/bin/nm -B) interface... BSD nm
+checking whether ln -s works... yes
+checking the maximum length of command line arguments... 1572864
+checking how to convert x86_64-pc-linux-gnu file names to x86_64-pc-linux-gnu format... func_convert_file_noop
+checking how to convert x86_64-pc-linux-gnu file names to toolchain format... func_convert_file_noop
+checking for /usr/bin/ld option to reload object files... -r
+checking for objdump... objdump
+checking how to recognize dependent libraries... pass_all
+checking for dlltool... no
+checking how to associate runtime and link libraries... printf %s\n
+checking for ar... ar
+checking for archiver @FILE support... @
+checking for strip... strip
+checking for ranlib... ranlib
+checking command to parse /usr/bin/nm -B output from gcc object... ok
+checking for sysroot... no
+checking for a working dd... /usr/bin/dd
+checking how to truncate binary pipes... /usr/bin/dd bs=4096 count=1
+checking for mt... no
+checking if : is a manifest tool... no
+checking for stdio.h... yes
+checking for stdlib.h... yes
+checking for string.h... yes
+checking for inttypes.h... yes
+checking for stdint.h... yes
+checking for strings.h... yes
+checking for sys/stat.h... yes
+checking for sys/types.h... yes
+checking for unistd.h... yes
+checking for dlfcn.h... yes
+checking for objdir... .libs
+checking if gcc supports -fno-rtti -fno-exceptions... no
+checking for gcc option to produce PIC... -fPIC -DPIC
+checking if gcc PIC flag -fPIC -DPIC works... yes
+checking if gcc static flag -static works... yes
+checking if gcc supports -c -o file.o... yes
+checking if gcc supports -c -o file.o... (cached) yes
+checking whether the gcc linker (/usr/bin/ld -m elf_x86_64) supports shared libraries... yes
+checking whether -lc should be explicitly linked in... no
+checking dynamic linker characteristics... GNU/Linux ld.so
+checking how to hardcode library paths into programs... immediate
+checking whether stripping libraries is possible... yes
+checking if libtool supports shared libraries... yes
+checking whether to build shared libraries... yes
+checking whether to build static libraries... yes
+checking whether make sets $(MAKE)... (cached) yes
+checking for sys/time.h... yes
+checking for unistd.h... (cached) yes
+checking for sys/times.h... yes
+checking size of int... 4
+checking size of long... 8
+checking size of long long... 8
+checking size of void*... 8
+checking for size_t... yes
+checking for working alloca.h... yes
+checking for alloca... yes
+checking that generated files are newer than configure... done
+configure: creating ./config.status
+config.status: creating Makefile
+config.status: creating src/Makefile
+config.status: creating test/Makefile
+config.status: creating sample/Makefile
+config.status: creating onig-config
+config.status: creating src/config.h
+config.status: src/config.h is unchanged
+config.status: executing depfiles commands
+config.status: executing libtool commands
+config.status: executing default commands
++ make clean
+Making clean in modules/oniguruma
+make[1]: Entering directory '/testbed/modules/oniguruma'
+Making clean in src
+make[2]: Entering directory '/testbed/modules/oniguruma/src'
+test -z "libonig.la" || rm -f libonig.la
+rm -f ./so_locations
+rm -rf .libs _libs
+rm -f *.o
+rm -f *.lo
+make[2]: Leaving directory '/testbed/modules/oniguruma/src'
+Making clean in test
+make[2]: Entering directory '/testbed/modules/oniguruma/test'
+ rm -f test_utf8 test_syntax test_options testc testcu test_regset test_back
+rm -rf .libs _libs
+rm -f *.o
+test -z "test_utf8.log test_syntax.log test_options.log testc.log testcu.log test_regset.log test_back.log" || rm -f test_utf8.log test_syntax.log test_options.log testc.log testcu.log test_regset.log test_back.log
+test -z "test_utf8.trs test_syntax.trs test_options.trs testc.trs testcu.trs test_regset.trs test_back.trs" || rm -f test_utf8.trs test_syntax.trs test_options.trs testc.trs testcu.trs test_regset.trs test_back.trs
+test -z "test-suite.log" || rm -f test-suite.log
+rm -f *.lo
+make[2]: Leaving directory '/testbed/modules/oniguruma/test'
+Making clean in sample
+make[2]: Entering directory '/testbed/modules/oniguruma/sample'
+ rm -f encode listcap names simple sql syntax user_property callout echo count bug_fix regset scan callback_each_match
+rm -rf .libs _libs
+rm -f *.o
+test -z "encode.log listcap.log names.log simple.log sql.log syntax.log user_property.log callout.log echo.log count.log bug_fix.log regset.log scan.log callback_each_match.log" || rm -f encode.log listcap.log names.log simple.log sql.log syntax.log user_property.log callout.log echo.log count.log bug_fix.log regset.log scan.log callback_each_match.log
+test -z "encode.trs listcap.trs names.trs simple.trs sql.trs syntax.trs user_property.trs callout.trs echo.trs count.trs bug_fix.trs regset.trs scan.trs callback_each_match.trs" || rm -f encode.trs listcap.trs names.trs simple.trs sql.trs syntax.trs user_property.trs callout.trs echo.trs count.trs bug_fix.trs regset.trs scan.trs callback_each_match.trs
+test -z "test-suite.log" || rm -f test-suite.log
+rm -f *.lo
+make[2]: Leaving directory '/testbed/modules/oniguruma/sample'
+make[2]: Entering directory '/testbed/modules/oniguruma'
+rm -rf .libs _libs
+rm -f *.lo
+make[2]: Leaving directory '/testbed/modules/oniguruma'
+make[1]: Leaving directory '/testbed/modules/oniguruma'
+make[1]: Entering directory '/testbed'
+ rm -f jq
+test -z "libjq.la " || rm -f libjq.la 
+rm -f ./so_locations
+rm -rf .libs _libs
+rm -rf src/.libs src/_libs
+rm -rf src/decNumber/.libs src/decNumber/_libs
+rm -f src/*.gcno src/*.gcda src/*.gcov
+rm -f src/version.h .remake-version-h
+rm -f *.o
+rm -f src/*.o
+rm -f src/*.lo
+rm -f src/decNumber/*.o
+rm -f src/decNumber/*.lo
+test -z "tests/optionaltest.log tests/mantest.log tests/jqtest.log tests/onigtest.log tests/shtest.log tests/utf8test.log tests/base64test.log" || rm -f tests/optionaltest.log tests/mantest.log tests/jqtest.log tests/onigtest.log tests/shtest.log tests/utf8test.log tests/base64test.log
+test -z "tests/optionaltest.trs tests/mantest.trs tests/jqtest.trs tests/onigtest.trs tests/shtest.trs tests/utf8test.trs tests/base64test.trs" || rm -f tests/optionaltest.trs tests/mantest.trs tests/jqtest.trs tests/onigtest.trs tests/shtest.trs tests/utf8test.trs tests/base64test.trs
+test -z "test-suite.log" || rm -f test-suite.log
+rm -f *.lo
+make[1]: Leaving directory '/testbed'
++ touch src/parser.y src/lexer.l
+++ nproc
++ make -j16
+  LEX      src/lexer.c
+  YACC     src/parser.c
+mkdir -p src
+  GEN      src/version.h
+src/parser.h is unchanged
+make  all-recursive
+make[1]: Entering directory '/testbed'
+Making all in modules/oniguruma
+make[2]: Entering directory '/testbed/modules/oniguruma'
+Making all in src
+make[3]: Entering directory '/testbed/modules/oniguruma/src'
+make  all-am
+make[4]: Entering directory '/testbed/modules/oniguruma/src'
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT regparse.lo -MD -MP -MF .deps/regparse.Tpo -c -o regparse.lo regparse.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT regcomp.lo -MD -MP -MF .deps/regcomp.Tpo -c -o regcomp.lo regcomp.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT regexec.lo -MD -MP -MF .deps/regexec.Tpo -c -o regexec.lo regexec.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT regenc.lo -MD -MP -MF .deps/regenc.Tpo -c -o regenc.lo regenc.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT regerror.lo -MD -MP -MF .deps/regerror.Tpo -c -o regerror.lo regerror.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT regext.lo -MD -MP -MF .deps/regext.Tpo -c -o regext.lo regext.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT regsyntax.lo -MD -MP -MF .deps/regsyntax.Tpo -c -o regsyntax.lo regsyntax.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT regtrav.lo -MD -MP -MF .deps/regtrav.Tpo -c -o regtrav.lo regtrav.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT regversion.lo -MD -MP -MF .deps/regversion.Tpo -c -o regversion.lo regversion.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT st.lo -MD -MP -MF .deps/st.Tpo -c -o st.lo st.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT reggnu.lo -MD -MP -MF .deps/reggnu.Tpo -c -o reggnu.lo reggnu.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT unicode.lo -MD -MP -MF .deps/unicode.Tpo -c -o unicode.lo unicode.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT unicode_unfold_key.lo -MD -MP -MF .deps/unicode_unfold_key.Tpo -c -o unicode_unfold_key.lo unicode_unfold_key.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT unicode_fold1_key.lo -MD -MP -MF .deps/unicode_fold1_key.Tpo -c -o unicode_fold1_key.lo unicode_fold1_key.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT unicode_fold2_key.lo -MD -MP -MF .deps/unicode_fold2_key.Tpo -c -o unicode_fold2_key.lo unicode_fold2_key.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT unicode_fold3_key.lo -MD -MP -MF .deps/unicode_fold3_key.Tpo -c -o unicode_fold3_key.lo unicode_fold3_key.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT regexec.lo -MD -MP -MF .deps/regexec.Tpo -c regexec.c  -fPIC -DPIC -o .libs/regexec.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT regenc.lo -MD -MP -MF .deps/regenc.Tpo -c regenc.c  -fPIC -DPIC -o .libs/regenc.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT regversion.lo -MD -MP -MF .deps/regversion.Tpo -c regversion.c  -fPIC -DPIC -o .libs/regversion.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT regtrav.lo -MD -MP -MF .deps/regtrav.Tpo -c regtrav.c  -fPIC -DPIC -o .libs/regtrav.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT regcomp.lo -MD -MP -MF .deps/regcomp.Tpo -c regcomp.c  -fPIC -DPIC -o .libs/regcomp.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT unicode.lo -MD -MP -MF .deps/unicode.Tpo -c unicode.c  -fPIC -DPIC -o .libs/unicode.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT regparse.lo -MD -MP -MF .deps/regparse.Tpo -c regparse.c  -fPIC -DPIC -o .libs/regparse.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT unicode_fold2_key.lo -MD -MP -MF .deps/unicode_fold2_key.Tpo -c unicode_fold2_key.c  -fPIC -DPIC -o .libs/unicode_fold2_key.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT regext.lo -MD -MP -MF .deps/regext.Tpo -c regext.c  -fPIC -DPIC -o .libs/regext.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT st.lo -MD -MP -MF .deps/st.Tpo -c st.c  -fPIC -DPIC -o .libs/st.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT reggnu.lo -MD -MP -MF .deps/reggnu.Tpo -c reggnu.c  -fPIC -DPIC -o .libs/reggnu.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT unicode_fold1_key.lo -MD -MP -MF .deps/unicode_fold1_key.Tpo -c unicode_fold1_key.c  -fPIC -DPIC -o .libs/unicode_fold1_key.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT unicode_fold3_key.lo -MD -MP -MF .deps/unicode_fold3_key.Tpo -c unicode_fold3_key.c  -fPIC -DPIC -o .libs/unicode_fold3_key.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT regerror.lo -MD -MP -MF .deps/regerror.Tpo -c regerror.c  -fPIC -DPIC -o .libs/regerror.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT unicode_unfold_key.lo -MD -MP -MF .deps/unicode_unfold_key.Tpo -c unicode_unfold_key.c  -fPIC -DPIC -o .libs/unicode_unfold_key.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT regsyntax.lo -MD -MP -MF .deps/regsyntax.Tpo -c regsyntax.c  -fPIC -DPIC -o .libs/regsyntax.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT regversion.lo -MD -MP -MF .deps/regversion.Tpo -c regversion.c -o regversion.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT unicode_fold3_key.lo -MD -MP -MF .deps/unicode_fold3_key.Tpo -c unicode_fold3_key.c -o unicode_fold3_key.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT regtrav.lo -MD -MP -MF .deps/regtrav.Tpo -c regtrav.c -o regtrav.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT unicode_fold2_key.lo -MD -MP -MF .deps/unicode_fold2_key.Tpo -c unicode_fold2_key.c -o unicode_fold2_key.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT regext.lo -MD -MP -MF .deps/regext.Tpo -c regext.c -o regext.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT unicode_fold1_key.lo -MD -MP -MF .deps/unicode_fold1_key.Tpo -c unicode_fold1_key.c -o unicode_fold1_key.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT regsyntax.lo -MD -MP -MF .deps/regsyntax.Tpo -c regsyntax.c -o regsyntax.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT unicode_unfold_key.lo -MD -MP -MF .deps/unicode_unfold_key.Tpo -c unicode_unfold_key.c -o unicode_unfold_key.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT reggnu.lo -MD -MP -MF .deps/reggnu.Tpo -c reggnu.c -o reggnu.o >/dev/null 2>&1
+mv -f .deps/regversion.Tpo .deps/regversion.Plo
+mv -f .deps/unicode_fold3_key.Tpo .deps/unicode_fold3_key.Plo
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT ascii.lo -MD -MP -MF .deps/ascii.Tpo -c -o ascii.lo ascii.c
+mv -f .deps/regtrav.Tpo .deps/regtrav.Plo
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT utf8.lo -MD -MP -MF .deps/utf8.Tpo -c -o utf8.lo utf8.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT utf16_be.lo -MD -MP -MF .deps/utf16_be.Tpo -c -o utf16_be.lo utf16_be.c
+mv -f .deps/unicode_fold1_key.Tpo .deps/unicode_fold1_key.Plo
+mv -f .deps/regext.Tpo .deps/regext.Plo
+mv -f .deps/regsyntax.Tpo .deps/regsyntax.Plo
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT utf16_le.lo -MD -MP -MF .deps/utf16_le.Tpo -c -o utf16_le.lo utf16_le.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT utf32_be.lo -MD -MP -MF .deps/utf32_be.Tpo -c -o utf32_be.lo utf32_be.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT utf32_le.lo -MD -MP -MF .deps/utf32_le.Tpo -c -o utf32_le.lo utf32_le.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT ascii.lo -MD -MP -MF .deps/ascii.Tpo -c ascii.c  -fPIC -DPIC -o .libs/ascii.o
+mv -f .deps/unicode_fold2_key.Tpo .deps/unicode_fold2_key.Plo
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT euc_jp.lo -MD -MP -MF .deps/euc_jp.Tpo -c -o euc_jp.lo euc_jp.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT utf16_be.lo -MD -MP -MF .deps/utf16_be.Tpo -c utf16_be.c  -fPIC -DPIC -o .libs/utf16_be.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT utf8.lo -MD -MP -MF .deps/utf8.Tpo -c utf8.c  -fPIC -DPIC -o .libs/utf8.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT utf32_be.lo -MD -MP -MF .deps/utf32_be.Tpo -c utf32_be.c  -fPIC -DPIC -o .libs/utf32_be.o
+mv -f .deps/unicode_unfold_key.Tpo .deps/unicode_unfold_key.Plo
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT utf32_le.lo -MD -MP -MF .deps/utf32_le.Tpo -c utf32_le.c  -fPIC -DPIC -o .libs/utf32_le.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT regerror.lo -MD -MP -MF .deps/regerror.Tpo -c regerror.c -o regerror.o >/dev/null 2>&1
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT euc_jp_prop.lo -MD -MP -MF .deps/euc_jp_prop.Tpo -c -o euc_jp_prop.lo euc_jp_prop.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT utf16_le.lo -MD -MP -MF .deps/utf16_le.Tpo -c utf16_le.c  -fPIC -DPIC -o .libs/utf16_le.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT euc_jp.lo -MD -MP -MF .deps/euc_jp.Tpo -c euc_jp.c  -fPIC -DPIC -o .libs/euc_jp.o
+mv -f .deps/reggnu.Tpo .deps/reggnu.Plo
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT ascii.lo -MD -MP -MF .deps/ascii.Tpo -c ascii.c -o ascii.o >/dev/null 2>&1
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT sjis.lo -MD -MP -MF .deps/sjis.Tpo -c -o sjis.lo sjis.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT euc_jp_prop.lo -MD -MP -MF .deps/euc_jp_prop.Tpo -c euc_jp_prop.c  -fPIC -DPIC -o .libs/euc_jp_prop.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT utf32_be.lo -MD -MP -MF .deps/utf32_be.Tpo -c utf32_be.c -o utf32_be.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT st.lo -MD -MP -MF .deps/st.Tpo -c st.c -o st.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT utf32_le.lo -MD -MP -MF .deps/utf32_le.Tpo -c utf32_le.c -o utf32_le.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT sjis.lo -MD -MP -MF .deps/sjis.Tpo -c sjis.c  -fPIC -DPIC -o .libs/sjis.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT utf8.lo -MD -MP -MF .deps/utf8.Tpo -c utf8.c -o utf8.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT utf16_be.lo -MD -MP -MF .deps/utf16_be.Tpo -c utf16_be.c -o utf16_be.o >/dev/null 2>&1
+mv -f .deps/ascii.Tpo .deps/ascii.Plo
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT sjis_prop.lo -MD -MP -MF .deps/sjis_prop.Tpo -c -o sjis_prop.lo sjis_prop.c
+mv -f .deps/utf32_be.Tpo .deps/utf32_be.Plo
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT euc_jp_prop.lo -MD -MP -MF .deps/euc_jp_prop.Tpo -c euc_jp_prop.c -o euc_jp_prop.o >/dev/null 2>&1
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT iso8859_1.lo -MD -MP -MF .deps/iso8859_1.Tpo -c -o iso8859_1.lo iso8859_1.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT utf16_le.lo -MD -MP -MF .deps/utf16_le.Tpo -c utf16_le.c -o utf16_le.o >/dev/null 2>&1
+mv -f .deps/utf32_le.Tpo .deps/utf32_le.Plo
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT iso8859_2.lo -MD -MP -MF .deps/iso8859_2.Tpo -c -o iso8859_2.lo iso8859_2.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT sjis_prop.lo -MD -MP -MF .deps/sjis_prop.Tpo -c sjis_prop.c  -fPIC -DPIC -o .libs/sjis_prop.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_1.lo -MD -MP -MF .deps/iso8859_1.Tpo -c iso8859_1.c  -fPIC -DPIC -o .libs/iso8859_1.o
+mv -f .deps/utf8.Tpo .deps/utf8.Plo
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT euc_jp.lo -MD -MP -MF .deps/euc_jp.Tpo -c euc_jp.c -o euc_jp.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT regenc.lo -MD -MP -MF .deps/regenc.Tpo -c regenc.c -o regenc.o >/dev/null 2>&1
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT iso8859_3.lo -MD -MP -MF .deps/iso8859_3.Tpo -c -o iso8859_3.lo iso8859_3.c
+mv -f .deps/euc_jp_prop.Tpo .deps/euc_jp_prop.Plo
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_2.lo -MD -MP -MF .deps/iso8859_2.Tpo -c iso8859_2.c  -fPIC -DPIC -o .libs/iso8859_2.o
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT iso8859_4.lo -MD -MP -MF .deps/iso8859_4.Tpo -c -o iso8859_4.lo iso8859_4.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT sjis.lo -MD -MP -MF .deps/sjis.Tpo -c sjis.c -o sjis.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT sjis_prop.lo -MD -MP -MF .deps/sjis_prop.Tpo -c sjis_prop.c -o sjis_prop.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_3.lo -MD -MP -MF .deps/iso8859_3.Tpo -c iso8859_3.c  -fPIC -DPIC -o .libs/iso8859_3.o
+mv -f .deps/utf16_be.Tpo .deps/utf16_be.Plo
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_1.lo -MD -MP -MF .deps/iso8859_1.Tpo -c iso8859_1.c -o iso8859_1.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_4.lo -MD -MP -MF .deps/iso8859_4.Tpo -c iso8859_4.c  -fPIC -DPIC -o .libs/iso8859_4.o
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT iso8859_5.lo -MD -MP -MF .deps/iso8859_5.Tpo -c -o iso8859_5.lo iso8859_5.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_2.lo -MD -MP -MF .deps/iso8859_2.Tpo -c iso8859_2.c -o iso8859_2.o >/dev/null 2>&1
+mv -f .deps/regerror.Tpo .deps/regerror.Plo
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT iso8859_6.lo -MD -MP -MF .deps/iso8859_6.Tpo -c -o iso8859_6.lo iso8859_6.c
+mv -f .deps/utf16_le.Tpo .deps/utf16_le.Plo
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT iso8859_7.lo -MD -MP -MF .deps/iso8859_7.Tpo -c -o iso8859_7.lo iso8859_7.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_3.lo -MD -MP -MF .deps/iso8859_3.Tpo -c iso8859_3.c -o iso8859_3.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_5.lo -MD -MP -MF .deps/iso8859_5.Tpo -c iso8859_5.c  -fPIC -DPIC -o .libs/iso8859_5.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_4.lo -MD -MP -MF .deps/iso8859_4.Tpo -c iso8859_4.c -o iso8859_4.o >/dev/null 2>&1
+mv -f .deps/sjis_prop.Tpo .deps/sjis_prop.Plo
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT iso8859_8.lo -MD -MP -MF .deps/iso8859_8.Tpo -c -o iso8859_8.lo iso8859_8.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_6.lo -MD -MP -MF .deps/iso8859_6.Tpo -c iso8859_6.c  -fPIC -DPIC -o .libs/iso8859_6.o
+mv -f .deps/iso8859_2.Tpo .deps/iso8859_2.Plo
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT iso8859_9.lo -MD -MP -MF .deps/iso8859_9.Tpo -c -o iso8859_9.lo iso8859_9.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_7.lo -MD -MP -MF .deps/iso8859_7.Tpo -c iso8859_7.c  -fPIC -DPIC -o .libs/iso8859_7.o
+mv -f .deps/st.Tpo .deps/st.Plo
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT iso8859_10.lo -MD -MP -MF .deps/iso8859_10.Tpo -c -o iso8859_10.lo iso8859_10.c
+mv -f .deps/iso8859_1.Tpo .deps/iso8859_1.Plo
+mv -f .deps/iso8859_3.Tpo .deps/iso8859_3.Plo
+mv -f .deps/euc_jp.Tpo .deps/euc_jp.Plo
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT iso8859_11.lo -MD -MP -MF .deps/iso8859_11.Tpo -c -o iso8859_11.lo iso8859_11.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT iso8859_13.lo -MD -MP -MF .deps/iso8859_13.Tpo -c -o iso8859_13.lo iso8859_13.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT iso8859_14.lo -MD -MP -MF .deps/iso8859_14.Tpo -c -o iso8859_14.lo iso8859_14.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_5.lo -MD -MP -MF .deps/iso8859_5.Tpo -c iso8859_5.c -o iso8859_5.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_6.lo -MD -MP -MF .deps/iso8859_6.Tpo -c iso8859_6.c -o iso8859_6.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_8.lo -MD -MP -MF .deps/iso8859_8.Tpo -c iso8859_8.c  -fPIC -DPIC -o .libs/iso8859_8.o
+mv -f .deps/iso8859_4.Tpo .deps/iso8859_4.Plo
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT iso8859_15.lo -MD -MP -MF .deps/iso8859_15.Tpo -c -o iso8859_15.lo iso8859_15.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_7.lo -MD -MP -MF .deps/iso8859_7.Tpo -c iso8859_7.c -o iso8859_7.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_9.lo -MD -MP -MF .deps/iso8859_9.Tpo -c iso8859_9.c  -fPIC -DPIC -o .libs/iso8859_9.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_14.lo -MD -MP -MF .deps/iso8859_14.Tpo -c iso8859_14.c  -fPIC -DPIC -o .libs/iso8859_14.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_10.lo -MD -MP -MF .deps/iso8859_10.Tpo -c iso8859_10.c  -fPIC -DPIC -o .libs/iso8859_10.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_11.lo -MD -MP -MF .deps/iso8859_11.Tpo -c iso8859_11.c  -fPIC -DPIC -o .libs/iso8859_11.o
+mv -f .deps/sjis.Tpo .deps/sjis.Plo
+mv -f .deps/iso8859_6.Tpo .deps/iso8859_6.Plo
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_13.lo -MD -MP -MF .deps/iso8859_13.Tpo -c iso8859_13.c  -fPIC -DPIC -o .libs/iso8859_13.o
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT iso8859_16.lo -MD -MP -MF .deps/iso8859_16.Tpo -c -o iso8859_16.lo iso8859_16.c
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT euc_tw.lo -MD -MP -MF .deps/euc_tw.Tpo -c -o euc_tw.lo euc_tw.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_8.lo -MD -MP -MF .deps/iso8859_8.Tpo -c iso8859_8.c -o iso8859_8.o >/dev/null 2>&1
+mv -f .deps/iso8859_5.Tpo .deps/iso8859_5.Plo
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_15.lo -MD -MP -MF .deps/iso8859_15.Tpo -c iso8859_15.c  -fPIC -DPIC -o .libs/iso8859_15.o
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT euc_kr.lo -MD -MP -MF .deps/euc_kr.Tpo -c -o euc_kr.lo euc_kr.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_11.lo -MD -MP -MF .deps/iso8859_11.Tpo -c iso8859_11.c -o iso8859_11.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_10.lo -MD -MP -MF .deps/iso8859_10.Tpo -c iso8859_10.c -o iso8859_10.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_9.lo -MD -MP -MF .deps/iso8859_9.Tpo -c iso8859_9.c -o iso8859_9.o >/dev/null 2>&1
+mv -f .deps/iso8859_7.Tpo .deps/iso8859_7.Plo
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_14.lo -MD -MP -MF .deps/iso8859_14.Tpo -c iso8859_14.c -o iso8859_14.o >/dev/null 2>&1
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT big5.lo -MD -MP -MF .deps/big5.Tpo -c -o big5.lo big5.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT euc_tw.lo -MD -MP -MF .deps/euc_tw.Tpo -c euc_tw.c  -fPIC -DPIC -o .libs/euc_tw.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_16.lo -MD -MP -MF .deps/iso8859_16.Tpo -c iso8859_16.c  -fPIC -DPIC -o .libs/iso8859_16.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_13.lo -MD -MP -MF .deps/iso8859_13.Tpo -c iso8859_13.c -o iso8859_13.o >/dev/null 2>&1
+mv -f .deps/iso8859_8.Tpo .deps/iso8859_8.Plo
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT gb18030.lo -MD -MP -MF .deps/gb18030.Tpo -c -o gb18030.lo gb18030.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT euc_kr.lo -MD -MP -MF .deps/euc_kr.Tpo -c euc_kr.c  -fPIC -DPIC -o .libs/euc_kr.o
+mv -f .deps/iso8859_11.Tpo .deps/iso8859_11.Plo
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT koi8_r.lo -MD -MP -MF .deps/koi8_r.Tpo -c -o koi8_r.lo koi8_r.c
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT big5.lo -MD -MP -MF .deps/big5.Tpo -c big5.c  -fPIC -DPIC -o .libs/big5.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_15.lo -MD -MP -MF .deps/iso8859_15.Tpo -c iso8859_15.c -o iso8859_15.o >/dev/null 2>&1
+mv -f .deps/iso8859_10.Tpo .deps/iso8859_10.Plo
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT cp1251.lo -MD -MP -MF .deps/cp1251.Tpo -c -o cp1251.lo cp1251.c
+mv -f .deps/iso8859_9.Tpo .deps/iso8859_9.Plo
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT iso8859_16.lo -MD -MP -MF .deps/iso8859_16.Tpo -c iso8859_16.c -o iso8859_16.o >/dev/null 2>&1
+/bin/bash ../libtool  --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.  -I..  -Wall   -g -O2 -MT onig_init.lo -MD -MP -MF .deps/onig_init.Tpo -c -o onig_init.lo onig_init.c
+mv -f .deps/iso8859_13.Tpo .deps/iso8859_13.Plo
+mv -f .deps/iso8859_14.Tpo .deps/iso8859_14.Plo
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT gb18030.lo -MD -MP -MF .deps/gb18030.Tpo -c gb18030.c  -fPIC -DPIC -o .libs/gb18030.o
+mv -f .deps/regenc.Tpo .deps/regenc.Plo
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT euc_kr.lo -MD -MP -MF .deps/euc_kr.Tpo -c euc_kr.c -o euc_kr.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT koi8_r.lo -MD -MP -MF .deps/koi8_r.Tpo -c koi8_r.c  -fPIC -DPIC -o .libs/koi8_r.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT euc_tw.lo -MD -MP -MF .deps/euc_tw.Tpo -c euc_tw.c -o euc_tw.o >/dev/null 2>&1
+mv -f .deps/iso8859_15.Tpo .deps/iso8859_15.Plo
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT onig_init.lo -MD -MP -MF .deps/onig_init.Tpo -c onig_init.c  -fPIC -DPIC -o .libs/onig_init.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT cp1251.lo -MD -MP -MF .deps/cp1251.Tpo -c cp1251.c  -fPIC -DPIC -o .libs/cp1251.o
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT unicode.lo -MD -MP -MF .deps/unicode.Tpo -c unicode.c -o unicode.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT big5.lo -MD -MP -MF .deps/big5.Tpo -c big5.c -o big5.o >/dev/null 2>&1
+mv -f .deps/iso8859_16.Tpo .deps/iso8859_16.Plo
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT koi8_r.lo -MD -MP -MF .deps/koi8_r.Tpo -c koi8_r.c -o koi8_r.o >/dev/null 2>&1
+mv -f .deps/euc_kr.Tpo .deps/euc_kr.Plo
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT onig_init.lo -MD -MP -MF .deps/onig_init.Tpo -c onig_init.c -o onig_init.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT cp1251.lo -MD -MP -MF .deps/cp1251.Tpo -c cp1251.c -o cp1251.o >/dev/null 2>&1
+mv -f .deps/euc_tw.Tpo .deps/euc_tw.Plo
+mv -f .deps/koi8_r.Tpo .deps/koi8_r.Plo
+mv -f .deps/big5.Tpo .deps/big5.Plo
+mv -f .deps/cp1251.Tpo .deps/cp1251.Plo
+mv -f .deps/onig_init.Tpo .deps/onig_init.Plo
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT gb18030.lo -MD -MP -MF .deps/gb18030.Tpo -c gb18030.c -o gb18030.o >/dev/null 2>&1
+regcomp.c: In function 'detect_can_be_slow':
+regcomp.c:8070:16: warning: 'prev_heavy_element' may be used uninitialized in this function [-Wmaybe-uninitialized]
+ 8070 |             if (prev_heavy_element == ct->heavy_element)
+      |                ^
+mv -f .deps/gb18030.Tpo .deps/gb18030.Plo
+mv -f .deps/unicode.Tpo .deps/unicode.Plo
+regcomp.c: In function 'compile_tree':
+regcomp.c:2220:34: warning: 'mid3' may be used uninitialized in this function [-Wmaybe-uninitialized]
+ 2220 |       COP(reg)->update_var.id    = mid3;
+regcomp.c:2147:28: note: 'mid3' was declared here
+ 2147 |     MemNumType mid1, mid2, mid3;
+      |                            ^~~~
+regcomp.c:2085:34: warning: 'mid3' may be used uninitialized in this function [-Wmaybe-uninitialized]
+ 2085 |       COP(reg)->update_var.id    = mid3;
+regcomp.c:2008:28: note: 'mid3' was declared here
+ 2008 |     MemNumType mid1, mid2, mid3;
+      |                            ^~~~
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT regexec.lo -MD -MP -MF .deps/regexec.Tpo -c regexec.c -o regexec.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT regcomp.lo -MD -MP -MF .deps/regcomp.Tpo -c regcomp.c -o regcomp.o >/dev/null 2>&1
+libtool: compile:  gcc -DHAVE_CONFIG_H -I. -I.. -Wall -g -O2 -MT regparse.lo -MD -MP -MF .deps/regparse.Tpo -c regparse.c -o regparse.o >/dev/null 2>&1
+mv -f .deps/regexec.Tpo .deps/regexec.Plo
+mv -f .deps/regcomp.Tpo .deps/regcomp.Plo
+mv -f .deps/regparse.Tpo .deps/regparse.Plo
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall   -g -O2  -version-info 8:0:3   -o libonig.la -rpath /usr/local/lib regparse.lo regcomp.lo regexec.lo regenc.lo regerror.lo regext.lo regsyntax.lo regtrav.lo regversion.lo st.lo reggnu.lo  unicode.lo unicode_unfold_key.lo unicode_fold1_key.lo unicode_fold2_key.lo unicode_fold3_key.lo ascii.lo utf8.lo utf16_be.lo utf16_le.lo utf32_be.lo utf32_le.lo euc_jp.lo euc_jp_prop.lo sjis.lo sjis_prop.lo iso8859_1.lo iso8859_2.lo iso8859_3.lo iso8859_4.lo iso8859_5.lo iso8859_6.lo iso8859_7.lo iso8859_8.lo iso8859_9.lo iso8859_10.lo iso8859_11.lo iso8859_13.lo iso8859_14.lo iso8859_15.lo iso8859_16.lo euc_tw.lo euc_kr.lo big5.lo gb18030.lo koi8_r.lo cp1251.lo onig_init.lo  
+libtool: link: gcc -shared  -fPIC -DPIC  .libs/regparse.o .libs/regcomp.o .libs/regexec.o .libs/regenc.o .libs/regerror.o .libs/regext.o .libs/regsyntax.o .libs/regtrav.o .libs/regversion.o .libs/st.o .libs/reggnu.o .libs/unicode.o .libs/unicode_unfold_key.o .libs/unicode_fold1_key.o .libs/unicode_fold2_key.o .libs/unicode_fold3_key.o .libs/ascii.o .libs/utf8.o .libs/utf16_be.o .libs/utf16_le.o .libs/utf32_be.o .libs/utf32_le.o .libs/euc_jp.o .libs/euc_jp_prop.o .libs/sjis.o .libs/sjis_prop.o .libs/iso8859_1.o .libs/iso8859_2.o .libs/iso8859_3.o .libs/iso8859_4.o .libs/iso8859_5.o .libs/iso8859_6.o .libs/iso8859_7.o .libs/iso8859_8.o .libs/iso8859_9.o .libs/iso8859_10.o .libs/iso8859_11.o .libs/iso8859_13.o .libs/iso8859_14.o .libs/iso8859_15.o .libs/iso8859_16.o .libs/euc_tw.o .libs/euc_kr.o .libs/big5.o .libs/gb18030.o .libs/koi8_r.o .libs/cp1251.o .libs/onig_init.o    -g -O2   -Wl,-soname -Wl,libonig.so.5 -o .libs/libonig.so.5.3.0
+libtool: link: (cd ".libs" && rm -f "libonig.so.5" && ln -s "libonig.so.5.3.0" "libonig.so.5")
+libtool: link: (cd ".libs" && rm -f "libonig.so" && ln -s "libonig.so.5.3.0" "libonig.so")
+libtool: link: ar cr .libs/libonig.a  regparse.o regcomp.o regexec.o regenc.o regerror.o regext.o regsyntax.o regtrav.o regversion.o st.o reggnu.o unicode.o unicode_unfold_key.o unicode_fold1_key.o unicode_fold2_key.o unicode_fold3_key.o ascii.o utf8.o utf16_be.o utf16_le.o utf32_be.o utf32_le.o euc_jp.o euc_jp_prop.o sjis.o sjis_prop.o iso8859_1.o iso8859_2.o iso8859_3.o iso8859_4.o iso8859_5.o iso8859_6.o iso8859_7.o iso8859_8.o iso8859_9.o iso8859_10.o iso8859_11.o iso8859_13.o iso8859_14.o iso8859_15.o iso8859_16.o euc_tw.o euc_kr.o big5.o gb18030.o koi8_r.o cp1251.o onig_init.o
+libtool: link: ranlib .libs/libonig.a
+libtool: link: ( cd ".libs" && rm -f "libonig.la" && ln -s "../libonig.la" "libonig.la" )
+make[4]: Leaving directory '/testbed/modules/oniguruma/src'
+make[3]: Leaving directory '/testbed/modules/oniguruma/src'
+Making all in test
+make[3]: Entering directory '/testbed/modules/oniguruma/test'
+make[3]: Nothing to be done for 'all'.
+make[3]: Leaving directory '/testbed/modules/oniguruma/test'
+Making all in sample
+make[3]: Entering directory '/testbed/modules/oniguruma/sample'
+make[3]: Nothing to be done for 'all'.
+make[3]: Leaving directory '/testbed/modules/oniguruma/sample'
+make[3]: Entering directory '/testbed/modules/oniguruma'
+sed -e 's,[@]datadir[@],/usr/local/share,g' -e 's,[@]datarootdir[@],/usr/local/share,g' -e 's,[@]PACKAGE_VERSION[@],6.9.8,g' -e 's,[@]prefix[@],/usr/local,g' -e 's,[@]exec_prefix[@],/usr/local,g' -e 's,[@]libdir[@],/usr/local/lib,g' -e 's,[@]includedir[@],/usr/local/include,g' < ./oniguruma.pc.in > oniguruma.pc
+make[3]: Leaving directory '/testbed/modules/oniguruma'
+make[2]: Leaving directory '/testbed/modules/oniguruma'
+make[2]: Entering directory '/testbed'
+  CC       src/builtin.lo
+  CC       src/bytecode.lo
+  CC       src/compile.lo
+  CC       src/jq_test.lo
+  CC       src/jv.lo
+  CC       src/jv_alloc.lo
+  CC       src/jv_aux.lo
+  CC       src/jv_file.lo
+  CC       src/jv_dtoa.lo
+  CC       src/jv_parse.lo
+  CC       src/jv_print.lo
+  CC       src/jv_unicode.lo
+  CC       src/linker.lo
+  CC       src/locfile.lo
+  CC       src/util.lo
+  CC       src/decNumber/decContext.lo
+src/util.c:3: warning: "_GNU_SOURCE" redefined
+    3 | #define _GNU_SOURCE
+      | 
+<command-line>: note: this is the location of the previous definition
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:2:1: note: in expansion of macro 'LIBM_DD'
+    2 | LIBM_DD(acos)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:7:1: note: in expansion of macro 'LIBM_DD'
+    7 | LIBM_DD(acosh)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:12:1: note: in expansion of macro 'LIBM_DD'
+   12 | LIBM_DD(asin)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:17:1: note: in expansion of macro 'LIBM_DD'
+   17 | LIBM_DD(asinh)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:22:1: note: in expansion of macro 'LIBM_DD'
+   22 | LIBM_DD(atan)
+      | ^~~~~~~
+src/builtin.c:1671:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1671 |   {(cfunction_ptr)f_ ## name, #name, 3},
+      |    ^
+src/libm.h:27:1: note: in expansion of macro 'LIBM_DDD'
+   27 | LIBM_DDD(atan2)
+      | ^~~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:32:1: note: in expansion of macro 'LIBM_DD'
+   32 | LIBM_DD(atanh)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:37:1: note: in expansion of macro 'LIBM_DD'
+   37 | LIBM_DD(cbrt)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:42:1: note: in expansion of macro 'LIBM_DD'
+   42 | LIBM_DD(cos)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:47:1: note: in expansion of macro 'LIBM_DD'
+   47 | LIBM_DD(cosh)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:52:1: note: in expansion of macro 'LIBM_DD'
+   52 | LIBM_DD(exp)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:57:1: note: in expansion of macro 'LIBM_DD'
+   57 | LIBM_DD(exp2)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:62:1: note: in expansion of macro 'LIBM_DD'
+   62 | LIBM_DD(floor)
+      | ^~~~~~~
+src/builtin.c:1671:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1671 |   {(cfunction_ptr)f_ ## name, #name, 3},
+      |    ^
+src/libm.h:67:1: note: in expansion of macro 'LIBM_DDD'
+   67 | LIBM_DDD(hypot)
+      | ^~~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:72:1: note: in expansion of macro 'LIBM_DD'
+   72 | LIBM_DD(j0)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:77:1: note: in expansion of macro 'LIBM_DD'
+   77 | LIBM_DD(j1)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:82:1: note: in expansion of macro 'LIBM_DD'
+   82 | LIBM_DD(log)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:87:1: note: in expansion of macro 'LIBM_DD'
+   87 | LIBM_DD(log10)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:92:1: note: in expansion of macro 'LIBM_DD'
+   92 | LIBM_DD(log2)
+      | ^~~~~~~
+src/builtin.c:1671:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1671 |   {(cfunction_ptr)f_ ## name, #name, 3},
+      |    ^
+src/libm.h:97:1: note: in expansion of macro 'LIBM_DDD'
+   97 | LIBM_DDD(pow)
+      | ^~~~~~~~
+src/builtin.c:1671:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1671 |   {(cfunction_ptr)f_ ## name, #name, 3},
+      |    ^
+src/libm.h:102:1: note: in expansion of macro 'LIBM_DDD'
+  102 | LIBM_DDD(remainder)
+      | ^~~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:107:1: note: in expansion of macro 'LIBM_DD'
+  107 | LIBM_DD(sin)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:112:1: note: in expansion of macro 'LIBM_DD'
+  112 | LIBM_DD(sinh)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:117:1: note: in expansion of macro 'LIBM_DD'
+  117 | LIBM_DD(sqrt)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:122:1: note: in expansion of macro 'LIBM_DD'
+  122 | LIBM_DD(tan)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:127:1: note: in expansion of macro 'LIBM_DD'
+  127 | LIBM_DD(tanh)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:132:1: note: in expansion of macro 'LIBM_DD'
+  132 | LIBM_DD(tgamma)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:137:1: note: in expansion of macro 'LIBM_DD'
+  137 | LIBM_DD(y0)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:142:1: note: in expansion of macro 'LIBM_DD'
+  142 | LIBM_DD(y1)
+      | ^~~~~~~
+src/builtin.c:1671:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1671 |   {(cfunction_ptr)f_ ## name, #name, 3},
+      |    ^
+src/libm.h:147:1: note: in expansion of macro 'LIBM_DDD'
+  147 | LIBM_DDD(jn)
+      | ^~~~~~~~
+src/builtin.c:1671:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1671 |   {(cfunction_ptr)f_ ## name, #name, 3},
+      |    ^
+src/libm.h:150:1: note: in expansion of macro 'LIBM_DDD'
+  150 | LIBM_DDD(yn)
+      | ^~~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:153:1: note: in expansion of macro 'LIBM_DD'
+  153 | LIBM_DD(ceil)
+      | ^~~~~~~
+src/builtin.c:1671:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1671 |   {(cfunction_ptr)f_ ## name, #name, 3},
+      |    ^
+src/libm.h:158:1: note: in expansion of macro 'LIBM_DDD'
+  158 | LIBM_DDD(copysign)
+      | ^~~~~~~~
+src/builtin.c:1671:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1671 |   {(cfunction_ptr)f_ ## name, #name, 3},
+      |    ^
+src/libm.h:163:1: note: in expansion of macro 'LIBM_DDD'
+  163 | LIBM_DDD(drem)
+      | ^~~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:168:1: note: in expansion of macro 'LIBM_DD'
+  168 | LIBM_DD(erf)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:173:1: note: in expansion of macro 'LIBM_DD'
+  173 | LIBM_DD(erfc)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:178:1: note: in expansion of macro 'LIBM_DD'
+  178 | LIBM_DD(exp10)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:183:1: note: in expansion of macro 'LIBM_DD'
+  183 | LIBM_DD(expm1)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:188:1: note: in expansion of macro 'LIBM_DD'
+  188 | LIBM_DD(fabs)
+      | ^~~~~~~
+src/builtin.c:1671:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1671 |   {(cfunction_ptr)f_ ## name, #name, 3},
+      |    ^
+src/libm.h:193:1: note: in expansion of macro 'LIBM_DDD'
+  193 | LIBM_DDD(fdim)
+      | ^~~~~~~~
+src/builtin.c:1675:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1675 |   {(cfunction_ptr)f_ ## name, #name, 4},
+      |    ^
+src/libm.h:198:1: note: in expansion of macro 'LIBM_DDDD'
+  198 | LIBM_DDDD(fma)
+      | ^~~~~~~~~
+src/builtin.c:1671:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1671 |   {(cfunction_ptr)f_ ## name, #name, 3},
+      |    ^
+src/libm.h:203:1: note: in expansion of macro 'LIBM_DDD'
+  203 | LIBM_DDD(fmax)
+      | ^~~~~~~~
+src/builtin.c:1671:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1671 |   {(cfunction_ptr)f_ ## name, #name, 3},
+      |    ^
+src/libm.h:208:1: note: in expansion of macro 'LIBM_DDD'
+  208 | LIBM_DDD(fmin)
+      | ^~~~~~~~
+src/builtin.c:1671:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1671 |   {(cfunction_ptr)f_ ## name, #name, 3},
+      |    ^
+src/libm.h:213:1: note: in expansion of macro 'LIBM_DDD'
+  213 | LIBM_DDD(fmod)
+      | ^~~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:218:1: note: in expansion of macro 'LIBM_DD'
+  218 | LIBM_DD(gamma)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:223:1: note: in expansion of macro 'LIBM_DD'
+  223 | LIBM_DD(lgamma)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:228:1: note: in expansion of macro 'LIBM_DD'
+  228 | LIBM_DD(log1p)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:233:1: note: in expansion of macro 'LIBM_DD'
+  233 | LIBM_DD(logb)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:238:1: note: in expansion of macro 'LIBM_DD'
+  238 | LIBM_DD(nearbyint)
+      | ^~~~~~~
+src/builtin.c:1671:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1671 |   {(cfunction_ptr)f_ ## name, #name, 3},
+      |    ^
+src/libm.h:243:1: note: in expansion of macro 'LIBM_DDD'
+  243 | LIBM_DDD(nextafter)
+      | ^~~~~~~~
+src/builtin.c:1671:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1671 |   {(cfunction_ptr)f_ ## name, #name, 3},
+      |    ^
+src/libm.h:248:1: note: in expansion of macro 'LIBM_DDD'
+  248 | LIBM_DDD(nexttoward)
+      | ^~~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:258:1: note: in expansion of macro 'LIBM_DD'
+  258 | LIBM_DD(rint)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:263:1: note: in expansion of macro 'LIBM_DD'
+  263 | LIBM_DD(round)
+      | ^~~~~~~
+src/builtin.c:1671:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1671 |   {(cfunction_ptr)f_ ## name, #name, 3},
+      |    ^
+src/libm.h:268:1: note: in expansion of macro 'LIBM_DDD'
+  268 | LIBM_DDD(scalb)
+      | ^~~~~~~~
+src/builtin.c:1671:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1671 |   {(cfunction_ptr)f_ ## name, #name, 3},
+      |    ^
+src/libm.h:273:1: note: in expansion of macro 'LIBM_DDD'
+  273 | LIBM_DDD(scalbln)
+      | ^~~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:278:1: note: in expansion of macro 'LIBM_DD'
+  278 | LIBM_DD(significand)
+      | ^~~~~~~
+src/builtin.c:1667:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1667 |   {(cfunction_ptr)f_ ## name,  #name, 1},
+      |    ^
+src/libm.h:283:1: note: in expansion of macro 'LIBM_DD'
+  283 | LIBM_DD(trunc)
+      | ^~~~~~~
+src/builtin.c:1671:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1671 |   {(cfunction_ptr)f_ ## name, #name, 3},
+      |    ^
+src/libm.h:288:1: note: in expansion of macro 'LIBM_DDD'
+  288 | LIBM_DDD(ldexp)
+      | ^~~~~~~~
+src/jv.c: In function 'jvp_string_hash':
+src/builtin.c:1681:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1681 |   {(cfunction_ptr)f_frexp,"frexp", 1},
+      |    ^
+src/jv.c:1219:14: warning: this statement may fall through [-Wimplicit-fallthrough=]
+ 1219 |   case 3: k1 ^= tail[2] << 16;
+      |           ~~~^~~~~~~~~~~~~~~~
+src/builtin.c:1684:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1684 |   {(cfunction_ptr)f_modf,"modf", 1},
+      |    ^
+src/jv.c:1220:3: note: here
+ 1220 |   case 2: k1 ^= tail[1] << 8;
+      |   ^~~~
+src/builtin.c:1687:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1687 |   {(cfunction_ptr)f_lgamma_r,"lgamma_r", 1},
+      |    ^
+src/jv.c:1220:14: warning: this statement may fall through [-Wimplicit-fallthrough=]
+ 1220 |   case 2: k1 ^= tail[1] << 8;
+      |           ~~~^~~~~~~~~~~~~~~
+src/jv.c:1221:3: note: here
+ 1221 |   case 1: k1 ^= tail[0];
+      |   ^~~~
+src/builtin.c:1689:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1689 |   {(cfunction_ptr)f_plus, "_plus", 3},
+      |    ^
+src/builtin.c:1690:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1690 |   {(cfunction_ptr)f_negate, "_negate", 1},
+      |    ^
+src/builtin.c:1691:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1691 |   {(cfunction_ptr)f_minus, "_minus", 3},
+      |    ^
+src/builtin.c:1692:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1692 |   {(cfunction_ptr)f_multiply, "_multiply", 3},
+      |    ^
+src/builtin.c:1693:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1693 |   {(cfunction_ptr)f_divide, "_divide", 3},
+      |    ^
+src/builtin.c:1694:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1694 |   {(cfunction_ptr)f_mod, "_mod", 3},
+      |    ^
+src/builtin.c:1695:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1695 |   {(cfunction_ptr)f_dump, "tojson", 1},
+      |    ^
+src/builtin.c:1696:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1696 |   {(cfunction_ptr)f_json_parse, "fromjson", 1},
+      |    ^
+src/builtin.c:1697:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1697 |   {(cfunction_ptr)f_tonumber, "tonumber", 1},
+      |    ^
+src/builtin.c:1698:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1698 |   {(cfunction_ptr)f_tostring, "tostring", 1},
+      |    ^
+src/builtin.c:1699:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1699 |   {(cfunction_ptr)f_keys, "keys", 1},
+      |    ^
+src/builtin.c:1700:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1700 |   {(cfunction_ptr)f_keys_unsorted, "keys_unsorted", 1},
+      |    ^
+src/builtin.c:1701:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1701 |   {(cfunction_ptr)f_startswith, "startswith", 2},
+      |    ^
+src/builtin.c:1702:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1702 |   {(cfunction_ptr)f_endswith, "endswith", 2},
+      |    ^
+src/builtin.c:1703:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1703 |   {(cfunction_ptr)f_ltrimstr, "ltrimstr", 2},
+      |    ^
+src/builtin.c:1704:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1704 |   {(cfunction_ptr)f_rtrimstr, "rtrimstr", 2},
+      |    ^
+src/builtin.c:1705:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1705 |   {(cfunction_ptr)f_string_split, "split", 2},
+      |    ^
+src/builtin.c:1706:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1706 |   {(cfunction_ptr)f_string_explode, "explode", 1},
+      |    ^
+src/builtin.c:1707:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1707 |   {(cfunction_ptr)f_string_implode, "implode", 1},
+      |    ^
+src/builtin.c:1708:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1708 |   {(cfunction_ptr)f_string_indexes, "_strindices", 2},
+      |    ^
+src/builtin.c:1709:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1709 |   {(cfunction_ptr)f_setpath, "setpath", 3}, // FIXME typechecking
+      |    ^
+src/builtin.c:1710:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1710 |   {(cfunction_ptr)f_getpath, "getpath", 2},
+      |    ^
+src/builtin.c:1711:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1711 |   {(cfunction_ptr)f_delpaths, "delpaths", 2},
+      |    ^
+src/builtin.c:1712:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1712 |   {(cfunction_ptr)f_has, "has", 2},
+      |    ^
+src/builtin.c:1713:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1713 |   {(cfunction_ptr)f_equal, "_equal", 3},
+      |    ^
+src/builtin.c:1714:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1714 |   {(cfunction_ptr)f_notequal, "_notequal", 3},
+      |    ^
+src/builtin.c:1715:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1715 |   {(cfunction_ptr)f_less, "_less", 3},
+      |    ^
+src/builtin.c:1716:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1716 |   {(cfunction_ptr)f_greater, "_greater", 3},
+      |    ^
+src/builtin.c:1717:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1717 |   {(cfunction_ptr)f_lesseq, "_lesseq", 3},
+      |    ^
+src/builtin.c:1718:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1718 |   {(cfunction_ptr)f_greatereq, "_greatereq", 3},
+      |    ^
+src/builtin.c:1719:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1719 |   {(cfunction_ptr)f_contains, "contains", 2},
+      |    ^
+src/builtin.c:1720:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1720 |   {(cfunction_ptr)f_length, "length", 1},
+      |    ^
+src/builtin.c:1721:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1721 |   {(cfunction_ptr)f_utf8bytelength, "utf8bytelength", 1},
+      |    ^
+src/builtin.c:1722:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1722 |   {(cfunction_ptr)f_type, "type", 1},
+      |    ^
+src/builtin.c:1723:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1723 |   {(cfunction_ptr)f_isinfinite, "isinfinite", 1},
+      |    ^
+src/builtin.c:1724:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1724 |   {(cfunction_ptr)f_isnan, "isnan", 1},
+      |    ^
+src/builtin.c:1725:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1725 |   {(cfunction_ptr)f_isnormal, "isnormal", 1},
+      |    ^
+src/builtin.c:1726:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1726 |   {(cfunction_ptr)f_infinite, "infinite", 1},
+      |    ^
+src/builtin.c:1727:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1727 |   {(cfunction_ptr)f_nan, "nan", 1},
+      |    ^
+src/builtin.c:1728:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1728 |   {(cfunction_ptr)f_sort, "sort", 1},
+      |    ^
+src/builtin.c:1729:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1729 |   {(cfunction_ptr)f_sort_by_impl, "_sort_by_impl", 2},
+      |    ^
+src/builtin.c:1730:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1730 |   {(cfunction_ptr)f_group_by_impl, "_group_by_impl", 2},
+      |    ^
+src/builtin.c:1731:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1731 |   {(cfunction_ptr)f_min, "min", 1},
+      |    ^
+src/builtin.c:1732:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1732 |   {(cfunction_ptr)f_max, "max", 1},
+      |    ^
+src/builtin.c:1733:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1733 |   {(cfunction_ptr)f_min_by_impl, "_min_by_impl", 2},
+      |    ^
+src/builtin.c:1734:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1734 |   {(cfunction_ptr)f_max_by_impl, "_max_by_impl", 2},
+      |    ^
+src/builtin.c:1735:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1735 |   {(cfunction_ptr)f_error, "error", 1},
+      |    ^
+src/builtin.c:1736:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1736 |   {(cfunction_ptr)f_format, "format", 2},
+      |    ^
+src/builtin.c:1737:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1737 |   {(cfunction_ptr)f_env, "env", 1},
+      |    ^
+src/builtin.c:1738:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1738 |   {(cfunction_ptr)f_halt, "halt", 1},
+      |    ^
+src/builtin.c:1739:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1739 |   {(cfunction_ptr)f_halt_error, "halt_error", 2},
+      |    ^
+src/builtin.c:1740:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1740 |   {(cfunction_ptr)f_get_search_list, "get_search_list", 1},
+      |    ^
+src/builtin.c:1741:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1741 |   {(cfunction_ptr)f_get_prog_origin, "get_prog_origin", 1},
+      |    ^
+src/builtin.c:1742:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1742 |   {(cfunction_ptr)f_get_jq_origin, "get_jq_origin", 1},
+      |    ^
+src/builtin.c:1743:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv,  jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1743 |   {(cfunction_ptr)f_match, "_match_impl", 4},
+      |    ^
+src/builtin.c:1744:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1744 |   {(cfunction_ptr)f_modulemeta, "modulemeta", 1},
+      |    ^
+src/builtin.c:1745:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1745 |   {(cfunction_ptr)f_input, "input", 1},
+      |    ^
+src/builtin.c:1746:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1746 |   {(cfunction_ptr)f_debug, "debug", 1},
+      |    ^
+src/builtin.c:1747:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1747 |   {(cfunction_ptr)f_stderr, "stderr", 1},
+      |    ^
+src/builtin.c:1748:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1748 |   {(cfunction_ptr)f_strptime, "strptime", 2},
+      |    ^
+src/builtin.c:1749:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1749 |   {(cfunction_ptr)f_strftime, "strftime", 2},
+      |    ^
+src/builtin.c:1750:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv,  jv)' to 'void (*)()' [-Wcast-function-type]
+ 1750 |   {(cfunction_ptr)f_strflocaltime, "strflocaltime", 2},
+      |    ^
+src/builtin.c:1751:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1751 |   {(cfunction_ptr)f_mktime, "mktime", 1},
+      |    ^
+src/builtin.c:1752:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1752 |   {(cfunction_ptr)f_gmtime, "gmtime", 1},
+      |    ^
+src/builtin.c:1753:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1753 |   {(cfunction_ptr)f_localtime, "localtime", 1},
+      |    ^
+src/builtin.c:1754:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1754 |   {(cfunction_ptr)f_now, "now", 1},
+      |    ^
+src/builtin.c:1755:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1755 |   {(cfunction_ptr)f_current_filename, "input_filename", 1},
+      |    ^
+src/builtin.c:1756:4: warning: cast between incompatible function types from 'jv (*)(jq_state *, jv)' to 'void (*)()' [-Wcast-function-type]
+ 1756 |   {(cfunction_ptr)f_current_line, "input_line_number", 1},
+      |    ^
+src/jv_dtoa.c: In function 'jvp_strtod':
+src/jv_dtoa.c:2330:61: warning: unused variable 'test_scale' [-Wunused-variable]
+ 2330 |         int bb2, bb5, bbe, bd2, bd5, bbbits, bs2, c, e, e1, test_scale;
+      |                                                             ^~~~~~~~~~
+src/jv_dtoa.c:2368:30: warning: this statement may fall through [-Wimplicit-fallthrough=]
+ 2368 |                         sign = 1;
+      |                         ~~~~~^~~
+src/jv_dtoa.c:2370:17: note: here
+ 2370 |                 case '+':
+      |                 ^~~~
+src/jv_dtoa.c:2480:39: warning: this statement may fall through [-Wimplicit-fallthrough=]
+ 2480 |                                 esign = 1;
+      |                                 ~~~~~~^~~
+src/jv_dtoa.c:2481:25: note: here
+ 2481 |                         case '+':
+      |                         ^~~~
+src/jv_dtoa.c: In function 'jvp_dtoa':
+src/jv_dtoa.c:3700:35: warning: this statement may fall through [-Wimplicit-fallthrough=]
+ 3700 |                         leftright = 0;
+      |                         ~~~~~~~~~~^~~
+src/jv_dtoa.c:3702:17: note: here
+ 3702 |                 case 4:
+      |                 ^~~~
+src/jv_dtoa.c:3708:35: warning: this statement may fall through [-Wimplicit-fallthrough=]
+ 3708 |                         leftright = 0;
+      |                         ~~~~~~~~~~^~~
+src/jv_dtoa.c:3710:17: note: here
+ 3710 |                 case 5:
+      |                 ^~~~
+  CC       src/decNumber/decNumber.lo
+  CC       src/jv_dtoa_tsd.lo
+  CC       src/lexer.lo
+  CC       src/parser.lo
+  CC       src/main.o
+  CC       src/execute.lo
+src/execute.c: In function 'jq_next':
+src/execute.c:860:22: warning: cast between incompatible function types from 'cfunction_ptr' {aka 'void (*)()'} to 'jv (*)(jq_state *, jv)' [-Wcast-function-type]
+  860 |       case 1: top = ((func_1)function->fptr)(jq, in[0]); break;
+      |                      ^
+src/execute.c:861:22: warning: cast between incompatible function types from 'cfunction_ptr' {aka 'void (*)()'} to 'jv (*)(jq_state *, jv,  jv)' [-Wcast-function-type]
+  861 |       case 2: top = ((func_2)function->fptr)(jq, in[0], in[1]); break;
+      |                      ^
+src/execute.c:862:22: warning: cast between incompatible function types from 'cfunction_ptr' {aka 'void (*)()'} to 'jv (*)(jq_state *, jv,  jv,  jv)' [-Wcast-function-type]
+  862 |       case 3: top = ((func_3)function->fptr)(jq, in[0], in[1], in[2]); break;
+      |                      ^
+src/execute.c:863:22: warning: cast between incompatible function types from 'cfunction_ptr' {aka 'void (*)()'} to 'jv (*)(jq_state *, jv,  jv,  jv,  jv)' [-Wcast-function-type]
+  863 |       case 4: top = ((func_4)function->fptr)(jq, in[0], in[1], in[2], in[3]); break;
+      |                      ^
+src/execute.c:864:22: warning: cast between incompatible function types from 'cfunction_ptr' {aka 'void (*)()'} to 'jv (*)(jq_state *, jv,  jv,  jv,  jv,  jv)' [-Wcast-function-type]
+  864 |       case 5: top = ((func_5)function->fptr)(jq, in[0], in[1], in[2], in[3], in[4]); break;
+      |                      ^
+src/execute.c:574:9: warning: this statement may fall through [-Wimplicit-fallthrough=]
+  574 |         stack_save(jq, pc - 1, stack_get_pos(jq));
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/execute.c:575:5: note: here
+  575 |     case STOREV: {
+      |     ^~~~
+src/execute.c:721:20: warning: this statement may fall through [-Wimplicit-fallthrough=]
+  721 |     case EACH_OPT: {
+      |                    ^
+src/execute.c:736:5: note: here
+  736 |     case ON_BACKTRACK(EACH):
+      |     ^~~~
+  CCLD     libjq.la
+  CCLD     jq
+make[2]: Leaving directory '/testbed'
+make[1]: Leaving directory '/testbed'
++ : '>>>>> Start Test Output'
++ cat
++ make check
+make  check-recursive
+make[1]: Entering directory '/testbed'
+Making check in modules/oniguruma
+make[2]: Entering directory '/testbed/modules/oniguruma'
+Making check in src
+make[3]: Entering directory '/testbed/modules/oniguruma/src'
+make[3]: Leaving directory '/testbed/modules/oniguruma/src'
+Making check in test
+make[3]: Entering directory '/testbed/modules/oniguruma/test'
+make  test_utf8 test_syntax test_options testc testcu test_regset test_back
+make[4]: Entering directory '/testbed/modules/oniguruma/test'
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -Wno-invalid-source-encoding -g -O2 -MT test_utf8.o -MD -MP -MF .deps/test_utf8.Tpo -c -o test_utf8.o test_utf8.c
+mv -f .deps/test_utf8.Tpo .deps/test_utf8.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -Wno-invalid-source-encoding -g -O2 -L/usr/local/lib  -o test_utf8 test_utf8.o ../src/libonig.la 
+libtool: link: gcc -Wall -Wno-invalid-source-encoding -g -O2 -o .libs/test_utf8 test_utf8.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -Wno-invalid-source-encoding -g -O2 -MT test_syntax.o -MD -MP -MF .deps/test_syntax.Tpo -c -o test_syntax.o test_syntax.c
+mv -f .deps/test_syntax.Tpo .deps/test_syntax.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -Wno-invalid-source-encoding -g -O2 -L/usr/local/lib  -o test_syntax test_syntax.o ../src/libonig.la 
+libtool: link: gcc -Wall -Wno-invalid-source-encoding -g -O2 -o .libs/test_syntax test_syntax.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -Wno-invalid-source-encoding -g -O2 -MT test_options.o -MD -MP -MF .deps/test_options.Tpo -c -o test_options.o test_options.c
+mv -f .deps/test_options.Tpo .deps/test_options.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -Wno-invalid-source-encoding -g -O2 -L/usr/local/lib  -o test_options test_options.o ../src/libonig.la 
+libtool: link: gcc -Wall -Wno-invalid-source-encoding -g -O2 -o .libs/test_options test_options.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -Wno-invalid-source-encoding -g -O2 -MT testc.o -MD -MP -MF .deps/testc.Tpo -c -o testc.o testc.c
+mv -f .deps/testc.Tpo .deps/testc.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -Wno-invalid-source-encoding -g -O2 -L/usr/local/lib  -o testc testc.o ../src/libonig.la 
+libtool: link: gcc -Wall -Wno-invalid-source-encoding -g -O2 -o .libs/testc testc.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -Wno-invalid-source-encoding -g -O2 -MT testu.o -MD -MP -MF .deps/testu.Tpo -c -o testu.o testu.c
+mv -f .deps/testu.Tpo .deps/testu.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -Wno-invalid-source-encoding -g -O2 -L/usr/local/lib  -o testcu testu.o ../src/libonig.la 
+libtool: link: gcc -Wall -Wno-invalid-source-encoding -g -O2 -o .libs/testcu testu.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -Wno-invalid-source-encoding -g -O2 -MT test_regset.o -MD -MP -MF .deps/test_regset.Tpo -c -o test_regset.o test_regset.c
+mv -f .deps/test_regset.Tpo .deps/test_regset.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -Wno-invalid-source-encoding -g -O2 -L/usr/local/lib  -o test_regset test_regset.o ../src/libonig.la 
+libtool: link: gcc -Wall -Wno-invalid-source-encoding -g -O2 -o .libs/test_regset test_regset.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -Wno-invalid-source-encoding -g -O2 -MT test_back.o -MD -MP -MF .deps/test_back.Tpo -c -o test_back.o test_back.c
+mv -f .deps/test_back.Tpo .deps/test_back.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -Wno-invalid-source-encoding -g -O2 -L/usr/local/lib  -o test_back test_back.o ../src/libonig.la 
+libtool: link: gcc -Wall -Wno-invalid-source-encoding -g -O2 -o .libs/test_back test_back.o  -L/usr/local/lib ../src/.libs/libonig.so
+make[4]: Leaving directory '/testbed/modules/oniguruma/test'
+make  check-TESTS
+make[4]: Entering directory '/testbed/modules/oniguruma/test'
+make[5]: Entering directory '/testbed/modules/oniguruma/test'
+PASS: test_utf8
+PASS: test_syntax
+PASS: test_options
+PASS: testc
+PASS: testcu
+PASS: test_regset
+PASS: test_back
+============================================================================
+Testsuite summary for onig 6.9.8
+============================================================================
+# TOTAL: 7
+# PASS:  7
+# SKIP:  0
+# XFAIL: 0
+# FAIL:  0
+# XPASS: 0
+# ERROR: 0
+============================================================================
+make[5]: Leaving directory '/testbed/modules/oniguruma/test'
+make[4]: Leaving directory '/testbed/modules/oniguruma/test'
+make[3]: Leaving directory '/testbed/modules/oniguruma/test'
+Making check in sample
+make[3]: Entering directory '/testbed/modules/oniguruma/sample'
+make  encode listcap names simple sql syntax user_property callout echo count bug_fix regset scan callback_each_match
+make[4]: Entering directory '/testbed/modules/oniguruma/sample'
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -g -O2 -MT encode.o -MD -MP -MF .deps/encode.Tpo -c -o encode.o encode.c
+mv -f .deps/encode.Tpo .deps/encode.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -g -O2 -L/usr/local/lib  -o encode encode.o ../src/libonig.la 
+libtool: link: gcc -Wall -g -O2 -o .libs/encode encode.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -g -O2 -MT listcap.o -MD -MP -MF .deps/listcap.Tpo -c -o listcap.o listcap.c
+mv -f .deps/listcap.Tpo .deps/listcap.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -g -O2 -L/usr/local/lib  -o listcap listcap.o ../src/libonig.la 
+libtool: link: gcc -Wall -g -O2 -o .libs/listcap listcap.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -g -O2 -MT names.o -MD -MP -MF .deps/names.Tpo -c -o names.o names.c
+mv -f .deps/names.Tpo .deps/names.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -g -O2 -L/usr/local/lib  -o names names.o ../src/libonig.la 
+libtool: link: gcc -Wall -g -O2 -o .libs/names names.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -g -O2 -MT simple.o -MD -MP -MF .deps/simple.Tpo -c -o simple.o simple.c
+mv -f .deps/simple.Tpo .deps/simple.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -g -O2 -L/usr/local/lib  -o simple simple.o ../src/libonig.la 
+libtool: link: gcc -Wall -g -O2 -o .libs/simple simple.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -g -O2 -MT sql.o -MD -MP -MF .deps/sql.Tpo -c -o sql.o sql.c
+mv -f .deps/sql.Tpo .deps/sql.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -g -O2 -L/usr/local/lib  -o sql sql.o ../src/libonig.la 
+libtool: link: gcc -Wall -g -O2 -o .libs/sql sql.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -g -O2 -MT syntax.o -MD -MP -MF .deps/syntax.Tpo -c -o syntax.o syntax.c
+mv -f .deps/syntax.Tpo .deps/syntax.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -g -O2 -L/usr/local/lib  -o syntax syntax.o ../src/libonig.la 
+libtool: link: gcc -Wall -g -O2 -o .libs/syntax syntax.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -g -O2 -MT user_property.o -MD -MP -MF .deps/user_property.Tpo -c -o user_property.o user_property.c
+mv -f .deps/user_property.Tpo .deps/user_property.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -g -O2 -L/usr/local/lib  -o user_property user_property.o ../src/libonig.la 
+libtool: link: gcc -Wall -g -O2 -o .libs/user_property user_property.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -g -O2 -MT callout.o -MD -MP -MF .deps/callout.Tpo -c -o callout.o callout.c
+mv -f .deps/callout.Tpo .deps/callout.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -g -O2 -L/usr/local/lib  -o callout callout.o ../src/libonig.la 
+libtool: link: gcc -Wall -g -O2 -o .libs/callout callout.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -g -O2 -MT echo.o -MD -MP -MF .deps/echo.Tpo -c -o echo.o echo.c
+mv -f .deps/echo.Tpo .deps/echo.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -g -O2 -L/usr/local/lib  -o echo echo.o ../src/libonig.la 
+libtool: link: gcc -Wall -g -O2 -o .libs/echo echo.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -g -O2 -MT count.o -MD -MP -MF .deps/count.Tpo -c -o count.o count.c
+mv -f .deps/count.Tpo .deps/count.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -g -O2 -L/usr/local/lib  -o count count.o ../src/libonig.la 
+libtool: link: gcc -Wall -g -O2 -o .libs/count count.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -g -O2 -MT bug_fix.o -MD -MP -MF .deps/bug_fix.Tpo -c -o bug_fix.o bug_fix.c
+mv -f .deps/bug_fix.Tpo .deps/bug_fix.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -g -O2 -L/usr/local/lib  -o bug_fix bug_fix.o ../src/libonig.la 
+libtool: link: gcc -Wall -g -O2 -o .libs/bug_fix bug_fix.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -g -O2 -MT regset.o -MD -MP -MF .deps/regset.Tpo -c -o regset.o regset.c
+mv -f .deps/regset.Tpo .deps/regset.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -g -O2 -L/usr/local/lib  -o regset regset.o ../src/libonig.la 
+libtool: link: gcc -Wall -g -O2 -o .libs/regset regset.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -g -O2 -MT scan.o -MD -MP -MF .deps/scan.Tpo -c -o scan.o scan.c
+mv -f .deps/scan.Tpo .deps/scan.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -g -O2 -L/usr/local/lib  -o scan scan.o ../src/libonig.la 
+libtool: link: gcc -Wall -g -O2 -o .libs/scan scan.o  -L/usr/local/lib ../src/.libs/libonig.so
+gcc -DHAVE_CONFIG_H -I. -I../src  -I../src  -Wall -g -O2 -MT callback_each_match.o -MD -MP -MF .deps/callback_each_match.Tpo -c -o callback_each_match.o callback_each_match.c
+callback_each_match.c: In function 'match':
+callback_each_match.c:96:26: warning: variable 'range' set but not used [-Wunused-but-set-variable]
+   96 |   unsigned char *start, *range, *end;
+      |                          ^~~~~
+callback_each_match.c:96:18: warning: variable 'start' set but not used [-Wunused-but-set-variable]
+   96 |   unsigned char *start, *range, *end;
+      |                  ^~~~~
+mv -f .deps/callback_each_match.Tpo .deps/callback_each_match.Po
+/bin/bash ../libtool  --tag=CC   --mode=link gcc -Wall -g -O2 -L/usr/local/lib  -o callback_each_match callback_each_match.o ../src/libonig.la 
+libtool: link: gcc -Wall -g -O2 -o .libs/callback_each_match callback_each_match.o  -L/usr/local/lib ../src/.libs/libonig.so
+make[4]: Leaving directory '/testbed/modules/oniguruma/sample'
+make  check-TESTS
+make[4]: Entering directory '/testbed/modules/oniguruma/sample'
+make[5]: Entering directory '/testbed/modules/oniguruma/sample'
+PASS: encode
+PASS: listcap
+PASS: names
+PASS: simple
+PASS: sql
+PASS: syntax
+PASS: user_property
+PASS: callout
+PASS: echo
+PASS: count
+PASS: bug_fix
+PASS: regset
+PASS: scan
+PASS: callback_each_match
+============================================================================
+Testsuite summary for onig 6.9.8
+============================================================================
+# TOTAL: 14
+# PASS:  14
+# SKIP:  0
+# XFAIL: 0
+# FAIL:  0
+# XPASS: 0
+# ERROR: 0
+============================================================================
+make[5]: Leaving directory '/testbed/modules/oniguruma/sample'
+make[4]: Leaving directory '/testbed/modules/oniguruma/sample'
+make[3]: Leaving directory '/testbed/modules/oniguruma/sample'
+make[3]: Entering directory '/testbed/modules/oniguruma'
+make[3]: Nothing to be done for 'check-am'.
+make[3]: Leaving directory '/testbed/modules/oniguruma'
+make[2]: Leaving directory '/testbed/modules/oniguruma'
+make[2]: Entering directory '/testbed'
+make  tests/man.test
+make[3]: Entering directory '/testbed'
+make[3]: 'tests/man.test' is up to date.
+make[3]: Leaving directory '/testbed'
+make  check-TESTS
+make[3]: Entering directory '/testbed'
+make[4]: Entering directory '/testbed'
+PASS: tests/optionaltest
+PASS: tests/mantest
+PASS: tests/jqtest
+PASS: tests/onigtest
+PASS: tests/shtest
+PASS: tests/utf8test
+PASS: tests/base64test
+============================================================================
+Testsuite summary for jq 1.6-223-g4dc2a2f-dirty
+============================================================================
+# TOTAL: 7
+# PASS:  7
+# SKIP:  0
+# XFAIL: 0
+# FAIL:  0
+# XPASS: 0
+# ERROR: 0
+============================================================================
+make[4]: Leaving directory '/testbed'
+make[3]: Leaving directory '/testbed'
+make[2]: Leaving directory '/testbed'
+make[1]: Leaving directory '/testbed'
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 4dc2a2fb9df94ec45d107b798173c7db9c695a7f tests/jq.test
+>>>>> Test Exit Code: 0
+Updated 1 path from dafbfe8

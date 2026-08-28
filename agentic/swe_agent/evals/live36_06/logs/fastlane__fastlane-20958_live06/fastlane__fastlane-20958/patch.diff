@@ -1,0 +1,51 @@
+diff --git a/fastlane/lib/fastlane/fast_file.rb b/fastlane/lib/fastlane/fast_file.rb
+index 3a65ed8bb..a12521541 100644
+--- a/fastlane/lib/fastlane/fast_file.rb
++++ b/fastlane/lib/fastlane/fast_file.rb
+@@ -304,7 +304,13 @@ module Fastlane
+           # `path` and `dependencies`.
+           checkout_path = is_eligible_for_caching ? "" : "#{path.shellescape} #{checkout_dependencies}"
+ 
+-          if Dir[clone_folder].empty?
++          # Whether the repository was just cloned in this call. This is used to
++          # know if the working directory has no files checked out yet (since we
++          # clone with `--no-checkout`), in which case a `git checkout` is
++          # always needed, regardless of the requested version.
++          repo_was_cloned = Dir[clone_folder].empty?
++
++          if repo_was_cloned
+             UI.message("Cloning remote git repo...")
+             Helper.with_env_values('GIT_TERMINAL_PROMPT' => '0') do
+               # When using cached clones, we need the entire repository history
+@@ -344,7 +350,13 @@ module Fastlane
+             Helper.with_env_values('GIT_TERMINAL_PROMPT' => '0') do
+               Actions.sh("cd #{clone_folder.shellescape} && git fetch --all --quiet && git checkout #{checkout_param.shellescape} #{checkout_path} && git reset --hard && git rebase")
+             end
+-          else
++          elsif is_eligible_for_caching && !version.nil? && !repo_was_cloned
++            # When using cached clones, the repository is not cloned on every
++            # call, so the requested version might already be checked out, in
++            # which case we can skip the `git checkout` to avoid superfluous
++            # work. This only applies when the repository was not just cloned,
++            # since a fresh clone is done with `--no-checkout`, meaning no files
++            # are present in the working directory yet.
+             begin
+               # https://stackoverflow.com/a/1593574/865175
+               current_tag = Actions.sh("cd #{clone_folder.shellescape} && git describe --exact-match --tags HEAD").strip
+@@ -352,9 +364,15 @@ module Fastlane
+               current_tag = nil
+             end
+ 
+-            if !version.nil? && current_tag != version
++            if current_tag != version
+               Actions.sh("cd #{clone_folder.shellescape} && git checkout #{checkout_param.shellescape} #{checkout_path}")
+             end
++          else
++            # When not using cached clones, or when the repository was just
++            # cloned, the working directory has no files checked out yet (since
++            # we clone with `--no-checkout`), which means we always need to
++            # check out the requested `path` and `dependencies`.
++            Actions.sh("cd #{clone_folder.shellescape} && git checkout #{checkout_param.shellescape} #{checkout_path}")
+           end
+ 
+           # Knowing that we check out all the files and directories when the

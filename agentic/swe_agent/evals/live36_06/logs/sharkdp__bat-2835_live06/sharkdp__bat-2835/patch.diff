@@ -1,0 +1,187 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index bb027c5..e4d50e5 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -5,6 +5,8 @@
+ ## Bugfixes
+ 
+ - Fix `NO_COLOR` support, see #2767 (@acuteenvy)
++- Wrap long file names in the header onto the next line(s) instead of letting them overflow the
++  terminal width, see #2833 (@sharkdp)
+ 
+ ## Other
+ 
+diff --git a/src/printer.rs b/src/printer.rs
+index cb80edc..7db9e3d 100644
+--- a/src/printer.rs
++++ b/src/printer.rs
+@@ -19,6 +19,7 @@ use content_inspector::ContentType;
+ use encoding_rs::{UTF_16BE, UTF_16LE};
+ 
+ use unicode_width::UnicodeWidthChar;
++use unicode_width::UnicodeWidthStr;
+ 
+ use crate::assets::{HighlightingAssets, SyntaxReferenceInSet};
+ use crate::config::Config;
+@@ -302,6 +303,118 @@ impl<'a> InteractivePrinter<'a> {
+         }
+     }
+ 
++    /// The width (in terminal columns) taken up by the header component indent that is
++    /// printed by `print_header_component_indent`. This is the amount of horizontal space that is
++    /// not available for the actual header content (e.g. the file name).
++    fn header_component_indent_width(&self) -> usize {
++        if self.panel_width == 0 {
++            0
++        } else if self.config.style_components.grid() {
++            // `panel_width` spaces plus the grid border (`"\u{2502} "`, i.e. the vertical bar followed by a space).
++            self.panel_width + 2
++        } else {
++            self.panel_width
++        }
++    }
++
++    /// Split a (potentially long) string into chunks that each fit into the available header
++    /// content width. The chunks are returned as a `Vec` of `String`s. If the string fits into a
++    /// single line, a single chunk is returned.
++    ///
++    /// `first_line_prefix` is the (unwrapped) text that is printed before the value on the first
++    /// line (e.g. `"File: "`). It is taken into account so that the first chunk is short enough
++    /// to leave room for it. `last_line_suffix` is the (unwrapped) text that is printed after the
++    /// value on the last line (e.g. `"   <BINARY>"`). It is taken into account so that the last
++    /// chunk is short enough to leave room for it.
++    fn split_into_header_chunks(
++        &self,
++        text: &str,
++        first_line_prefix: &str,
++        last_line_suffix: &str,
++    ) -> Vec<String> {
++        let available_width = match self
++            .config
++            .term_width
++            .checked_sub(self.header_component_indent_width())
++        {
++            Some(width) if width > 0 => width,
++            // If there is no space for any content, fall back to a single chunk to avoid
++            // underflow issues. The text will then simply overflow, which matches the previous
++            // behavior.
++            _ => return vec![text.to_string()],
++        };
++
++        let prefix_width = display_width(first_line_prefix);
++        let suffix_width = display_width(last_line_suffix);
++
++        let mut chunks: Vec<String> = Vec::new();
++        let mut current_chunk = String::new();
++        let mut current_width = 0usize;
++
++        for c in text.chars() {
++            let char_width = c.width().unwrap_or(0);
++
++            // The first chunk has to leave room for the prefix. Since we don't know in advance
++            // how many chunks we will end up with, we conservatively leave room for the suffix
++            // on every chunk (the suffix is only printed on the last line, but reserving space
++            // for it on every line guarantees that no line ever overflows).
++            let reserved_width = if chunks.is_empty() {
++                prefix_width + suffix_width
++            } else {
++                suffix_width
++            };
++
++            if current_width > 0 && current_width + char_width + reserved_width > available_width {
++                // The current chunk is full, push it and start a new one.
++                chunks.push(std::mem::take(&mut current_chunk));
++                current_width = 0;
++            }
++
++            current_chunk.push(c);
++            current_width += char_width;
++        }
++
++        if !current_chunk.is_empty() || chunks.is_empty() {
++            chunks.push(current_chunk);
++        }
++
++        chunks
++    }
++
++    /// Print a single header component (e.g. the file name) while wrapping the value onto
++    /// multiple lines if it does not fit into the available terminal width.
++    ///
++    /// `prefix` is the (unwrapped) text printed before the value on the first line, e.g.
++    /// `"File: "`. `suffix` is the (unwrapped) text printed after the value on the last line,
++    /// e.g. `"   <BINARY>"`.
++    fn print_header_component(
++        &mut self,
++        handle: &mut OutputHandle,
++        prefix: &str,
++        value: &str,
++        suffix: &str,
++    ) -> Result<()> {
++        let chunks = self.split_into_header_chunks(value, prefix, suffix);
++
++        for (index, chunk) in chunks.iter().enumerate() {
++            self.print_header_component_indent(handle)?;
++
++            let is_first = index == 0;
++            let is_last = index == chunks.len() - 1;
++
++            let line = format!(
++                "{}{}{}",
++                if is_first { prefix } else { "" },
++                self.colors.header_value.paint(chunk),
++                if is_last { suffix } else { "" },
++            );
++
++            writeln!(handle, "{}", line)?;
++        }
++
++        Ok(())
++    }
++
+     fn preprocess(&self, text: &str, cursor: &mut usize) -> String {
+         if self.config.tab_width > 0 {
+             return expand_tabs(text, self.config.tab_width, cursor);
+@@ -378,26 +491,21 @@ impl<'a> Printer for InteractivePrinter<'a> {
+         }
+ 
+         header_components.iter().try_for_each(|component| {
+-            self.print_header_component_indent(handle)?;
+-
+             match component {
+-                StyleComponent::HeaderFilename => writeln!(
+-                    handle,
+-                    "{}{}{}",
+-                    description
++                StyleComponent::HeaderFilename => {
++                    let prefix = description
+                         .kind()
+                         .map(|kind| format!("{}: ", kind))
+-                        .unwrap_or_else(|| "".into()),
+-                    self.colors.header_value.paint(description.title()),
+-                    mode
+-                ),
++                        .unwrap_or_else(|| "".into());
++                    self.print_header_component(handle, &prefix, description.title(), mode)
++                }
+ 
+                 StyleComponent::HeaderFilesize => {
+                     let bsize = metadata
+                         .size
+                         .map(|s| format!("{}", ByteSize(s)))
+                         .unwrap_or_else(|| "-".into());
+-                    writeln!(handle, "Size: {}", self.colors.header_value.paint(bsize))
++                    self.print_header_component(handle, "Size: ", &bsize, "")
+                 }
+                 _ => Ok(()),
+             }
+@@ -762,3 +870,9 @@ impl Colors {
+         }
+     }
+ }
++
++/// Returns the displayed width (in terminal columns) of the given string, taking Unicode
++/// character widths (e.g. for wide CJK characters) into account.
++fn display_width(s: &str) -> usize {
++    s.width()
++}

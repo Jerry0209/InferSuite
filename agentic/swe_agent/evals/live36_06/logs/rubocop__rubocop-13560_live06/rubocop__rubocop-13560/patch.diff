@@ -1,0 +1,46 @@
+diff --git a/changelog/fix_style_file_null_false_positive_for_nul.md b/changelog/fix_style_file_null_false_positive_for_nul.md
+new file mode 100644
+index 000000000..ce69e88b2
+--- /dev/null
++++ b/changelog/fix_style_file_null_false_positive_for_nul.md
+@@ -0,0 +1 @@
++* [#13501](https://github.com/rubocop/rubocop/issues/13501): Fix a false positive for `Style/FileNull` when a string is `'nul'` (lowercase), which is unrelated to the Windows `NUL` null device. The `NUL` device name is now matched case sensitively. ([@dvandersluis][])
+diff --git a/docs/modules/ROOT/pages/cops_style.adoc b/docs/modules/ROOT/pages/cops_style.adoc
+index f33620a34..bc37742c2 100644
+--- a/docs/modules/ROOT/pages/cops_style.adoc
++++ b/docs/modules/ROOT/pages/cops_style.adoc
+@@ -5160,6 +5160,10 @@ OSes, `NUL` or `NUL:` on Windows), so that code is platform independent.
+ Only looks for full string matches, substrings within a longer string are not
+ considered.
+ 
++The Windows device name `NUL` is matched case sensitively (only the uppercase
++`NUL` and `NUL:` are considered), so that unrelated strings such as `'nul'` are
++not flagged. The Unix path `/dev/null` is matched case insensitively.
++
+ NOTE: Uses inside arrays and hashes are ignored.
+ 
+ [#safety-stylefilenull]
+diff --git a/lib/rubocop/cop/style/file_null.rb b/lib/rubocop/cop/style/file_null.rb
+index 140f3881f..f8e3b7ffd 100644
+--- a/lib/rubocop/cop/style/file_null.rb
++++ b/lib/rubocop/cop/style/file_null.rb
+@@ -8,6 +8,10 @@ module RuboCop
+       # Only looks for full string matches, substrings within a longer string are not
+       # considered.
+       #
++      # The Windows device name `NUL` is matched case sensitively (only the uppercase
++      # `NUL` and `NUL:` are considered), so that unrelated strings such as `'nul'` are
++      # not flagged. The Unix path `/dev/null` is matched case insensitively.
++      #
+       # NOTE: Uses inside arrays and hashes are ignored.
+       #
+       # @safety
+@@ -39,7 +43,7 @@ module RuboCop
+       class FileNull < Base
+         extend AutoCorrector
+ 
+-        REGEXP = %r{\A(/dev/null|NUL:?)\z}i.freeze
++        REGEXP = Regexp.union(%r{\A/dev/null\z}i, /\ANUL:?\z/).freeze
+         MSG = 'Use `File::NULL` instead of `%<source>s`.'
+ 
+         def on_str(node)

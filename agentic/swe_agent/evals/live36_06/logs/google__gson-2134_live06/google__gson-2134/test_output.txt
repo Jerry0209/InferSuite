@@ -1,0 +1,438 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   gson/src/main/java/com/google/gson/internal/bind/util/ISO8601Utils.java
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 96ab171eb48dcea94fd9b8f425f65c531e6c3aad
+Author: Nathan Herring <Capstan@users.noreply.github.com>
+Date:   Wed Jun 8 15:04:42 2022 -0700
+
+    Add explicit support for floats in JsonWriter. (#2130)
+    
+    This avoids floats being treated as doubles and having an unwarranted level of precision.
+    
+    Fixes #1127.
+
+diff --git a/gson/src/main/java/com/google/gson/stream/JsonWriter.java b/gson/src/main/java/com/google/gson/stream/JsonWriter.java
+index 476da2bb..05991562 100644
+--- a/gson/src/main/java/com/google/gson/stream/JsonWriter.java
++++ b/gson/src/main/java/com/google/gson/stream/JsonWriter.java
+@@ -490,6 +490,25 @@ public class JsonWriter implements Closeable, Flushable {
+     return this;
+   }
+ 
++  /**
++   * Encodes {@code value}.
++   *
++   * @param value a finite value. May not be {@link Float#isNaN() NaNs} or {@link Float#isInfinite()
++   *     infinities}.
++   * @return this writer.
++   * @throws IllegalArgumentException if the value is NaN or Infinity and this writer is not {@link
++   *     #setLenient(boolean) lenient}.
++   */
++  public JsonWriter value(float value) throws IOException {
++    writeDeferredName();
++    if (!lenient && (Float.isNaN(value) || Float.isInfinite(value))) {
++      throw new IllegalArgumentException("Numeric values must be finite, but was " + value);
++    }
++    beforeValue();
++    out.append(Float.toString(value));
++    return this;
++  }
++
+   /**
+    * Encodes {@code value}.
+    *
+diff --git a/gson/src/test/java/com/google/gson/stream/JsonWriterTest.java b/gson/src/test/java/com/google/gson/stream/JsonWriterTest.java
+index 7d4148e3..5c57fd1d 100644
+--- a/gson/src/test/java/com/google/gson/stream/JsonWriterTest.java
++++ b/gson/src/test/java/com/google/gson/stream/JsonWriterTest.java
+@@ -172,6 +172,30 @@ public final class JsonWriterTest extends TestCase {
+     assertEquals("{\"a\":{\"b\":true},\"c\":1}", stringWriter.toString());
+   }
+ 
++  public void testNonFiniteFloats() throws IOException {
++    StringWriter stringWriter = new StringWriter();
++    JsonWriter jsonWriter = new JsonWriter(stringWriter);
++    jsonWriter.beginArray();
++    try {
++      jsonWriter.value(Float.NaN);
++      fail();
++    } catch (IllegalArgumentException expected) {
++      assertEquals("Numeric values must be finite, but was NaN", expected.getMessage());
++    }
++    try {
++      jsonWriter.value(Float.NEGATIVE_INFINITY);
++      fail();
++    } catch (IllegalArgumentException expected) {
++      assertEquals("Numeric values must be finite, but was -Infinity", expected.getMessage());
++    }
++    try {
++      jsonWriter.value(Float.POSITIVE_INFINITY);
++      fail();
++    } catch (IllegalArgumentException expected) {
++      assertEquals("Numeric values must be finite, but was Infinity", expected.getMessage());
++    }
++  }
++
+   public void testNonFiniteDoubles() throws IOException {
+     StringWriter stringWriter = new StringWriter();
+     JsonWriter jsonWriter = new JsonWriter(stringWriter);
+@@ -226,6 +250,18 @@ public final class JsonWriterTest extends TestCase {
+     }
+   }
+ 
++  public void testNonFiniteFloatsWhenLenient() throws IOException {
++    StringWriter stringWriter = new StringWriter();
++    JsonWriter jsonWriter = new JsonWriter(stringWriter);
++    jsonWriter.setLenient(true);
++    jsonWriter.beginArray();
++    jsonWriter.value(Float.NaN);
++    jsonWriter.value(Float.NEGATIVE_INFINITY);
++    jsonWriter.value(Float.POSITIVE_INFINITY);
++    jsonWriter.endArray();
++    assertEquals("[NaN,-Infinity,Infinity]", stringWriter.toString());
++  }
++
+   public void testNonFiniteDoublesWhenLenient() throws IOException {
+     StringWriter stringWriter = new StringWriter();
+     JsonWriter jsonWriter = new JsonWriter(stringWriter);
+@@ -251,6 +287,36 @@ public final class JsonWriterTest extends TestCase {
+     assertEquals("[NaN,-Infinity,Infinity,Infinity]", stringWriter.toString());
+   }
+ 
++  public void testFloats() throws IOException {
++    StringWriter stringWriter = new StringWriter();
++    JsonWriter jsonWriter = new JsonWriter(stringWriter);
++    jsonWriter.beginArray();
++    jsonWriter.value(-0.0f);
++    jsonWriter.value(1.0f);
++    jsonWriter.value(Float.MAX_VALUE);
++    jsonWriter.value(Float.MIN_VALUE);
++    jsonWriter.value(0.0f);
++    jsonWriter.value(-0.5f);
++    jsonWriter.value(2.2250739E-38f);
++    jsonWriter.value(3.723379f);
++    jsonWriter.value((float) Math.PI);
++    jsonWriter.value((float) Math.E);
++    jsonWriter.endArray();
++    jsonWriter.close();
++    assertEquals(
++        "[-0.0,"
++            + "1.0,"
++            + "3.4028235E38,"
++            + "1.4E-45,"
++            + "0.0,"
++            + "-0.5,"
++            + "2.2250739E-38,"
++            + "3.723379,"
++            + "3.1415927,"
++            + "2.7182817]",
++        stringWriter.toString());
++  }
++
+   public void testDoubles() throws IOException {
+     StringWriter stringWriter = new StringWriter();
+     JsonWriter jsonWriter = new JsonWriter(stringWriter);
++ git -c core.fileMode=false diff 96ab171eb48dcea94fd9b8f425f65c531e6c3aad
+diff --git a/gson/src/main/java/com/google/gson/internal/bind/util/ISO8601Utils.java b/gson/src/main/java/com/google/gson/internal/bind/util/ISO8601Utils.java
+index 99ec679a..a50758fe 100644
+--- a/gson/src/main/java/com/google/gson/internal/bind/util/ISO8601Utils.java
++++ b/gson/src/main/java/com/google/gson/internal/bind/util/ISO8601Utils.java
+@@ -149,7 +149,16 @@ public class ISO8601Utils
+             boolean hasT = checkOffset(date, offset, 'T');
+             
+             if (!hasT && (date.length() <= offset)) {
+-                Calendar calendar = new GregorianCalendar(year, month - 1, day);
++                Calendar calendar = new GregorianCalendar();
++                // Use lenient false to reject non-existent dates, such as 2022-14-30, see https://github.com/google/gson/issues/2159
++                calendar.setLenient(false);
++                calendar.set(Calendar.YEAR, year);
++                calendar.set(Calendar.MONTH, month - 1);
++                calendar.set(Calendar.DAY_OF_MONTH, day);
++                calendar.set(Calendar.HOUR_OF_DAY, 0);
++                calendar.set(Calendar.MINUTE, 0);
++                calendar.set(Calendar.SECOND, 0);
++                calendar.set(Calendar.MILLISECOND, 0);
+ 
+                 pos.setIndex(offset);
+                 return calendar.getTime();
++ git checkout 96ab171eb48dcea94fd9b8f425f65c531e6c3aad gson/src/test/java/com/google/gson/internal/bind/util/ISO8601UtilsTest.java
+Updated 0 paths from 9812ced7
++ git apply -v -
+Checking patch gson/src/test/java/com/google/gson/internal/bind/util/ISO8601UtilsTest.java...
+Applied patch gson/src/test/java/com/google/gson/internal/bind/util/ISO8601UtilsTest.java cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ mvnd test -B -T 1C -pl gson -Dtest=com.google.gson.internal.bind.util.ISO8601UtilsTest#testDateParseInvalidDay
+Aug 28, 2026 1:50:34 AM org.jline.utils.Log logr
+WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[main] WARNING org.jline - Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[INFO] Processing build on daemon 70e013fb
+[INFO] Scanning for projects...
+[INFO] BuildTimeEventSpy is registered.
+[INFO] 
+[INFO] Using the SmartBuilder implementation with a thread count of 16
+[INFO] 
+[INFO] ---------------------< com.google.code.gson:gson >----------------------
+[INFO] Building Gson 2.9.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:1.0:enforce (enforce-maven) @ gson ---
+[INFO] 
+[INFO] --- templating:1.0.0:filter-sources (filtering-java-templates) @ gson ---
+[INFO] Coping files with filtering to temporary directory.
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 1 resource
+[INFO] No files needs to be copied to output directory. Up to date: /testbed/gson/target/generated-sources/java-templates
+[INFO] Source directory: /testbed/gson/target/generated-sources/java-templates added.
+[INFO] 
+[INFO] --- resources:3.2.0:resources (default-resources) @ gson ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] skip non existing resourceDirectory /testbed/gson/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.10.1:compile (default-compile) @ gson ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 78 source files to /testbed/gson/target/classes
+[INFO] /testbed/gson/src/main/java/com/google/gson/JsonPrimitive.java: /testbed/gson/src/main/java/com/google/gson/JsonPrimitive.java uses or overrides a deprecated API.
+[INFO] /testbed/gson/src/main/java/com/google/gson/JsonPrimitive.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- bnd:6.3.1:bnd-process (default) @ gson ---
+[WARNING] /testbed/gson/bnd.bnd [0:0]: Export com.google.gson,  has 1,  private references [com.google.gson.internal]
+[INFO] 
+[INFO] --- resources:3.2.0:testResources (default-testResources) @ gson ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 1 resource
+[INFO] 
+[INFO] --- compiler:3.10.1:testCompile (default-testCompile) @ gson ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 110 source files to /testbed/gson/target/test-classes
+[INFO] 
+[INFO] --- copy-rename:1.0.1:rename (pre-obfuscate-class) @ gson ---
+[INFO] Renamed /testbed/gson/target/test-classes/com/google/gson/functional/EnumWithObfuscatedTest.class to /testbed/gson/target/test-classes-obfuscated-injar/com/google/gson/functional/EnumWithObfuscatedTest.class
+[INFO] Renamed /testbed/gson/target/test-classes/com/google/gson/functional/EnumWithObfuscatedTest$Gender.class to /testbed/gson/target/test-classes-obfuscated-injar/com/google/gson/functional/EnumWithObfuscatedTest$Gender.class
+[INFO] 
+[INFO] --- proguard:2.5.3:proguard (default) @ gson ---
+[INFO] execute ProGuard [-injars, '/testbed/gson/target/test-classes-obfuscated-injar'(!META-INF/maven/**,**/*.class), -outjars, '/testbed/gson/target/test-classes-obfuscated-outjar', -include, '/testbed/gson/src/test/resources/testcases-proguard.conf', -libraryjars, '/testbed/gson/target/classes', -libraryjars, '/opt/java/openjdk/jmods/java.base.jmod', -printmapping, '/testbed/gson/target/proguard_map.txt', -printseeds, '/testbed/gson/target/proguard_seed.txt']
+[INFO] proguard jar: [/root/.m2/repository/com/guardsquare/proguard-base/7.2.0-beta4/proguard-base-7.2.0-beta4.jar, /root/.m2/repository/com/guardsquare/proguard-core/8.0.3/proguard-core-8.0.3.jar]
+[INFO] [stdout]  [proguard] ProGuard, version 7.2.0-beta4
+[INFO] 
+[INFO] --- resources:3.2.0:copy-resources (post-obfuscate-class) @ gson ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 2 resources
+[INFO] 
+[INFO] --- surefire:3.0.0-M7:test (default-test) @ gson ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junit4.JUnit4Provider
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit4/3.0.0-M7/surefire-junit4-3.0.0-M7.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit4/3.0.0-M7/surefire-junit4-3.0.0-M7.jar (18 kB at 126 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit4/3.0.0-M7/surefire-junit4-3.0.0-M7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit4/3.0.0-M7/surefire-junit4-3.0.0-M7.pom (2.9 kB at 182 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-providers/3.0.0-M7/surefire-providers-3.0.0-M7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-providers/3.0.0-M7/surefire-providers-3.0.0-M7.pom (2.5 kB at 127 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/junit/junit/4.0/junit-4.0.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/junit/junit/4.0/junit-4.0.pom (210 B at 8.1 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit4/3.0.0-M7/common-junit4-3.0.0-M7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit4/3.0.0-M7/common-junit4-3.0.0-M7.pom (3.0 kB at 176 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit3/3.0.0-M7/common-junit3-3.0.0-M7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit3/3.0.0-M7/common-junit3-3.0.0-M7.pom (2.7 kB at 156 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.0.0-M7/common-java5-3.0.0-M7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.0.0-M7/common-java5-3.0.0-M7.pom (2.7 kB at 150 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/hamcrest/hamcrest-library/1.3/hamcrest-library-1.3.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/hamcrest/hamcrest-library/1.3/hamcrest-library-1.3.pom (820 B at 46 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/assertj/assertj-core/3.22.0/assertj-core-3.22.0.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/assertj/assertj-core/3.22.0/assertj-core-3.22.0.pom (31 kB at 1.6 MB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/assertj/assertj-parent-pom/2.2.14/assertj-parent-pom-2.2.14.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/assertj/assertj-parent-pom/2.2.14/assertj-parent-pom-2.2.14.pom (25 kB at 1.2 MB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.8.0/junit-bom-5.8.0.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.8.0/junit-bom-5.8.0.pom (5.6 kB at 313 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit3/3.0.0-M7/common-junit3-3.0.0-M7.jar
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit4/3.0.0-M7/common-junit4-3.0.0-M7.jar
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.0.0-M7/common-java5-3.0.0-M7.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit3/3.0.0-M7/common-junit3-3.0.0-M7.jar (12 kB at 691 kB/s)
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.0.0-M7/common-java5-3.0.0-M7.jar (17 kB at 468 kB/s)
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-junit4/3.0.0-M7/common-junit4-3.0.0-M7.jar (26 kB at 625 kB/s)
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.google.gson.internal.bind.util.ISO8601UtilsTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.039 s - in com.google.gson.internal.bind.util.ISO8601UtilsTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  4.847 s (Wall Clock)
+[INFO] Finished at: 2026-08-28T01:50:40Z
+[INFO] ------------------------------------------------------------------------
++ mvnd test -B -T 1C -pl gson -Dtest=com.google.gson.internal.bind.util.ISO8601UtilsTest#testDateParseInvalidMonth
+Aug 28, 2026 1:50:40 AM org.jline.utils.Log logr
+WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[main] WARNING org.jline - Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[INFO] Processing build on daemon 70e013fb
+[INFO] Scanning for projects...
+[INFO] BuildTimeEventSpy is registered.
+[INFO] 
+[INFO] Using the SmartBuilder implementation with a thread count of 16
+[INFO] 
+[INFO] ---------------------< com.google.code.gson:gson >----------------------
+[INFO] Building Gson 2.9.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:1.0:enforce (enforce-maven) @ gson ---
+[INFO] 
+[INFO] --- templating:1.0.0:filter-sources (filtering-java-templates) @ gson ---
+[INFO] Coping files with filtering to temporary directory.
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 1 resource
+[INFO] No files needs to be copied to output directory. Up to date: /testbed/gson/target/generated-sources/java-templates
+[INFO] Source directory: /testbed/gson/target/generated-sources/java-templates added.
+[INFO] 
+[INFO] --- resources:3.2.0:resources (default-resources) @ gson ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] skip non existing resourceDirectory /testbed/gson/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.10.1:compile (default-compile) @ gson ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- bnd:6.3.1:bnd-process (default) @ gson ---
+[WARNING] /testbed/gson/bnd.bnd [0:0]: Export com.google.gson,  has 1,  private references [com.google.gson.internal]
+[INFO] 
+[INFO] --- resources:3.2.0:testResources (default-testResources) @ gson ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 1 resource
+[INFO] 
+[INFO] --- compiler:3.10.1:testCompile (default-testCompile) @ gson ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- copy-rename:1.0.1:rename (pre-obfuscate-class) @ gson ---
+[INFO] Renamed /testbed/gson/target/test-classes/com/google/gson/functional/EnumWithObfuscatedTest.class to /testbed/gson/target/test-classes-obfuscated-injar/com/google/gson/functional/EnumWithObfuscatedTest.class
+[INFO] Renamed /testbed/gson/target/test-classes/com/google/gson/functional/EnumWithObfuscatedTest$Gender.class to /testbed/gson/target/test-classes-obfuscated-injar/com/google/gson/functional/EnumWithObfuscatedTest$Gender.class
+[INFO] 
+[INFO] --- proguard:2.5.3:proguard (default) @ gson ---
+[INFO] execute ProGuard [-injars, '/testbed/gson/target/test-classes-obfuscated-injar'(!META-INF/maven/**,**/*.class), -outjars, '/testbed/gson/target/test-classes-obfuscated-outjar', -include, '/testbed/gson/src/test/resources/testcases-proguard.conf', -libraryjars, '/testbed/gson/target/classes', -libraryjars, '/opt/java/openjdk/jmods/java.base.jmod', -printmapping, '/testbed/gson/target/proguard_map.txt', -printseeds, '/testbed/gson/target/proguard_seed.txt']
+[INFO] proguard jar: [/root/.m2/repository/com/guardsquare/proguard-base/7.2.0-beta4/proguard-base-7.2.0-beta4.jar, /root/.m2/repository/com/guardsquare/proguard-core/8.0.3/proguard-core-8.0.3.jar]
+[INFO] [stdout]  [proguard] ProGuard, version 7.2.0-beta4
+[INFO] 
+[INFO] --- resources:3.2.0:copy-resources (post-obfuscate-class) @ gson ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 2 resources
+[INFO] 
+[INFO] --- surefire:3.0.0-M7:test (default-test) @ gson ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junit4.JUnit4Provider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.google.gson.internal.bind.util.ISO8601UtilsTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.043 s - in com.google.gson.internal.bind.util.ISO8601UtilsTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.117 s (Wall Clock)
+[INFO] Finished at: 2026-08-28T01:50:41Z
+[INFO] ------------------------------------------------------------------------
++ mvnd test -B -T 1C -pl gson -Dtest=com.google.gson.internal.bind.util.ISO8601UtilsTest#testDateParseWithDefaultTimezone
+Aug 28, 2026 1:50:41 AM org.jline.utils.Log logr
+WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[main] WARNING org.jline - Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[INFO] Processing build on daemon 70e013fb
+[INFO] Scanning for projects...
+[INFO] BuildTimeEventSpy is registered.
+[INFO] 
+[INFO] Using the SmartBuilder implementation with a thread count of 16
+[INFO] 
+[INFO] ---------------------< com.google.code.gson:gson >----------------------
+[INFO] Building Gson 2.9.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:1.0:enforce (enforce-maven) @ gson ---
+[INFO] 
+[INFO] --- templating:1.0.0:filter-sources (filtering-java-templates) @ gson ---
+[INFO] Coping files with filtering to temporary directory.
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 1 resource
+[INFO] No files needs to be copied to output directory. Up to date: /testbed/gson/target/generated-sources/java-templates
+[INFO] Source directory: /testbed/gson/target/generated-sources/java-templates added.
+[INFO] 
+[INFO] --- resources:3.2.0:resources (default-resources) @ gson ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] skip non existing resourceDirectory /testbed/gson/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.10.1:compile (default-compile) @ gson ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- bnd:6.3.1:bnd-process (default) @ gson ---
+[WARNING] /testbed/gson/bnd.bnd [0:0]: Export com.google.gson,  has 1,  private references [com.google.gson.internal]
+[INFO] 
+[INFO] --- resources:3.2.0:testResources (default-testResources) @ gson ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 1 resource
+[INFO] 
+[INFO] --- compiler:3.10.1:testCompile (default-testCompile) @ gson ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- copy-rename:1.0.1:rename (pre-obfuscate-class) @ gson ---
+[INFO] Renamed /testbed/gson/target/test-classes/com/google/gson/functional/EnumWithObfuscatedTest.class to /testbed/gson/target/test-classes-obfuscated-injar/com/google/gson/functional/EnumWithObfuscatedTest.class
+[INFO] Renamed /testbed/gson/target/test-classes/com/google/gson/functional/EnumWithObfuscatedTest$Gender.class to /testbed/gson/target/test-classes-obfuscated-injar/com/google/gson/functional/EnumWithObfuscatedTest$Gender.class
+[INFO] 
+[INFO] --- proguard:2.5.3:proguard (default) @ gson ---
+[INFO] execute ProGuard [-injars, '/testbed/gson/target/test-classes-obfuscated-injar'(!META-INF/maven/**,**/*.class), -outjars, '/testbed/gson/target/test-classes-obfuscated-outjar', -include, '/testbed/gson/src/test/resources/testcases-proguard.conf', -libraryjars, '/testbed/gson/target/classes', -libraryjars, '/opt/java/openjdk/jmods/java.base.jmod', -printmapping, '/testbed/gson/target/proguard_map.txt', -printseeds, '/testbed/gson/target/proguard_seed.txt']
+[INFO] proguard jar: [/root/.m2/repository/com/guardsquare/proguard-base/7.2.0-beta4/proguard-base-7.2.0-beta4.jar, /root/.m2/repository/com/guardsquare/proguard-core/8.0.3/proguard-core-8.0.3.jar]
+[INFO] [stdout]  [proguard] ProGuard, version 7.2.0-beta4
+[INFO] 
+[INFO] --- resources:3.2.0:copy-resources (post-obfuscate-class) @ gson ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 2 resources
+[INFO] 
+[INFO] --- surefire:3.0.0-M7:test (default-test) @ gson ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junit4.JUnit4Provider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.google.gson.internal.bind.util.ISO8601UtilsTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.038 s - in com.google.gson.internal.bind.util.ISO8601UtilsTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.059 s (Wall Clock)
+[INFO] Finished at: 2026-08-28T01:50:42Z
+[INFO] ------------------------------------------------------------------------
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 96ab171eb48dcea94fd9b8f425f65c531e6c3aad gson/src/test/java/com/google/gson/internal/bind/util/ISO8601UtilsTest.java
+>>>>> Test Exit Code: 0
+Updated 1 path from 9812ced7

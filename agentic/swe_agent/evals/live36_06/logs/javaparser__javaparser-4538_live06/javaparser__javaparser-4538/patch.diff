@@ -1,0 +1,28 @@
+diff --git a/changelog.md b/changelog.md
+index 7f5923dd4..aba1d413b 100644
+--- a/changelog.md
++++ b/changelog.md
+@@ -8,6 +8,7 @@ Next Release (Version 3.26.2-snapshot)
+ ### Deprecated
+ ### Removed
+ ### Fixed
++* Fix Node.PostOrderIterator throwing EmptyStackException when the root node has no children (PR [#4480](https://github.com/javaparser/javaparser/pull/4480))
+ ### Security
+ 
+ Version 3.26.1
+diff --git a/javaparser-core/src/main/java/com/github/javaparser/ast/Node.java b/javaparser-core/src/main/java/com/github/javaparser/ast/Node.java
+index 1728e7e57..1d33f8f56 100644
+--- a/javaparser-core/src/main/java/com/github/javaparser/ast/Node.java
++++ b/javaparser-core/src/main/java/com/github/javaparser/ast/Node.java
+@@ -1161,6 +1161,11 @@ public abstract class Node
+ 
+         @Override
+         public Node next() {
++            if (nodesStack.empty()) {
++                // The root has no children, so it is the only (and last) node to return.
++                hasNext = false;
++                return root;
++            }
+             final List<Node> nodes = nodesStack.peek();
+             final int cursor = cursorStack.peek();
+             final boolean levelHasNext = cursor < nodes.size();

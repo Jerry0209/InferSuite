@@ -1,0 +1,761 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch develop
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   include/nlohmann/detail/conversions/to_json.hpp
+	modified:   single_include/nlohmann/json.hpp
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 3780b41dd070436f3f55327b0a88f27a52e2dfa8
+Author: Niels Lohmann <mail@nlohmann.me>
+Date:   Wed Dec 6 20:51:04 2023 +0100
+
+    :moneybag: update sponsors
+
+diff --git a/README.md b/README.md
+index 91090270..789a716f 100644
+--- a/README.md
++++ b/README.md
+@@ -75,9 +75,9 @@ See the [contribution guidelines](https://github.com/nlohmann/json/blob/master/.
+ 
+ You can sponsor this library at [GitHub Sponsors](https://github.com/sponsors/nlohmann).
+ 
+-### :office: Corporate Sponsor
++### :raising_hand: Priority Sponsor
+ 
+-[![](https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Codacy-logo-black.svg/320px-Codacy-logo-black.svg.png)](https://github.com/codacy/About)
++- [Martti Laine](https://github.com/codeclown)
+ 
+ ### :label: Named Sponsors
+ 
++ git -c core.fileMode=false diff 3780b41dd070436f3f55327b0a88f27a52e2dfa8
+diff --git a/include/nlohmann/detail/conversions/to_json.hpp b/include/nlohmann/detail/conversions/to_json.hpp
+index e39b7797..bd9be916 100644
+--- a/include/nlohmann/detail/conversions/to_json.hpp
++++ b/include/nlohmann/detail/conversions/to_json.hpp
+@@ -320,7 +320,14 @@ template<typename BasicJsonType, typename EnumType,
+ inline void to_json(BasicJsonType& j, EnumType e) noexcept
+ {
+     using underlying_type = typename std::underlying_type<EnumType>::type;
+-    external_constructor<value_t::number_integer>::construct(j, static_cast<underlying_type>(e));
++    using integer_type = typename std::conditional<
++                              std::is_signed<underlying_type>::value,
++                              typename BasicJsonType::number_integer_t,
++                              typename BasicJsonType::number_unsigned_t>::type;
++    external_constructor<
++        std::is_signed<underlying_type>::value
++        ? value_t::number_integer
++        : value_t::number_unsigned>::construct(j, static_cast<integer_type>(e));
+ }
+ #endif  // JSON_DISABLE_ENUM_SERIALIZATION
+ 
+diff --git a/single_include/nlohmann/json.hpp b/single_include/nlohmann/json.hpp
+index 8b72ea65..50ddfb48 100644
+--- a/single_include/nlohmann/json.hpp
++++ b/single_include/nlohmann/json.hpp
+@@ -5697,7 +5697,14 @@ template<typename BasicJsonType, typename EnumType,
+ inline void to_json(BasicJsonType& j, EnumType e) noexcept
+ {
+     using underlying_type = typename std::underlying_type<EnumType>::type;
+-    external_constructor<value_t::number_integer>::construct(j, static_cast<underlying_type>(e));
++    using integer_type = typename std::conditional<
++                              std::is_signed<underlying_type>::value,
++                              typename BasicJsonType::number_integer_t,
++                              typename BasicJsonType::number_unsigned_t>::type;
++    external_constructor<
++        std::is_signed<underlying_type>::value
++        ? value_t::number_integer
++        : value_t::number_unsigned>::construct(j, static_cast<integer_type>(e));
+ }
+ #endif  // JSON_DISABLE_ENUM_SERIALIZATION
+ 
++ git checkout 3780b41dd070436f3f55327b0a88f27a52e2dfa8 tests/src/unit-udt.cpp
+Updated 0 paths from 18eed0f6
++ git apply -v -
+Checking patch tests/src/unit-udt.cpp...
+Applied patch tests/src/unit-udt.cpp cleanly.
++ mkdir -p build
++ cd build
++ cmake ..
+-- Using the multi-header code from /testbed/include/
+-- Operating system: Linux-5.14.0-701.el9.x86_64; Linux cefce547f4f0 6.17.0-1030-oem #30-Ubuntu SMP PREEMPT_DYNAMIC Thu Jul 16 15:01:53 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+-- Compiler: c++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0; Copyright (C) 2021 Free Software Foundation, Inc.; This is free software; see the source for copying conditions.  There is NO; warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+-- Testing standards: 11 14 17 20 23
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /testbed/build
++ make test-udt_cpp11
+Consolidate compiler generated dependencies of target test_main
+[ 50%] Built target test_main
+Consolidate compiler generated dependencies of target test-udt_cpp11
+[100%] Building CXX object tests/CMakeFiles/test-udt_cpp11.dir/src/unit-udt.cpp.o
+[100%] Linking CXX executable test-udt_cpp11
+[100%] Built target test-udt_cpp11
++ cd ..
++ : '>>>>> Start Test Output'
++ cat
++ ./build/tests/test-udt_cpp11 -s -r=xml
+<?xml version="1.0" encoding="UTF-8"?>
+<doctest binary="./build/tests/test-udt_cpp11" version="2.4.11">
+  <Options order_by="file" rand_seed="0" first="0" last="4294967295" abort_after="0" subcase_filter_levels="2147483647" case_sensitive="false" no_throw="false" no_skip="false"/>
+  <TestSuite name="udt">
+    <TestCase name="basic usage" filename="/testbed/tests/src/unit-udt.cpp" line="230">
+      <SubCase name="conversion to json via free-functions" filename="/testbed/tests/src/unit-udt.cpp" line="247">
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="249">
+          <Original>
+            json(a) == json(23)
+          </Original>
+          <Expanded>
+            23 == 23
+          </Expanded>
+        </Expression>
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="250">
+          <Original>
+            json(n) == json("theo")
+          </Original>
+          <Expanded>
+            "theo" == "theo"
+          </Expanded>
+        </Expression>
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="251">
+          <Original>
+            json(c) == json("France")
+          </Original>
+          <Expanded>
+            "France" == "France"
+          </Expanded>
+        </Expression>
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="252">
+          <Original>
+            json(sfinae_addict) == R"({"name":"theo", "age":23, "country":"France"})"_json
+          </Original>
+          <Expanded>
+            {"age":23,"country":"France","name":"theo"} == {"age":23,"country":"France","name":"theo"}
+          </Expanded>
+        </Expression>
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="253">
+          <Original>
+            json("Paris") == json(addr)
+          </Original>
+          <Expanded>
+            "Paris" == "Paris"
+          </Expanded>
+        </Expression>
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="254">
+          <Original>
+            json(cpp_programmer) == R"({"person" : {"age":23, "name":"theo", "country":"France"}, "address":"Paris"})"_json
+          </Original>
+          <Expanded>
+            {"address":"Paris","person":{"age":23,"country":"France","name":"theo"}} == {"address":"Paris","person":{"age":23,"country":"France","name":"theo"}}
+          </Expanded>
+        </Expression>
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="256">
+          <Original>
+            json(large_id) == json(static_cast&lt;std::uint64_t>(1) &lt;&lt; 63)
+          </Original>
+          <Expanded>
+            9223372036854775808 == 9223372036854775808
+          </Expanded>
+        </Expression>
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="257">
+          <Original>
+            json(large_id) > 0u
+          </Original>
+          <Expanded>
+            9223372036854775808 >  0
+          </Expanded>
+        </Expression>
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="258">
+          <Original>
+            to_string(json(large_id)) == "9223372036854775808"
+          </Original>
+          <Expanded>
+            9223372036854775808 == 9223372036854775808
+          </Expanded>
+        </Expression>
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="259">
+          <Original>
+            json(large_id).is_number_unsigned()
+          </Original>
+          <Expanded>
+            true
+          </Expanded>
+        </Expression>
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="261">
+          <Original>
+            json(book) == R"({"name":"C++", "id":42, "contacts" : [{"person" : {"age":23, "name":"theo", "country":"France"}, "address":"Paris"}, {"person" : {"age":42, "country":"中华人民共和国", "name":"王芳"}, "address":"Paris"}]})"_json
+          </Original>
+          <Expanded>
+            {"contacts":[{"address":"Paris","person":{"age":23,"country":"France","name":"theo"}},{"address":"Paris","person":{"age":42,"country":"中华人民共和国","name":"王芳"}}],"id":42,"name":"C++"} == {"contacts":[{"address":"Paris","person":{"age":23,"country":"France","name":"theo"}},{"address":"Paris","person":{"age":42,"country":"中华人民共和国","name":"王芳"}}],"id":42,"name":"C++"}
+          </Expanded>
+        </Expression>
+      </SubCase>
+      <SubCase name="conversion from json via free-functions" filename="/testbed/tests/src/unit-udt.cpp" line="267">
+        <SubCase name="via explicit calls to get" filename="/testbed/tests/src/unit-udt.cpp" line="271">
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="287">
+            <Original>
+              age == a
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="288">
+            <Original>
+              name == n
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="289">
+            <Original>
+              country == c
+            </Original>
+            <Expanded>
+              1 == 1
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="290">
+            <Original>
+              address == addr
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="291">
+            <Original>
+              person == sfinae_addict
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="292">
+            <Original>
+              contact == cpp_programmer
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="293">
+            <Original>
+              contacts == book.m_contacts
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="294">
+            <Original>
+              book_name == udt::name{"C++"}
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="295">
+            <Original>
+              book_id == book.m_book_id
+            </Original>
+            <Expanded>
+              42 == 42
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="296">
+            <Original>
+              book == parsed_book
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+        </SubCase>
+      </SubCase>
+      <SubCase name="conversion from json via free-functions" filename="/testbed/tests/src/unit-udt.cpp" line="267">
+        <SubCase name="via explicit calls to get_to" filename="/testbed/tests/src/unit-udt.cpp" line="299">
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="305">
+            <Original>
+              person_json.get_to(person) == sfinae_addict
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="309">
+            <Original>
+              name.m_val == "new name"
+            </Original>
+            <Expanded>
+              new name == new name
+            </Expanded>
+          </Expression>
+        </SubCase>
+      </SubCase>
+      <SubCase name="conversion from json via free-functions" filename="/testbed/tests/src/unit-udt.cpp" line="267">
+        <SubCase name="implicit conversions" filename="/testbed/tests/src/unit-udt.cpp" line="313">
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="327">
+            <Original>
+              age == a
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="328">
+            <Original>
+              name == n
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="329">
+            <Original>
+              country == c
+            </Original>
+            <Expanded>
+              1 == 1
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="330">
+            <Original>
+              address == addr
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="331">
+            <Original>
+              person == sfinae_addict
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="332">
+            <Original>
+              contact == cpp_programmer
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="333">
+            <Original>
+              contacts == book.m_contacts
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="334">
+            <Original>
+              book_name == udt::name{"C++"}
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="335">
+            <Original>
+              book_id == static_cast&lt;udt::book_id>(42u)
+            </Original>
+            <Expanded>
+              42 == 42
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="336">
+            <Original>
+              book == parsed_book
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+        </SubCase>
+      </SubCase>
+      <OverallResultsAsserts successes="33" failures="0" test_case_success="true"/>
+    </TestCase>
+    <TestCase name="adl_serializer specialization" filename="/testbed/tests/src/unit-udt.cpp" line="397">
+      <SubCase name="partial specialization" filename="/testbed/tests/src/unit-udt.cpp" line="399">
+        <SubCase name="to_json" filename="/testbed/tests/src/unit-udt.cpp" line="401">
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="406">
+            <Original>
+              j.is_null()
+            </Original>
+            <Expanded>
+              true
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK_FALSE" filename="/testbed/tests/src/unit-udt.cpp" line="410">
+            <Original>
+              j.is_null()
+            </Original>
+            <Expanded>
+              false
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="412">
+            <Original>
+              j.get&lt;udt::person>() == *optPerson
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+        </SubCase>
+      </SubCase>
+      <SubCase name="partial specialization" filename="/testbed/tests/src/unit-udt.cpp" line="399">
+        <SubCase name="from_json" filename="/testbed/tests/src/unit-udt.cpp" line="415">
+          <Expression success="true" type="REQUIRE" filename="/testbed/tests/src/unit-udt.cpp" line="421">
+            <Original>
+              optPerson
+            </Original>
+            <Expanded>
+              0x5dce29e0d470
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="422">
+            <Original>
+              *optPerson == person
+            </Original>
+            <Expanded>
+              {?} == {?}
+            </Expanded>
+          </Expression>
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="426">
+            <Original>
+              !optPerson
+            </Original>
+            <Expanded>
+              true
+            </Expanded>
+          </Expression>
+        </SubCase>
+      </SubCase>
+      <SubCase name="total specialization" filename="/testbed/tests/src/unit-udt.cpp" line="430">
+        <SubCase name="to_json" filename="/testbed/tests/src/unit-udt.cpp" line="432">
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="437">
+            <Original>
+              j.get&lt;int>() == 4242
+            </Original>
+            <Expanded>
+              4242 == 4242
+            </Expanded>
+          </Expression>
+        </SubCase>
+      </SubCase>
+      <SubCase name="total specialization" filename="/testbed/tests/src/unit-udt.cpp" line="430">
+        <SubCase name="from_json" filename="/testbed/tests/src/unit-udt.cpp" line="440">
+          <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="444">
+            <Original>
+              lt.number == "4242"
+            </Original>
+            <Expanded>
+              4242 == 4242
+            </Expanded>
+          </Expression>
+        </SubCase>
+      </SubCase>
+      <OverallResultsAsserts successes="8" failures="0" test_case_success="true"/>
+    </TestCase>
+    <TestCase name="even supported types can be specialized" filename="/testbed/tests/src/unit-udt.cpp" line="473">
+      <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="476">
+        <Original>
+          j.dump() == R"("hijacked!")"
+        </Original>
+        <Expanded>
+          "hijacked!" == "hijacked!"
+        </Expanded>
+      </Expression>
+      <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="479">
+        <Original>
+          (f == std::vector&lt;float> {4.0, 5.0, 6.0})
+        </Original>
+        <Expanded>
+          true
+        </Expanded>
+      </Expression>
+      <OverallResultsAsserts successes="2" failures="0" test_case_success="true"/>
+    </TestCase>
+    <TestCase name="Non-copyable types" filename="/testbed/tests/src/unit-udt.cpp" line="512">
+      <SubCase name="to_json" filename="/testbed/tests/src/unit-udt.cpp" line="514">
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="519">
+          <Original>
+            j.is_null()
+          </Original>
+          <Expanded>
+            true
+          </Expanded>
+        </Expression>
+        <Expression success="true" type="CHECK_FALSE" filename="/testbed/tests/src/unit-udt.cpp" line="523">
+          <Original>
+            j.is_null()
+          </Original>
+          <Expanded>
+            false
+          </Expanded>
+        </Expression>
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="525">
+          <Original>
+            j.get&lt;udt::person>() == *optPerson
+          </Original>
+          <Expanded>
+            {?} == {?}
+          </Expanded>
+        </Expression>
+      </SubCase>
+      <SubCase name="from_json" filename="/testbed/tests/src/unit-udt.cpp" line="528">
+        <Expression success="true" type="REQUIRE" filename="/testbed/tests/src/unit-udt.cpp" line="534">
+          <Original>
+            optPerson
+          </Original>
+          <Expanded>
+            {?}
+          </Expanded>
+        </Expression>
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="535">
+          <Original>
+            *optPerson == person
+          </Original>
+          <Expanded>
+            {?} == {?}
+          </Expanded>
+        </Expression>
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="539">
+          <Original>
+            !optPerson
+          </Original>
+          <Expanded>
+            true
+          </Expanded>
+        </Expression>
+      </SubCase>
+      <OverallResultsAsserts successes="6" failures="0" test_case_success="true"/>
+    </TestCase>
+    <TestCase name="custom serializer for pods" filename="/testbed/tests/src/unit-udt.cpp" line="653">
+      <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="664">
+        <Original>
+          p == p2
+        </Original>
+        <Expanded>
+          begin: 42, middle: /, end: 42 == begin: 42, middle: /, end: 42
+        </Expanded>
+      </Expression>
+      <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="669">
+        <Original>
+          np == np2
+        </Original>
+        <Expanded>
+          {?} == {?}
+        </Expanded>
+      </Expression>
+      <OverallResultsAsserts successes="2" failures="0" test_case_success="true"/>
+    </TestCase>
+    <TestCase name="custom serializer that does adl by default" filename="/testbed/tests/src/unit-udt.cpp" line="693">
+      <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="700">
+        <Original>
+          j.dump() == cj.dump()
+        </Original>
+        <Expanded>
+          {"age":23,"country":"France","name":"theo"} == {"age":23,"country":"France","name":"theo"}
+        </Expanded>
+      </Expression>
+      <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="702">
+        <Original>
+          me == j.get&lt;udt::person>()
+        </Original>
+        <Expanded>
+          {?} == {?}
+        </Expanded>
+      </Expression>
+      <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="703">
+        <Original>
+          me == cj.get&lt;udt::person>()
+        </Original>
+        <Expanded>
+          {?} == {?}
+        </Expanded>
+      </Expression>
+      <OverallResultsAsserts successes="3" failures="0" test_case_success="true"/>
+    </TestCase>
+  </TestSuite>
+  <TestSuite>
+    <TestCase name="different basic_json types conversions" filename="/testbed/tests/src/unit-udt.cpp" line="706">
+      <SubCase name="null" filename="/testbed/tests/src/unit-udt.cpp" line="708">
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="712">
+          <Original>
+            cj == nullptr
+          </Original>
+          <Expanded>
+            null == nullptr
+          </Expanded>
+        </Expression>
+      </SubCase>
+      <SubCase name="boolean" filename="/testbed/tests/src/unit-udt.cpp" line="715">
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="719">
+          <Original>
+            cj == true
+          </Original>
+          <Expanded>
+            true == true
+          </Expanded>
+        </Expression>
+      </SubCase>
+      <SubCase name="discarded" filename="/testbed/tests/src/unit-udt.cpp" line="722">
+        <Expression success="true" type="CHECK_NOTHROW" filename="/testbed/tests/src/unit-udt.cpp" line="726">
+          <Original>
+            cj = j
+          </Original>
+        </Expression>
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="727">
+          <Original>
+            cj.type() == custom_json::value_t::discarded
+          </Original>
+          <Expanded>
+            9 == 9
+          </Expanded>
+        </Expression>
+      </SubCase>
+      <SubCase name="array" filename="/testbed/tests/src/unit-udt.cpp" line="730">
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="734">
+          <Original>
+            (cj == std::vector&lt;int> {1, 2, 3})
+          </Original>
+          <Expanded>
+            true
+          </Expanded>
+        </Expression>
+      </SubCase>
+      <SubCase name="integer" filename="/testbed/tests/src/unit-udt.cpp" line="737">
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="741">
+          <Original>
+            cj == 42
+          </Original>
+          <Expanded>
+            42 == 42
+          </Expanded>
+        </Expression>
+      </SubCase>
+      <SubCase name="float" filename="/testbed/tests/src/unit-udt.cpp" line="744">
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="748">
+          <Original>
+            cj == 42.0
+          </Original>
+          <Expanded>
+            42.0 == 42
+          </Expanded>
+        </Expression>
+      </SubCase>
+      <SubCase name="unsigned" filename="/testbed/tests/src/unit-udt.cpp" line="751">
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="755">
+          <Original>
+            cj == 42u
+          </Original>
+          <Expanded>
+            42 == 42
+          </Expanded>
+        </Expression>
+      </SubCase>
+      <SubCase name="string" filename="/testbed/tests/src/unit-udt.cpp" line="758">
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="762">
+          <Original>
+            cj == "forty-two"
+          </Original>
+          <Expanded>
+            "forty-two" == forty-two
+          </Expanded>
+        </Expression>
+      </SubCase>
+      <SubCase name="binary" filename="/testbed/tests/src/unit-udt.cpp" line="765">
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="769">
+          <Original>
+            cj.get_binary().subtype() == 42
+          </Original>
+          <Expanded>
+            42 == 42
+          </Expanded>
+        </Expression>
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="772">
+          <Original>
+            cv == v
+          </Original>
+          <Expanded>
+            {?} == {?}
+          </Expanded>
+        </Expression>
+      </SubCase>
+      <SubCase name="object" filename="/testbed/tests/src/unit-udt.cpp" line="775">
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="780">
+          <Original>
+            cj == m
+          </Original>
+          <Expanded>
+            {"forty":"two"} == {?}
+          </Expanded>
+        </Expression>
+      </SubCase>
+      <SubCase name="get&lt;custom_json>" filename="/testbed/tests/src/unit-udt.cpp" line="783">
+        <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="787">
+          <Original>
+            cj == 42
+          </Original>
+          <Expanded>
+            42 == 42
+          </Expanded>
+        </Expression>
+      </SubCase>
+      <OverallResultsAsserts successes="13" failures="0" test_case_success="true"/>
+    </TestCase>
+  </TestSuite>
+  <TestSuite name="udt">
+    <TestCase name="an incomplete type does not trigger a compiler error in non-evaluated context" filename="/testbed/tests/src/unit-udt.cpp" line="805">
+      <OverallResultsAsserts successes="0" failures="0" test_case_success="true"/>
+    </TestCase>
+  </TestSuite>
+  <TestSuite>
+    <TestCase name="Issue #924" filename="/testbed/tests/src/unit-udt.cpp" line="828">
+      <Expression success="true" type="CHECK_NOTHROW" filename="/testbed/tests/src/unit-udt.cpp" line="833">
+        <Original>
+          j.get&lt;Evil>()
+        </Original>
+      </Expression>
+      <Expression success="true" type="CHECK_NOTHROW" filename="/testbed/tests/src/unit-udt.cpp" line="834">
+        <Original>
+          j.get&lt;std::vector&lt;Evil>>()
+        </Original>
+      </Expression>
+      <Expression success="true" type="CHECK" filename="/testbed/tests/src/unit-udt.cpp" line="838">
+        <Original>
+          e.m_i >= 0
+        </Original>
+        <Expanded>
+          4 >= 0
+        </Expanded>
+      </Expression>
+      <OverallResultsAsserts successes="3" failures="0" test_case_success="true"/>
+    </TestCase>
+    <TestCase name="Issue #1237" filename="/testbed/tests/src/unit-udt.cpp" line="841">
+      <OverallResultsAsserts successes="0" failures="0" test_case_success="true"/>
+    </TestCase>
+    <TestCase name="compatible array type, without iterator type alias" filename="/testbed/tests/src/unit-udt.cpp" line="871">
+      <OverallResultsAsserts successes="0" failures="0" test_case_success="true"/>
+    </TestCase>
+  </TestSuite>
+  <OverallResultsAsserts successes="70" failures="0"/>
+  <OverallResultsTestCases successes="11" failures="0" skipped="0"/>
+</doctest>
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout 3780b41dd070436f3f55327b0a88f27a52e2dfa8 tests/src/unit-udt.cpp
+Updated 1 path from 18eed0f6

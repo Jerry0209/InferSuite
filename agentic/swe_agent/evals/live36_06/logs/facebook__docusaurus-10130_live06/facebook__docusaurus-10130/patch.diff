@@ -1,0 +1,64 @@
+diff --git a/package.json b/package.json
+index c9abfeb19..c66ad61ef 100644
+--- a/package.json
++++ b/package.json
+@@ -116,5 +116,6 @@
+     "stylelint-config-prettier": "^9.0.5",
+     "stylelint-config-standard": "^29.0.0",
+     "typescript": "~5.4.5"
+-  }
++  },
++  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+ }
+diff --git a/packages/docusaurus/src/server/brokenLinks.ts b/packages/docusaurus/src/server/brokenLinks.ts
+index 9e940f7b8..556db98cb 100644
+--- a/packages/docusaurus/src/server/brokenLinks.ts
++++ b/packages/docusaurus/src/server/brokenLinks.ts
+@@ -112,8 +112,36 @@ function createBrokenLinksHelper({
+     return true;
+   }
+ 
++  function getCollectedPage(
++    linkPath: URLPath,
++  ): {links: Set<string>; anchors: Set<string>} | undefined {
++    // A link to a page might be written with or without a trailing slash
++    // (e.g. "/docs/intro#anchor" vs "/docs/intro/#anchor"), while the page
++    // itself is collected/registered under a single pathname convention.
++    // We normalize the trailing slash when looking up the collected page,
++    // so that the broken anchor checker is consistent regardless of the
++    // trailing slash used in the link.
++    // See https://github.com/facebook/docusaurus/issues/10133
++    const pathnames = [
++      linkPath.pathname,
++      decodeURI(linkPath.pathname),
++      addTrailingSlash(linkPath.pathname),
++      removeTrailingSlash(linkPath.pathname),
++      addTrailingSlash(decodeURI(linkPath.pathname)),
++      removeTrailingSlash(decodeURI(linkPath.pathname)),
++    ];
++    return pathnames
++      .map((p) => collectedLinks.get(p))
++      .find(
++        (
++          collected,
++        ): collected is {links: Set<string>; anchors: Set<string>} =>
++          collected !== undefined,
++      );
++  }
++
+   function isAnchorBrokenLink(linkPath: URLPath) {
+-    const {pathname, hash} = linkPath;
++    const {hash} = linkPath;
+     // Link has no hash: it can't be a broken anchor link
+     if (hash === undefined) {
+       return false;
+@@ -124,8 +152,7 @@ function createBrokenLinksHelper({
+     if (hash === '') {
+       return false;
+     }
+-    const targetPage =
+-      collectedLinks.get(pathname) || collectedLinks.get(decodeURI(pathname));
++    const targetPage = getCollectedPage(linkPath);
+     // link with anchor to a page that does not exist (or did not collect any
+     // link/anchor) is considered as a broken anchor
+     if (!targetPage) {

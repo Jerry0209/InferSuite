@@ -1,0 +1,19 @@
+diff --git a/src/t_string.c b/src/t_string.c
+index ce095ca65..f9becfd02 100644
+--- a/src/t_string.c
++++ b/src/t_string.c
+@@ -507,7 +507,13 @@ void getrangeCommand(client *c) {
+     if (start < 0) start = strlen+start;
+     if (end < 0) end = strlen+end;
+     if (start < 0) start = 0;
+-    if (end < 0) end = 0;
++    if (end < 0) {
++        /* If end is still negative after the conversion above it means the
++         * end index points before the start of the string, so there is
++         * nothing to return (e.g. GETRANGE key 0 -500). */
++        addReply(c,shared.emptybulk);
++        return;
++    }
+     if ((unsigned long long)end >= strlen) end = strlen-1;
+ 
+     /* Precondition: end >= 0 && end < strlen, so the only condition where

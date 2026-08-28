@@ -1,0 +1,296 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   CHANGELOG.rst
+	modified:   lib/fpm/package/deb.rb
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit c7e7b187316a0969c90706b04db35e78b0e2fc09
+Author: Jordan Sissel <jls@semicomplete.com>
+Date:   Sat Sep 4 17:32:39 2021 -0700
+
+    Fix failing test.
+    
+    This test was failing on a lintian check which reports:
+    
+    ```
+    E: name: init.d-script-needs-depends-on-lsb-base etc/init.d/test (line 14)
+    ```
+    
+    Added `lsb-base` dependency to resolve it.
+
+diff --git a/spec/fpm/package/deb_spec.rb b/spec/fpm/package/deb_spec.rb
+index 3940575..968d40d 100644
+--- a/spec/fpm/package/deb_spec.rb
++++ b/spec/fpm/package/deb_spec.rb
+@@ -369,6 +369,7 @@ describe FPM::Package::Deb do
+       subject.attributes[:deb_user] = "root"
+       subject.attributes[:deb_group] = "root"
+       subject.category = "comm"
++      subject.dependencies << "lsb-base"
+ 
+       subject.instance_variable_set(:@staging_path, staging_path)
+ 
++ git -c core.fileMode=false diff c7e7b187316a0969c90706b04db35e78b0e2fc09
+diff --git a/CHANGELOG.rst b/CHANGELOG.rst
+index 9737e7b..cf54087 100644
+--- a/CHANGELOG.rst
++++ b/CHANGELOG.rst
+@@ -1,6 +1,14 @@
+ Release Notes and Change Log
+ ============================
+ 
++1.13.2 (unreleased)
++^^^^^^^^^^^^^^^^^^^
++* deb: Validate the `Provides` field. Debian policy only allows exact version
++  (`=`) matches in the `Provides` field. fpm now fails at build time, rather
++  than letting `dpkg` fail at install time, when a `--provides` entry uses an
++  invalid version comparison operator (such as `<<`, `<=`, `>=`, `>>`, `<`,
++  `>` or `!=`).
++
+ 1.13.1 (July 6, 2021)
+ ^^^^^^^^^^^^^^^^^^^^^
+ * deb: The `--provides` flag now allows for versions. Previously, fpm would
+diff --git a/lib/fpm/package/deb.rb b/lib/fpm/package/deb.rb
+index 93d9e4d..912f93f 100644
+--- a/lib/fpm/package/deb.rb
++++ b/lib/fpm/package/deb.rb
+@@ -793,6 +793,23 @@ class FPM::Package::Deb < FPM::Package
+       logger.warn("Replacing 'provides' entry #{provides} with syntax 'name (= version)'")
+       provides = "#{m[1]} (= #{m[2]})"
+     end
++
++    # Debian policy only allows exact version (`=`) matches in the Provides
++    # field. Any other version comparison operator (`<<`, `<=`, `>=`, `>>`,
++    # `<`, `>`, `!=`, etc.) is invalid and will be rejected by dpkg at install
++    # time. Fail at build time so the error is caught early.
++    # See: https://www.debian.org/doc/debian-policy/ch-relationships.html#s7.6
++    if m = provides.match(/\(\s*(\S+)\s+\S/)
++      op = m[1]
++      if op != "="
++        raise FPM::InvalidPackageConfiguration,
++          "Debian policy only allows exact version (`=`) matches in the " \
++          "`Provides` field, but `#{provides}` uses the `#{op}` operator. " \
++          "Only `=` is permitted. See " \
++          "https://www.debian.org/doc/debian-policy/ch-relationships.html#s7.6"
++      end
++    end
++
+     return provides.rstrip
+   end
+ 
++ git checkout c7e7b187316a0969c90706b04db35e78b0e2fc09 spec/fpm/package/deb_spec.rb
+Updated 0 paths from 9220a7f
++ git apply -v -
+Checking patch spec/fpm/package/deb_spec.rb...
+Applied patch spec/fpm/package/deb_spec.rb cleanly.
++ : '>>>>> Start Test Output'
++ cat
++ bundle exec rspec spec/fpm/package/deb_spec.rb --no-color --format json
++ sed -n '/^{/,$p'
++ jq -r '.examples[] | "\(.description) - \(.status)"'
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+/testbed/lib/fpm/package.rb:334: warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.
+/testbed/lib/fpm/package.rb:334: warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.
+should convert x86_64 to amd64 - passed
+should convert aarch64 to arm64 - passed
+should convert noarch to all - passed
+should default to native - passed
+should default to nil - passed
+should default to nil - passed
+should default to 'extra' - passed
+should be nil by default - passed
+should have a default output usable as a filename - passed
+should not include iteration if it is nil - passed
+should lowercase the package name - passed
+should replace underscores with dashes in the package name - passed
+should replace spaces with dashes in the package name - passed
+should have the requested meta file in the control archive - passed
+should have the requested triggers in the triggers file - passed
+should have the correct name - passed
+should have the correct version - passed
+should have the correct iteration - passed
+should have the correct epoch - passed
+should have the correct dependencies - passed
+should fix capitalization and underscores-to-dashes (#591) - passed
+should have the correct name - passed
+should have the correct 'epoch:version-iteration' - passed
+should have the correct priority - passed
+should have the correct dependency list - passed
+should have the correct replaces list - passed
+should have the correct build dependency list - passed
+should have a custom field 'foo: bar' - passed
+should have the correct Conflicts - passed
+should have the correct Breaks - passed
+should have no dependencies - passed
+should set the user for the package's data files - passed
+should set the group for the package's data files - passed
+should not set the user or group for the package's data files if :deb_use_file_permissions? is not nil - passed
+should return no errors - pending
+should reject 'this is not valid' - failed
+should reject 'hello = world' - failed
+should reject 'hello ()' - failed
+should reject 'hello (>)' - failed
+should reject 'hello (1234)' - failed
+should reject 'foo (<< 1.0.0-54)' - passed
+should accept 'libc' - passed
+should accept 'libc (= 6)' - passed
+should accept 'bar (= 1:1.0)' - passed
+should accept 'bar (= 1:1.0-1)' - passed
+should accept 'foo (= 1.0.0-54)' - passed
+it should output bit-for-bit identical packages - passed
+should use bz2 for data and control files - passed
+should use xz for data and control files - passed
+should use gz for data and control files - passed
++ SWEBENCH_TEST_EXIT_CODE=1
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 1'
++ git checkout c7e7b187316a0969c90706b04db35e78b0e2fc09 spec/fpm/package/deb_spec.rb
+>>>>> Test Exit Code: 1
+Updated 1 path from 9220a7f

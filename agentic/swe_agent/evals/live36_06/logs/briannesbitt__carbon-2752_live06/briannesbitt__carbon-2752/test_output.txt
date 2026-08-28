@@ -1,0 +1,209 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/Carbon/Traits/Comparison.php
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 09acf64155c16dc6f580f36569ae89344e9734a3
+Merge: 1e60d1b9 5ecdc33b
+Author: Kyle <kylekatarnls@users.noreply.github.com>
+Date:   Fri Jan 6 16:55:01 2023 +0100
+
+    Merge pull request #2750 from kylekatarnls/feature/is-long-iso-year
+    
+    Add isLongIsoYear() method
+
++ git -c core.fileMode=false diff 09acf64155c16dc6f580f36569ae89344e9734a3
+diff --git a/src/Carbon/Traits/Comparison.php b/src/Carbon/Traits/Comparison.php
+index 30a4d73d..b9611642 100644
+--- a/src/Carbon/Traits/Comparison.php
++++ b/src/Carbon/Traits/Comparison.php
+@@ -1027,7 +1027,7 @@ trait Comparison
+         }
+ 
+         if (preg_match(
+-            '/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d+$/i',
++            '/^(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+\d+)?$/i',
+             $tester
+         )) {
+             return $current->startOfMonth()->eq($other->startOfMonth());
++ git checkout 09acf64155c16dc6f580f36569ae89344e9734a3 tests/CarbonImmutable/IsTest.php
+Updated 0 paths from c760f164
++ git apply -v -
+Checking patch tests/CarbonImmutable/IsTest.php...
+Applied patch tests/CarbonImmutable/IsTest.php cleanly.
++ : '>>>>> Start Test Output'
++ vendor/bin/phpunit --testdox --colors=never tests/CarbonImmutable/IsTest.php
++ cat
+PHPUnit 9.6.34 by Sebastian Bergmann and contributors.
+
+Warning:       Your XML configuration validates against a deprecated schema.
+Suggestion:    Migrate your XML configuration using "--migrate-configuration"!
+
+Is (Tests\CarbonImmutable\Is)
+ ✔ Is weekday true
+ ✔ Is weekday false
+ ✔ Is weekend true
+ ✔ Is weekend false
+ ✔ Is yesterday true
+ ✔ Is yesterday false with today
+ ✔ Is yesterday false with 2 days
+ ✔ Is today true
+ ✔ Is current week
+ ✔ Is same week
+ ✔ Is next week true
+ ✔ Is last week true
+ ✔ Is next week false
+ ✔ Is last week false
+ ✔ Is next quarter true
+ ✔ Is last quarter true
+ ✔ Is next quarter false
+ ✔ Is last quarter false
+ ✔ Is next month true
+ ✔ Is last month true
+ ✔ Is next month false
+ ✔ Is last month false
+ ✔ Is next year true
+ ✔ Is last year true
+ ✔ Is next year false
+ ✔ Is last year false
+ ✔ Is today false with yesterday
+ ✔ Is today false with tomorrow
+ ✔ Is today with timezone
+ ✔ Is tomorrow true
+ ✔ Is tomorrow false with today
+ ✔ Is tomorrow false with 2 days
+ ✔ Is future true
+ ✔ Is future false
+ ✔ Is future false in the past
+ ✔ Is past true
+ ✔ Is past false
+ ✔ Now is past false
+ ✔ Is leap year true
+ ✔ Is leap year false
+ ✔ Is current year true
+ ✔ Is current year false
+ ✔ Is same year true
+ ✔ Is same year false
+ ✔ Is current decade true
+ ✔ Is current decade false
+ ✔ Is same decade true
+ ✔ Is same decade false
+ ✔ Is same foobar
+ ✔ Is current quarter true
+ ✔ Is current quarter false
+ ✔ Is same quarter true
+ ✔ Is same quarter true with date time
+ ✔ Is same quarter false
+ ✔ Is same quarter false with date time
+ ✔ Is same quarter and year true
+ ✔ Is same quarter and year true with date time
+ ✔ Is same quarter and year false
+ ✔ Is same quarter and year false with date time
+ ✔ Is current month
+ ✔ Is current month false
+ ✔ Is same month
+ ✔ Is same month true with date time
+ ✔ Is same month of same year
+ ✔ Is same month false with date time
+ ✔ Is same month and year true
+ ✔ Is same month and year true with date time
+ ✔ Is same month and year false
+ ✔ Is same month and year false with date time
+ ✔ Is same day true
+ ✔ Is same day with string
+ ✔ Is same day true with date time
+ ✔ Is same day false
+ ✔ Is same day false with date time
+ ✔ Is current day true
+ ✔ Is current day false
+ ✔ Is same hour true
+ ✔ Is same hour true with date time
+ ✔ Is same hour false
+ ✔ Is same hour false with date time
+ ✔ Is current hour true
+ ✔ Is current hour false
+ ✔ Is same minute true
+ ✔ Is same minute true with date time
+ ✔ Is same minute false
+ ✔ Is same minute false with date time
+ ✔ Is current minute true
+ ✔ Is current minute false
+ ✔ Is same second true
+ ✔ Is same second true with date time
+ ✔ Is same second false
+ ✔ Is same second false with date time
+ ✔ Is current second true
+ ✔ Is current second false
+ ✔ Is day of week
+ ✔ Is same as
+ ✔ Is same as with invalid argument
+ ✔ Is sunday
+ ✔ Is monday
+ ✔ Is tuesday
+ ✔ Is wednesday
+ ✔ Is thursday
+ ✔ Is friday
+ ✔ Is saturday
+ ✔ Is start of day
+ ✔ Is start of day with microseconds
+ ✔ Is end of day
+ ✔ Is end of day with microseconds
+ ✔ Is midnight
+ ✔ Is midday
+ ✔ Has format
+ ✔ Has format with single letter with data set #0
+ ✔ Has format with single letter with data set #1
+ ✔ Has format with single letter with data set #2
+ ✔ Has format with single letter with data set #3
+ ✔ Has format with single letter with data set #4
+ ✔ Has format with single letter with data set #5
+ ✔ Has format with single letter with data set #6
+ ✔ Has format with single letter with data set #7
+ ✔ Has format with single letter with data set #8
+ ✔ Has format with single letter with data set #9
+ ✔ Has format with single letter with data set #10
+ ✔ Has format with single letter with data set #11
+ ✔ Has format with single letter with data set #12
+ ✔ Has format with single letter with data set #13
+ ✔ Has format with single letter with data set #14
+ ✔ Has format with single letter with data set #15
+ ✔ Has format with single letter with data set #16
+ ✔ Has format with single letter with data set #17
+ ✔ Has format with single letter with data set #18
+ ✔ Has format with single letter with data set #19
+ ✔ Has format with single letter with data set #20
+ ✔ Has format with single letter with data set #21
+ ✔ Has format with single letter with data set #22
+ ✔ Has format with single letter with data set #23
+ ✔ Has format with single letter with data set #24
+ ✔ Has format with single letter with data set #25
+ ✔ Has format with single letter with data set #26
+ ✔ Has format with single letter with data set #27
+ ✔ Has format with single letter with data set #28
+ ✔ Has format with single letter with data set #29
+ ✔ Has format with single letter with data set #30
+ ✔ Has format with single letter with data set #31
+ ✔ Has format with single letter with data set #32
+ ✔ Has format with single letter with data set #33
+ ✔ Has format with single letter with data set #34
+ ✔ Has format with single letter with data set #35
+ ✔ Has format with single letter with data set #36
+ ✔ Has format with single letter with data set #37
+ ✔ Is
+ ✔ Has format with dots
+
+Time: 00:00.075, Memory: 14.00 MB
+
+OK (151 tests, 1270 assertions)
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
+>>>>> Test Exit Code: 0
++ git checkout 09acf64155c16dc6f580f36569ae89344e9734a3 tests/CarbonImmutable/IsTest.php
+Updated 1 path from c760f164

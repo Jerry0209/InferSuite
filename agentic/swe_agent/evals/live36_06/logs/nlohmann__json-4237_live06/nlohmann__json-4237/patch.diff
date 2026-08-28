@@ -1,0 +1,40 @@
+diff --git a/include/nlohmann/detail/conversions/to_json.hpp b/include/nlohmann/detail/conversions/to_json.hpp
+index e39b7797..bd9be916 100644
+--- a/include/nlohmann/detail/conversions/to_json.hpp
++++ b/include/nlohmann/detail/conversions/to_json.hpp
+@@ -320,7 +320,14 @@ template<typename BasicJsonType, typename EnumType,
+ inline void to_json(BasicJsonType& j, EnumType e) noexcept
+ {
+     using underlying_type = typename std::underlying_type<EnumType>::type;
+-    external_constructor<value_t::number_integer>::construct(j, static_cast<underlying_type>(e));
++    using integer_type = typename std::conditional<
++                              std::is_signed<underlying_type>::value,
++                              typename BasicJsonType::number_integer_t,
++                              typename BasicJsonType::number_unsigned_t>::type;
++    external_constructor<
++        std::is_signed<underlying_type>::value
++        ? value_t::number_integer
++        : value_t::number_unsigned>::construct(j, static_cast<integer_type>(e));
+ }
+ #endif  // JSON_DISABLE_ENUM_SERIALIZATION
+ 
+diff --git a/single_include/nlohmann/json.hpp b/single_include/nlohmann/json.hpp
+index 8b72ea65..50ddfb48 100644
+--- a/single_include/nlohmann/json.hpp
++++ b/single_include/nlohmann/json.hpp
+@@ -5697,7 +5697,14 @@ template<typename BasicJsonType, typename EnumType,
+ inline void to_json(BasicJsonType& j, EnumType e) noexcept
+ {
+     using underlying_type = typename std::underlying_type<EnumType>::type;
+-    external_constructor<value_t::number_integer>::construct(j, static_cast<underlying_type>(e));
++    using integer_type = typename std::conditional<
++                              std::is_signed<underlying_type>::value,
++                              typename BasicJsonType::number_integer_t,
++                              typename BasicJsonType::number_unsigned_t>::type;
++    external_constructor<
++        std::is_signed<underlying_type>::value
++        ? value_t::number_integer
++        : value_t::number_unsigned>::construct(j, static_cast<integer_type>(e));
+ }
+ #endif  // JSON_DISABLE_ENUM_SERIALIZATION
+ 

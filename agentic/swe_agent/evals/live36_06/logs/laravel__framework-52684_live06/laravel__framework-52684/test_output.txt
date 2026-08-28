@@ -1,0 +1,292 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/Illuminate/Support/Str.php
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 455598c577fab3898e1d84ddbaa142780c8b192d
+Author: Diaa Fares <diaafares@gmail.com>
+Date:   Fri Sep 6 23:27:22 2024 +0300
+
+    [11.x] Fix build failures due to enum collide After adding BackedEnum support to Gate (#52683)
+    
+    * Fix build failures due to enum collide
+    
+    * Fix lint
+
+diff --git a/tests/Auth/AuthAccessGateTest.php b/tests/Auth/AuthAccessGateTest.php
+index bb50a9462f..128ac8daca 100644
+--- a/tests/Auth/AuthAccessGateTest.php
++++ b/tests/Auth/AuthAccessGateTest.php
+@@ -12,6 +12,8 @@
+ use PHPUnit\Framework\TestCase;
+ use stdClass;
+ 
++include_once 'Enums.php';
++
+ class AuthAccessGateTest extends TestCase
+ {
+     public function testBasicClosuresCanBeDefined()
+@@ -1541,9 +1543,3 @@ public function create()
+         throw new AuthorizationException('Not allowed.', 'some_code');
+     }
+ }
+-
+-enum AbilitiesEnum: string
+-{
+-    case VIEW_DASHBOARD = 'view-dashboard';
+-    case UPDATE = 'update';
+-}
+diff --git a/tests/Auth/AuthorizeMiddlewareTest.php b/tests/Auth/AuthorizeMiddlewareTest.php
+index a9c6059f43..d9ca83e78b 100644
+--- a/tests/Auth/AuthorizeMiddlewareTest.php
++++ b/tests/Auth/AuthorizeMiddlewareTest.php
+@@ -19,6 +19,8 @@
+ use PHPUnit\Framework\TestCase;
+ use stdClass;
+ 
++include_once 'Enums.php';
++
+ class AuthorizeMiddlewareTest extends TestCase
+ {
+     protected $container;
+@@ -351,8 +353,3 @@ protected function gate()
+         return $this->container->make(GateContract::class);
+     }
+ }
+-
+-enum AbilitiesEnum: string
+-{
+-    case VIEW_DASHBOARD = 'view-dashboard';
+-}
+diff --git a/tests/Auth/Enums.php b/tests/Auth/Enums.php
+new file mode 100644
+index 0000000000..0e93ee2557
+--- /dev/null
++++ b/tests/Auth/Enums.php
+@@ -0,0 +1,9 @@
++<?php
++
++namespace Illuminate\Tests\Auth;
++
++enum AbilitiesEnum: string
++{
++    case VIEW_DASHBOARD = 'view-dashboard';
++    case UPDATE = 'update';
++}
++ git -c core.fileMode=false diff 455598c577fab3898e1d84ddbaa142780c8b192d
+diff --git a/src/Illuminate/Support/Str.php b/src/Illuminate/Support/Str.php
+index 52867d89e4..fb07586936 100644
+--- a/src/Illuminate/Support/Str.php
++++ b/src/Illuminate/Support/Str.php
+@@ -1497,7 +1497,7 @@ public static function snake($value, $delimiter = '_')
+     public static function trim($value, $charlist = null)
+     {
+         if ($charlist === null) {
+-            return preg_replace('~^[\s\x{FEFF}\x{200B}\x{200E}]+|[\s\x{FEFF}\x{200B}\x{200E}]+$~u', '', $value) ?? trim($value);
++            return preg_replace('~^[\s\x{FEFF}\x{200B}\x{200E}\x00]+|[\s\x{FEFF}\x{200B}\x{200E}\x00]+$~u', '', $value) ?? trim($value);
+         }
+ 
+         return trim($value, $charlist);
+@@ -1513,7 +1513,7 @@ public static function trim($value, $charlist = null)
+     public static function ltrim($value, $charlist = null)
+     {
+         if ($charlist === null) {
+-            return preg_replace('~^[\s\x{FEFF}\x{200B}\x{200E}]+~u', '', $value) ?? ltrim($value);
++            return preg_replace('~^[\s\x{FEFF}\x{200B}\x{200E}\x00]+~u', '', $value) ?? ltrim($value);
+         }
+ 
+         return ltrim($value, $charlist);
+@@ -1529,7 +1529,7 @@ public static function ltrim($value, $charlist = null)
+     public static function rtrim($value, $charlist = null)
+     {
+         if ($charlist === null) {
+-            return preg_replace('~[\s\x{FEFF}\x{200B}\x{200E}]+$~u', '', $value) ?? rtrim($value);
++            return preg_replace('~[\s\x{FEFF}\x{200B}\x{200E}\x00]+$~u', '', $value) ?? rtrim($value);
+         }
+ 
+         return rtrim($value, $charlist);
++ git checkout 455598c577fab3898e1d84ddbaa142780c8b192d tests/Support/SupportStrTest.php
+Updated 0 paths from 55504f979d
++ git apply -v -
+Checking patch tests/Support/SupportStrTest.php...
+Applied patch tests/Support/SupportStrTest.php cleanly.
++ : '>>>>> Start Test Output'
++ vendor/bin/phpunit --testdox --colors=never tests/Support/SupportStrTest.php
++ cat
+PHPUnit 11.5.56 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.3.16
+Configuration: /testbed/phpunit.xml.dist
+
+...............................................................  63 / 151 ( 41%)
+............................................................... 126 / 151 ( 83%)
+.........................                                       151 / 151 (100%)
+
+Time: 00:00.387, Memory: 14.00 MB
+
+Support Str (Illuminate\Tests\Support\SupportStr)
+ ✔ String can be limited by words
+ ✔ String can be limited by words non ascii
+ ✔ String trimmed only where necessary
+ ✔ String title
+ ✔ String headline
+ ✔ String apa
+ ✔ String without words doesnt produce error
+ ✔ String ascii
+ ✔ String ascii with specific locale
+ ✔ Starts with
+ ✔ Ends with
+ ✔ Str excerpt
+ ✔ Str before
+ ✔ Str before last
+ ✔ Str between
+ ✔ Str between first
+ ✔ Str after
+ ✔ Str after last
+ ✔ Str contains with data set #0
+ ✔ Str contains with data set #1
+ ✔ Str contains with data set #2
+ ✔ Str contains with data set #3
+ ✔ Str contains with data set #4
+ ✔ Str contains with data set #5
+ ✔ Str contains with data set #6
+ ✔ Str contains with data set #7
+ ✔ Str contains with data set #8
+ ✔ Str contains with data set #9
+ ✔ Str contains with data set #10
+ ✔ Str contains with data set #11
+ ✔ Str contains with data set #12
+ ✔ Str contains all with data set #0
+ ✔ Str contains all with data set #1
+ ✔ Str contains all with data set #2
+ ✔ Str contains all with data set #3
+ ✔ Str contains all with data set #4
+ ✔ Str contains all with data set #5
+ ✔ Convert case
+ ✔ Dedup
+ ✔ Parse callback
+ ✔ Slug
+ ✔ Str start
+ ✔ Flush cache
+ ✔ Finish
+ ✔ Wrap
+ ✔ Unwrap
+ ✔ Is
+ ✔ Is url
+ ✔ Is uuid with valid uuid with data set #0
+ ✔ Is uuid with valid uuid with data set #1
+ ✔ Is uuid with valid uuid with data set #2
+ ✔ Is uuid with valid uuid with data set #3
+ ✔ Is uuid with valid uuid with data set #4
+ ✔ Is uuid with valid uuid with data set #5
+ ✔ Is uuid with valid uuid with data set #6
+ ✔ Is uuid with valid uuid with data set #7
+ ✔ Is uuid with valid uuid with data set #8
+ ✔ Is uuid with valid uuid with data set #9
+ ✔ Is uuid with invalid uuid with data set #0
+ ✔ Is uuid with invalid uuid with data set #1
+ ✔ Is uuid with invalid uuid with data set #2
+ ✔ Is uuid with invalid uuid with data set #3
+ ✔ Is uuid with invalid uuid with data set #4
+ ✔ Is uuid with invalid uuid with data set #5
+ ✔ Is uuid with invalid uuid with data set #6
+ ✔ Is uuid with invalid uuid with data set #7
+ ✔ Is uuid with invalid uuid with data set #8
+ ✔ Is uuid with invalid uuid with data set #9
+ ✔ Is json
+ ✔ Is match
+ ✔ Kebab
+ ✔ Lower
+ ✔ Upper
+ ✔ Limit
+ ✔ Length
+ ✔ Numbers
+ ✔ Random
+ ✔ Whether the number of generated characters is equally distributed
+ ✔ Random string factory can be set
+ ✔ It can specify a sequence of random strings to utilise
+ ✔ It can specify a fallback for a random string sequence
+ ✔ Replace
+ ✔ Replace array
+ ✔ Replace first
+ ✔ Replace start
+ ✔ Replace last
+ ✔ Replace end
+ ✔ Remove
+ ✔ Reverse
+ ✔ Snake
+ ✔ Trim
+ ✔ Ltrim
+ ✔ Rtrim
+ ✔ Squish
+ ✔ Studly
+ ✔ Mask
+ ✔ Match
+ ✔ Camel
+ ✔ Char at
+ ✔ Substr
+ ✔ Substr count
+ ✔ Position
+ ✔ Substr replace
+ ✔ Take
+ ✔ Lcfirst
+ ✔ Ucfirst
+ ✔ Ucsplit
+ ✔ Uuid
+ ✔ Ascii null
+ ✔ Pad both
+ ✔ Pad left
+ ✔ Pad right
+ ✔ Swap keywords
+ ✔ Word count
+ ✔ Word wrap
+ ✔ Markdown
+ ✔ Inline markdown
+ ✔ Repeat
+ ✔ Repeat when times is negative
+ ✔ Transliterate with data set #0
+ ✔ Transliterate with data set #1
+ ✔ Transliterate with data set #2
+ ✔ Transliterate with data set #3
+ ✔ Transliterate with data set #4
+ ✔ Transliterate with data set #5
+ ✔ Transliterate with data set #6
+ ✔ Transliterate with data set #7
+ ✔ Transliterate override unknown
+ ✔ Transliterate strict with data set #0
+ ✔ Transliterate strict with data set #1
+ ✔ Transliterate strict with data set #2
+ ✔ Transliterate strict with data set #3
+ ✔ Transliterate strict with data set #4
+ ✔ Transliterate strict with data set #5
+ ✔ Transliterate strict with data set #6
+ ✔ Transliterate strict with data set #7
+ ✔ It can freeze uuids
+ ✔ It can freeze uuids in a closure
+ ✔ It creates uuids normally after failure within freeze method
+ ✔ It can specify a sequence of uuids to utilise
+ ✔ It can specify a fallback for a sequence
+ ✔ It can freeze ulids
+ ✔ It can freeze ulids in a closure
+ ✔ It creates ulids normally after failure within freeze method
+ ✔ It can specify a sequence of ulids to utilise
+ ✔ It can specify a fallback for a ulid sequence
+ ✔ Password creation
+ ✔ To base 64
+ ✔ From base 64
+ ✔ Chop start
+ ✔ Chop end
+
+OK (151 tests, 938 assertions)
++ SWEBENCH_TEST_EXIT_CODE=0
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 0'
++ git checkout 455598c577fab3898e1d84ddbaa142780c8b192d tests/Support/SupportStrTest.php
+>>>>> Test Exit Code: 0
+Updated 1 path from 55504f979d

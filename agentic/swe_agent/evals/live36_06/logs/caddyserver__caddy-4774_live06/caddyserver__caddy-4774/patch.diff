@@ -1,0 +1,71 @@
+diff --git a/caddyconfig/httpcaddyfile/addresses.go b/caddyconfig/httpcaddyfile/addresses.go
+index b33c0f0..8cfb7ad 100644
+--- a/caddyconfig/httpcaddyfile/addresses.go
++++ b/caddyconfig/httpcaddyfile/addresses.go
+@@ -213,8 +213,8 @@ func (st *ServerType) listenerAddrsForServerBlockKey(sblock serverBlock, key str
+ 		lnHosts = append(lnHosts, cfgVal.Value.([]string)...)
+ 	}
+ 	if len(lnHosts) == 0 {
+-		if defaultBind, ok := options["default_bind"].(string); ok {
+-			lnHosts = []string{defaultBind}
++		if defaultBind, ok := options["default_bind"].([]string); ok {
++			lnHosts = defaultBind
+ 		} else {
+ 			lnHosts = []string{""}
+ 		}
+diff --git a/caddyconfig/httpcaddyfile/httptype.go b/caddyconfig/httpcaddyfile/httptype.go
+index a8d01bc..74e8152 100644
+--- a/caddyconfig/httpcaddyfile/httptype.go
++++ b/caddyconfig/httpcaddyfile/httptype.go
+@@ -372,6 +372,22 @@ func (ServerType) evaluateGlobalOptionsBlock(serverBlocks []serverBlock, options
+ 			continue
+ 		}
+ 
++		// Additionally, fold multiple "default_bind" options together
++		// into an array so that multiple default bind addresses can
++		// be configured across multiple lines.
++		if opt == "default_bind" {
++			existingOpts, ok := options[opt].([]string)
++			if !ok {
++				existingOpts = []string{}
++			}
++			defaultBindOpts, ok := val.([]string)
++			if !ok {
++				return nil, fmt.Errorf("unexpected type from 'default_bind' global options: %T", val)
++			}
++			options[opt] = append(existingOpts, defaultBindOpts...)
++			continue
++		}
++
+ 		options[opt] = val
+ 	}
+ 
+diff --git a/caddyconfig/httpcaddyfile/options.go b/caddyconfig/httpcaddyfile/options.go
+index 65b0338..f477df3 100644
+--- a/caddyconfig/httpcaddyfile/options.go
++++ b/caddyconfig/httpcaddyfile/options.go
+@@ -29,7 +29,7 @@ func init() {
+ 	RegisterGlobalOption("debug", parseOptTrue)
+ 	RegisterGlobalOption("http_port", parseOptHTTPPort)
+ 	RegisterGlobalOption("https_port", parseOptHTTPSPort)
+-	RegisterGlobalOption("default_bind", parseOptSingleString)
++	RegisterGlobalOption("default_bind", parseOptStringList)
+ 	RegisterGlobalOption("grace_period", parseOptDuration)
+ 	RegisterGlobalOption("default_sni", parseOptSingleString)
+ 	RegisterGlobalOption("order", parseOptOrder)
+@@ -279,6 +279,15 @@ func parseOptSingleString(d *caddyfile.Dispenser, _ interface{}) (interface{}, e
+ 	return val, nil
+ }
+ 
++func parseOptStringList(d *caddyfile.Dispenser, _ interface{}) (interface{}, error) {
++	d.Next() // consume parameter name
++	val := d.RemainingArgs()
++	if len(val) == 0 {
++		return nil, d.ArgErr()
++	}
++	return val, nil
++}
++
+ func parseOptAdmin(d *caddyfile.Dispenser, _ interface{}) (interface{}, error) {
+ 	adminCfg := new(caddy.AdminConfig)
+ 	for d.Next() {

@@ -1,0 +1,15 @@
+diff --git a/src/diff/index.js b/src/diff/index.js
+index fc564d3b..0121e1fc 100644
+--- a/src/diff/index.js
++++ b/src/diff/index.js
+@@ -110,8 +110,8 @@ export function diff(
+ 			oldProps = c.props;
+ 			oldState = c.state;
+ 
+-			for (tmp = 0; tmp < c._stateCallbacks.length; tmp++) {
+-				c._renderCallbacks.push(c._stateCallbacks[tmp]);
++			if (c._stateCallbacks.length) {
++				c._renderCallbacks.push(...c._stateCallbacks);
+ 				c._stateCallbacks = [];
+ 			}
+ 

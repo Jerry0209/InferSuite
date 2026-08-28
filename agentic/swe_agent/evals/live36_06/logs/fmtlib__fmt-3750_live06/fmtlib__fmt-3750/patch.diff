@@ -1,0 +1,23 @@
+diff --git a/include/fmt/format.h b/include/fmt/format.h
+index 79bf5256..04790e15 100644
+--- a/include/fmt/format.h
++++ b/include/fmt/format.h
+@@ -2179,8 +2179,16 @@ template <typename Char = char> struct loc_writer {
+   template <typename T, FMT_ENABLE_IF(is_integer<T>::value)>
+   auto operator()(T value) -> bool {
+     auto arg = make_write_int_arg(value, specs.sign);
+-    write_int(out, static_cast<uint64_or_128_t<T>>(arg.abs_value), arg.prefix,
+-              specs, digit_grouping<Char>(grouping, sep));
++    switch (specs.type) {
++    case presentation_type::none:
++    case presentation_type::dec:
++      write_int(out, static_cast<uint64_or_128_t<T>>(arg.abs_value), arg.prefix,
++                specs, digit_grouping<Char>(grouping, sep));
++      break;
++    default:
++      write_int(out, arg, specs, locale_ref());
++      break;
++    }
+     return true;
+   }
+ 

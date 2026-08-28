@@ -1,0 +1,280 @@
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   caddyconfig/httpcaddyfile/addresses.go
+	modified:   caddyconfig/httpcaddyfile/httptype.go
+	modified:   caddyconfig/httpcaddyfile/options.go
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit f7be0ee10131f25620a2f64af7e3ded43eae2049
+Author: Francis Lavoie <lavofr@gmail.com>
+Date:   Fri May 6 12:25:31 2022 -0400
+
+    map: Prevent output destinations overlap with Caddyfile shorthands (#4657)
+
+diff --git a/caddyconfig/httpcaddyfile/httptype.go b/caddyconfig/httpcaddyfile/httptype.go
+index 9c723db..a8d01bc 100644
+--- a/caddyconfig/httpcaddyfile/httptype.go
++++ b/caddyconfig/httpcaddyfile/httptype.go
+@@ -88,34 +88,10 @@ func (st ServerType) Setup(inputServerBlocks []caddyfile.ServerBlock,
+ 		return nil, warnings, err
+ 	}
+ 
+-	// replace shorthand placeholders (which are
+-	// convenient when writing a Caddyfile) with
+-	// their actual placeholder identifiers or
+-	// variable names
+-	replacer := strings.NewReplacer(
+-		"{dir}", "{http.request.uri.path.dir}",
+-		"{file}", "{http.request.uri.path.file}",
+-		"{host}", "{http.request.host}",
+-		"{hostport}", "{http.request.hostport}",
+-		"{port}", "{http.request.port}",
+-		"{method}", "{http.request.method}",
+-		"{path}", "{http.request.uri.path}",
+-		"{query}", "{http.request.uri.query}",
+-		"{remote}", "{http.request.remote}",
+-		"{remote_host}", "{http.request.remote.host}",
+-		"{remote_port}", "{http.request.remote.port}",
+-		"{scheme}", "{http.request.scheme}",
+-		"{uri}", "{http.request.uri}",
+-		"{tls_cipher}", "{http.request.tls.cipher_suite}",
+-		"{tls_version}", "{http.request.tls.version}",
+-		"{tls_client_fingerprint}", "{http.request.tls.client.fingerprint}",
+-		"{tls_client_issuer}", "{http.request.tls.client.issuer}",
+-		"{tls_client_serial}", "{http.request.tls.client.serial}",
+-		"{tls_client_subject}", "{http.request.tls.client.subject}",
+-		"{tls_client_certificate_pem}", "{http.request.tls.client.certificate_pem}",
+-		"{tls_client_certificate_der_base64}", "{http.request.tls.client.certificate_der_base64}",
+-		"{upstream_hostport}", "{http.reverse_proxy.upstream.hostport}",
+-	)
++	// replace shorthand placeholders (which are convenient
++	// when writing a Caddyfile) with their actual placeholder
++	// identifiers or variable names
++	replacer := strings.NewReplacer(placeholderShorthands()...)
+ 
+ 	// these are placeholders that allow a user-defined final
+ 	// parameters, but we still want to provide a shorthand
+@@ -1265,6 +1241,58 @@ func encodeMatcherSet(matchers map[string]caddyhttp.RequestMatcher) (caddy.Modul
+ 	return msEncoded, nil
+ }
+ 
++// placeholderShorthands returns a slice of old-new string pairs,
++// where the left of the pair is a placeholder shorthand that may
++// be used in the Caddyfile, and the right is the replacement.
++func placeholderShorthands() []string {
++	return []string{
++		"{dir}", "{http.request.uri.path.dir}",
++		"{file}", "{http.request.uri.path.file}",
++		"{host}", "{http.request.host}",
++		"{hostport}", "{http.request.hostport}",
++		"{port}", "{http.request.port}",
++		"{method}", "{http.request.method}",
++		"{path}", "{http.request.uri.path}",
++		"{query}", "{http.request.uri.query}",
++		"{remote}", "{http.request.remote}",
++		"{remote_host}", "{http.request.remote.host}",
++		"{remote_port}", "{http.request.remote.port}",
++		"{scheme}", "{http.request.scheme}",
++		"{uri}", "{http.request.uri}",
++		"{tls_cipher}", "{http.request.tls.cipher_suite}",
++		"{tls_version}", "{http.request.tls.version}",
++		"{tls_client_fingerprint}", "{http.request.tls.client.fingerprint}",
++		"{tls_client_issuer}", "{http.request.tls.client.issuer}",
++		"{tls_client_serial}", "{http.request.tls.client.serial}",
++		"{tls_client_subject}", "{http.request.tls.client.subject}",
++		"{tls_client_certificate_pem}", "{http.request.tls.client.certificate_pem}",
++		"{tls_client_certificate_der_base64}", "{http.request.tls.client.certificate_der_base64}",
++		"{upstream_hostport}", "{http.reverse_proxy.upstream.hostport}",
++	}
++}
++
++// WasReplacedPlaceholderShorthand checks if a token string was
++// likely a replaced shorthand of the known Caddyfile placeholder
++// replacement outputs. Useful to prevent some user-defined map
++// output destinations from overlapping with one of the
++// predefined shorthands.
++func WasReplacedPlaceholderShorthand(token string) string {
++	prev := ""
++	for i, item := range placeholderShorthands() {
++		// only look at every 2nd item, which is the replacement
++		if i%2 == 0 {
++			prev = item
++			continue
++		}
++		if strings.Trim(token, "{}") == strings.Trim(item, "{}") {
++			// we return the original shorthand so it
++			// can be used for an error message
++			return prev
++		}
++	}
++	return ""
++}
++
+ // tryInt tries to convert val to an integer. If it fails,
+ // it downgrades the error to a warning and returns 0.
+ func tryInt(val interface{}, warnings *[]caddyconfig.Warning) int {
+diff --git a/modules/caddyhttp/map/caddyfile.go b/modules/caddyhttp/map/caddyfile.go
+index 8394b21..f1ee468 100644
+--- a/modules/caddyhttp/map/caddyfile.go
++++ b/modules/caddyhttp/map/caddyfile.go
+@@ -56,6 +56,11 @@ func parseCaddyfile(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error)
+ 		if len(handler.Destinations) == 0 {
+ 			return nil, h.Err("missing destination argument(s)")
+ 		}
++		for _, dest := range handler.Destinations {
++			if shorthand := httpcaddyfile.WasReplacedPlaceholderShorthand(dest); shorthand != "" {
++				return nil, h.Errf("destination %s conflicts with a Caddyfile placeholder shorthand", shorthand)
++			}
++		}
+ 
+ 		// mappings
+ 		for h.NextBlock(0) {
++ git -c core.fileMode=false diff f7be0ee10131f25620a2f64af7e3ded43eae2049
+diff --git a/caddyconfig/httpcaddyfile/addresses.go b/caddyconfig/httpcaddyfile/addresses.go
+index b33c0f0..8cfb7ad 100644
+--- a/caddyconfig/httpcaddyfile/addresses.go
++++ b/caddyconfig/httpcaddyfile/addresses.go
+@@ -213,8 +213,8 @@ func (st *ServerType) listenerAddrsForServerBlockKey(sblock serverBlock, key str
+ 		lnHosts = append(lnHosts, cfgVal.Value.([]string)...)
+ 	}
+ 	if len(lnHosts) == 0 {
+-		if defaultBind, ok := options["default_bind"].(string); ok {
+-			lnHosts = []string{defaultBind}
++		if defaultBind, ok := options["default_bind"].([]string); ok {
++			lnHosts = defaultBind
+ 		} else {
+ 			lnHosts = []string{""}
+ 		}
+diff --git a/caddyconfig/httpcaddyfile/httptype.go b/caddyconfig/httpcaddyfile/httptype.go
+index a8d01bc..74e8152 100644
+--- a/caddyconfig/httpcaddyfile/httptype.go
++++ b/caddyconfig/httpcaddyfile/httptype.go
+@@ -372,6 +372,22 @@ func (ServerType) evaluateGlobalOptionsBlock(serverBlocks []serverBlock, options
+ 			continue
+ 		}
+ 
++		// Additionally, fold multiple "default_bind" options together
++		// into an array so that multiple default bind addresses can
++		// be configured across multiple lines.
++		if opt == "default_bind" {
++			existingOpts, ok := options[opt].([]string)
++			if !ok {
++				existingOpts = []string{}
++			}
++			defaultBindOpts, ok := val.([]string)
++			if !ok {
++				return nil, fmt.Errorf("unexpected type from 'default_bind' global options: %T", val)
++			}
++			options[opt] = append(existingOpts, defaultBindOpts...)
++			continue
++		}
++
+ 		options[opt] = val
+ 	}
+ 
+diff --git a/caddyconfig/httpcaddyfile/options.go b/caddyconfig/httpcaddyfile/options.go
+index 65b0338..f477df3 100644
+--- a/caddyconfig/httpcaddyfile/options.go
++++ b/caddyconfig/httpcaddyfile/options.go
+@@ -29,7 +29,7 @@ func init() {
+ 	RegisterGlobalOption("debug", parseOptTrue)
+ 	RegisterGlobalOption("http_port", parseOptHTTPPort)
+ 	RegisterGlobalOption("https_port", parseOptHTTPSPort)
+-	RegisterGlobalOption("default_bind", parseOptSingleString)
++	RegisterGlobalOption("default_bind", parseOptStringList)
+ 	RegisterGlobalOption("grace_period", parseOptDuration)
+ 	RegisterGlobalOption("default_sni", parseOptSingleString)
+ 	RegisterGlobalOption("order", parseOptOrder)
+@@ -279,6 +279,15 @@ func parseOptSingleString(d *caddyfile.Dispenser, _ interface{}) (interface{}, e
+ 	return val, nil
+ }
+ 
++func parseOptStringList(d *caddyfile.Dispenser, _ interface{}) (interface{}, error) {
++	d.Next() // consume parameter name
++	val := d.RemainingArgs()
++	if len(val) == 0 {
++		return nil, d.ArgErr()
++	}
++	return val, nil
++}
++
+ func parseOptAdmin(d *caddyfile.Dispenser, _ interface{}) (interface{}, error) {
+ 	adminCfg := new(caddy.AdminConfig)
+ 	for d.Next() {
++ git checkout f7be0ee10131f25620a2f64af7e3ded43eae2049 caddytest/integration/caddyfile_adapt/global_options_default_bind.txt
+Updated 0 paths from 986ae34
++ git apply -v -
+Checking patch caddytest/integration/caddyfile_adapt/global_options_default_bind.txt...
+Applied patch caddytest/integration/caddyfile_adapt/global_options_default_bind.txt cleanly.
++ : '>>>>> Start Test Output'
++ go test -v ./caddytest/integration -run 'TestCaddyfileAdapt*'
++ cat
+=== RUN   TestCaddyfileAdaptToJSON
+  {
+  	"apps": {
+  		"http": {
+  			"servers": {
+  				"srv0": {
+  					"listen": [
+ - 						"tcp4/0.0.0.0:12345",
+ - 						"tcp6/[::]:12345"
+ + 						"tcp4/0.0.0.0:443",
+ + 						"tcp6/[::]:443"
+  					],
+  					"routes": [
+  						{
+  							"match": [
+  								{
+  									"host": [
+ - 										"example.org"
+ + 										"example.com"
+  									]
+  								}
+  							],
+  							"terminal": true
+  						}
+  					]
+  				},
+  				"srv1": {
+  					"listen": [
+ - 						"tcp4/0.0.0.0:443",
+ - 						"tcp6/[::]:443"
+ + 						"tcp6/[::]:12345",
+ + 						"tcp4/0.0.0.0:12345"
+  					],
+  					"routes": [
+  						{
+  							"match": [
+  								{
+  									"host": [
+ - 										"example.com"
+ + 										"example.org"
+  									]
+  								}
+  							],
+  							"terminal": true
+  						}
+  					]
+  				}
+  			}
+  		}
+  	}
+  }
+    caddyfile_adapt_test.go:52: failed to adapt global_options_default_bind.txt
+    caddytest.go:392: warning: map_and_vars_with_raw_types.txt:3: : Caddyfile input is not formatted; run the 'caddy fmt' command to fix inconsistencies
+--- FAIL: TestCaddyfileAdaptToJSON (0.02s)
+FAIL
+FAIL	github.com/caddyserver/caddy/v2/caddytest/integration	0.046s
+FAIL
++ SWEBENCH_TEST_EXIT_CODE=1
++ : '>>>>> End Test Output'
++ echo '>>>>> Test Exit Code: 1'
++ git checkout f7be0ee10131f25620a2f64af7e3ded43eae2049 caddytest/integration/caddyfile_adapt/global_options_default_bind.txt
+>>>>> Test Exit Code: 1
+Updated 1 path from 986ae34

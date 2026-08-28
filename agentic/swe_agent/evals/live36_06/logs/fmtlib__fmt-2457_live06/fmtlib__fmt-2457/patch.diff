@@ -1,0 +1,51 @@
+diff --git a/include/fmt/ranges.h b/include/fmt/ranges.h
+index a35c0664..64f635bd 100644
+--- a/include/fmt/ranges.h
++++ b/include/fmt/ranges.h
+@@ -629,7 +629,24 @@ template <typename Char, typename... T>
+ struct formatter<tuple_join_view<Char, T...>, Char> {
+   template <typename ParseContext>
+   FMT_CONSTEXPR auto parse(ParseContext& ctx) -> decltype(ctx.begin()) {
+-    return ctx.begin();
++    auto it = ctx.begin();
++    auto end = ctx.end();
++    // Find the end of the format spec to capture it. The spec may contain
++    // nested replacement fields (e.g. dynamic width/precision like "{1}"), so
++    // the closing '}' is the one that balances the (top-level) braces.
++    int brace_depth = 0;
++    for (; it != end; ++it) {
++      if (*it == '{') {
++        ++brace_depth;
++      } else if (*it == '}') {
++        if (brace_depth == 0) break;
++        --brace_depth;
++      }
++    }
++    // Store the spec without the trailing '}'.
++    format_str_ = basic_string_view<Char>(ctx.begin(),
++                                          detail::to_unsigned(it - ctx.begin()));
++    return it;
+   }
+ 
+   template <typename FormatContext>
+@@ -660,7 +677,10 @@ struct formatter<tuple_join_view<Char, T...>, Char> {
+                    const Arg& arg, const Args&... args) ->
+       typename FormatContext::iterator {
+     using base = formatter<typename std::decay<Arg>::type, Char>;
+-    auto out = base().format(arg, ctx);
++    auto parse_ctx = basic_format_parse_context<Char>(format_str_);
++    base f;
++    f.parse(parse_ctx);
++    auto out = f.format(arg, ctx);
+     if (sizeof...(Args) > 0) {
+       out = std::copy(value.sep.begin(), value.sep.end(), out);
+       ctx.advance_to(out);
+@@ -668,6 +688,8 @@ struct formatter<tuple_join_view<Char, T...>, Char> {
+     }
+     return out;
+   }
++
++  basic_string_view<Char> format_str_;
+ };
+ 
+ FMT_MODULE_EXPORT_BEGIN

@@ -1,0 +1,22 @@
+diff --git a/gson/src/main/java/com/google/gson/internal/bind/util/ISO8601Utils.java b/gson/src/main/java/com/google/gson/internal/bind/util/ISO8601Utils.java
+index 99ec679a..a50758fe 100644
+--- a/gson/src/main/java/com/google/gson/internal/bind/util/ISO8601Utils.java
++++ b/gson/src/main/java/com/google/gson/internal/bind/util/ISO8601Utils.java
+@@ -149,7 +149,16 @@ public class ISO8601Utils
+             boolean hasT = checkOffset(date, offset, 'T');
+             
+             if (!hasT && (date.length() <= offset)) {
+-                Calendar calendar = new GregorianCalendar(year, month - 1, day);
++                Calendar calendar = new GregorianCalendar();
++                // Use lenient false to reject non-existent dates, such as 2022-14-30, see https://github.com/google/gson/issues/2159
++                calendar.setLenient(false);
++                calendar.set(Calendar.YEAR, year);
++                calendar.set(Calendar.MONTH, month - 1);
++                calendar.set(Calendar.DAY_OF_MONTH, day);
++                calendar.set(Calendar.HOUR_OF_DAY, 0);
++                calendar.set(Calendar.MINUTE, 0);
++                calendar.set(Calendar.SECOND, 0);
++                calendar.set(Calendar.MILLISECOND, 0);
+ 
+                 pos.setIndex(offset);
+                 return calendar.getTime();
