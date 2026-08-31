@@ -723,22 +723,39 @@ order is recorded as the runner-up.
 
 *Top-ups* walk down the majority cell's same ranking, preferring fresh repos.
 
-## The realized matrix (picks per cell)
+## The realized matrix (picks per cell) — as revised 2026-08-29
 
 | language | B | T | S | M | top-ups |
 | --- | --- | --- | --- | --- | --- |
-| C | redis-12272 | micropython-13039 | jq-2598 | valkey-1499 | — |
+| C | redis-12272 | micropython-13039 | jq-2598 | redis-10068 | — |
 | C++ | nlohmann-4237 | *empty* | *empty* | *empty* | + fmt-3750, fmt-3901, fmt-2457 (B) |
 | Rust | nushell-13831 | ripgrep-2209 | *empty* | bat-2835 | + axum-1730 (B) |
 | Go | caddy-4774 | gin-2121 | *empty* | prometheus-10720 | + hugo-12579 (M) |
 | Java | gson-1093 | gson-2134 | lombok-3479 | javaparser-4538 | — |
 | PHP | laravel-52684 | php-cs-fixer-8064 | carbon-2752 | phpspreadsheet-3463 | — |
-| Ruby | fpm-1829 | fastlane-20958 | rubocop-13396 | rubocop-13560 | — |
-| JavaScript | *empty* | babel-15649 | *(n=1, unprofilable)* | preact-3763 | + axios-6539, three.js-26589 (T) |
-| TypeScript | *empty* | docusaurus-9897 | vuejs-core-11589 | *empty* | + immutable-js-2006, docusaurus-10130 (T) |
+| Ruby | *(n=1, not live-resolvable)* | fastlane-20958 | *(no resolvable candidate)* | rubocop-13560 | + jekyll-8167, fluentd-3328 (T) |
+| JavaScript | *empty* | babel-15649 | *(n=1, unprofilable)* | preact-3763 | + axios-5892, three.js-26589 (T) |
+| TypeScript | *empty* | docusaurus-9897 | vuejs-core-11870 | *empty* | + immutable-js-2006, docusaurus-10130 (T) |
 
-Column sums: **B 11 / T 12 / S 5 / M 8** = 36 picks; 27 distinct cells covered, 31 repos,
-Σ tool-fence 4,797 core-s (17 → 655 per task).
+Column sums: **B 10 / T 14 / S 4 / M 8** = 36 picks; 25 distinct cells covered, 31 repos,
+Σ tool-fence 4,741 core-s (5 → 655 per task).
+
+## Revisions (both encoded in the TSV `why` column; the rule itself is unchanged)
+
+- **2026-08-27 — resolution-clean revision.** Requirement added: a pick's census episode must
+  be *officially resolved* (SWE-bench harness verdict), so live P7 re-runs have a resolvable
+  reference. Four picks replaced by walking down the recorded rankings:
+  valkey-1499 → redis-10068 (C×M), vuejs-core-11589 → vuejs-core-11870 (TS×S),
+  axios-6539 → axios-5892 (JS top-up), and rubocop-13396 (unresolved, no patch) with its
+  Ruby×S cell left without a resolvable member — the slot **converted** to a majority-T
+  top-up, fluentd-3328.
+- **2026-08-29 — Ruby×B conversion.** The P7 live campaign showed fpm-1829 (the cell's only
+  member) is not *live-resolvable*: 6 independent live attempts at temp 0.6 all failed the
+  same hidden reject-path tests — the issue text underspecifies them, so resolution measures
+  interpretation luck (full analysis in the retry campaign notes). The slot converted to the
+  next majority-T top-up in the 2026-08-27 ranking's walk-down, **jekyll-8167** (runner-up
+  faker-2705); both candidates' banked ws02 patches were verified resolved by official eval
+  before the swap, and jekyll-8167's fresh P7 live episode resolved on its first attempt.
 
 ## Honest limitations (all recorded per-row in the TSV `why` column)
 
@@ -747,8 +764,11 @@ Column sums: **B 11 / T 12 / S 5 / M 8** = 36 picks; 27 distinct cells covered, 
   (W-CONFOUND), exactly as in the 30-selection.
 - **Java×B and Java×T are forced gson singletons** (n=1 cells), so those two cells share one
   repo.
-- **Ruby×S and Ruby×M are forced single-profilable picks**; rubocop-13396 additionally carries
-  a low classified % (24 % — one large git operation dominates its fence).
+- **Ruby is 3/4 majority-T typed**: both its B and S cells lost their only viable members to
+  resolution screening (see Revisions), so only fastlane-20958 (T) and rubocop-13560 (M) fill
+  cells and the other two slots are T top-ups. Ruby's B and S count-types exist in the
+  population but are unrepresented in the profiled set — a recorded coverage gap, not a
+  sampler artifact.
 - **The search column is small (5 picks) and its members are small** (5–213 core-s): a fact
   about the population — count-search-led tasks are rare and mostly tiny — not about the
   sampler. Several PHP/Ruby picks sit under the historical 20 core-s magnitude gate; they are

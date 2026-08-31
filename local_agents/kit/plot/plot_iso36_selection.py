@@ -66,6 +66,13 @@ for i, lang in enumerate(LANGS):
         if n and not e:
             ax.text(j + 0.5, i + 0.58, "no profilable\ncandidate", ha="center", va="center",
                     fontsize=7.6, color="#8a3333", style="italic")
+        # cells whose members are profilable but were excluded by the resolution screening —
+        # the audit trail is the TSV `why` column and the doc's Revisions section
+        RESOLUTION_EXCLUDED = {("Ruby", "B"): "not live-resolvable\n(fpm-1829, 6 attempts)",
+                               ("Ruby", "S"): "no resolvable\ncandidate"}
+        if n and e and not picks.get((lang, lab)) and (lang, lab) in RESOLUTION_EXCLUDED:
+            ax.text(j + 0.5, i + 0.58, RESOLUTION_EXCLUDED[(lang, lab)], ha="center",
+                    va="center", fontsize=7.6, color="#8a3333", style="italic")
         ps = picks.get((lang, lab), [])
         for k, (short, topup, fence) in enumerate(ps):
             ax.text(j + 0.5, i + 0.40 + 0.155 * k, ("+ " if topup else "") + short,
@@ -90,8 +97,8 @@ ax.set_title("ML_iso36 selection — 36 picks on the count-view type matrix", fo
 fig.text(0.5, 0.015,
          "cell shade = count-view population (300 tasks) · bold = picked task · '+' = majority top-up "
          "(its home cell was empty or had no profilable candidate)\n"
-         "resolution-clean revision 2026-08-27: every pick is officially RESOLVED (SWE-bench harness); "
-         "Ruby×S and the 3 other affected slots were re-picked or converted — see multi_full_stratification.md\n"
+         "resolution-clean revision 2026-08-27 (4 slots re-picked or converted) + 2026-08-29 Ruby×B conversion "
+         "(fpm-1829 not live-resolvable → jekyll-8167): every pick officially RESOLVED — see multi_full_stratification.md\n"
          "profilable = not replay-invalid, no E7 loop flags, banked trajectory exists · "
          "4 picks per language, one per profilable cell, extras to the majority category",
          ha="center", fontsize=8, color="#666666")
