@@ -7,17 +7,28 @@ the currently banked data and the current 36-task selection.** Superseded genera
 frozen, complete with the MANIFEST that described them, under `archive/<date_tag>/` and are
 never edited or regenerated. Current state:
 
-- Top level: `iso36_selection_matrix.png` (regenerated 2026-08-31 for the revised selection —
-  jekyll-8167 replaced fpm-1829, see `docs/multi_full_stratification.md` "Revisions").
-- `archive/2026-08-28_original36_pre-jekyll/`: the full 2026-08-22→28 figure set. It shows the
-  pre-revision 36 (fpm-1829 in, jekyll-8167 absent) and live episodes before the resolved
-  retry swaps; frozen when the selection was revised. The figure definitions in its MANIFEST
-  (and mirrored below) remain the reference until each figure reappears at top level from the
-  paper-style regeneration over the final set.
+- **`paper_v1/` — the LATEST generation** (2026-08-31, per-version folders per the PI's
+  request): the paper-style figure set over the revised all-resolved 36, rendered by the
+  `plot_paper_*` scripts on the shared style contract `theme_paper.R` + `paper_style.py`
+  (Libertine serif; value axes terminating exactly on their outermost tick; outward ticks;
+  dotted grey grid; black edge on every bar/violin; AVG/MEDIAN aggregate rows on a grey band
+  with value labels; solid aggregate separator > dotted language separators > gridlines; top
+  bordered-key legend — style anchors: Hermes MICRO'22 Fig 9/12, Constable ISCA'24 Fig 11/13).
+  Contents: `iso36_live_overview` (4-panel, + MEDIAN row), `iso36_cpu_work` (+AVG/MEDIAN),
+  `iso36_active_wall` (+AVG/MEDIAN), `iso36_tma_l1_combined` (+MEDIAN row; SPEC rows
+  renormalized), and the MERGED-fence per-window family `iso36_agg_{ipc,frontend,memory,
+  system}_merged` + `iso36_agg_compact_merged` — agent windows with the two fences' raw
+  counts summed before metric derivation (fence `both` in `analyze_l3_windows.py`; exact,
+  instruction/slot-weighted by construction; Python pilots excluded — not re-derived).
+  Numbers beside every figure (`*_numbers.csv`, `*_values.json`).
+- Top level: `iso36_selection_matrix.png` only — selection metadata, not measurement
+  (regenerated 2026-08-31 for the revised selection; see `docs/multi_full_stratification.md`
+  "Revisions"), kept here because reports link this path.
+- `archive/2026-08-28_original36_pre-jekyll/`: the full 2026-08-22→28 per-fence figure set
+  over the pre-revision 36; frozen with its own MANIFEST when the selection was revised.
 
-When regenerating a new generation: first move the superseded top-level figures (with a copy
-of this MANIFEST) into a new `archive/<date_tag>/`, then plot — plotters write to the top
-level, so whatever sits here is by construction the latest.
+Each new generation gets its own `paper_vN/` folder; superseded generations move under
+`archive/<date_tag>/` with a frozen MANIFEST copy and are never edited or regenerated.
 
 Data: `local_agents/ML_iso36/data` — **36 tasks × 9 dedicated-group replay passes = 324
 episodes**, 273,005 windows of 100 ms, captured 2026-08-21→22 on measured cores 4–11 (SMT

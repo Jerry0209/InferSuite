@@ -67,7 +67,7 @@ for e in SPEC:
     for _ak, sk, lab in METRICS:
         v = [r[sk] for r in rows if sk in r and r[sk] is not None]
         if len(v) >= 5:
-            for fence in ("tool", "harness"):
+            for fence in ("tool", "harness", "both"):
                 w.writerow([fence, lab, g, g, round(st.median(v), 5)]); n += 1
 
 def dump_windows(path, grp, col):
@@ -76,7 +76,7 @@ def dump_windows(path, grp, col):
         return
     for r in csv.DictReader(open(path)):
         for ak, _sk, lab in METRICS:
-            if r["metric"] == ak and r["fence"] in ("tool", "harness"):
+            if r["metric"] == ak and r["fence"] in ("tool", "harness", "both"):
                 w.writerow([r["fence"], lab, grp, col, r["value"]]); n += 1
                 break
 

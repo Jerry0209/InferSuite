@@ -280,8 +280,13 @@ for rd in sorted(glob.glob(f"{BASE}/run_*")):
         w, grp, a, b = p[0], p[1], float(p[2]), float(p[3])
         if grp != group: continue
         per = counts(f"{rd}/group_{group}_w{w}.txt")
+        # merged agent fence (mentor 2026-08-31): sum RAW counts across the two scopes before
+        # deriving, so every ratio is exact (slot-/instruction-weighted by construction) —
+        # same combination rule as the TMA combined-fence figure
+        per["both"] = {ev: per["tool"].get(ev, 0) + per["harness"].get(ev, 0)
+                       for ev in set(per["tool"]) | set(per["harness"])}
         tg = tag_for(a, b, samples)
-        for fence in FENCES:
+        for fence in list(FENCES) + ["both"]:
             mets = derive(group, per[fence], b - a)
             for k, v in mets.items():
                 rows.append(dict(task=SHORT, group=group, run=os.path.basename(rd),

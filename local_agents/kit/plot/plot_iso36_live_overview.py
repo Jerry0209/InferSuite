@@ -27,6 +27,7 @@ import glob
 import json
 import os
 import statistics as st
+import sys
 
 import matplotlib
 matplotlib.use("Agg")
@@ -35,7 +36,7 @@ import numpy as np  # noqa: E402
 
 REPO = os.path.expanduser("~/InferSuite")
 ML = f"{REPO}/local_agents/ML_typeid"
-OUT = f"{REPO}/local_agents/ML_iso36/plots"
+OUT = os.environ.get("ISO36_OUT", f"{REPO}/local_agents/ML_iso36/plots")
 SEL = f"{ML}/selection_36_count.tsv"
 
 plt.rcParams.update({
@@ -140,6 +141,33 @@ RULE = ("counting rule: every action item in the SWE-agent trajectory = one comm
 print(RULE)
 if excluded:
     print("excluded:", excluded)
+
+# ---- numbers CSV (the R renderers' input): per-task rows + AVG and MEDIAN rows ----
+MED = dict(
+    working_pct=st.median(m["working_pct"] for _, _, _, m in rows),
+    tool_pct=st.median(m["tool_pct"] for _, _, _, m in rows),
+    n_calls=st.median(m["n_calls"] for _, _, _, m in rows),
+    med_dur_s=st.median(m["med_dur_s"] for _, _, _, m in rows),
+)
+with open(f"{OUT}/iso36_live_overview_numbers.csv", "w", newline="") as fh:
+    w = csv.writer(fh)
+    w.writerow(["language", "task", "working_pct", "stall_pct", "tool_pct", "harness_pct",
+                "n_calls", "med_dur_s"])
+    for lang, disp, _c, m in rows:
+        w.writerow([lang, disp, round(m["working_pct"], 2), round(m["stall_pct"], 2),
+                    round(m["tool_pct"], 2), round(100 - m["tool_pct"], 2),
+                    m["n_calls"], round(m["med_dur_s"], 3)])
+    for name, agg in (("AVG", AVG), ("MEDIAN", MED)):
+        w.writerow([name, name, round(agg["working_pct"], 2),
+                    round(100 - agg["working_pct"], 2), round(agg["tool_pct"], 2),
+                    round(100 - agg["tool_pct"], 2), round(agg["n_calls"], 1),
+                    round(agg["med_dur_s"], 3)])
+print(f"{OUT}/iso36_live_overview_numbers.csv  (36 tasks + AVG + MEDIAN)")
+if os.environ.get("ISO36_NUMBERS_ONLY"):
+    json.dump({f"{l}|{d}": m for l, d, _c, m in rows} | {"AVG": AVG, "MEDIAN": MED,
+              "rule": RULE}, open(f"{OUT}/iso36_live_overview_values.json", "w"), indent=1)
+    print("numbers-only mode: skipping the matplotlib render")
+    sys.exit(0)
 
 # ---- layout ----
 GAP, AVGGAP = 0.9, 1.8
