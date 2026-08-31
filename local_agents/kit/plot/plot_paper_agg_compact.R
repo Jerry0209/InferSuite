@@ -52,9 +52,9 @@ write.csv(num, file.path(OUT, "iso36_agg_compact_merged_numbers.csv"), row.names
 
 # the paper_v1 inner glyph, narrowed so it stays inside the violin outline
 inner_v1 <- function() list(
-  geom_boxplot(width = 0.12, outlier.shape = NA, linewidth = 0.28,
+  geom_boxplot(width = 0.08, outlier.shape = NA, linewidth = 0.28,
                colour = "grey15", fill = "white", alpha = 0.95, coef = 0),
-  stat_summary(fun = median, geom = "crossbar", width = 0.12, linewidth = 0.3,
+  stat_summary(fun = median, geom = "crossbar", width = 0.08, linewidth = 0.3,
                colour = "black"),
   stat_summary(fun = mean, geom = "point", shape = 23, size = 1.5,
                fill = "white", colour = "black", stroke = 0.4))
@@ -135,42 +135,34 @@ panel <- function(m) {
   (upper / lower) + plot_layout(heights = c(0.2, 0.8))
 }
 
-# ---- the formal legend panel (beside the grid) ----
-legend_panel <- function() {
-  y <- c(SPEC = 0.95, AG = 0.88, BOX = 0.76, MED = 0.65, MEAN = 0.54,
-         OUT = 0.42, BRK = 0.30, DAG = 0.17)
-  tx <- function(yy, lab, size = 2.1) annotate("text", x = 0.28, y = yy, label = lab,
+# ---- the formal legend strip (below the title, above the grid) ----
+legend_strip <- function() {
+  tx <- function(xx, lab, size = 2.5) annotate("text", x = xx, y = 0.5, label = lab,
                                                hjust = 0, size = size,
                                                family = PAPER_SERIF)
   ggplot() + xlim(0, 1) + ylim(0, 1) + theme_void() +
     theme(panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.4),
-          plot.margin = margin(6, 4, 6, 2)) +
-    annotate("rect", xmin = 0.06, xmax = 0.22, ymin = y["SPEC"] - 0.02,
-             ymax = y["SPEC"] + 0.02, fill = PAPER_TWO[["SPEC"]], colour = "black",
-             linewidth = 0.3) + tx(y["SPEC"], "SPEC\n(26 benchmarks)", 2.0) +
-    annotate("rect", xmin = 0.06, xmax = 0.22, ymin = y["AG"] - 0.02,
-             ymax = y["AG"] + 0.02, fill = PAPER_TWO[["Agentic"]], colour = "black",
-             linewidth = 0.3) + tx(y["AG"], "Agentic\n(36 tasks)", 2.0) +
-    annotate("rect", xmin = 0.10, xmax = 0.18, ymin = y["BOX"] - 0.028,
-             ymax = y["BOX"] + 0.028, fill = "white", colour = "grey15",
-             linewidth = 0.35) + tx(y["BOX"], "white box =\nIQR (25–75%)", 2.0) +
-    annotate("segment", x = 0.08, xend = 0.20, y = y["MED"], yend = y["MED"],
-             colour = "black", linewidth = 0.9) + tx(y["MED"], "black bar =\nmedian", 2.0) +
-    annotate("point", x = 0.14, y = y["MEAN"], shape = 23, size = 2.0, fill = "white",
-             colour = "black", stroke = 0.45) + tx(y["MEAN"], "diamond =\nmean", 2.0) +
-    annotate("point", x = 0.14, y = y["OUT"], shape = 21, size = 1.4, fill = "grey35",
-             colour = "black", stroke = 0.3) +
-    tx(y["OUT"], "point = outlier\nabove the break", 2.0) +
-    annotate("text", x = 0.14, y = y["BRK"], label = "∕∕", size = 2.6,
-             family = PAPER_SERIF, fontface = "bold") + tx(y["BRK"], "axis break", 2.0) +
-    tx(y["DAG"], "† median 0 —\nno position on\na log axis", 1.9)
+          plot.margin = margin(2, 30, 4, 30)) +
+    annotate("rect", xmin = 0.030, xmax = 0.052, ymin = 0.28, ymax = 0.72,
+             fill = PAPER_TWO[["SPEC"]], colour = "black", linewidth = 0.3) +
+    tx(0.062, "SPEC (26 benchmarks)") +
+    annotate("rect", xmin = 0.245, xmax = 0.267, ymin = 0.28, ymax = 0.72,
+             fill = PAPER_TWO[["Agentic"]], colour = "black", linewidth = 0.3) +
+    tx(0.277, "Agentic (36 tasks)") +
+    annotate("segment", x = 0.445, xend = 0.475, y = 0.5, yend = 0.5,
+             colour = "black", linewidth = 1.0) +
+    tx(0.485, "median") +
+    annotate("point", x = 0.585, y = 0.5, shape = 23, size = 2.1, fill = "white",
+             colour = "black", stroke = 0.45) +
+    tx(0.600, "mean") +
+    tx(0.690, "† median 0 — no position on a log axis", 2.2)
 }
 
 ps <- lapply(METRICS, panel)
 grid <- wrap_plots(ps, ncol = 4)
-fig <- (grid | legend_panel()) + plot_layout(widths = c(1, 0.11)) + plot_annotation(
+fig <- (legend_strip() / grid) + plot_layout(heights = c(0.045, 1)) + plot_annotation(
   title = "SPEC vs Agentic",
   theme = theme(plot.title = element_text(size = 13, face = "bold", hjust = 0.5,
                                           family = PAPER_SERIF)))
 paper_save(fig, file.path(OUT, paste0("iso36_agg_compact_merged", suffix)),
-           width = 11.6, height = 8.4)
+           width = 10.6, height = 8.6)
