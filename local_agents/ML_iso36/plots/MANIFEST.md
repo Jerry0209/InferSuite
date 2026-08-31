@@ -16,7 +16,11 @@ never edited or regenerated. Current state:
   bordered-key legend — style anchors: Hermes MICRO'22 Fig 9/12, Constable ISCA'24 Fig 11/13).
   Contents: `iso36_live_overview` (4-panel, + MEDIAN row), `iso36_cpu_work` (+AVG/MEDIAN),
   `iso36_active_wall` (+AVG/MEDIAN), `iso36_tma_l1_combined` (+MEDIAN row; SPEC rows
-  renormalized), and the MERGED-fence per-window family `iso36_agg_{ipc,frontend,memory,
+  renormalized), the two LIVE companions with MODEL WAIT in the row (PI 2026-08-31; census
+  episodes, 0.2 s union-grid busy rule): `iso36_wall_split_live` (stacked DISJOINT
+  tool / harness-without-tool / neither≈model-wait segments summing to the wall; wait median
+  86%) and `iso36_busy_wall_live` (grouped independent busy times + wait + wall tick;
+  values in `iso36_wall_live_values.json`), and the MERGED-fence per-window family `iso36_agg_{ipc,frontend,memory,
   system}_merged` + `iso36_agg_compact_merged` — agent windows with the two fences' raw
   counts summed before metric derivation (fence `both` in `analyze_l3_windows.py`; exact,
   instruction/slot-weighted by construction; Python pilots excluded — not re-derived).
