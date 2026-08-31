@@ -1,5 +1,24 @@
 # ML_iso36 figure manifest
 
+## Versioning (2026-08-31)
+
+**The top level of `plots/` always holds the LATEST generation — every figure here matches
+the currently banked data and the current 36-task selection.** Superseded generations are
+frozen, complete with the MANIFEST that described them, under `archive/<date_tag>/` and are
+never edited or regenerated. Current state:
+
+- Top level: `iso36_selection_matrix.png` (regenerated 2026-08-31 for the revised selection —
+  jekyll-8167 replaced fpm-1829, see `docs/multi_full_stratification.md` "Revisions").
+- `archive/2026-08-28_original36_pre-jekyll/`: the full 2026-08-22→28 figure set. It shows the
+  pre-revision 36 (fpm-1829 in, jekyll-8167 absent) and live episodes before the resolved
+  retry swaps; frozen when the selection was revised. The figure definitions in its MANIFEST
+  (and mirrored below) remain the reference until each figure reappears at top level from the
+  paper-style regeneration over the final set.
+
+When regenerating a new generation: first move the superseded top-level figures (with a copy
+of this MANIFEST) into a new `archive/<date_tag>/`, then plot — plotters write to the top
+level, so whatever sits here is by construction the latest.
+
 Data: `local_agents/ML_iso36/data` — **36 tasks × 9 dedicated-group replay passes = 324
 episodes**, 273,005 windows of 100 ms, captured 2026-08-21→22 on measured cores 4–11 (SMT
 off), ISO-PROOF-gated, model never called. Sweep: 14.5 h wall, zero failed passes, zero
