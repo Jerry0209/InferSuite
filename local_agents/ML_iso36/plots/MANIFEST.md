@@ -41,11 +41,9 @@ Workspace state:
 - Top level: `iso36_selection_matrix.png` only — selection metadata, not measurement
   (regenerated 2026-08-31 for the revised selection; see `docs/multi_full_stratification.md`
   "Revisions"), kept here because reports link this path.
-- `archive/2026-08-28_original36_pre-jekyll/`: the full 2026-08-22→28 per-fence figure set
-  over the pre-revision 36; frozen with its own MANIFEST when the selection was revised.
 
-Each new generation gets its own `paper_vN/` folder; superseded generations move under
-`archive/<date_tag>/` with a frozen MANIFEST copy and are never edited or regenerated.
+(The former `archive/2026-08-28_original36_pre-jekyll/` set now lives, adapted to the
+mentor layout, at `../charts/v1_2026-08-28_original36/`.)
 
 Data: `local_agents/ML_iso36/data` — **36 tasks × 9 dedicated-group replay passes = 324
 episodes**, 273,005 windows of 100 ms, captured 2026-08-21→22 on measured cores 4–11 (SMT
