@@ -1,51 +1,15 @@
+# v1 (2026-08-28) — the original-36, pre-revision generation [SUPERSEDED by v2]
+
+Adapted 2026-09-02 into the per-version chart layout (Raw data / Scripts / Figures /
+README). This is the frozen 2026-08-22→28 figure set over the PRE-revision selection
+(fpm-1829 in, jekyll-8167 absent) and the live episodes before the resolved retry swaps.
+Never regenerated. `Raw data/` holds its numbers CSVs and values JSONs as banked;
+`Scripts/SOURCES.md` names each figure's generator and the git commit to reproduce.
+The original MANIFEST describing every figure follows unchanged.
+
+---
+
 # ML_iso36 figure manifest
-
-## Versioning (revised 2026-09-02 — the charts/ convention)
-
-**The versioned deliverable tree is `../charts/` (PI directive): one folder per version,
-each in the mentor layout (`Raw data/ · Scripts/ · Figures/{PDF,PNG} · README.md`); see
-`../charts/README.md` for the version index and the maintenance rule.** `plots/paper_vN`
-below are the RENDER WORKSPACES the generators write into; a finished revision is
-assembled into a new `charts/vN_<date>_<tag>/` with `build_chart_pack.py` (VERSION env).
-The former `plots/archive/` generation was adapted into `charts/v1_2026-08-28_original36/`.
-Workspace state:
-
-- **`paper_v2/` — the LATEST violin-family generation** (2026-09-01, mentor violin spec):
-  the 12-panel compact grid and the 4 group pictures re-rendered with the paired
-  blue-vs-red palette (SPEC = dark blue, Agentic = dark red; language pictures keep the
-  locked language palette), the inner-statistics glyph (p5–p95 whisker, THICK black IQR
-  bar, white square = median, black circle = mean), raw-workload point overlays on the
-  n=26/36 grid, manually-built broken axes where pooled max > 3× pooled p95 (L1I, L1D,
-  L2, LLC; ggbreak dropped breaks silently under composition and was replaced), a hero
-  template with the Min/Max/Median/Mean±Std stats strip (`iso36_hero_ipc`), and KDE
-  bandwidth variants for review (`bandwidth_variants/`, adjust 0.8/1.2 vs default 1.0).
-  Supersedes paper_v1's violin figures ONLY — see `paper_v2/README.md`.
-- **`paper_v1/` — the LATEST bar-family generation** (2026-08-31, per-version folders per
-  the PI's request; its violin figures are superseded by paper_v2): the paper-style figure set over the revised all-resolved 36, rendered by the
-  `plot_paper_*` scripts on the shared style contract `theme_paper.R` + `paper_style.py`
-  (Libertine serif; value axes terminating exactly on their outermost tick; outward ticks;
-  dotted grey grid; black edge on every bar/violin; AVG/MEDIAN aggregate rows on a grey band
-  with value labels; solid aggregate separator > dotted language separators > gridlines; top
-  bordered-key legend — style anchors: Hermes MICRO'22 Fig 9/12, Constable ISCA'24 Fig 11/13).
-  Contents: `iso36_live_overview` (4-panel, + MEDIAN row), `iso36_cpu_work` (+AVG/MEDIAN),
-  `iso36_active_wall` (+AVG/MEDIAN), `iso36_tma_l1_combined` (+MEDIAN row; SPEC rows
-  renormalized), the two LIVE companions with MODEL WAIT in the row (PI 2026-08-31; census
-  episodes, 0.2 s union-grid busy rule): `iso36_wall_split_live` (stacked DISJOINT
-  tool / harness-without-tool / neither≈model-wait segments summing to the wall; wait median
-  86%) and `iso36_busy_wall_live` (grouped independent busy times + wait + wall tick;
-  values in `iso36_wall_live_values.json`), and the MERGED-fence per-window family `iso36_agg_{ipc,frontend,memory,
-  system}_merged` + `iso36_agg_compact_merged` — agent windows with the two fences' raw
-  counts summed before metric derivation (fence `both` in `analyze_l3_windows.py`; exact,
-  instruction/slot-weighted by construction; Python pilots excluded — not re-derived).
-  Numbers beside every figure (`*_numbers.csv`, `*_values.json`).
-- Top level: `iso36_selection_matrix.png` only — selection metadata, not measurement
-  (regenerated 2026-08-31 for the revised selection; see `docs/multi_full_stratification.md`
-  "Revisions"), kept here because reports link this path.
-- `archive/2026-08-28_original36_pre-jekyll/`: the full 2026-08-22→28 per-fence figure set
-  over the pre-revision 36; frozen with its own MANIFEST when the selection was revised.
-
-Each new generation gets its own `paper_vN/` folder; superseded generations move under
-`archive/<date_tag>/` with a frozen MANIFEST copy and are never edited or regenerated.
 
 Data: `local_agents/ML_iso36/data` — **36 tasks × 9 dedicated-group replay passes = 324
 episodes**, 273,005 windows of 100 ms, captured 2026-08-21→22 on measured cores 4–11 (SMT

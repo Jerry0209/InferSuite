@@ -1,35 +1,25 @@
-# ML_iso36 chart pack
+# ML_iso36 charts — versioned chart packs
 
-Organized per the mentor's layout (2026-09-02): one raw-data file, one script and
-one PDF+PNG per figure. **PDF → paper, PNG → slides.** Assembled from the two
-latest generations (`../plots/paper_v1` bar family, `../plots/paper_v2` violin
-family; see `../plots/MANIFEST.md` for full definitions and provenance).
+**The maintenance convention (PI directive 2026-09-02): every figure version lives in its
+own folder here, each with the same internal layout:**
 
-Population: the revised all-resolved 36 count-view tasks (jekyll-8167 in).
-`Raw data/` holds every number a figure displays. `Scripts/` are copies of the
-canonical generators in `local_agents/kit/plot/` (edit there — the header of each
-copy names its source); they run from the repo root against the banked data tree.
-Regenerate everything: run each script with the repo's conda interpreters
-(`infersuite-full` python for .py, the `rplot` env Rscript for .R), then rerun
-`local_agents/kit/plot/build_chart_pack.py` to refresh this pack.
+    vN_<date>_<tag>/
+      Raw data/        one CSV (or values JSON) per figure — every number displayed
+      Scripts/         the generator per figure (or SOURCES.md pinning a git commit)
+      Figures/PDF/     -> paper
+      Figures/PNG/     -> PPTX
+      README.md        what this version is, figure index, provenance
 
-| Fig | Name | What it shows | Raw data |
-|---|---|---|---|
-| fig01 | live_overview | 4-panel live overview: CPU working vs stall, tool vs harness, #calls, call duration | `Raw data/fig01_live_overview.csv` |
-| fig02 | wall_split_live | episode wall split into disjoint tool / harness / model-wait segments (live, stacked) | `Raw data/fig02_wall_split_live.csv` |
-| fig03 | busy_wall_live | tool busy, harness busy and model wait side by side with the wall tick (live, grouped) | `Raw data/fig03_busy_wall_live.csv` |
-| fig04 | cpu_work | CPU work in core-seconds by fence, stacked per task (replays, median of 9 episodes) | `Raw data/fig04_cpu_work.csv` |
-| fig05 | active_wall | fence busy time in seconds, grouped, with implied tool parallelism (replays) | `Raw data/fig05_active_wall.csv` |
-| fig06 | tma_l1_combined | TMA Level 1 with both fences combined (slot-weighted), MEDIAN + SPEC reference rows | `Raw data/fig06_tma_l1_combined.csv` |
-| fig07 | agg_compact_merged | 12-metric SPEC-vs-Agentic violin grid, one vote per workload, merged agent fence | `Raw data/fig07_agg_compact_merged.csv` |
-| fig08 | hero_ipc | IPC hero: two violins + Min/Max/Median/Mean±Std stats strip | `Raw data/fig08_hero_ipc.csv` |
-| fig09 | agg_ipc_merged | IPC per-window violins: SPEC band + 36 tasks by language, merged fence | `Raw data/fig09_agg_ipc_merged.csv.gz` |
-| fig10 | agg_frontend_merged | frontend metrics (Branch/Branch-dir/BTB/L1I/DSB MPKI, DSB coverage), merged fence | `Raw data/fig10_agg_frontend_merged.csv.gz` |
-| fig11 | agg_memory_merged | memory metrics (L1D/L2/LLC MPKI, DRAM read GB/s), merged fence | `Raw data/fig11_agg_memory_merged.csv.gz` |
-| fig12 | agg_system_merged | context switches per CPU-second (log axis), merged fence | `Raw data/fig12_agg_system_merged.csv.gz` |
+New figure work NEVER edits an existing version folder: regenerate in the plots/
+workspaces, then assemble a NEW vN folder with
+`VERSION=vN_<date>_<tag> python3 local_agents/kit/plot/build_chart_pack.py`.
 
-Notes: fig02/fig03 share one values source (each CSV is complete on its own).
-fig09–fig12 raw data are per-window rows (gzipped; R reads .csv.gz natively).
-fig07/fig08 raw data are one row per workload (the per-window medians the violins
-vote with). The selection-matrix figure is metadata, not measurement, and lives at
+| Version | Status | Contents |
+|---|---|---|
+| `v2_2026-09-01_paper/` | **CURRENT** | the paper-style set over the revised all-resolved 36: fig01–fig12 (bar family from plots/paper_v1, violin family from plots/paper_v2) |
+| `v1_2026-08-28_original36/` | superseded | the pre-revision original-36 set (fpm-1829 in), frozen; scripts pinned by commit in its Scripts/SOURCES.md |
+
+`../plots/paper_v1`, `../plots/paper_v2` are the RENDER WORKSPACES the generators write
+into (see `../plots/MANIFEST.md` for figure definitions); this tree is the versioned
+deliverable. The selection-matrix figure (metadata, not measurement) stays at
 `../plots/iso36_selection_matrix.png`.

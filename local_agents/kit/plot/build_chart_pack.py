@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""build_chart_pack.py — assemble the mentor's chart organization (PI request 2026-09-02):
+"""build_chart_pack.py — assemble one VERSIONED chart pack (PI convention 2026-09-02):
+
+Target: charts/$VERSION/ (env VERSION, default v2_2026-09-01_paper). Each version is a
+separate folder; never rebuild an old version — bump VERSION for new figure revisions.
 
     charts/
       Raw data/   figNN_<name>.csv[.gz]   the exact numbers behind each figure
@@ -23,7 +26,7 @@ REPO = os.path.expanduser("~/InferSuite")
 ML = f"{REPO}/local_agents/ML_iso36"
 KP = f"{REPO}/local_agents/kit/plot"
 P1, P2 = f"{ML}/plots/paper_v1", f"{ML}/plots/paper_v2"
-CH = f"{ML}/charts"
+CH = f"{ML}/charts/" + os.environ.get("VERSION", "v2_2026-09-01_paper")
 RAW, SCR = f"{CH}/Raw data", f"{CH}/Scripts"
 FPDF, FPNG = f"{CH}/Figures/PDF", f"{CH}/Figures/PNG"
 for d in (RAW, SCR, FPDF, FPNG):
