@@ -1,25 +1,20 @@
 #!/usr/bin/env Rscript
-# plot_paper_agg_compact.R -- the 12-panel SPEC-vs-Agentic grid, violin revision v2
-# (mentor spec 2026-09-01), MERGED agent fence. Components from theme_paper.R:
-#   - paired hue/lightness palette: the two DARK hues (SPEC = dark blue, Agentic = dark
-#     red); thin black violin outlines
-#   - the inner-statistics glyph: p5-p95 whisker, THICK black IQR bar, white square =
-#     median, black circle = mean (one encoding everywhere, stated in the subtitle)
-#   - raw workloads overlaid as jittered points (n = 26 / 36 -- the KDE alone is mostly
-#     bandwidth at this n; the points are the evidence)
-#   - broken y-axis ONLY where pooled max > 3x pooled p95 (printed per panel).
-#     NOTE deviation from the spec: ggbreak + as.ggplot silently DROPS the break when the
-#     wrapped grob is composed (verified 2026-09-01 -- the four panels rendered with flat
-#     full axes), so the break is built manually as a two-piece patchwork cell: lower
-#     piece = the body, upper piece = the outlier zone, double-slash marks at the seam
-#   - the context-switches panel stays log (NEVER break + log): SPEC's median is exactly
-#     0, which has no position on a log axis -- glyph clamped to the floor, labeled 0+dagger
-#   - per the spec, the 12-panel grid keeps ONE compact median label per violin (a stats
-#     strip per panel would be 24 strips); the hero figure carries the strip instead
+# plot_paper_agg_compact.R -- the 12-panel SPEC-vs-Agentic grid, revision v3
+# (PI feedback 2026-09-02 on the v2 violin spec):
+#   - short CENTRED title, all grey subtitle/caption text removed
+#   - a FORMAL legend panel beside the grid (fills + glyphs + break mark + dagger note)
+#   - inner glyph back to the paper_v1 style -- thin WHITE IQR box + black median bar +
+#     white diamond mean -- narrowed so it never exceeds the violin outline
+#   - no raw-point overlay (removed on PI request)
+#   - broken-axis gap tightened (the two pieces nearly touch; the double-slash marks
+#     remain the break signal)
+# Kept from v2: paired dark-blue/dark-red palette, thin black violin outlines, breaks only
+# where pooled max > 3x pooled p95, log ctx panel with the 0-dagger convention, medians in
+# the x tick labels, exact axis-break/border discipline, dotted grids, outward ticks.
 #
 # ADJ=0.8|1.0|1.2 sets the KDE bandwidth multiplier (default 1.0; variants for review).
 # Inputs : local_agents/ML_iso36/data/l3_study/agg_rows_long.csv (fence == "both")
-# Outputs: plots/paper_v2/iso36_agg_compact_merged[.adj]. {png,pdf} + _numbers.csv
+# Outputs: plots/paper_v2/iso36_agg_compact_merged[_adjNN].{png,pdf} + _numbers.csv
 suppressPackageStartupMessages({
   library(ggplot2); library(dplyr); library(ragg); library(scales); library(patchwork)
 })
@@ -55,6 +50,15 @@ num <- per_workload |> group_by(metric, side) |>
             bw_nrd0 = stats::bw.nrd0(v), .groups = "drop")
 write.csv(num, file.path(OUT, "iso36_agg_compact_merged_numbers.csv"), row.names = FALSE)
 
+# the paper_v1 inner glyph, narrowed so it stays inside the violin outline
+inner_v1 <- function() list(
+  geom_boxplot(width = 0.12, outlier.shape = NA, linewidth = 0.28,
+               colour = "grey15", fill = "white", alpha = 0.95, coef = 0),
+  stat_summary(fun = median, geom = "crossbar", width = 0.12, linewidth = 0.3,
+               colour = "black"),
+  stat_summary(fun = mean, geom = "point", shape = 23, size = 1.5,
+               fill = "white", colour = "black", stroke = 0.4))
+
 panel <- function(m) {
   dm <- per_workload |> filter(metric == m)
   nm <- num |> filter(metric == m) |> arrange(side)
@@ -65,7 +69,7 @@ panel <- function(m) {
   cat(sprintf("panel %-28s max=%.4g 3x_p95=%.4g -> break=%s\n",
               m, max(pooled), 3 * quantile(pooled, .95), ifelse(qual, "YES",
               ifelse(use_log, "no (log panel)", "no"))))
-  med_lab <- ifelse(nm$median == 0 & use_log, "0\u2020", sprintf("%.3g", nm$median))
+  med_lab <- ifelse(nm$median == 0 & use_log, "0†", sprintf("%.3g", nm$median))
   xlabs <- setNames(sprintf("%s\nmed %s", nm$side, med_lab), nm$side)
   th <- theme_paper(base_size = 8) +
     theme(plot.title = element_text(size = 7.4, hjust = 0.5, face = "plain",
@@ -75,9 +79,8 @@ panel <- function(m) {
           panel.grid.major.x = element_blank())
   base <- function(dd) ggplot(dd, aes(x = side, y = v, fill = side)) +
     geom_violin(scale = "width", width = 0.72, linewidth = PAPER_VIOLIN_LW,
-                colour = "black", adjust = ADJ, trim = TRUE, alpha = 0.65) +
-    paper_jitter() +
-    paper_inner_stats(scale = 0.9) +
+                colour = "black", adjust = ADJ, trim = TRUE, alpha = 0.75) +
+    inner_v1() +
     scale_fill_manual(values = PAPER_TWO, guide = "none") +
     labs(x = NULL, y = NULL) + th
   if (use_log) {
@@ -100,7 +103,7 @@ panel <- function(m) {
       scale_x_discrete(labels = xlabs, expand = expansion(add = 0.6)) +
       paper_scale_y(0, max(br), br[2] - br[1]))
   }
-  # manual broken axis: body piece + outlier piece, double-slash marks at the seam
+  # manual broken axis: body piece + outlier piece; TIGHT gap (pieces nearly touch)
   thr <- 3 * quantile(pooled, .95)
   body_max <- max(pooled[pooled <= thr]); out_min <- min(pooled[pooled > thr])
   brk <- pretty(c(0, body_max * 1.12), 5)
@@ -111,41 +114,63 @@ panel <- function(m) {
   if (up_lo <= brk_lo) up_lo <- signif(out_min * 0.95, 2)  # upper zone must sit ABOVE the gap
   up_hi <- max(ub)
   stopifnot(up_lo <= out_min, up_lo > brk_lo, brk_lo >= body_max)
-  slash <- function(frac) annotate("text", x = 0.47, y = frac, label = "\u2215\u2215",
-                                    size = 2.3, hjust = 0.5, family = PAPER_SERIF,
-                                    fontface = "bold")
   lower <- base(dm) +
     scale_x_discrete(labels = xlabs, expand = expansion(add = 0.6)) +
     scale_y_continuous(limits = c(0, brk_lo), breaks = brk, expand = expansion(0, 0),
                        oob = scales::oob_squish) +
-    annotate("text", x = 0.47, y = brk_lo * 0.985, label = "\u2215\u2215", size = 2.3,
-             hjust = 0.5, family = PAPER_SERIF, fontface = "bold")
+    annotate("text", x = 0.47, y = brk_lo * 0.985, label = "∕∕", size = 2.3,
+             hjust = 0.5, family = PAPER_SERIF, fontface = "bold") +
+    theme(plot.margin = margin(0.6, 8, 6, 6))
   upper <- ggplot(dm |> filter(v > thr), aes(x = side, y = v, fill = side)) +
-    geom_point(position = position_jitter(width = 0.05, height = 0, seed = 7),
-               alpha = 0.6, size = 0.8, colour = "black", shape = 16) +
+    geom_point(shape = 21, size = 1.2, fill = "grey35", colour = "black", stroke = 0.3) +
     scale_fill_manual(values = PAPER_TWO, guide = "none") +
     scale_x_discrete(limits = levels(dm$side), expand = expansion(add = 0.6)) +
     scale_y_continuous(limits = c(up_lo, up_hi), breaks = c(up_lo, up_hi),
                        expand = expansion(0, 0)) +
     labs(x = NULL, y = NULL) + ggtitle(m) + th +
-    theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
-    annotate("text", x = 0.47, y = up_lo + (up_hi - up_lo) * 0.03, label = "\u2215\u2215",
+    theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+          plot.margin = margin(6, 8, 0.6, 6)) +
+    annotate("text", x = 0.47, y = up_lo + (up_hi - up_lo) * 0.03, label = "∕∕",
              size = 2.3, hjust = 0.5, family = PAPER_SERIF, fontface = "bold")
-  (upper / lower) + plot_layout(heights = c(0.22, 0.78))
+  (upper / lower) + plot_layout(heights = c(0.2, 0.8))
+}
+
+# ---- the formal legend panel (beside the grid) ----
+legend_panel <- function() {
+  y <- c(SPEC = 0.95, AG = 0.88, BOX = 0.76, MED = 0.65, MEAN = 0.54,
+         OUT = 0.42, BRK = 0.30, DAG = 0.17)
+  tx <- function(yy, lab, size = 2.1) annotate("text", x = 0.28, y = yy, label = lab,
+                                               hjust = 0, size = size,
+                                               family = PAPER_SERIF)
+  ggplot() + xlim(0, 1) + ylim(0, 1) + theme_void() +
+    theme(panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.4),
+          plot.margin = margin(6, 4, 6, 2)) +
+    annotate("rect", xmin = 0.06, xmax = 0.22, ymin = y["SPEC"] - 0.02,
+             ymax = y["SPEC"] + 0.02, fill = PAPER_TWO[["SPEC"]], colour = "black",
+             linewidth = 0.3) + tx(y["SPEC"], "SPEC\n(26 benchmarks)", 2.0) +
+    annotate("rect", xmin = 0.06, xmax = 0.22, ymin = y["AG"] - 0.02,
+             ymax = y["AG"] + 0.02, fill = PAPER_TWO[["Agentic"]], colour = "black",
+             linewidth = 0.3) + tx(y["AG"], "Agentic\n(36 tasks)", 2.0) +
+    annotate("rect", xmin = 0.10, xmax = 0.18, ymin = y["BOX"] - 0.028,
+             ymax = y["BOX"] + 0.028, fill = "white", colour = "grey15",
+             linewidth = 0.35) + tx(y["BOX"], "white box =\nIQR (25–75%)", 2.0) +
+    annotate("segment", x = 0.08, xend = 0.20, y = y["MED"], yend = y["MED"],
+             colour = "black", linewidth = 0.9) + tx(y["MED"], "black bar =\nmedian", 2.0) +
+    annotate("point", x = 0.14, y = y["MEAN"], shape = 23, size = 2.0, fill = "white",
+             colour = "black", stroke = 0.45) + tx(y["MEAN"], "diamond =\nmean", 2.0) +
+    annotate("point", x = 0.14, y = y["OUT"], shape = 21, size = 1.4, fill = "grey35",
+             colour = "black", stroke = 0.3) +
+    tx(y["OUT"], "point = outlier\nabove the break", 2.0) +
+    annotate("text", x = 0.14, y = y["BRK"], label = "∕∕", size = 2.6,
+             family = PAPER_SERIF, fontface = "bold") + tx(y["BRK"], "axis break", 2.0) +
+    tx(y["DAG"], "† median 0 —\nno position on\na log axis", 1.9)
 }
 
 ps <- lapply(METRICS, panel)
-fig <- wrap_plots(ps, ncol = 4) + plot_annotation(
-  title = "SPEC vs Agentic, one vote per workload — combined agent fence (tool + harness)",
-  subtitle = paste("SPEC = 26 benchmarks (dark blue), Agentic = the revised all-resolved 36",
-                   "(dark red); points = the actual workloads ·", PAPER_STATS_SUBTITLE,
-                   "· med = group median (in the x labels)"),
-  caption = paste("100 ms windows, matched configuration · axis breaks (∕∕) only where max > 3× pooled p95",
-                  "· context-switches panel is LOG while the others are linear — do not compare shapes across panels",
-                  "· † SPEC's median is exactly 0: no position on a log axis, glyph clamped to the floor",
-                  sprintf("· KDE bandwidth: nrd0 × adjust=%.1f (per-side nrd0 in the numbers CSV)", ADJ)),
-  theme = theme(plot.title = element_text(size = 11.5, face = "bold", family = PAPER_SERIF),
-                plot.subtitle = element_text(size = 6.4, colour = "grey35", family = PAPER_SERIF),
-                plot.caption = element_text(size = 5.6, colour = "grey45", family = PAPER_SERIF)))
+grid <- wrap_plots(ps, ncol = 4)
+fig <- (grid | legend_panel()) + plot_layout(widths = c(1, 0.11)) + plot_annotation(
+  title = "SPEC vs Agentic",
+  theme = theme(plot.title = element_text(size = 13, face = "bold", hjust = 0.5,
+                                          family = PAPER_SERIF)))
 paper_save(fig, file.path(OUT, paste0("iso36_agg_compact_merged", suffix)),
-           width = 10.5, height = 8.6)
+           width = 11.6, height = 8.4)
