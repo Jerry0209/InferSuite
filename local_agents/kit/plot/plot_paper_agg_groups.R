@@ -24,7 +24,7 @@ suppressPackageStartupMessages({
 })
 repo <- path.expand("~/InferSuite")
 source(file.path(repo, "local_agents/kit/plot/theme_paper.R"))
-OUT <- file.path(repo, "local_agents/ML_iso36/plots/paper_v1")
+OUT <- file.path(repo, "local_agents/ML_iso36/plots/paper_v2")
 dir.create(OUT, showWarnings = FALSE, recursive = TRUE)
 
 d <- read.csv(file.path(repo, "local_agents/ML_iso36/data/l3_study/agg_rows_long.csv"),
@@ -75,14 +75,9 @@ panel <- function(m, show_x) {
   meds <- med_tab |> filter(metric == m)
   p <- ggplot(dm, aes(x = col_f, y = value, fill = fillg)) +
     paper_band(0.4, SEP_AGG) +
-    geom_violin(scale = "width", width = 0.85, linewidth = PAPER_EDGE_LW,
-                colour = PAPER_EDGE, adjust = 1.2, trim = TRUE, alpha = 0.8) +
-    geom_boxplot(width = 0.28, outlier.shape = NA, linewidth = 0.25,
-                 colour = "grey15", fill = "white", alpha = 0.9, coef = 0) +
-    stat_summary(fun = median, geom = "crossbar", width = 0.28, linewidth = 0.3,
-                 colour = "black") +
-    stat_summary(fun = mean, geom = "point", shape = 23, size = 1.1,
-                 fill = "white", colour = "black", stroke = 0.35) +
+    geom_violin(scale = "width", width = 0.85, linewidth = PAPER_VIOLIN_LW,
+                colour = "black", adjust = 1.2, trim = TRUE, alpha = 0.75) +
+    paper_inner_stats(scale = 0.42) +
     paper_agg_sep(SEP_AGG) + paper_lang_sep(SEP_LANG) +
     scale_fill_manual(values = lcol, guide = "none") +
     paper_x_discrete() +
@@ -154,10 +149,10 @@ for (gname in names(GROUPS)) {
     subtitle = paste("agent columns = per-window values with the two fences' raw counts summed",
                      "(instruction-weighted by construction) · SPEC = per-benchmark window-medians,",
                      "one vote each, on the grey band · rotated label = column median ·",
-                     "violin + box, black bar = median, white diamond = mean"),
+                     PAPER_STATS_SUBTITLE, "· hue = language (locked palette)"),
     caption = paste("100 ms windows, matched configuration · dotted lines demarcate languages ·",
                     "red triangle = off-scale outlier (axis capped; stats use full data) ·",
-                    "revised all-resolved 36 (jekyll-8167 in)"),
+                    "revised all-resolved 36 · per-window violins (thousands of windows per column: KDE is meaningful, raw-point overlay not applicable at this n)"),
     theme = theme(plot.title = element_text(size = 11.5, face = "bold", family = PAPER_SERIF),
                   plot.subtitle = element_text(size = 6.4, colour = "grey35", family = PAPER_SERIF),
                   plot.caption = element_text(size = 5.6, colour = "grey45", family = PAPER_SERIF)))

@@ -7,8 +7,18 @@ the currently banked data and the current 36-task selection.** Superseded genera
 frozen, complete with the MANIFEST that described them, under `archive/<date_tag>/` and are
 never edited or regenerated. Current state:
 
-- **`paper_v1/` — the LATEST generation** (2026-08-31, per-version folders per the PI's
-  request): the paper-style figure set over the revised all-resolved 36, rendered by the
+- **`paper_v2/` — the LATEST violin-family generation** (2026-09-01, mentor violin spec):
+  the 12-panel compact grid and the 4 group pictures re-rendered with the paired
+  blue-vs-red palette (SPEC = dark blue, Agentic = dark red; language pictures keep the
+  locked language palette), the inner-statistics glyph (p5–p95 whisker, THICK black IQR
+  bar, white square = median, black circle = mean), raw-workload point overlays on the
+  n=26/36 grid, manually-built broken axes where pooled max > 3× pooled p95 (L1I, L1D,
+  L2, LLC; ggbreak dropped breaks silently under composition and was replaced), a hero
+  template with the Min/Max/Median/Mean±Std stats strip (`iso36_hero_ipc`), and KDE
+  bandwidth variants for review (`bandwidth_variants/`, adjust 0.8/1.2 vs default 1.0).
+  Supersedes paper_v1's violin figures ONLY — see `paper_v2/README.md`.
+- **`paper_v1/` — the LATEST bar-family generation** (2026-08-31, per-version folders per
+  the PI's request; its violin figures are superseded by paper_v2): the paper-style figure set over the revised all-resolved 36, rendered by the
   `plot_paper_*` scripts on the shared style contract `theme_paper.R` + `paper_style.py`
   (Libertine serif; value axes terminating exactly on their outermost tick; outward ticks;
   dotted grey grid; black edge on every bar/violin; AVG/MEDIAN aggregate rows on a grey band

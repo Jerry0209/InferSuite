@@ -65,6 +65,46 @@ paper_legend_keys <- function()
 # every bar/segment gets a black edge: use these constants in the geoms
 PAPER_EDGE <- "black"; PAPER_EDGE_LW <- 0.25
 
+# ---- violin components (mentor spec 2026-09-01) ----------------------------------------
+# Paired hue/lightness palette: primary contrast = HUE (blue vs red family), secondary
+# variant = LIGHTNESS (dark vs light). Two-group SPEC-vs-Agentic plots use the two DARK
+# hues. NOTE: the reference PNG was not provided, so these are the canonical print-safe
+# RdBu anchors matching its description — swap in the sampled hexes when the file lands.
+PAPER_PAIR <- c(blue_dark = "#2166ac", blue_light = "#92c5de",
+                red_dark  = "#b2182b", red_light  = "#f4a582")
+PAPER_TWO  <- c(SPEC = unname(PAPER_PAIR["blue_dark"]),
+                Agentic = unname(PAPER_PAIR["red_dark"]))
+PAPER_VIOLIN_LW <- 0.3        # thin black outline on every violin
+
+# The inner-statistics glyph, drawn ON TOP of the violin (one encoding everywhere):
+#   thin black whisker = p5-p95 · THICK black bar = IQR · white square (22) = median ·
+#   black circle (21) = mean. `scale` shrinks it for many-column figures.
+paper_inner_stats <- function(scale = 1) {
+  list(
+    stat_summary(fun.min = function(x) quantile(x, .05),
+                 fun.max = function(x) quantile(x, .95),
+                 geom = "linerange", linewidth = 0.4 * scale, colour = "black"),
+    stat_summary(fun.min = function(x) quantile(x, .25),
+                 fun.max = function(x) quantile(x, .75),
+                 geom = "linerange", linewidth = 2.5 * scale, colour = "black"),
+    stat_summary(fun = median, geom = "point", shape = 22, size = 2.1 * scale,
+                 fill = "white", colour = "black", stroke = 0.5 * scale),
+    stat_summary(fun = mean, geom = "point", shape = 21, size = 1.5 * scale,
+                 fill = "black", colour = "black", stroke = 0.3 * scale))
+}
+PAPER_STATS_SUBTITLE <- paste("violin outline thin black; whisker = 5th-95th pct,",
+                              "thick black bar = IQR, white square = median,",
+                              "black circle = mean")
+
+# raw-sample overlay for small-n violins (n = workloads, not windows): fixed seed
+paper_jitter <- function(seed = 7)
+  geom_point(position = position_jitter(width = 0.06, height = 0, seed = seed),
+             alpha = 0.5, size = 0.7, colour = "black", shape = 16)
+
+# broken-axis qualifier (mentor rule): a panel qualifies ONLY when its pooled max exceeds
+# 3x the pooled 95th percentile. Never combine with a log scale.
+paper_break_qualifies <- function(v) max(v) > 3 * quantile(v, .95)
+
 paper_save <- function(p, stem, width, height) {
   ragg::agg_png(paste0(stem, ".png"), width = width, height = height,
                 units = "in", res = 300)
