@@ -36,6 +36,10 @@ REPO = os.path.expanduser("~/InferSuite")
 DATA = f"{REPO}/local_agents/ML_iso36/data"
 OUT = os.environ.get("ISO36_OUT", f"{REPO}/local_agents/ML_iso36/plots/paper_v1")
 SEL = f"{REPO}/local_agents/ML_typeid/selection_36_count.tsv"
+# LANG_VERTICAL=1 (PI 2026-09-06): rotate the language group labels 90° so they cannot
+# overlap the long task labels; writes *_vertical_labels alongside the original.
+VERT = os.environ.get("LANG_VERTICAL") == "1"
+STEM = "iso36_tma_l1_combined" + ("_vertical_labels" if VERT else "")
 sys.path.insert(0, f"{REPO}/spec26/kit/plot")
 from spec_common import episodes as spec_episodes  # noqa: E402
 
@@ -172,8 +176,12 @@ for yy, (kind, x) in zip(Y, order):
         ax.text(101.0, yy, f"{x[4]:.0f}% tool slots", va="center", fontsize=5.8,
                 color="#777777", clip_on=False)
 for lang, mid in lang_mid.items():
-    ax.text(-0.265, mid, lang, transform=ax.get_yaxis_transform(),
-            ha="left", va="center", fontsize=8, fontweight="bold")
+    if VERT:
+        ax.text(-0.265, mid, lang, transform=ax.get_yaxis_transform(), rotation=90,
+                ha="center", va="center", fontsize=8, fontweight="bold")
+    else:
+        ax.text(-0.265, mid, lang, transform=ax.get_yaxis_transform(),
+                ha="left", va="center", fontsize=8, fontweight="bold")
 ps.exact_limits(ax, "x", 0, 100, 25)
 ax.set_yticks(Y)
 ax.set_yticklabels(ylab, fontsize=6.4)
@@ -187,8 +195,8 @@ handles = [plt.Rectangle((0, 0), 1, 1, fc=c) for _k, _l, c in L1COLS]
 ps.top_legend(fig, handles, [l for _k, l, _c in L1COLS], y=0.985)
 ps.assert_exact(ax, "x")
 for ext in ("png", "pdf"):
-    fig.savefig(f"{OUT}/iso36_tma_l1_combined.{ext}", bbox_inches="tight")
+    fig.savefig(f"{OUT}/{STEM}.{ext}", bbox_inches="tight")
 json.dump(values, open(f"{OUT}/iso36_tma_combined_values.json", "w"), indent=1)
 fe = [x[3]["fe-bound"] for k, x in order if k == "task"]
-print(f"{OUT}/iso36_tma_l1_combined.png — asserts passed; "
+print(f"{OUT}/{STEM}.png — asserts passed; "
       f"combined frontend-bound median {st.median(fe):.1f}%")

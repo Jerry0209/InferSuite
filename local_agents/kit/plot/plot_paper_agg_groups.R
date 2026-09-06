@@ -126,6 +126,110 @@ add_headers <- function(p) {
   p + theme(plot.margin = margin(14, 8, 6, 6))
 }
 
+# ---- VARIANT=broken_axis (PI 2026-09-06): frontend + memory with CUT y axes ------------
+# Two-piece panels like the compact grid's broken axes, cut where the PI drew the red
+# lines (snapped to the nearest clean tick): most of the height goes to 0..cut, a small
+# compressed zone shows cut..cap (∕∕ marks the scale change; the seam skips NO data — the
+# axis is continuous, only the scale compresses). Violins are windowed with
+# coord_cartesian, so the KDE is computed on the FULL data and the shape continues across
+# the seam; red triangle = column max beyond the cap (unchanged). Language headers move to
+# a separate strip (annotation clipping must stay ON — tails would leak outside the
+# panels otherwise). Writes *_broken_axis alongside the originals.
+VARIANT <- Sys.getenv("VARIANT", "")
+BREAKS <- list(
+  "Branch MPKI"           = list(cut = 14, step = 2),
+  "Branch-direction MPKI" = list(cut = 14, step = 2),
+  "BTB MPKI (BAClears)"   = list(cut = 3,  step = 1),
+  "L1I MPKI (code-read)"  = list(cut = 75, step = 25),
+  "L2-load MPKI"          = list(cut = 3,  step = 1),
+  "LLC MPKI"              = list(cut = 2,  step = 0.5),
+  "DRAM read (GB/s)"      = list(cut = 14, step = 2))
+
+cap_top <- function(m, dm) {
+  TRIM <- c("BTB MPKI (BAClears)", "L1D-load MPKI", "L2-load MPKI", "LLC MPKI")
+  p97 <- dm |> group_by(col_f) |> summarise(q97 = quantile(value, .97),
+                                            q95 = quantile(value, .95), .groups = "drop")
+  cap <- if (m %in% TRIM) quantile(p97$q95, .85) * 1.2 else max(p97$q97) * 1.15
+  if (grepl("\\(%\\)", m)) cap <- min(cap, 100)
+  max(pretty(c(0, cap), 5))
+}
+
+broken_panel <- function(m, cut, step, show_x) {
+  dm <- d |> filter(metric == m)
+  hi <- cap_top(m, dm)
+  nlv <- length(ord)
+  stopifnot(cut < hi)
+  th <- theme_paper(base_size = 8) +
+    theme(axis.title.y = element_text(size = 7), axis.text.y = element_text(size = 6),
+          panel.grid.major.x = element_blank())
+  base <- ggplot(dm, aes(x = col_f, y = value, fill = fillg)) +
+    paper_band(0.4, SEP_AGG) +
+    geom_violin(scale = "width", width = 0.85, linewidth = PAPER_VIOLIN_LW,
+                colour = "black", adjust = 1.2, trim = TRUE, alpha = 0.75) +
+    paper_inner_stats(scale = 0.42) +
+    paper_agg_sep(SEP_AGG) + paper_lang_sep(SEP_LANG) +
+    scale_fill_manual(values = lcol, guide = "none") +
+    paper_x_discrete() + labs(x = NULL) + th
+  mx <- dm |> group_by(col_f) |> summarise(mx = max(value), .groups = "drop") |>
+    filter(mx > hi)
+  upper <- base + labs(y = NULL) +
+    coord_cartesian(xlim = c(0.4, nlv + 0.6), ylim = c(cut, hi), expand = FALSE) +
+    scale_y_continuous(breaks = c(cut, hi),
+                       labels = c("", sprintf("%g", hi))) +   # seam value labeled below
+    annotate("text", x = 0.55, y = cut + (hi - cut) * 0.10, label = "∕∕", size = 2.1,
+             family = PAPER_SERIF, fontface = "bold") +
+    theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+          plot.margin = margin(4, 8, 0.4, 6))
+  if (nrow(mx) > 0)
+    upper <- upper + geom_point(data = mx, aes(x = col_f, y = hi - (hi - cut) * 0.06),
+                                shape = 17, size = 0.8, colour = "#b2182b",
+                                inherit.aes = FALSE)
+  lower <- base + labs(y = m) +
+    coord_cartesian(xlim = c(0.4, nlv + 0.6), ylim = c(0, cut), expand = FALSE) +
+    scale_y_continuous(breaks = seq(0, cut, step),
+                       labels = label_number(drop0trailing = TRUE)) +
+    annotate("text", x = 0.55, y = cut * 0.965, label = "∕∕", size = 2.1,
+             family = PAPER_SERIF, fontface = "bold") +
+    theme(plot.margin = margin(0.4, 8, 4, 6))
+  lower <- lower + if (show_x)
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 5.4))
+  else theme(axis.text.x = element_blank())
+  list(upper = upper, lower = lower)
+}
+
+header_strip <- function() {
+  hd <- data.frame(x = c(1.5, sapply(langs, function(lg) mean(lang_span[[lg]]))),
+                   lab = c("SPEC CPU 2026", langs),
+                   col = c("#4d4d4d", unname(lcol[langs])))
+  ggplot(hd) +
+    geom_text(aes(x = x, y = 0, label = lab, colour = I(col)), size = 2.0,
+              fontface = "bold", family = PAPER_SERIF) +
+    scale_x_continuous(limits = c(0.4, length(ord) + 0.6), expand = expansion(0, 0)) +
+    scale_y_continuous(limits = c(-1, 1), expand = expansion(0, 0)) +
+    theme_void() + theme(plot.margin = margin(2, 8, 0, 6))
+}
+
+if (VARIANT == "broken_axis") {
+  for (gname in c("frontend", "memory")) {
+    ms <- GROUPS[[gname]]
+    pieces <- list(header_strip()); heights <- c(0.16)
+    for (k in seq_along(ms)) {
+      m <- ms[k]; last <- (k == length(ms))
+      if (!is.null(BREAKS[[m]])) {
+        bp <- broken_panel(m, BREAKS[[m]]$cut, BREAKS[[m]]$step, show_x = last)
+        cat(sprintf("broken %-24s cut=%g\n", m, BREAKS[[m]]$cut))
+        pieces <- c(pieces, list(bp$upper, bp$lower)); heights <- c(heights, 0.45, 2.0)
+      } else {
+        pieces <- c(pieces, list(panel(m, show_x = last))); heights <- c(heights, 2.45)
+      }
+    }
+    fig <- wrap_plots(pieces, ncol = 1) + plot_layout(heights = heights)
+    paper_save(fig, file.path(OUT, sprintf("iso36_agg_%s_merged_broken_axis", gname)),
+               width = 14, height = sum(heights) + 0.7)
+  }
+  quit(save = "no")
+}
+
 # paper-ready (PI 2026-09-06): no title / subtitle / caption / per-column median labels --
 # the filename and the paper caption carry them; column medians stay banked in the CSV
 for (gname in names(GROUPS)) {

@@ -59,6 +59,21 @@ FIGS = [
     ("fig12", "agg_system_merged", P2, "plot_paper_agg_groups.R",
      "context switches per CPU-second (log axis), merged fence"),
 ]
+# variant figures (PI 2026-09-06): appended NEXT TO their base figure, never replacing it.
+# No separate raw data (same numbers as the base) or script copy (same generator, run with
+# the env shown); update suffix in the name per the PI's naming rule.
+# (variant name, source dir, source stem, generating env + script)
+VARIANTS = [
+    ("fig06_tma_l1_combined_vertical_labels", P1, "iso36_tma_l1_combined_vertical_labels",
+     "LANG_VERTICAL=1 + fig06 script",
+     "fig06 with the language group labels rotated 90° (no overlap with task labels)"),
+    ("fig10_agg_frontend_merged_broken_axis", P2, "iso36_agg_frontend_merged_broken_axis",
+     "VARIANT=broken_axis + fig10 script",
+     "fig10 with cut y axes (Branch/Branch-dir 14, BTB 3, L1I 75; compressed outlier zone)"),
+    ("fig11_agg_memory_merged_broken_axis", P2, "iso36_agg_memory_merged_broken_axis",
+     "VARIANT=broken_axis + fig11 script",
+     "fig11 with cut y axes (L2 3, LLC 2, DRAM 14; compressed outlier zone)"),
+]
 LANGS = ["C", "C++", "Rust", "Go", "Java", "PHP", "Ruby", "JavaScript", "TypeScript"]
 GROUP_METRICS = {
     "agg_ipc_merged": ["IPC"],
@@ -82,6 +97,12 @@ for fid, name, src, script, _d in FIGS:
            f"# Regenerate: see charts/README.md.\n")
     body = body.split("\n", 1)[1] if body.startswith("#!") else body
     open(dst, "w").write(hdr + body)
+
+for vname, src, stem, _env, _d in VARIANTS:
+    if not os.path.exists(f"{src}/{stem}.png"):
+        continue
+    shutil.copy(f"{src}/{stem}.pdf", f"{FPDF}/{vname}.pdf")
+    shutil.copy(f"{src}/{stem}.png", f"{FPNG}/{vname}.png")
 
 # ---- raw data ----
 def jcsv(vals_path, out, keys, agg_keys=None):
@@ -156,9 +177,14 @@ lines = ["# ML_iso36 chart pack",
          "| Fig | Name | What it shows | Raw data |",
          "|---|---|---|---|"]
 for fid, name, _src, _script, desc in FIGS:
-    raw = f"fig{fid[3:]}_{name}.csv" + (".gz" if name.startswith("agg_") and name != "agg_compact_merged" else "")
     raw = f"{fid}_{name}.csv" + (".gz" if name.startswith("agg_") and name != "agg_compact_merged" else "")
     lines.append(f"| {fid} | {name} | {desc} | `Raw data/{raw}` |")
+present = [v for v in VARIANTS if os.path.exists(f"{v[1]}/{v[2]}.png")]
+if present:
+    lines += ["", "**Variants** (appended next to their base figure, never replacing it;",
+              "same raw data and script as the base — regenerate with the env shown):", ""]
+    for vname, _src, _stem, env, desc in present:
+        lines.append(f"- `{vname}` — {desc}. Regenerate: `{env}`.")
 lines += ["",
           "Notes: fig02/fig03 share one values source (each CSV is complete on its own).",
           "fig09–fig12 raw data are per-window rows (gzipped; R reads .csv.gz natively).",

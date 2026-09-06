@@ -7,6 +7,9 @@ unboxed and centred; fig03 gained an "Episode wall" legend entry to replace its 
 group violins (fig09–fig12) lose the per-column median number labels and the red
 "axis capped" text (the red triangle alone marks an off-scale column max; column medians
 stay banked in the Raw data CSVs). fig08 (hero IPC) is carried over unchanged from v2.
+Appended same day (second PI round): three VARIANT figures next to their bases — fig06
+with vertical language labels, fig10/fig11 with cut y axes at the PI's red-line positions
+(see the Variants list below). Originals kept.
 
 Organized per the mentor's layout (2026-09-02): one raw-data file, one script and
 one PDF+PNG per figure. **PDF → paper, PNG → slides.** Assembled from the two
@@ -35,6 +38,13 @@ Regenerate everything: run each script with the repo's conda interpreters
 | fig10 | agg_frontend_merged | frontend metrics (Branch/Branch-dir/BTB/L1I/DSB MPKI, DSB coverage), merged fence | `Raw data/fig10_agg_frontend_merged.csv.gz` |
 | fig11 | agg_memory_merged | memory metrics (L1D/L2/LLC MPKI, DRAM read GB/s), merged fence | `Raw data/fig11_agg_memory_merged.csv.gz` |
 | fig12 | agg_system_merged | context switches per CPU-second (log axis), merged fence | `Raw data/fig12_agg_system_merged.csv.gz` |
+
+**Variants** (appended next to their base figure, never replacing it;
+same raw data and script as the base — regenerate with the env shown):
+
+- `fig06_tma_l1_combined_vertical_labels` — fig06 with the language group labels rotated 90° (no overlap with task labels). Regenerate: `LANG_VERTICAL=1 + fig06 script`.
+- `fig10_agg_frontend_merged_broken_axis` — fig10 with cut y axes (Branch/Branch-dir 14, BTB 3, L1I 75; compressed outlier zone). Regenerate: `VARIANT=broken_axis + fig10 script`.
+- `fig11_agg_memory_merged_broken_axis` — fig11 with cut y axes (L2 3, LLC 2, DRAM 14; compressed outlier zone). Regenerate: `VARIANT=broken_axis + fig11 script`.
 
 Notes: fig02/fig03 share one values source (each CSV is complete on its own).
 fig09–fig12 raw data are per-window rows (gzipped; R reads .csv.gz natively).

@@ -18,6 +18,12 @@ centred; `iso36_busy_wall_live` gained an "Episode wall" legend entry). The remo
 context lives in the paper captions / this manifest; every removed number stays banked in
 the `*_numbers.csv` / `*_values.json` beside the figures. The workspace descriptions
 below predate this pass where they mention titles, captions, or on-figure labels.
+A second same-day round added three VARIANTS next to their bases (originals kept):
+`iso36_tma_l1_combined_vertical_labels` (paper_v1; `LANG_VERTICAL=1`, language labels
+rotated 90°) and `iso36_agg_{frontend,memory}_merged_broken_axis` (paper_v2;
+`VARIANT=broken_axis`, two-piece cut y axes at the PI's red-line positions —
+Branch/Branch-dir 14, BTB 3, L1I 75, L2 3, LLC 2, DRAM 14; coord-windowed violins so the
+KDE stays computed on full data; ∕∕ marks the scale change, seam skips no data).
 Workspace state:
 
 - **`paper_v2/` — the LATEST violin-family generation** (2026-09-01, mentor violin spec):
