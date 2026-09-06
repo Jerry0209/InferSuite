@@ -137,7 +137,7 @@ def frame(figsize):
     return fig, ax
 
 
-def finish(fig, ax, cap, step, xlabel, legend_items, footer, stem):
+def finish(fig, ax, cap, step, xlabel, legend_items, stem, wall_tick=False):
     ps.exact_limits(ax, "x", 0, cap, step)
     ax.set_yticks(list(Y) + list(Y_AGG.values()))
     ax.set_yticklabels(ylab + ["AVG", "MEDIAN"], fontsize=6.4)
@@ -147,10 +147,15 @@ def finish(fig, ax, cap, step, xlabel, legend_items, footer, stem):
         ax.text(-0.265, mid, lang, transform=ax.get_yaxis_transform(),
                 ha="left", va="center", fontsize=8, fontweight="bold")
     ax.set_xlabel(xlabel)
-    handles = [plt.Rectangle((0, 0), 1, 1, fc=c) for _l, c in legend_items]
-    ps.top_legend(fig, handles, [l for l, _c in legend_items], y=0.985)
-    fig.text(0.5, -0.012, footer, ha="center", fontsize=6, color="#666666")
+    # paper-ready (PI 2026-09-06): no footer; layout FIRST so the legend centres on the panel
     fig.tight_layout(rect=(0.125, 0.01, 1, 0.945))
+    handles = [plt.Rectangle((0, 0), 1, 1, fc=c) for _l, c in legend_items]
+    labels = [l for l, _c in legend_items]
+    if wall_tick:
+        handles.append(plt.Line2D([0], [0], marker="|", color="#5c6b64",
+                                  linestyle="none", markersize=9))
+        labels.append("Episode wall")
+    ps.top_legend(fig, handles, labels, y=0.985)
     ps.assert_exact(ax, "x")
     for ext in ("png", "pdf"):
         fig.savefig(f"{OUT}/{stem}.{ext}", bbox_inches="tight")
@@ -179,10 +184,6 @@ finish(fig, ax, cap, 500,
        "episode wall time (seconds) — live census episodes",
        [("Tool fence busy", C_TOOL), ("Harness busy (no tool)", C_HARN),
         ("Model wait + idle", C_WAIT)],
-       "one live census episode per task (revised all-resolved 36; same population and 0.2 s "
-       "union-grid busy rule as the live overview) · segments are DISJOINT (tool > harness > "
-       "neither) and sum to the wall · the neither-fence segment is dominated by the model "
-       "round-trip · AVG/MEDIAN = unweighted over the 36 tasks",
        "iso36_wall_split_live")
 
 # ================= figure 2: grouped busy + wait =================
@@ -208,11 +209,7 @@ finish(fig, ax, cap, 500,
        "time (seconds) — live census episodes",
        [("Tool fence busy", C_TOOL), ("Harness busy", C_HARN),
         ("Model wait + idle", C_WAIT)],
-       "grouped, never stacked: the fences overlap in time (busy = 10 Hz activity above the "
-       "burst floors, tool 0.005 / harness 0.02 cores; each fence counted independently) · "
-       "model wait + idle = wall where NEITHER fence is busy · | = episode wall · one live "
-       "census episode per task · AVG/MEDIAN = unweighted over the 36 tasks",
-       "iso36_busy_wall_live")
+       "iso36_busy_wall_live", wall_tick=True)
 
 json.dump(values, open(f"{OUT}/iso36_wall_live_values.json", "w"), indent=1)
 w = [100 * x[3]["seg_wait"] / x[3]["wall"] for x in rows]

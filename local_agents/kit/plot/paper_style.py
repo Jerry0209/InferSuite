@@ -95,8 +95,16 @@ def top_legend(fig, handles, labels, y=1.045, ncol=None, fontsize=8.5):
             h.set_edgecolor("black"); h.set_linewidth(0.5)
         except AttributeError:
             pass
+    # centre over the PANEL area, not the canvas: y tick labels / row annotations make the
+    # canvas asymmetric, so anchor at the midpoint of the axes' union (finalize layout first)
+    try:
+        fig.canvas.draw()
+        boxes = [ax.get_position() for ax in fig.axes]
+        cx = (min(b.x0 for b in boxes) + max(b.x1 for b in boxes)) / 2
+    except Exception:
+        cx = 0.5
     return fig.legend(handles, labels, ncol=ncol or len(labels), loc="upper center",
-                      bbox_to_anchor=(0.5, y), frameon=False, fontsize=fontsize,
+                      bbox_to_anchor=(cx, y), frameon=False, fontsize=fontsize,
                       handlelength=1.0, handleheight=1.0, columnspacing=1.4)
 
 

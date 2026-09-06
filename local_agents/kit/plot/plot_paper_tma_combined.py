@@ -181,15 +181,10 @@ for t, (kind, _x) in zip(ax.get_yticklabels(), order):
     if kind == "agg":
         t.set_fontweight("bold")
 ax.set_xlabel("pipeline slots (%) — both fences combined, slot-weighted")
+# paper-ready (PI 2026-09-06): no footer; layout FIRST so the legend centres on the panel
+fig.tight_layout(rect=(0.125, 0.01, 0.94, 0.955))
 handles = [plt.Rectangle((0, 0), 1, 1, fc=c) for _k, _l, c in L1COLS]
 ps.top_legend(fig, handles, [l for _k, l, _c in L1COLS], y=0.985)
-fig.text(0.5, -0.012,
-         "continuous PERF_METRICS census, counts summed over both fences and all 9 episodes per "
-         "task (slot-weighted) · right margin: the tool fence's share of the slots · revised "
-         "all-resolved 36 · MEDIAN row = per-component median over the tasks, renormalized · "
-         "SPEC rows = per-benchmark episode medians, renormalized to 100",
-         ha="center", fontsize=6, color="#666666")
-fig.tight_layout(rect=(0.125, 0.01, 0.94, 0.955))
 ps.assert_exact(ax, "x")
 for ext in ("png", "pdf"):
     fig.savefig(f"{OUT}/iso36_tma_l1_combined.{ext}", bbox_inches="tight")

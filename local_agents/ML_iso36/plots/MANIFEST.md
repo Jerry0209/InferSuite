@@ -8,6 +8,16 @@ each in the mentor layout (`Raw data/ · Scripts/ · Figures/{PDF,PNG} · README
 below are the RENDER WORKSPACES the generators write into; a finished revision is
 assembled into a new `charts/vN_<date>_<tag>/` with `build_chart_pack.py` (VERSION env).
 The former `plots/archive/` generation was adapted into `charts/v1_2026-08-28_original36/`.
+
+**Paper-ready pass (PI 2026-09-06, banked as `charts/v3_2026-09-06_paperready/`):** both
+workspaces now render WITHOUT on-figure titles, explanatory grey footer/subtitle text,
+per-violin median number labels, or the red "axis capped" annotations (the red triangle
+alone marks an off-scale column max); legends are centred at the top of each figure
+(`paper_style.top_legend` anchors on the panel area; fig07's legend strip is unboxed and
+centred; `iso36_busy_wall_live` gained an "Episode wall" legend entry). The removed
+context lives in the paper captions / this manifest; every removed number stays banked in
+the `*_numbers.csv` / `*_values.json` beside the figures. The workspace descriptions
+below predate this pass where they mention titles, captions, or on-figure labels.
 Workspace state:
 
 - **`paper_v2/` — the LATEST violin-family generation** (2026-09-01, mentor violin spec):

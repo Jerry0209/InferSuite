@@ -16,7 +16,8 @@ workspaces, then assemble a NEW vN folder with
 
 | Version | Status | Contents |
 |---|---|---|
-| `v2_2026-09-01_paper/` | **CURRENT** | the paper-style set over the revised all-resolved 36: fig01–fig12 (bar family from plots/paper_v1, violin family from plots/paper_v2) |
+| `v3_2026-09-06_paperready/` | **CURRENT** | the paper-ready revision of v2 (PI 2026-09-06): no on-figure titles / explanatory grey text / red off-scale text / per-violin median labels; legends centred at the top (fig07's unboxed); fig08 unchanged |
+| `v2_2026-09-01_paper/` | superseded | the paper-style set over the revised all-resolved 36: fig01–fig12 (bar family from plots/paper_v1, violin family from plots/paper_v2) |
 | `v1_2026-08-28_original36/` | superseded | the pre-revision original-36 set (fpm-1829 in), frozen; scripts pinned by commit in its Scripts/SOURCES.md |
 
 `../plots/paper_v1`, `../plots/paper_v2` are the RENDER WORKSPACES the generators write

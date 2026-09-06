@@ -125,16 +125,10 @@ for lang, mid in lang_mid.items():
     axes[0].text(-1.04, mid, lang, transform=axes[0].get_yaxis_transform(),
                  ha="left", va="center", fontsize=7, fontweight="bold", clip_on=False)
 
+# paper-ready (PI 2026-09-06): no explanatory footer — the caption carries it
 handles = [plt.Rectangle((0, 0), 1, 1, fc=c) for c in (C_WORK, C_STALL, C_TOOL, C_HARN)]
 ps.top_legend(fig, handles, ["CPU working", "CPU stall (incl. model wait)",
                              "Tool", "Harness"], y=1.05)
-fig.text(0.5, -0.045,
-         "36 live census episodes of the revised selection (all officially resolved). "
-         "(c) every trajectory action incl. failed/errored calls and the final submit; "
-         "model-only turns not counted.\nAVG = unweighted mean over the 36 tasks; MEDIAN = "
-         "median over the 36 per-task values (panel d: median of the per-task medians). "
-         "Grey band = aggregate rows.",
-         ha="center", fontsize=5.8, color="#555555")
 
 for ax in axes:
     ps.assert_exact(ax, "x")

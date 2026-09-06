@@ -136,14 +136,10 @@ for lang, mid in lang_mid.items():
     ax.text(-0.20, mid, lang, transform=ax.get_yaxis_transform(),
             ha="left", va="center", fontsize=8, fontweight="bold")
 ax.set_xlabel("CPU work (core-seconds) — median over the task's 9 replay episodes")
+# paper-ready (PI 2026-09-06): no footer; layout FIRST so the legend centres on the panel
+fig.tight_layout(rect=(0.09, 0.01, 1, 0.955))
 handles = [plt.Rectangle((0, 0), 1, 1, fc=C_TOOL), plt.Rectangle((0, 0), 1, 1, fc=C_HARN)]
 ps.top_legend(fig, handles, ["Tool execution", "Agent harness"], y=0.985)
-fig.text(0.5, -0.012,
-         "deterministic replays of the revised all-resolved 36, model never called (no "
-         "inference or litellm wedge) · cores 4–11 SMT off · (B/T/S/M) = count-view "
-         "cell · AVG/MEDIAN = unweighted over the 36 task medians · spread banked",
-         ha="center", fontsize=6, color="#666666")
-fig.tight_layout(rect=(0.09, 0.01, 1, 0.955))
 ps.assert_exact(ax, "x")
 for ext in ("png", "pdf"):
     fig.savefig(f"{OUT}/iso36_cpu_work.{ext}", bbox_inches="tight")

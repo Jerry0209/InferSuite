@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
-# plot_paper_agg_compact.R -- the 12-panel SPEC-vs-Agentic grid, revision v3
-# (PI feedback 2026-09-02 on the v2 violin spec):
+# plot_paper_agg_compact.R -- the 12-panel SPEC-vs-Agentic grid, revision v4
+# (PI 2026-09-06, paper-ready: figure title removed -- the filename/caption carries it --
+#  legend strip unboxed and centred at the top; earlier v3 feedback 2026-09-02):
 #   - short CENTRED title, all grey subtitle/caption text removed
 #   - a FORMAL legend panel beside the grid (fills + glyphs + break mark + dagger note)
 #   - inner glyph back to the paper_v1 style -- thin WHITE IQR box + black median bar +
@@ -135,34 +136,31 @@ panel <- function(m) {
   (upper / lower) + plot_layout(heights = c(0.2, 0.8))
 }
 
-# ---- the formal legend strip (below the title, above the grid) ----
+# ---- the legend strip (top of the figure; paper-ready PI 2026-09-06: no title, no box,
+# entries centred as a group) ----
 legend_strip <- function() {
   tx <- function(xx, lab, size = 2.5) annotate("text", x = xx, y = 0.5, label = lab,
                                                hjust = 0, size = size,
                                                family = PAPER_SERIF)
   ggplot() + xlim(0, 1) + ylim(0, 1) + theme_void() +
-    theme(panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.4),
-          plot.margin = margin(2, 30, 4, 30)) +
-    annotate("rect", xmin = 0.030, xmax = 0.052, ymin = 0.28, ymax = 0.72,
+    theme(plot.margin = margin(2, 10, 4, 10)) +
+    annotate("rect", xmin = 0.155, xmax = 0.177, ymin = 0.28, ymax = 0.72,
              fill = PAPER_TWO[["SPEC"]], colour = "black", linewidth = 0.3) +
-    tx(0.062, "SPEC (26 benchmarks)") +
-    annotate("rect", xmin = 0.245, xmax = 0.267, ymin = 0.28, ymax = 0.72,
+    tx(0.187, "SPEC (26 benchmarks)") +
+    annotate("rect", xmin = 0.322, xmax = 0.344, ymin = 0.28, ymax = 0.72,
              fill = PAPER_TWO[["Agentic"]], colour = "black", linewidth = 0.3) +
-    tx(0.277, "Agentic (36 tasks)") +
-    annotate("segment", x = 0.445, xend = 0.475, y = 0.5, yend = 0.5,
+    tx(0.354, "Agentic (36 tasks)") +
+    annotate("segment", x = 0.474, xend = 0.504, y = 0.5, yend = 0.5,
              colour = "black", linewidth = 1.0) +
-    tx(0.485, "median") +
-    annotate("point", x = 0.585, y = 0.5, shape = 23, size = 2.1, fill = "white",
+    tx(0.514, "median") +
+    annotate("point", x = 0.586, y = 0.5, shape = 23, size = 2.1, fill = "white",
              colour = "black", stroke = 0.45) +
-    tx(0.600, "mean") +
-    tx(0.690, "† median 0 — no position on a log axis", 2.2)
+    tx(0.601, "mean") +
+    tx(0.656, "† median 0 — no position on a log axis", 2.2)
 }
 
 ps <- lapply(METRICS, panel)
 grid <- wrap_plots(ps, ncol = 4)
-fig <- (legend_strip() / grid) + plot_layout(heights = c(0.045, 1)) + plot_annotation(
-  title = "SPEC vs Agentic",
-  theme = theme(plot.title = element_text(size = 13, face = "bold", hjust = 0.5,
-                                          family = PAPER_SERIF)))
+fig <- (legend_strip() / grid) + plot_layout(heights = c(0.04, 1))
 paper_save(fig, file.path(OUT, paste0("iso36_agg_compact_merged", suffix)),
-           width = 10.6, height = 8.6)
+           width = 10.6, height = 8.3)

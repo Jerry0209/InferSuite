@@ -168,20 +168,12 @@ for lang, mid in lang_mid.items():
     ax.text(-0.265, mid, lang, transform=ax.get_yaxis_transform(),
             ha="left", va="center", fontsize=8, fontweight="bold")
 ax.set_xlabel("busy time (seconds) — median over the task's 9 replay episodes")
+# paper-ready (PI 2026-09-06): no footer; layout FIRST so the legend centres on the panel
+fig.tight_layout(rect=(0.125, 0.01, 1, 0.945))
 handles = [plt.Rectangle((0, 0), 1, 1, fc=C_TOOL), plt.Rectangle((0, 0), 1, 1, fc=C_HARN),
            plt.Line2D([0], [0], marker="|", color="#5c6b64", linestyle="none", markersize=9)]
-leg = fig.legend(handles, ["Tool fence busy", "Agent harness busy", "episode wall"],
-                 ncol=3, loc="upper center", bbox_to_anchor=(0.5, 0.985), frameon=False,
-                 fontsize=8.5, handlelength=1.0, handleheight=1.0, columnspacing=1.4)
-for h in leg.legend_handles[:2]:
-    h.set_edgecolor("black"); h.set_linewidth(0.5)
-fig.text(0.5, -0.012,
-         "grouped, never stacked: the fences overlap in time · ×N = tool core-seconds ÷ busy "
-         "seconds (average parallelism while busy) · busy = 10 Hz intervals above the burst "
-         "floors (tool 0.005 / harness 0.02 cores) · revised all-resolved 36 · AVG/MEDIAN = "
-         "unweighted over the task medians",
-         ha="center", fontsize=6, color="#666666")
-fig.tight_layout(rect=(0.125, 0.01, 1, 0.945))
+ps.top_legend(fig, handles, ["Tool fence busy", "Agent harness busy", "Episode wall"],
+              y=0.985)
 ps.assert_exact(ax, "x")
 for ext in ("png", "pdf"):
     fig.savefig(f"{OUT}/iso36_active_wall.{ext}", bbox_inches="tight")

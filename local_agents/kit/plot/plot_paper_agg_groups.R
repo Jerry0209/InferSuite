@@ -72,7 +72,6 @@ panel <- function(m, show_x) {
                                             q95 = quantile(value, .95), .groups = "drop")
   cap <- if (m %in% TRIM) quantile(p97$q95, .85) * 1.2 else max(p97$q97) * 1.15
   if (grepl("\\(%\\)", m)) cap <- min(cap, 100)
-  meds <- med_tab |> filter(metric == m)
   p <- ggplot(dm, aes(x = col_f, y = value, fill = fillg)) +
     paper_band(0.4, SEP_AGG) +
     geom_violin(scale = "width", width = 0.85, linewidth = PAPER_VIOLIN_LW,
@@ -92,28 +91,18 @@ panel <- function(m, show_x) {
     p <- p + scale_y_log10(limits = c(lo, hi),
                            breaks = 10^seq(log10(lo), log10(hi)),
                            labels = label_number(drop0trailing = TRUE),
-                           expand = expansion(0, 0)) +
-      geom_text(data = meds, aes(x = col_f, y = hi * 0.55, label = sprintf("%.3g", med)),
-                angle = 90, hjust = 1, size = 1.75, colour = "grey25",
-                inherit.aes = FALSE)
+                           expand = expansion(0, 0))
   } else {
     br <- pretty(c(0, cap), 5); hi <- max(br)
     mx <- dm |> group_by(col_f) |> summarise(mx = max(value), .groups = "drop") |>
       filter(mx > hi)
-    p <- p + paper_scale_y(0, hi, br[2] - br[1]) +
-      geom_text(data = meds, aes(x = col_f, y = hi * 0.985, label = sprintf("%.3g", med)),
-                angle = 90, hjust = 1, size = 1.75, colour = "grey25",
-                inherit.aes = FALSE)
+    p <- p + paper_scale_y(0, hi, br[2] - br[1])
+    # paper-ready (PI 2026-09-06): the triangle alone marks an off-scale column max
+    # (axis capped; stats always on full data) -- no on-figure text, the caption carries it
     if (nrow(mx) > 0) {
-      mx <- mx |> arrange(desc(mx))
-      lab3 <- paste(sprintf("%s %.3g", head(mx$col_f, 3), head(mx$mx, 3)), collapse = " · ")
-      if (nrow(mx) > 3) lab3 <- paste0(lab3, sprintf("  (+%d more)", nrow(mx) - 3))
       p <- p +
         geom_point(data = mx, aes(x = col_f, y = hi * 0.995), shape = 17, size = 0.8,
-                   colour = "#b2182b", inherit.aes = FALSE) +
-        annotate("text", x = length(ord) - 0.5, y = hi * 0.70, hjust = 1, vjust = 1,
-                 size = 1.8, colour = "#b2182b",
-                 label = paste0("axis capped; off-scale max: ", lab3))
+                   colour = "#b2182b", inherit.aes = FALSE)
     }
   }
   if (show_x) {
@@ -137,24 +126,13 @@ add_headers <- function(p) {
   p + theme(plot.margin = margin(14, 8, 6, 6))
 }
 
+# paper-ready (PI 2026-09-06): no title / subtitle / caption / per-column median labels --
+# the filename and the paper caption carry them; column medians stay banked in the CSV
 for (gname in names(GROUPS)) {
   ms <- GROUPS[[gname]]
   ps <- lapply(seq_along(ms), function(k) panel(ms[k], show_x = (k == length(ms))))
   ps[[1]] <- add_headers(ps[[1]])
-  h <- 2.45 * length(ms) + 1.5
-  fig <- wrap_plots(ps, ncol = 1) + plot_annotation(
-    title = sprintf("%s — combined agent fence (tool + harness)",
-                    c(ipc = "IPC", frontend = "Frontend metrics",
-                      memory = "Memory metrics", system = "System-level metrics")[gname]),
-    subtitle = paste("agent columns = per-window values with the two fences' raw counts summed",
-                     "(instruction-weighted by construction) · SPEC = per-benchmark window-medians,",
-                     "one vote each, on the grey band · rotated label = column median ·",
-                     PAPER_STATS_SUBTITLE, "· hue = language (locked palette)"),
-    caption = paste("100 ms windows, matched configuration · dotted lines demarcate languages ·",
-                    "red triangle = off-scale outlier (axis capped; stats use full data) ·",
-                    "revised all-resolved 36 · per-window violins (thousands of windows per column: KDE is meaningful, raw-point overlay not applicable at this n)"),
-    theme = theme(plot.title = element_text(size = 11.5, face = "bold", family = PAPER_SERIF),
-                  plot.subtitle = element_text(size = 6.4, colour = "grey35", family = PAPER_SERIF),
-                  plot.caption = element_text(size = 5.6, colour = "grey45", family = PAPER_SERIF)))
+  h <- 2.45 * length(ms) + 0.9
+  fig <- wrap_plots(ps, ncol = 1)
   paper_save(fig, file.path(OUT, sprintf("iso36_agg_%s_merged", gname)), width = 14, height = h)
 }
