@@ -31,6 +31,7 @@ signal here.
 | SPEC install (binaries, ref inputs, run dirs) | `~/spec26-infra/cpu2026` | outside this repo |
 | Study reports (one per study) | `docs/reports/` | yes |
 | Session logs (one per chat) | `docs/handoff/sessions/` | yes |
+| **ARM / AWS Graviton bring-up handoff** | `docs/handoff/arm_aws_bringup.md` | yes |
 | Knowledge wiki (cross-cutting) | `docs/wiki/` | yes |
 | Curated figure view | `plots/` (synced, never edited by hand) | yes |
 
