@@ -83,8 +83,12 @@ panel <- function(m) {
   dcm <- dc_vote |> filter(metric == m)
   use_log <- m %in% logm
   is_pct <- grepl("\\(%\\)", m)
-  # the DCPerf marker must always fit on the axis, so its vote joins the pooled range
+  # the DCPerf marker must always fit on the axis, so its vote joins the pooled range.
+  # `pooled` decides the BREAK RULE (votes only, so the rule stays the one the other figures
+  # use); `vis_max` additionally covers the marker's window-IQR bar, so the axis never clips
+  # it -- a clipped error bar silently understates the workload.
   pooled <- c(dm$v, dcm$v)
+  vis_max <- max(c(pooled, dcm$q75), na.rm = TRUE)
   qual <- !use_log && !is_pct && paper_break_qualifies(pooled)
   cat(sprintf("panel %-28s max=%.4g 3x_p95=%.4g -> break=%s | dcperf med=%s\n",
               m, max(pooled), 3 * quantile(pooled, .95),
@@ -128,20 +132,20 @@ panel <- function(m) {
   if (use_log) {
     pos <- pooled[pooled > 0]
     lo <- 10^floor(log10(max(min(pos), 1e-2)))
-    hi <- 10^ceiling(log10(max(pooled)))
+    hi <- 10^ceiling(log10(vis_max))
     return(base(dm, dcm, lo) + ggtitle(m) +
       scale_y_log10(limits = c(lo, hi), breaks = 10^seq(log10(lo), log10(hi)),
                     labels = label_number(drop0trailing = TRUE), expand = expansion(0, 0)))
   }
   if (is_pct) return(base(dm, dcm) + ggtitle(m) + paper_scale_y(0, 100, 25))
   if (!qual) {
-    br <- pretty(c(0, max(pooled) * 1.03), 5)
+    br <- pretty(c(0, vis_max * 1.03), 5)
     return(base(dm, dcm) + ggtitle(m) + paper_scale_y(0, max(br), br[2] - br[1]))
   }
   thr <- 3 * quantile(pooled, .95)
   body_max <- max(pooled[pooled <= thr]); out_min <- min(pooled[pooled > thr])
   brk <- pretty(c(0, body_max * 1.12), 5); brk_lo <- max(brk)
-  ub <- pretty(c(out_min, max(pooled) * 1.02), 2)
+  ub <- pretty(c(out_min, vis_max * 1.02), 2)
   step <- if (length(ub) > 1) ub[2] - ub[1] else out_min * 0.1
   up_lo <- floor(out_min / step) * step
   if (up_lo <= brk_lo) up_lo <- signif(out_min * 0.95, 2)

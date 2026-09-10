@@ -80,6 +80,15 @@ bench_start(){ # $1 OUT, $2 UNIT
 
 bench_stop(){ # $1 OUT, $2 UNIT
   local OUT="$1" UNIT="$2"
+  # SLA RECEIPT: search_qps.sh writes its results row only when the experiment RUNS OUT, so
+  # killing the benchmark the moment the capture window closes leaves no evidence that the
+  # workload met its own p95 target while we were profiling it. The experiment is sized to
+  # outlast the capture by 60 s, so wait (bounded) for it to finish and write that row.
+  local i
+  for i in $(seq 1 "${FEEDSIM_DRAIN_S:-180}"); do
+    kill -0 "$FS_RUN_PID" 2>/dev/null || break
+    sleep 1
+  done
   [ -n "$FS_RUN_PID" ] && sudo kill -TERM "$FS_RUN_PID" 2>/dev/null
   sudo pkill -f DriverNodeRank 2>/dev/null
   sudo systemctl stop "$UNIT.scope" 2>/dev/null
