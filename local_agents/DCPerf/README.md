@@ -31,16 +31,19 @@ central claim, which is also about front-end pressure — and it lets us ask a q
 cannot answer: *when the agentic workload looks front-end bound, does it look front-end bound
 in the same way a real datacenter service does?*
 
-**It is the only DCPerf benchmark that maps cleanly onto our measurement model** — and, as it
-turns out, the only one that runs here at all without new hardware (see the feasibility table
-in the bring-up doc: SparkBench needs NVMe-over-TCP storage nodes and a custom kernel,
-TaoBench wants CentOS plus a 10–50 Gbps client network, Mediawiki needs HHVM-3.30 which
-predates our OS, and VideoTranscodeBench's dataset sits behind a manual registration).
-FeedSim ships as two separate binaries — `LeafNodeRank`, the server under test, and
-`DriverNodeRank`, the closed-loop load generator — so the split we already use for agent
-campaigns transfers exactly: **the workload goes in the measured cgroup fence, the load
-generator runs on the housekeeping cores**, which is precisely where the litellm proxy runs
-and for the same reason. It is the client, not the thing being measured.
+**It was the cleanest fit for our measurement model, and the only one that ran here without
+new hardware or a substituted dataset.** FeedSim ships as two separate binaries —
+`LeafNodeRank`, the server under test, and `DriverNodeRank`, the closed-loop load generator —
+so the split we already use for agent campaigns transfers exactly: **the workload goes in the
+measured cgroup fence, the load generator runs on the housekeeping cores**, which is precisely
+where the litellm proxy runs and for the same reason. It is the client, not the thing being
+measured.
+
+An earlier draft of this section claimed FeedSim was *the only* benchmark that maps onto the
+fence model. That was wrong and is corrected in §7.1: every DCPerf benchmark is mechanically
+fenceable. What separates them is how much supporting cast has to be pulled out of the measured
+fence, and whether pulling it out distorts the workload. FeedSim scores well on both, which is
+a real reason to profile it first, but a weaker claim than the original one.
 
 A note on what FeedSim is *not*: it is one workload, not a population. Every figure treats it
 that way (§5).
@@ -247,3 +250,118 @@ meaning.
 | Three-family figure | `local_agents/kit/plot/plot_paper_agg_compact3.R` |
 | Per-window capture (gitignored) | `local_agents/DCPerf/data/dcperf_feedsim/run_1..9` |
 | Figures | `local_agents/DCPerf/plots/paper_v1/` |
+
+## 7. Notes and clarifications
+
+Answers to questions raised in review (2026-09-10). Recorded here because each one is a
+load-bearing assumption behind the numbers above.
+
+### 7.1 What "fits the fence model" means, and how the six benchmarks differ
+
+A **fence is a cgroup**. Counters are attributed with `perf stat --for-each-cgroup` and CPU
+time by polling each cgroup's `cpu.stat` at 10 Hz, so measuring a workload means placing
+exactly that workload's processes in one cgroup pinned to the measured cores.
+
+The half that matters more is the *exclusion*: anything that is **not** the workload under
+test must run on the housekeeping cores. In the agent campaigns that is the litellm proxy — it
+relays model calls but is not the agent working. For a client/server benchmark the load
+generator plays the same role. Leaving the client on the measured cores commits two errors at
+once: its CPU work is counted as though it were the server's, and it steals cores from the
+server being characterised.
+
+**Mechanically, all six DCPerf benchmarks can be fenced.** They start their components as
+ordinary child processes tracked by pidfiles, not as systemd units, so cgroup inheritance
+covers every descendant and nothing escapes into `system.slice` the way k3s pods once did on
+this box. The real gradient is how much supporting cast must be pulled out, and whether doing
+so changes the workload:
+
+| Benchmark | What must leave the measured fence | Risk |
+|---|---|---|
+| VideoTranscodeBench | nothing — there is no client | none; the whole batch is the workload |
+| FeedSim | `DriverNodeRank` only | low; the driver is light enough for the housekeeping cores |
+| TaoBench | the memtier clients | DCPerf says clients want their own machines and 10–20 Gbps; on 8 shared cores the client may become the bottleneck, so the server is never properly loaded |
+| DjangoBench | Cassandra, memcached, siege | Cassandra is a JVM database DCPerf recommends running on a separate machine; starved on housekeeping cores it would make the measured Django server wait on it |
+| Mediawiki | nginx, MySQL, memcached, siege | same shape, plus a judgment call: is MySQL part of "web serving" or infrastructure? |
+| SparkBench | storage is remote by design | an infrastructure problem, not a fencing one |
+
+So the distinction is not *fits* versus *does not fit*. It is how obvious the line is between
+the workload and its supporting cast, and whether that cast survives on eight shared cores
+without distorting what is being measured.
+
+### 7.2 What the "n = 1 caveat" was
+
+With a single DCPerf benchmark profiled, every result had two explanations that could not be
+told apart: it might be a property of datacenter workloads generally, or a property of FeedSim
+alone. FeedSim walks a two-million-node graph, so its heavy memory traffic plausibly belonged
+to it rather than to the suite. The caveat was written into the first version of §4 and then
+tested by profiling a second benchmark. **It was the right worry**: VideoTranscodeBench reads
+3.8 GB/s against FeedSim's 11.5, and it overturned the instruction-supply conclusion outright.
+
+### 7.3 Why TaoBench and SparkBench need hardware this box does not have
+
+- **TaoBench.** DCPerf supports the server on **CentOS Stream 8 or 9 only**, and requires
+  `iommu=pt` on the kernel command line — without it "the system will be soft locked up in
+  network I/O". That is an OS we do not run plus a GRUB change needing explicit sign-off.
+  A single-host mode does exist, so the three-machine / 10–20 Gbps guidance is about avoiding a
+  client bottleneck rather than a hard block. The OS and the boot parameter are the hard blocks.
+- **SparkBench.** It models a data warehouse in which the dataset lives on **separate storage
+  nodes reached over NVMe-over-TCP**. DCPerf asks for a kernel built with the nvme-tcp options
+  (`CONFIG_NVME_TCP` and friends) and at least one storage node beside the compute node. We
+  have one machine and a stock kernel.
+
+### 7.4 Why DjangoBench and Mediawiki are container problems, not dead ends
+
+Both blockers are **purely userspace**, which is exactly what a container fixes:
+
+- **Mediawiki** needs HHVM-3.30, the last HHVM that ran PHP (2018). Prebuilt binaries exist
+  only for CentOS and Ubuntu 22.04, and it wants `libicudata.so.60` and gflags 2.1.2 — neither
+  present on Ubuntu 24.04.
+- **DjangoBench** needs `python3.10`, which has **no apt candidate** on 24.04, and pins
+  `cassandra-driver 3.19.0` / `django-cassandra-engine 1.5.5` from 2019, whose C extensions are
+  very unlikely to build against Python 3.12/3.13.
+
+A container shares the host kernel and supplies its own userspace, so a 22.04 image provides
+those libraries. Our measurement reads cgroups, and **a container is a cgroup** — this repo
+already does it, since the agent tool fence is a docker container inside `measured.slice`. Leave
+`SKIP_DOCKER` unset so `apply_isolation` puts containers under that slice. The one extra design
+step is DjangoBench's standalone role, which runs Cassandra, uWSGI and siege together: they must
+be split across separate containers to keep the server measured and the client on housekeeping
+cores (see §7.1).
+
+### 7.5 What was and was not modified in DCPerf
+
+**The dataset was not modified.** DCPerf ships `datasets/cuts` **empty on purpose** and instructs
+the user to register at CDVL and download the El Fuente clips themselves. That empty directory
+was filled with substitutes: two freely redistributable Xiph 1080p sequences (`park_joy`,
+`in_to_tree`), cut into six 100-frame shots with ffmpeg. Encoder, preset, parallelism and pool
+size are DCPerf's defaults, untouched.
+
+**Two DCPerf files were modified**, both deliberately and both reproducible:
+
+1. One line in `install_feedsim_x86_64_ubuntu.sh`, changing a literal `Ubuntu 22.04` string
+   match so the shipped compatibility patches also apply on 24.04. Without it the pinned old
+   folly does not build.
+2. A **generated copy** of FeedSim's `run.sh` (`run_infersuite.sh`, produced by
+   `patch_run_sh.py` on every preflight) carrying two edits that change only *where* the two
+   processes run. No workload parameter is touched.
+
+### 7.6 A latent issue found in the agent campaign kit
+
+`restore_isolation` **widens this box's housekeeping partition**, and it affects agent
+campaigns too, not just DCPerf.
+
+The box normally keeps `system.slice` and `user.slice` on cores `0-3,12-15`, leaving `4-11`
+clear. The kit snapshots that state before applying isolation by reading each slice's systemd
+`AllowedCPUs` property. **On this box that property is empty**, because the boot-time
+restriction is established some other way, so the documented fallback fires on restore and sets
+`AllowedCPUs` to *all online CPUs*. Both slices therefore end up wider than they started.
+
+**Measurements are not affected**: every pass re-applies the shield, and the ISO-PROOF gate
+refuses to capture unless the measured cores are provably silent. The exposure is *between*
+campaigns on a shared box — with the partition widened, another user's processes can be
+scheduled onto cores 4–11, which are meant to be reserved.
+
+**Fix (not yet applied, since it touches the shared campaign kit):** when the systemd property
+is empty, snapshot the effective cpuset from `/sys/fs/cgroup/<slice>/cpuset.cpus.effective`
+instead of falling back to all-online. The partition was restored by hand after this session
+with `systemctl set-property --runtime <slice> AllowedCPUs=0-3,12-15`.
