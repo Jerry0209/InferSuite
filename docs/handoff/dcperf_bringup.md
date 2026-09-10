@@ -53,12 +53,40 @@ and a measurement partition of 8 physical cores. Assessed 2026-09-10 from the DC
 | TaoBench | Standalone mode exists, but 3 machines are recommended, plus 10–50 Gbps NIC | Server documented for **CentOS Stream 8/9 only**; also wants `iommu=pt` on the kernel cmdline (a GRUB change → needs explicit user sign-off) | ❌ not on P7 as-is |
 | SparkBench | **No** — requires separate storage nodes over **NVMe-over-TCP** and a kernel built with the nvme-tcp options | Needs a custom kernel | ❌ infeasible here |
 
-Practical reading: **FeedSim, DjangoBench and VideoTranscodeBench** are the realistic P7 set.
-Mediawiki needs a CentOS/22.04 container or another box. TaoBench and SparkBench need
-infrastructure this box does not have — if the mentor wants all six, they are the two to
-raise as a scope/hardware question, and the AWS boxes in
+Practical reading: **FeedSim** is profiled and validated. **VideoTranscodeBench** is the next
+cheapest, needing only a substitute dataset. **DjangoBench** is harder than the table suggests
+(see below). TaoBench and SparkBench need infrastructure this box does not have — if the
+mentor wants all six, those two are the scope/hardware question to raise, and the AWS boxes in
 [`arm_aws_bringup.md`](arm_aws_bringup.md) are a natural home for TaoBench (multi-instance,
 CentOS-friendly) once that work starts.
+
+### DjangoBench: harder than it looks (checked 2026-09-10)
+
+Its Ubuntu installer wants `python3.10-dev` / `python3.10-venv`, and on noble `python3.10` has
+**no apt candidate at all** (noble ships 3.12). Worse, the workload pins 2019-era packages —
+`cassandra-driver 3.19.0`, `django-cassandra-engine 1.5.5` — whose C extensions are very
+unlikely to build against Python 3.12/3.13. Getting it running on the host therefore means
+either a deadsnakes PPA (a persistent change to the host's apt sources) or a private 3.10
+toolchain, plus dependency archaeology. Use the container route instead.
+
+### The container route (recommended for every OS-gated benchmark)
+
+**We already profile containerised workloads.** The agent campaigns' tool fence *is* a docker
+container living in `measured.slice`, measured with `perf --for-each-cgroup` on the container's
+cgroup. So running a DCPerf benchmark inside an `ubuntu:22.04` or CentOS Stream 9 image needs
+no new measurement machinery — only the existing docker path:
+
+- run the DCPerf install and the workload inside a supported-OS image;
+- leave `SKIP_DOCKER` unset so `apply_isolation` puts containers under `measured.slice`
+  (the DCPerf kit sets `SKIP_DOCKER=1` only because FeedSim is a native process);
+- fence the container's cgroup exactly as the tool fence is fenced.
+
+This unblocks **Mediawiki** (HHVM-3.30 has prebuilt Ubuntu 22.04 binaries) and **DjangoBench**
+(python3.10 is native to 22.04) without touching the host. The one design question it raises
+is fence separation: DjangoBench's standalone role runs Cassandra, uWSGI and siege together,
+so the server and the load generator must be split into separate containers (or separate
+sub-cgroups) to keep the "server measured, client on housekeeping cores" discipline that makes
+these numbers comparable with FeedSim and the agentic 36.
 
 ## 3. Install and run recipe (as used here)
 
