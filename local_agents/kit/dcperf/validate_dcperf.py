@@ -154,8 +154,16 @@ else:
     print("  WARN  D5 fence completeness: no partition witness series")
 
 # ---- D6 workload SLA ----
+# A profiling pass is torn down when its capture window closes, so the benchmark usually does
+# not reach the end of its experiment and writes no results row. The receipt therefore comes
+# from any run that DID finish with counters active -- the confirmation run under
+# data/confirm/ -- as well as from any pass that happened to complete. Rows with
+# requested_qps == 0 are the unpaced warm-up and are not SLA evidence.
 sla = []
-for g, rd in sorted(done.items()):
+receipt_dirs = list(sorted(done.items())) + [
+    ("confirm", d) for d in sorted(glob.glob(
+        f"{REPO}/local_agents/DCPerf/data/confirm/dcperf_{BENCH}/run_*"))]
+for g, rd in receipt_dirs:
     f = f"{rd}/feedsim_results.txt"
     if not os.path.exists(f):
         continue

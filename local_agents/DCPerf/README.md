@@ -131,10 +131,19 @@ DCPerf point next to the two violins is worth more than another benchmark on the
 ## 4. Results
 
 Nine dedicated-group passes, ~2 500 counter windows each (22 642 windows total), all at the
-16 QPS operating point. Validation (`validate_dcperf.py`) passes D1–D5 and D7: nine of nine
-groups complete, zero multiplexed counters in any window, steady state to within **2.8%**
-drift across every capture (median server load 3.43 of 8 cores), and the unfenced residual on
-the measured partition bounded at **2.5%** of partition busy time. D6 is discussed below.
+16 QPS operating point. **Validation passes all seven gates** (`validate_dcperf.py`): nine of
+nine groups complete; zero multiplexed counters in any window; steady state to within **2.8%**
+drift across every capture (median server load 3.43 of 8 cores); the unfenced residual on the
+measured partition bounded at **2.5%** of partition busy time; all twelve displayed metrics
+derived from the groups that own them.
+
+The service-level gate (D6) is worth stating on its own, because it answers the obvious
+objection to profiling a latency-critical workload: **does the measurement break the thing it
+measures?** A confirmation run at the same operating point, with the full capture stack live
+(windowed counters, 10 Hz pollers, continuous TMA), achieved **15.96 of 16 requested QPS at
+p95 = 472 ms** — inside DCPerf's own 500 ms objective, and indistinguishable from the 479 ms
+measured during calibration with no counters running. The instrumentation does not perturb the
+workload's service level.
 
 Votes are formed identically for all three families: one value per workload, equal to the
 median of that workload's 100 ms windows on the merged fence.
@@ -197,11 +206,10 @@ for treating agentic work as its own benchmark class.
 - The operating point is 8 physical cores at fixed frequency and 16 QPS. A different core
   count, QPS or a boost-enabled clock would move the absolute numbers; the fixed clock is what
   makes the three families comparable at all.
-- **D6 (SLA receipt) is a warning, not a pass.** Each pass is torn down immediately after its
-  300 s capture, so FeedSim never reaches the end of its experiment and never writes its
-  results row. The SLA evidence therefore comes from the calibration sweep at the same 16 QPS
-  under the same isolation (p95 479 ms), not from the profiled runs themselves. A confirmation
-  run that lets the experiment finish while counters are active is the clean fix.
+- The nine sweep passes are torn down when their capture window closes, so they do not
+  themselves write a results row; the SLA receipt above comes from the dedicated confirmation
+  run (`data/confirm/`). Teardown now waits for the experiment to finish, so future passes
+  carry their own receipts.
 
 ## 5. How DCPerf is drawn in the figures
 
