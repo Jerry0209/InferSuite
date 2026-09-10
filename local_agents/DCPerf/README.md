@@ -1,6 +1,6 @@
 # DCPerf on P7 — task choice, profiling method, and how it differs from SPEC and the agentic 36
 
-**Branch:** `dcperf` · **Started:** 2026-09-10 · **Profiled so far:** FeedSim (1 of 6)
+**Branch:** `dcperf` · **Started:** 2026-09-10 · **Profiled so far:** FeedSim, VideoTranscodeBench (2 of 6)
 
 Suite-level bring-up notes (install recipe, per-benchmark feasibility, traps) live in
 [`docs/handoff/dcperf_bringup.md`](../../docs/handoff/dcperf_bringup.md). This document is the
@@ -130,96 +130,111 @@ DCPerf point next to the two violins is worth more than another benchmark on the
 
 ## 4. Results
 
-Nine dedicated-group passes, ~2 500 counter windows each (22 642 windows total), all at the
-16 QPS operating point. **Validation passes all seven gates** (`validate_dcperf.py`): nine of
-nine groups complete; zero multiplexed counters in any window; steady state to within **2.8%**
-drift across every capture (median server load 3.43 of 8 cores); the unfenced residual on the
-measured partition bounded at **2.5%** of partition busy time; all twelve displayed metrics
-derived from the groups that own them.
+Two DCPerf benchmarks are profiled: **FeedSim** (latency-critical ranking service, 16 QPS,
+~2 500 windows per counter group) and **VideoTranscodeBench** (SVT-AV1 batch encode at
+DCPerf's default `--runtime medium` preset, ~1 500 windows per group). Both pass every
+applicable validation gate: nine of nine groups, zero multiplexed counters, steady state
+within 2.8% / 4.3% drift, unfenced residual ≤ 2.5% / 2.7% of partition busy, all twelve
+displayed metrics derived. FeedSim additionally holds its service-level objective *while
+being profiled* — a confirmation run with the full capture stack live achieved **15.96 of 16
+QPS at p95 = 472 ms**, against 479 ms measured with no counters running, so the
+instrumentation does not perturb the workload it measures. VideoTranscodeBench is a batch
+workload with no latency objective, and the gate records that rather than warning about a
+missing receipt.
 
-The service-level gate (D6) is worth stating on its own, because it answers the obvious
-objection to profiling a latency-critical workload: **does the measurement break the thing it
-measures?** A confirmation run at the same operating point, with the full capture stack live
-(windowed counters, 10 Hz pollers, continuous TMA), achieved **15.96 of 16 requested QPS at
-p95 = 472 ms** — inside DCPerf's own 500 ms objective, and indistinguishable from the 479 ms
-measured during calibration with no counters running. The instrumentation does not perturb the
-workload's service level.
+Votes are formed identically for all four columns: one value per workload, equal to the median
+of that workload's 100 ms windows on the merged fence.
 
-Votes are formed identically for all three families: one value per workload, equal to the
-median of that workload's 100 ms windows on the merged fence.
+| Metric | SPEC | Agentic 36 | DCPerf feedsim | DCPerf video_transcode | Agentic/SPEC | feedsim/SPEC | video_transcode/SPEC |
+|---|---|---|---|---|---|---|---|
+| IPC | 2.185 | 1.749 | 1.725 | 2.62 | 0.8 | 0.79 | 1.2 |
+| Branch MPKI | 0.8473 | 4.301 | 4.865 | 2.265 | 5.08 | 5.74 | 2.67 |
+| Branch-direction MPKI | 0.8249 | 3.597 | 3.379 | 2.186 | 4.36 | 4.1 | 2.65 |
+| BTB MPKI (BAClears) | 0.007845 | 0.7746 | 1.635 | 0.0477 | 98.7 | 208 | 6.08 |
+| L1I MPKI (code-read) | 0.8454 | 15.63 | 5.995 | 12.03 | 18.5 | 7.09 | 14.2 |
+| uop-cache (DSB) MPKI | 9.279 | 46.91 | 18.02 | 54.1 | 5.06 | 1.94 | 5.83 |
+| DSB coverage (%) | 93.9 | 66.12 | 82.17 | 56.67 | 0.704 | 0.875 | 0.604 |
+| L1D-load MPKI | 8.129 | 4.839 | 11.73 | 4.601 | 0.595 | 1.44 | 0.566 |
+| L2-load MPKI | 0.3344 | 0.5454 | 4.238 | 0.1511 | 1.63 | 12.7 | 0.452 |
+| LLC MPKI | 0.0429 | 0.1439 | 0.4793 | 0.0663 | 3.35 | 11.2 | 1.55 |
+| DRAM read (GB/s) | 1.517 | 0.4567 | 11.5 | 3.802 | 0.301 | 7.59 | 2.51 |
+| Context switches (/CPU-s) | 0 | 549.4 | 190.9 | 159 | ∞ | ∞ | ∞ |
 
-| Metric | SPEC | Agentic 36 | DCPerf feedsim | Agentic/SPEC | feedsim/SPEC |
-|---|---|---|---|---|---|
-| IPC | 2.185 | 1.749 | 1.725 | 0.8 | 0.79 |
-| Branch MPKI | 0.8473 | 4.301 | 4.865 | 5.08 | 5.74 |
-| Branch-direction MPKI | 0.8249 | 3.597 | 3.379 | 4.36 | 4.1 |
-| BTB MPKI (BAClears) | 0.007845 | 0.7746 | 1.635 | 98.7 | 208 |
-| L1I MPKI (code-read) | 0.8454 | 15.63 | 5.995 | 18.5 | 7.09 |
-| uop-cache (DSB) MPKI | 9.279 | 46.91 | 18.02 | 5.06 | 1.94 |
-| DSB coverage (%) | 93.9 | 66.12 | 82.17 | 0.704 | 0.875 |
-| L1D-load MPKI | 8.129 | 4.839 | 11.73 | 0.595 | 1.44 |
-| L2-load MPKI | 0.3344 | 0.5454 | 4.238 | 1.63 | 12.7 |
-| LLC MPKI | 0.0429 | 0.1439 | 0.4793 | 3.35 | 11.2 |
-| DRAM read (GB/s) | 1.517 | 0.4567 | 11.5 | 0.301 | 7.59 |
-| Context switches (/CPU-s) | 0 | 549.4 | 190.9 | ∞ | ∞ |
+### The second benchmark corrected a conclusion drawn from the first
 
-Read down the ratio columns and three separate stories appear.
+With FeedSim alone it looked as though instruction-supply pressure was the agentic workload's
+signature: FeedSim is purpose-built to stress instruction fetch — a 56 MB binary with an
+`ICacheBuster` unit compiled in 24 parts — and still showed 2.6× less L1I pressure than the
+agent. **VideoTranscodeBench does not support that reading.** It reaches an L1I code-read
+MPKI of 12.0 against the agent's 15.6, and it is *worse* than the agent on both uop-cache
+axes: 54.1 vs 46.9 misses per thousand instructions, and 56.7% vs 66.1% DSB coverage — the
+worst instruction-supply behaviour of all four families. Large unrolled SIMD encode kernels
+overflow the uop cache just as thoroughly as an agent's churning process images do.
 
-**Some gaps we attribute to agentic workloads are really "contemporary workload vs SPEC"
-gaps.** On IPC, branch misprediction, branch direction, BTB pressure and context switching,
-FeedSim sits with the agentic 36, not with SPEC — and on BTB it is the most extreme of the
-three (1.64 MPKI, **208× SPEC**, more than double the agentic figure). Branch MPKI is 5.7×
-SPEC for FeedSim and 5.1× for the agent. These axes separate SPEC from modern software in
-general; they are not evidence of anything specifically agentic, and the thesis should stop
-short of claiming they are.
+So "agentic workloads are uniquely hard on instruction supply" is **not** supported. This is
+the n = 1 caveat from the first pass doing its job, and it is worth stating plainly rather
+than quietly dropping.
 
-**But the agentic instruction-fetch signature is not reproduced by a real datacenter
-service.** FeedSim is purpose-built to stress instruction supply — a 56 MB server binary with
-an `ICacheBuster` unit compiled in 24 parts and a knob asking for 1.6 M i-cache iterations —
-and it still shows **2.6× less** L1I code-read pressure than the agent (6.0 vs 15.6 MPKI),
-2.6× less uop-cache miss pressure (18.0 vs 46.9), better uop-cache coverage (82% vs 66%), and
-**2.9× fewer** context switches per CPU-second (191 vs 549). The agentic front end is under
-more pressure than that of a workload engineered to put it under pressure. This is the finding
-that survives the previous paragraph, and it is the strongest argument yet that agentic
-workloads are not covered by existing suites.
+### What actually distinguishes the four families
 
-**FeedSim occupies a third corner that neither of the others touches: memory bandwidth.** It
-reads **11.5 GB/s** against SPEC's 1.52 and the agent's 0.46 — twenty-five times the agentic
-figure — with L2-load MPKI 12.7× SPEC and LLC MPKI 11.2× SPEC. The agentic workload is the
-*least* memory-intensive of the three; FeedSim is the most, by a wide margin. (This metric
-counts offcore data reads, demand plus prefetch, at 64 B each; the ~3.4× gap against the
-retired-load L2 miss count is hardware prefetch, as expected for graph aggregation. The same
-formula is applied to all three families, so the comparison is like-for-like.)
+The honest reading is that each occupies a different corner, and the agentic corner is defined
+by a *combination* rather than by any single extreme:
 
-**Synthesis.** The three workloads sit in three different corners: SPEC is compute-dense with
-a small footprint and no OS interaction; FeedSim is memory-bandwidth-bound with heavy branch
-and BTB pressure; the agentic workload is instruction-fetch-bound with heavy OS interaction
-and almost no memory traffic. Profiling DCPerf *instead of* agentic workloads would miss the
-instruction-fetch and context-switch extremes; profiling SPEC misses both. That is the case
-for treating agentic work as its own benchmark class.
+- **SPEC** — compute-dense, tiny instruction footprint, essentially no OS interaction
+  (context switches round to zero) and modest memory traffic.
+- **VideoTranscodeBench** — the highest IPC of the four (2.62) and near-SPEC branch behaviour
+  (BTB 0.048 MPKI, 6× SPEC where the others are 99× and 208×), combined with the *worst*
+  uop-cache behaviour. Front-end pressure from **capacity**, not from unpredictability:
+  straight-line vector code that is large but eminently predictable.
+- **FeedSim** — the memory corner. 11.5 GB/s of offcore reads against SPEC's 1.52 and the
+  agent's 0.46, L2-load MPKI 12.7× SPEC, LLC MPKI 11.2× SPEC, plus the highest BTB pressure
+  of all four (208× SPEC). Branchy and bandwidth-hungry.
+- **Agentic 36** — the only family that is simultaneously instruction-hungry (highest L1I
+  MPKI, 15.6), branch-hostile (Branch MPKI 4.3, BTB 99× SPEC), OS-dominated (549 context
+  switches per CPU-second, 2.9–3.5× either DCPerf benchmark) **and** memory-light (0.46 GB/s,
+  the lowest of the four). Nothing else combines those.
 
-**Caveats, stated plainly.**
-- **DCPerf here is n = 1.** FeedSim's memory intensity may be its own character — it walks a
-  two-million-node graph — rather than a property of the suite. The remaining benchmarks are
-  what would turn this single point into a population; until then the DCPerf column is a data
-  point, not a distribution, and the figures draw it that way.
-- The operating point is 8 physical cores at fixed frequency and 16 QPS. A different core
-  count, QPS or a boost-enabled clock would move the absolute numbers; the fixed clock is what
-  makes the three families comparable at all.
-- The nine sweep passes are torn down when their capture window closes, so they do not
-  themselves write a results row; the SLA receipt above comes from the dedicated confirmation
-  run (`data/confirm/`). Teardown now waits for the experiment to finish, so future passes
-  carry their own receipts.
+Two consequences follow. First, **DCPerf is not one point**: its two benchmarks sit at
+opposite ends of the memory axis (11.5 vs 3.8 GB/s) and of the branch axis (208× vs 6× SPEC),
+so "compare against DCPerf" is not a single comparison. Second, **neither DCPerf benchmark
+lands in the agentic corner** — profiling datacenter workloads instead of agentic ones would
+still miss the context-switch extreme and the branch-plus-instruction-fetch combination, and
+profiling SPEC misses nearly everything. That remains the case for treating agentic work as
+its own benchmark class, but it now rests on the combination rather than on any single metric.
+
+**Caveats.**
+- DCPerf here is **n = 2 of 6**. The four remaining benchmarks are blocked on infrastructure
+  or OS support (§ the bring-up doc); a third and fourth point could move these conclusions
+  again, exactly as the second moved the first.
+- VideoTranscodeBench runs on a **substituted dataset**: DCPerf specifies Netflix "El Fuente"
+  shots from CDVL, whose download requires a manual free registration and cannot be scripted,
+  so six 100-frame 1080p shots cut from freely-redistributable Xiph sequences
+  (`park_joy`, `in_to_tree`) stand in. Encoder, preset, parallelism and pool size are
+  DCPerf's. Encode *times* are therefore not comparable with published DCPerf numbers; the
+  microarchitectural character of AV1 encoding, which is what this study reads, is preserved.
+- Both benchmarks run on 8 physical cores at fixed frequency. FeedSim additionally runs at a
+  fixed 16 QPS rather than DCPerf's boost-enabled QPS search. The fixed clock is what makes
+  the four families comparable at all.
+- The nine sweep passes are torn down when their capture window closes, so the SLA receipt
+  comes from the dedicated confirmation run (`data/confirm/`). Teardown now waits for the
+  experiment to finish, so future passes carry their own receipts.
 
 ## 5. How DCPerf is drawn in the figures
 
 A violin is a distribution **over workloads**: SPEC contributes 26 benchmarks, the agentic
-family 36 tasks, one vote each. DCPerf currently contributes **one** profiled benchmark, so it
-has no across-workload distribution and is not drawn as a violin. It appears as a marker at its
-vote — the median of its steady-state windows, the same statistic every SPEC and agentic vote
-uses — with a thin bar showing the p25–p75 of its own windows, which is explicitly a
-*within*-workload spread and a different quantity from the violins. When more DCPerf
-benchmarks are profiled, `DCPERF_VIOLIN=1` switches it to a real violin.
+family 36 tasks, one vote each. DCPerf contributes **two** profiled benchmarks — far too few
+for a distribution — so each gets its own column drawn as a marker at its vote: the median of
+its steady-state windows, the same statistic every SPEC and agentic vote uses. The thin bar is
+the p25–p75 of that benchmark's own windows, which is explicitly a *within*-workload spread and
+a different quantity from the violins; it is labelled that way in the key. Giving each
+benchmark its own column rather than pooling them is deliberate — the two sit at opposite ends
+of the memory and branch axes, and pooling would invent a "DCPerf average" that describes
+neither. `DCPERF_VIOLIN=1` switches to a real violin once there are enough benchmarks to
+justify one.
+
+`fig02`–`fig05` are the unit-consistent companions: every column there is a distribution over
+100 ms windows, so a DCPerf benchmark sits beside SPEC and the 36 tasks without any change of
+meaning.
 
 ## 6. Files
 

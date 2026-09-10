@@ -32,6 +32,8 @@ BENCH = sys.argv[1] if len(sys.argv) > 1 else "feedsim"
 BASE = f"{REPO}/local_agents/DCPerf/data/dcperf_{BENCH}"
 L3 = f"{REPO}/local_agents/DCPerf/data/l3_study"
 GROUPS = ["fpbr", "cache", "mlp", "fe", "fe_lat", "core_ports", "dram_bw", "priv", "fe_miss"]
+# benchmarks whose DCPerf definition is a latency target, and which therefore owe an SLA receipt
+SLA_BENCHES = {"feedsim", "tao_bench", "mediawiki", "django_workload"}
 DISPLAY = {
     "IPC": "fpbr", "branch_MPKI": "fpbr", "branchDir_MPKI": "fe_miss", "BTB_MPKI": "fe_miss",
     "uopCache_MPKI": "fe_miss", "DSB_pct": "fe", "codeRead_MPKI_L1I": "fe_lat",
@@ -181,9 +183,13 @@ if sla:
          f"{max(s[3] for s in sla):.0f} ms (SLA 500), achieved "
          f"{st.median([s[2] for s in sla]):.2f} QPS median"
          + (f"; {len(bad)} OVER SLA" if bad else ""))
-else:
-    warns.append("D6: no per-pass results CSV")
+elif BENCH in SLA_BENCHES:
+    warns.append("D6: no results CSV for a latency-critical benchmark")
     print("  WARN  D6 workload SLA: no results CSV banked")
+else:
+    # Batch benchmarks (video transcoding, analytics) have no service-level objective to
+    # hold: throughput IS the result. Absence of a latency receipt is correct here, not a gap.
+    print(f"  n/a   D6 workload SLA: {BENCH} is a batch workload with no latency objective")
 
 # ---- D7 metric coverage ----
 aw = f"{L3}/all_windows_{BENCH}.csv"
