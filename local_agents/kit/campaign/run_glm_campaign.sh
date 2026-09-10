@@ -181,7 +181,12 @@ apply_isolation(){
     echo "$HOUSE_IRQ_MASK" | sudo tee "$f" >/dev/null 2>&1 || true
   done
   sudo systemctl set-property --runtime "$MSLICE" AllowedCPUs="$CPUS_MEASURED"
-  # docker: all containers -> measured.slice (daemon.json swap, checked restart)
+  # docker: all containers -> measured.slice (daemon.json swap, checked restart).
+  # SKIP_DOCKER=1 (DCPerf, 2026-09-10): benchmarks that run NO containers do not need
+  # the cgroup-parent swap, and restarting dockerd would bounce unrelated containers on
+  # the box. Every other knob is applied identically; containers already live under
+  # system.slice, pinned to CPUS_HOUSE below, so the quiet gate is unaffected.
+  if [ "${SKIP_DOCKER:-0}" != 1 ]; then
   python3 - "$MSLICE" <<'PY'
 import json, sys, os
 p = "/etc/docker/daemon.json"
@@ -194,6 +199,7 @@ PY
   sudo systemctl restart docker || { log "FATAL: docker restart failed"; exit 1; }
   local i; for i in $(seq 1 15); do docker info >/dev/null 2>&1 && break; sleep 2; done
   docker info >/dev/null 2>&1 || { log "FATAL: docker did not come back"; exit 1; }
+  fi
   sudo systemctl set-property --runtime system.slice AllowedCPUs="$CPUS_HOUSE"
   sudo systemctl set-property --runtime user.slice   AllowedCPUs="$CPUS_HOUSE"
   if [ "${SKIP_K3S:-0}" != 1 ] && grep -q '^active' "$STATE/k3s" 2>/dev/null; then
@@ -1207,6 +1213,7 @@ typeid_replay_episode(){ # $1 instance, $2 dest run n — replays the banked tra
 stage_typeid_replay(){ RAN_WORK=1; typeid_env; typeid_replay_episode "${1:?instance id}" "${2:-1}"; }
 
 case "${1:-all}" in
+  noop)           : ;;   # define functions only -- for `source run_glm_campaign.sh noop`
   preflight)      stage_preflight ;;
   dryrun)         stage_preflight; stage_dryrun ;;
   isolation-test) stage_isolation_test ;;

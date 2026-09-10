@@ -20,10 +20,15 @@ import sys, os, re, glob, csv, json, math
 
 DATA = sys.argv[1]; SHORT = sys.argv[2]
 DO_PLOT = "--plot" in sys.argv
-BASE = f"{DATA}/glm_replay_swe_{SHORT}"
+# Run-dir prefix and the fence map are overridable so OTHER workload families reuse this
+# analyzer (and therefore the identical metric formulas) instead of forking it. Defaults are
+# the agentic campaign's: <DATA>/glm_replay_swe_<short>/run_N, harness scope + tool container.
+# DCPerf (2026-09-10) passes L3_BASE_PREFIX=dcperf_ and a single-fence L3_FENCES map.
+BASE = f"{DATA}/{os.environ.get('L3_BASE_PREFIX', 'glm_replay_swe_')}{SHORT}"
 OUTD = f"{DATA}/l3_study"; os.makedirs(OUTD, exist_ok=True)
 
-FENCES = {"harness": "glm-rep", "tool": "docker-"}
+FENCES = (json.loads(os.environ["L3_FENCES"]) if os.environ.get("L3_FENCES")
+          else {"harness": "glm-rep", "tool": "docker-"})
 
 # ---- command tagging: argv -> category (taxonomy: build/test, vcs, pkg/compile, agent-tools,
 # shell, python-other; aligned with the internal-tools classes + Fig-10-style buckets) ----
@@ -283,8 +288,10 @@ for rd in sorted(glob.glob(f"{BASE}/run_*")):
         # merged agent fence (mentor 2026-08-31): sum RAW counts across the two scopes before
         # deriving, so every ratio is exact (slot-/instruction-weighted by construction) —
         # same combination rule as the TMA combined-fence figure
-        per["both"] = {ev: per["tool"].get(ev, 0) + per["harness"].get(ev, 0)
-                       for ev in set(per["tool"]) | set(per["harness"])}
+        # (summing over FENCES, not the two names, so a single-fence family -- e.g. a
+        # DCPerf server -- yields "both" == that fence; identical arithmetic for 2 fences)
+        per["both"] = {ev: sum(per[f].get(ev, 0) for f in FENCES)
+                       for ev in set().union(*(set(per[f]) for f in FENCES))}
         tg = tag_for(a, b, samples)
         for fence in list(FENCES) + ["both"]:
             mets = derive(group, per[fence], b - a)
