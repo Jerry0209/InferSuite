@@ -1,4 +1,4 @@
-# Session 2026-09-10 — DCPerf bring-up: FeedSim profiled with the iso36 instrument stack
+# Session 2026-09-10 — DCPerf bring-up: FeedSim and VideoTranscodeBench profiled with the iso36 instrument stack
 
 **Goal:** answer the mentor's brief — pick one DCPerf benchmark that is representative of the
 suite and likely to behave unlike both SPEC and the agentic 36, profile it with *the same
@@ -50,14 +50,50 @@ partition (the box's normal boot state).
 - Benchpress runs as root and leaves the DCPerf tree root-owned — the patched-runner generator
   needs `sudo`.
 
+## Second benchmark, and a conclusion it overturned
+VideoTranscodeBench was profiled after FeedSim (DCPerf's default `--runtime medium` SVT-AV1
+preset, 9 passes, ~1 500 windows per group, pool saturated at 7.95/8 cores, all gates pass).
+It **contradicted the conclusion drawn from FeedSim alone.** With n = 1 it looked as though
+instruction-supply pressure was the agentic signature; video transcoding turns out to be
+*worse* than the agent on both uop-cache axes (54.1 vs 46.9 MPKI; 56.7% vs 66.1% DSB coverage)
+and nearly as high on L1I miss MPKI (12.0 vs 15.6). Large unrolled SIMD kernels overflow the
+uop cache as thoroughly as churning process images do. The surviving claim is narrower and
+rests on a *combination*: the agentic family is the only one that is simultaneously
+instruction-hungry, branch-hostile, OS-dominated (549 ctx/CPU-s, ~3× either DCPerf benchmark)
+and memory-light (0.46 GB/s, the lowest of four). Written up in the study README §4.
+
+**Dataset deviation:** DCPerf specifies Netflix "El Fuente" shots from CDVL, behind a manual
+free registration that cannot be scripted. Six 100-frame 1080p shots cut from freely
+redistributable Xiph sequences (`park_joy`, `in_to_tree`) stand in; encoder, preset,
+parallelism and pool size are DCPerf's. Encode *times* are not comparable with published
+DCPerf numbers; the microarchitectural character is.
+
+## Latent kit issue found (affects agent campaigns too)
+`restore_isolation` **widens the box's housekeeping partition**. At session start
+`system.slice` / `user.slice` had effective cpuset `0-3,12-15` but *no* systemd `AllowedCPUs`
+property (the boot partition is set some other way), so the isolation snapshot was empty and
+the documented fallback — "restore to all online CPUs" — fired, leaving both slices at `0-15`
+after the sweep. Measurements are unaffected (the shield re-pins correctly at the start of
+every pass), but between campaigns the partition silently widens, which on a shared box lets
+another user's work land on cores 4–11. Restored by hand here with
+`systemctl set-property --runtime <slice> AllowedCPUs=0-3,12-15`. Worth fixing in
+`run_glm_campaign.sh`: snapshot the *effective* cpuset when the property is empty, rather than
+falling back to all-online.
+
 ## Machine state left
-SMT siblings 16–23 were **offlined** to match the iso36 topology. **They must be brought back
-online** when profiling is finished:
-`for c in 16 17 18 19 20 21 22 23; do echo 1 | sudo tee /sys/devices/system/cpu/cpu$c/online; done`
-Isolation is applied and restored per pass by the kit's own trap.
+**Restored to baseline.** SMT siblings 16–23 were offlined for the sweeps and are back
+online (all 24 CPUs); governor `powersave`, `no_turbo=0`, no `iso_applied` flag, no stray
+`perf`, and the housekeeping partition put back to `0-3,12-15` (see the latent issue above).
+Anyone starting another sweep must re-offline the siblings — the kit's topology gate refuses
+to run otherwise and prints the command.
 
 ## Open / next
 - Results, validation output and figures: see `local_agents/DCPerf/README.md` §4.
-- Remaining five benchmarks: DjangoBench is the next feasible candidate; VideoTranscodeBench
-  needs a manual dataset download; Mediawiki needs a CentOS/22.04 container; TaoBench and
-  SparkBench need hardware this box does not have (mentor scope call).
+- Remaining four benchmarks: **DjangoBench** and **Mediawiki** need the container route
+  (`python3.10` has no apt candidate on noble and the Django workload pins 2019-era C
+  extensions; HHVM-3.30 predates noble) — the machinery already exists, since the agent tool
+  fence is itself a container in `measured.slice`, but DjangoBench additionally needs its
+  server and load generator split across separate containers to preserve the fence
+  discipline. **TaoBench** and **SparkBench** need hardware this box does not have and are a
+  mentor scope call.
+- Fix the `restore_isolation` widening described above.
