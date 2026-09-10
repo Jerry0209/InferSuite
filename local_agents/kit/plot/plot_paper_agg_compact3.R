@@ -60,7 +60,10 @@ dc_vote <- dc |> group_by(metric, wl = col) |>
 DC_BENCHES <- sort(unique(dc_vote$wl))
 if (DCPERF_VIOLIN) per_workload <- bind_rows(per_workload, dc_vote |> select(metric, wl, v, side))
 per_workload$side <- factor(per_workload$side, levels = c("SPEC", "Agentic", "DCPerf"))
-SIDES <- if (DCPERF_VIOLIN) c("SPEC", "Agentic", "DCPerf") else c("SPEC", "Agentic", "DCPerf")
+# One column per DCPerf benchmark: with more than one profiled benchmark a single "DCPerf"
+# column would stack their markers on top of each other and show only the first one's median.
+DC_LAB <- setNames(DC_BENCHES, DC_BENCHES)
+SIDES <- if (DCPERF_VIOLIN) c("SPEC", "Agentic", "DCPerf") else c("SPEC", "Agentic", DC_BENCHES)
 
 num <- per_workload |> group_by(metric, side) |>
   summarise(n = n(), min = min(v), max = max(v), median = median(v), mean = mean(v),
@@ -95,8 +98,8 @@ panel <- function(m) {
               ifelse(qual, "YES", ifelse(use_log, "no (log)", "no")),
               paste(sprintf("%.3g", dcm$v), collapse = ",")))
 
-  meds <- c(sapply(c("SPEC", "Agentic"),
-                   function(s) median(dm$v[dm$side == s])), setNames(dcm$v[1], "DCPerf"))
+  meds <- c(sapply(c("SPEC", "Agentic"), function(s) median(dm$v[dm$side == s])),
+            setNames(dcm$v, dcm$wl)[DC_BENCHES])
   med_lab <- ifelse(meds == 0 & use_log, "0†", sprintf("%.3g", meds))
   xlabs <- setNames(sprintf("%s\nmed %s", names(meds), med_lab), names(meds))
   th <- theme_paper(base_size = 8) +
@@ -116,14 +119,16 @@ panel <- function(m) {
     if (!DCPERF_VIOLIN) {
       # single-workload marker: window IQR bar + the vote as a filled diamond
       p <- p +
-        geom_linerange(data = ddc, aes(x = "DCPerf", ymin = q25, ymax = q75),
+        geom_linerange(data = ddc, aes(x = wl, ymin = q25, ymax = q75),
                        inherit.aes = FALSE, linewidth = 0.55, colour = "grey25") +
-        geom_point(data = ddc, aes(x = "DCPerf", y = v), inherit.aes = FALSE,
+        geom_point(data = ddc, aes(x = wl, y = v), inherit.aes = FALSE,
                    shape = 23, size = 2.3, fill = PAPER_THREE[["DCPerf"]],
                    colour = "black", stroke = 0.45)
     }
-    p + scale_fill_manual(values = PAPER_THREE, guide = "none",
-                          limits = c("SPEC", "Agentic", "DCPerf")) +
+    p + scale_fill_manual(values = c(PAPER_THREE,
+                                     setNames(rep(PAPER_THREE[["DCPerf"]], length(DC_BENCHES)),
+                                              DC_BENCHES)),
+                          guide = "none", limits = SIDES) +
       scale_x_discrete(limits = SIDES, labels = xlabs, expand = expansion(add = 0.6),
                        drop = FALSE) +
       labs(x = NULL, y = NULL) + th
@@ -158,8 +163,8 @@ panel <- function(m) {
              hjust = 0.5, family = PAPER_SERIF, fontface = "bold") +
     theme(plot.margin = margin(0.6, 8, 6, 6))
   up_pts <- bind_rows(
-    dm |> filter(v > thr) |> transmute(side, v),
-    dcm |> filter(v > thr) |> transmute(side = "DCPerf", v))
+    dm |> filter(v > thr) |> transmute(side = as.character(side), v),
+    dcm |> filter(v > thr) |> transmute(side = wl, v))
   upper <- ggplot(up_pts, aes(x = side, y = v)) +
     geom_point(shape = 21, size = 1.2, fill = "grey35", colour = "black", stroke = 0.3) +
     scale_x_discrete(limits = SIDES, expand = expansion(add = 0.6), drop = FALSE) +
@@ -176,7 +181,7 @@ panel <- function(m) {
 legend_strip <- function() {
   tx <- function(xx, lab, size = 2.5) annotate("text", x = xx, y = 0.5, label = lab,
                                                hjust = 0, size = size, family = PAPER_SERIF)
-  dcl <- sprintf("DCPerf %s (1 workload)", paste(DC_BENCHES, collapse = "+"))
+  dcl <- sprintf("DCPerf: %s (one column per benchmark)", paste(DC_BENCHES, collapse = ", "))
   g <- ggplot() + xlim(0, 1) + ylim(0, 1) + theme_void() +
     theme(plot.margin = margin(2, 10, 4, 10)) +
     annotate("rect", xmin = 0.045, xmax = 0.067, ymin = 0.28, ymax = 0.72,
@@ -204,4 +209,4 @@ ps <- lapply(METRICS, panel)
 grid <- wrap_plots(ps, ncol = 4)
 fig <- (legend_strip() / grid) + plot_layout(heights = c(0.04, 1))
 paper_save(fig, file.path(OUT, paste0("dcperf_agg_compact3", suffix)),
-           width = 11.4, height = 8.3)
+           width = 11.4 + 1.1 * max(0, length(DC_BENCHES) - 1), height = 8.3)
