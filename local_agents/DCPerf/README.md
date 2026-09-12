@@ -365,3 +365,50 @@ scheduled onto cores 4–11, which are meant to be reserved.
 is empty, snapshot the effective cpuset from `/sys/fs/cgroup/<slice>/cpuset.cpus.effective`
 instead of falling back to all-online. The partition was restored by hand after this session
 with `systemctl set-property --runtime <slice> AllowedCPUs=0-3,12-15`.
+
+### 7.7 How the violins aggregate (reviewer question, 2026-09-12)
+
+**Question:** for a metric like IPC, is the violin drawn over every measurement from every
+workload pooled together, or over the median of each workload?
+
+**Answer: one median per workload, for the compact grid.** Every violin in
+`dcperf_agg_compact3` (and in the ML_iso36 `fig07`) is a distribution over WORKLOADS, with one
+vote each: SPEC contributes 26 benchmark medians, the agentic family 36 task medians, and each
+DCPerf benchmark contributes one. Nothing is pooled across workloads. In code, the SPEC vote is
+the per-benchmark window median written by `export_agg_rows_long.py`; the agentic vote is
+`group_by(metric, wl = col) |> summarise(v = median(value))` in `plot_paper_agg_compact*.R`.
+
+The per-window group figures (`dcperf_agg_*_3way`, ML_iso36 `fig09`–`fig12`) do the other
+thing, deliberately: each column is ONE workload and its violin is that workload's own window
+distribution. Still nothing is pooled across workloads — the columns stay separate.
+
+**The reviewer is right that the two choices give different graphs**, and the difference is
+large. Rendered both ways (`plot_aggregation_methods.py`, figure
+`aggregation_methods_ipc.png`, all twelve metrics in `aggregation_methods_numbers.csv`):
+
+| IPC | p5–p95 pooled | p5–p95 one vote | width ratio |
+|---|---|---|---|
+| SPEC | 0.71 – 4.14 | 1.19 – 3.65 | 1.4× |
+| Agentic 36 | 0.81 – 3.52 | 1.44 – 1.98 | **5.1×** |
+
+Medians barely move (agentic 1.76 pooled vs 1.74 one-vote), but the agentic violin is **five
+times wider** when pooled. Across all twelve metrics the pooled rendering is 1.0× to 25× wider,
+and it is wider in every single case.
+
+**Why one vote per workload is the right choice here.** Two reasons, both about what the figure
+claims:
+
+1. **It measures the wrong variance otherwise.** A pooled violin's width is dominated by
+   *within*-workload phase variation — an agent compiling, then waiting on the model, then
+   running tests, swings IPC across the whole range. The compact grid's claim is about how
+   workload FAMILIES differ from each other, which is *across*-workload variation. Pooling
+   hides that inside phase noise, which is why the agentic violin balloons 5×.
+2. **Pooling silently weights by runtime.** Each workload contributes as many points as it has
+   windows, so a long benchmark counts more than a short one. The spread is 14.5× between the
+   longest and shortest agentic task (156 to 2 265 windows) and **38×** across SPEC (70 to
+   2 658). A pooled SPEC violin is therefore mostly a picture of its longest-running
+   benchmarks. One vote each removes that weighting by construction.
+
+Within-workload spread is not thrown away: it is exactly what the per-window group figures
+show, and for the DCPerf markers it is the p25–p75 bar (labelled in the key as a
+within-workload quantity, precisely because it is not comparable to a violin's width).
