@@ -5,7 +5,8 @@ Same layout as every other pack: one raw-data file, one script, one PDF (paper) 
 (slides) per figure. Unit rule for fig01: violins are distributions over WORKLOADS (SPEC 26,
 agentic 36, one vote each); each external benchmark is ONE marker at its vote (median of its
 windows), grouped under its suite, with a bar for its own window IQR. fig02–fig05 are the
-per-window companions (one column per benchmark). Method and findings: `../../README.md`.
+per-window companions (one column per benchmark, each a distribution over that benchmark's
+windows; the two SPEC columns are distributions over benchmark medians). Method and findings: `../../README.md`.
 
 | Fig | Name | What it shows |
 |---|---|---|

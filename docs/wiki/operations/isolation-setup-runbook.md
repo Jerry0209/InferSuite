@@ -224,6 +224,20 @@ Notes:
   `/sys/devices/system/cpu/online`, never a `cpu*` glob, or real failures drown in noise.
 - *Limitation.* C-states are **not** disabled on this host (`intel_idle` with POLL/C1/C1E/C6 all
   enabled). Deep-C-state exit latency remains a variance source. Not currently controlled.
+- *Observation (2026-09-14).* **The pin is a request; measure what the cores did.** The `priv`
+  counter group banks `task-clock` and `cycles:u + cycles:k` per window and per fence, so
+  `cycles / task-clock` is the realised unhalted clock over the fence's own CPU time
+  ([realised_clock.py](../../../local_agents/kit/validate/realised_clock.py)). Under identical
+  settings it is 3.18–3.19 GHz for every SPEC benchmark, both DCPerf benchmarks and the
+  compute-bound JVM benchmarks, but 2.6–2.9 GHz for wake-heavy servers (DaCapo tomcat, cassandra,
+  Renaissance finagle-http at 34–47 k context switches per CPU-second) and 2.88 GHz for the
+  switch-heaviest agentic task; inside a workload the window clock falls as the window's switch
+  rate rises (Spearman −0.75 to −0.99). *Inference:* post-idle ramp after C1E/C6 exits, i.e. the
+  uncontrolled C-states above, not a DVFS fault (the knobs were verified before every pass).
+  IPC (unhalted cycles), MPKI and per-CPU-second rates are unaffected; any throughput or
+  cycles-per-second claim must use the realised clock. Restricting C-states would lift the
+  servers to a flat 3.2 GHz but break comparability with every capture taken so far — a
+  methodology decision, not a fix. Details: `local_agents/DCPerf/README.md` §9.
 
 ---
 

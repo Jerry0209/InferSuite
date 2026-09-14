@@ -67,7 +67,8 @@ One pass per counter group, nine passes, strictly serialised because the PMU is 
 resource; the same foreign-`perf` guard used by the agent replays refuses to run alongside a
 colleague's collectors. The machine is put in the identical topology the 36 tasks were captured
 on — measured cores 4–11 with SMT siblings 16–23 offlined — and a topology gate verifies it
-before any pass.
+before any pass. The exact configuration — which cores, what happens to their SMT siblings,
+what clock, and what the cores actually ran at — is tabulated in §9.
 
 **Placement.** DCPerf's `run.sh` is not rewritten. `patch_run_sh.py` regenerates an
 instrumented copy with exactly two edits, so every DCPerf flag, thread count, graph scale and
@@ -247,9 +248,12 @@ of the memory and branch axes, and pooling would invent a "DCPerf average" that 
 neither. `DCPERF_VIOLIN=1` switches to a real violin once there are enough benchmarks to
 justify one.
 
-`fig02`–`fig05` are the unit-consistent companions: every column there is a distribution over
-100 ms windows, so a DCPerf benchmark sits beside SPEC and the 36 tasks without any change of
-meaning.
+`fig02`–`fig05` are the per-window companions: every agentic and DCPerf column there is a
+distribution over that one workload's 100 ms windows, so a DCPerf benchmark sits beside the 36
+tasks without any change of meaning. The two SPEC columns are the exception by construction —
+`SPEC-int` and `SPEC-fp` are distributions over their benchmarks' window medians (14 and 12
+votes), the same per-benchmark statistic fig01 uses, because SPEC enters as one value per
+benchmark.
 
 ## 6. Files
 
@@ -479,3 +483,68 @@ captures; and the partition witness (gate D5 — `/proc/stat` on the measured co
 fence's own `cpu.stat`) bounds everything that ran on those cores outside our fence at
 **≤ 2.5% (FeedSim) and ≤ 2.7% (VideoTranscodeBench)** of busy time. The captures were taken
 under the same conditions the hardened shield now guarantees on its own; they stand.
+
+## 9. The isolation applied to every capture — cores, SMT, clock
+
+"The same method as the 36 tasks" means, concretely, the configuration below. Every value was
+read back from the machine or from the banked data, not from the scripts' intentions; the
+*verified by* column says where the evidence sits. It applies to all 18 DCPerf passes
+(2026-09-10), the FeedSim recheck (2026-09-14, banked at `data/recheck_2026-09-14/`) and all
+72 JVM passes (2026-09-14, `../JVMbench/`).
+
+**Machine.** Intel Xeon w5-3425 (Sapphire Rapids): 12 physical cores, 24 hardware threads
+(logical CPUs 0–23), Ubuntu 24.04, kernel 6.17.0-1030-oem, `intel_pstate` in active (HWP)
+mode, `intel_idle`. The box is shared; the shield borrows nothing from the co-tenant's
+configuration since 2026-09-14 (§8).
+
+| What | Applied | How | Verified by |
+|---|---|---|---|
+| **Measured cores** | logical CPUs **4–11** = physical cores 4–11, one hardware thread each | workload launched as `measured.slice/<suite>-<bench>-rN.scope` (a systemd scope) with `taskset` to 4–11; `measured.slice` is a top-level slice with `AllowedCPUs=4-11` | ISO-PROOF reads `measured.slice/cpuset.cpus.effective`; run metadata `cpus_measured` |
+| **Housekeeping cores** | logical CPUs **0–3 and 12–15** = physical cores 0–3 with *both* hardware threads (SMT stays on there) | `system.slice`, `user.slice`, `init.scope` pinned with `AllowedCPUs=0-3,12-15`; every IRQ and `default_smp_affinity` = `0xf00f`; unbound kernel workqueues `cpumask` = `0xf00f`. Hosts the OS, sshd, the perf writers, the 10 Hz pollers, the FeedSim driver + QPS controller, dockerd | ISO-PROOF reads the effective cpusets, the IRQ mask and the workqueue mask; metadata `cpus_house` |
+| **SMT** | hardware threads **16–23** (the siblings of 4–11) **offline** for the whole sweep, so each measured core owns its front end, L1/L2 and execution ports; brought back online afterwards | `echo 0 > /sys/devices/system/cpu/cpuN/online` — a manual step gated by the orchestrator's topology check on 2026-09-10, done and logged by the orchestrator itself since 2026-09-14 (`SMT siblings offlined: 16 … 23`, restored by its EXIT trap) | topology gate refuses to start if any measured core has an online sibling; **and** the `/proc/stat` witness in every run directory lists `cpu0`–`cpu15` only — an offline CPU disappears from `/proc/stat`, so the banked data itself proves the siblings were off |
+| **Clock** | governor `performance` on all 24 CPUs; `intel_pstate/no_turbo=1` (turbo, up to 4.4 GHz, off machine-wide); measured cores held at the **base frequency 3.2 GHz** (`scaling_min_freq = scaling_max_freq = 3200000` kHz; hardware range 0.8–4.4 GHz) | applied by the shield before the ISO-PROOF gate. The explicit min = max pin exists since 2026-09-14 (JVM passes, recheck); the 2026-09-10 DCPerf passes ran governor `performance` + `no_turbo=1` with `scaling_max` 3.2 GHz and `scaling_min` 0.8 GHz — the realised clock is the same (next table) | ISO-PROOF checks governor and `no_turbo` (all passes) and the per-core pin (since 09-14); the *realised* clock is measured from the counters below |
+| **Idle states** | **not restricted** — POLL, C1, C1E and C6 stay enabled (`intel_idle`, `menu` governor), exactly as in the SPEC and agentic captures | — | `cpuidle/state*/disable` = 0 |
+| **Memory / OS** | transparent hugepages `never` (enabled and defrag); NMI watchdog off; k3s not running; no containers (docker cgroup-parent swap skipped, `SKIP_DOCKER=1`) | shield writes; the boot entry also carries `nmi_watchdog=0 transparent_hugepage=never irqaffinity=0-3,12-15 workqueue.unbound_cpus=0-3,12-15` | ISO-PROOF |
+| **Not used** | `nohz_full`, `rcu_nocbs`, `isolcpus` (banned: removes cores from load balancing) | this boot entry has none of them | `/proc/cmdline` |
+| **Gate before every pass** | ISO-PROOF: slices' effective cpusets, governor, `no_turbo`, and since 09-14 the per-core clock pin, `init.scope`, `measured.slice`, workqueue mask, IRQ default and a foreign-resident scan; then the measured cores must be **< 2 % busy over a 1.5 s sample** (settle-and-retry, up to 8 samples) | `run_glm_campaign.sh apply_isolation` | `kit/campaign/campaign.log` from the first FeedSim profiling shield onward: 98 shield applications, every one `ISOLATION: PROVEN quiet`, 0 failures; 99 passing quiet samples, all but two below 1 % busy, worst 2.0 % (one shield on 2026-09-14 05:08 needed five samples while the operator's own preparation drained) |
+| **PMU** | only our `perf` on the box (foreign-`perf` guard, exit 3 otherwise); `perf stat --for-each-cgroup` on the workload scope, one counter group per 100 ms window, zero multiplexing; continuous PERF_METRICS TMA | orchestrator + kit | `windows.tsv`, `tma_cont.csv` per run |
+| **After each sweep** | every knob restored from its snapshot; siblings back online | `restore_isolation`, EXIT trap | `isolation-test` (§8); the machine today: `online 0-23`, governor `powersave`, `no_turbo 0`, 0.8–3.2 GHz |
+
+**Applied clock versus realised clock.** Pinning is a request; the counters say what the
+cores did. The `priv` group counts, per window and per fence, `task-clock` (the CPU-seconds the
+fence's tasks were scheduled) and `cycles:u + cycles:k` (the unhalted cycles while they ran),
+so their ratio is the mean unhalted clock over the workload's own CPU time.
+`local_agents/kit/validate/realised_clock.py` computes it for every capture
+(`data/l3_study/realised_clock.csv`):
+
+| Family / workload | realised GHz | ctx switches / CPU-s |
+|---|---|---|
+| SPEC CPU 2026, all 26 benchmarks | 3.18 – 3.19 | ≈ 0 |
+| Agentic 36 (ML_iso36) | median 3.17, min 2.88 (rubocop, the switch-heaviest task) | 549 median |
+| DCPerf FeedSim (2026-09-10) | 3.19 | 194 |
+| DCPerf VideoTranscodeBench (2026-09-10) | 3.19 | 320 |
+| Renaissance page-rank / neo4j-analytics / naive-bayes | 3.19 / 3.19 / 3.18 | 227 / 621 / 817 |
+| DaCapo kafka / Renaissance finagle-chirper | 3.13 / 3.13 | 5 051 / 9 278 |
+| Renaissance finagle-http | 2.91 | 40 575 |
+| DaCapo tomcat | 2.81 | 33 713 |
+| DaCapo cassandra (excluded capture) | 2.63 | 47 050 |
+
+Every SPEC benchmark, both DCPerf benchmarks and the compute-bound JVM benchmarks realise the
+pinned 3.2 GHz to within 0.5 %, on both capture days, so the pin held and the 2026-09-10
+captures (without the explicit min = max write) were not running at a different clock. The
+wake-heavy JVM servers realise less, and *inside* each of them the window clock falls as the
+window's switch rate rises (Spearman −0.97 tomcat, −0.91 cassandra, −0.75 kafka, −0.99 for the
+agentic rubocop task). The inference — hypothesis, not a measured mechanism — is the post-idle
+ramp: a core woken from C1E/C6 tens of thousands of times a second spends part of its
+scheduled time below the pinned clock while it wakes, and `task-clock` accrues from the moment
+of scheduling. This is a property of the workload under identical settings, present in the
+agentic tasks too, not a shield defect (the clock knobs were verified before every pass and the
+compute-bound workloads on the same day realise 3.19).
+
+What it means for the figures: nothing in the 12 metrics is a cycles-per-wall-second quantity.
+IPC divides instructions by *unhalted* cycles, MPKI are per instruction, context switches are
+per CPU-second, DRAM GB/s is per wall-second at the workload's own operating point. The
+comparison stands. Two rules follow: any future throughput or "cycles per second" claim must use
+the realised clock, not the pin; and restricting C-states to lift the wake-heavy servers to a
+flat 3.2 GHz would be a methodology change that also breaks comparability with the SPEC and
+agentic captures (all taken with C6 enabled) — not applied, and a mentor decision if ever.

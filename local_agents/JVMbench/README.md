@@ -40,7 +40,8 @@ and the figures say which is which.
 Identical to DCPerf: `local_agents/kit/dcperf/run_dcperf_profile.sh` with `SUITE=renaissance`
 or `SUITE=dacapo`, nine dedicated-group passes per benchmark, the self-sufficient isolation
 shield with automatic SMT-sibling handling, ISO-PROOF before every pass, the same
-`analyze_l3_windows.py` derivation and the same validator gates.
+`analyze_l3_windows.py` derivation and the same validator gates. Which cores, what happens to
+their SMT siblings and what clock they run at is tabulated in §6.
 
 JVM-specific mechanics (`bench_jvm_common.sh`, `bench_renaissance.sh`, `bench_dacapo.sh`):
 
@@ -136,7 +137,8 @@ memory bandwidth. Useful as a reference, but not evidence about serving.
 `plots/paper_v1/multi_agg_compact` is the 12-panel grid over every family profiled so far;
 each external benchmark is one marker at its vote, grouped under its suite (see the unit rule in
 `../DCPerf/README.md` §5 and §7.7). `plots/paper_v1/multi_agg_{ipc,frontend,memory,system}`
-are the per-window companions with one column per benchmark. Chart packs live under `charts/`.
+are the per-window companions with one column per benchmark (each column a distribution over
+that benchmark's windows; only the two SPEC columns are distributions over benchmark medians). Chart packs live under `charts/`.
 
 ## 5. Files
 
@@ -147,3 +149,44 @@ are the per-window companions with one column per benchmark. Chart packs live un
 | Captures (gitignored) | `local_agents/JVMbench/data/{renaissance,dacapo}_<benchmark>/run_1..9` |
 | Derived rows | `local_agents/JVMbench/data/l3_study/{renaissance,dacapo}_rows_long.csv` |
 | Suites (outside the repo) | `~/jvmbench-infra/` — `renaissance-gpl-0.16.1.jar`, `dacapo-23.11-MR2-chopin.jar` + data tree pruned to the three benchmarks used |
+
+## 6. The isolation applied — cores, SMT, clock
+
+Identical to every DCPerf and agentic capture; the full table with its evidence column is
+`../DCPerf/README.md` §9. The configuration, in one place:
+
+| What | Applied to every JVM pass (2026-09-14) |
+|---|---|
+| Machine | Intel Xeon w5-3425, 12 physical cores / 24 hardware threads, kernel 6.17.0-1030-oem, `intel_pstate` (HWP active), `intel_idle` |
+| Measured cores | logical CPUs **4–11** = 8 physical cores, one hardware thread each; the single JVM runs in `measured.slice/<suite>-<bench>-rN.scope` with `taskset` to 4–11 |
+| Housekeeping cores | logical CPUs **0–3, 12–15** (physical cores 0–3, both threads): `system.slice`, `user.slice`, `init.scope`, every IRQ (`0xf00f`), the unbound workqueues (`0xf00f`), the perf writers and pollers |
+| SMT | hardware threads **16–23** (siblings of 4–11) **offlined by the orchestrator at sweep start**, restored on exit — logged for all eight sweeps (`SMT siblings offlined: 16 … 23`); the `/proc/stat` witness in every run directory lists `cpu0`–`cpu15` only, which proves it from the data |
+| Clock | governor `performance` on all CPUs, `no_turbo=1` (4.4 GHz turbo off), measured cores pinned to the **base 3.2 GHz** (`scaling_min_freq = scaling_max_freq = 3200000` kHz), verified per core by ISO-PROOF before each pass |
+| Idle states | not restricted (C1/C1E/C6 enabled), as in the SPEC, agentic and DCPerf captures |
+| Memory / OS | THP `never`, NMI watchdog off, no containers, k3s off; no `nohz_full` / `isolcpus` in this boot |
+| Gate | ISO-PROOF before each of the 72 passes: cpusets, clock, workqueue/IRQ masks, foreign-resident scan, then < 2 % busy on the measured cores; every sweep shield logged `PROVEN quiet`, no failure in the whole JVM period |
+| PMU | our `perf` only (foreign-perf guard), one counter group per 100 ms window, zero multiplexing, continuous TMA |
+
+**Realised clock.** The pin is a request; `cycles:u + cycles:k` over `task-clock` from the
+`priv` pass is what the cores did during the fence's own CPU time
+(`local_agents/kit/validate/realised_clock.py`):
+
+| Benchmark | realised GHz | ctx switches / CPU-s |
+|---|---|---|
+| page-rank / neo4j-analytics / naive-bayes | 3.19 / 3.19 / 3.18 | 227 / 621 / 817 |
+| kafka / finagle-chirper | 3.13 / 3.13 | 5 051 / 9 278 |
+| finagle-http | 2.91 | 40 575 |
+| tomcat | 2.81 | 33 713 |
+| cassandra (excluded) | 2.63 | 47 050 |
+| *reference: SPEC 26 / DCPerf 2 / agentic 36* | *3.18–3.19 / 3.19 / median 3.17 (min 2.88)* | |
+
+The compute-bound benchmarks realise the pin to within 0.5 %; the wake-heavy servers do not,
+and within each of them the window clock falls as the window's switch rate rises
+(Spearman −0.97 tomcat, −0.91 cassandra, −0.75 kafka). Inference, not a measured mechanism: a
+core woken from C1E/C6 tens of thousands of times a second spends part of its scheduled time
+below the pinned clock while it wakes. It is a property of these workloads under settings
+identical to every other family (the agentic rubocop task shows the same at 2.88 GHz), and it
+does not touch the plotted metrics — IPC uses unhalted cycles, MPKI are per instruction,
+switches are per CPU-second. It must be remembered for any throughput or cycles-per-second
+claim, and disabling C-states to remove it would break comparability with the SPEC and agentic
+captures (taken with C6 enabled), so it was not done.

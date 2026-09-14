@@ -1,5 +1,15 @@
 # Wiki log
 
+## [2026-09-14] update | Applied clock vs realised clock (C-state ramp on wake-heavy workloads)
+
+Added an Observation to the [isolation setup runbook](operations/isolation-setup-runbook.md)
+Step 3: the realised unhalted clock measured from the banked `priv` counters
+([realised_clock.py](../../local_agents/kit/validate/realised_clock.py)) equals the 3.2 GHz
+pin (3.18–3.19) for SPEC, DCPerf and compute-bound JVM benchmarks, but drops to 2.6–2.9 GHz
+for wake-heavy JVM servers and correlates with the per-window context-switch rate — the
+uncontrolled C-states, not a DVFS fault. Plotted metrics are unaffected; throughput claims must
+use the realised clock. Source: `local_agents/DCPerf/README.md` §9.
+
 ## [2026-09-14] update | Isolation shield made self-sufficient
 
 Updated [isolation setup runbook](operations/isolation-setup-runbook.md) and

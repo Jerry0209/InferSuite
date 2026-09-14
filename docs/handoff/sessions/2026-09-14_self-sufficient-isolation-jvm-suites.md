@@ -67,3 +67,32 @@ a prediction pathology, versus the servers' capacity pathology.
 ## Open / next
 - Renaissance + DaCapo sweep outcomes and the multi-suite figures: see the end of this log.
 - The four blocked DCPerf benchmarks are unchanged (container route documented).
+
+## Addendum (later on 2026-09-14): the isolation, written down per capture; applied vs realised clock
+- PI asked for the exact isolation — cores, SMT, clock — in the write-ups. Added
+  `local_agents/DCPerf/README.md` §9 (full table with an evidence column) and
+  `local_agents/JVMbench/README.md` §6 (same configuration, JVM numbers), with pointers from
+  each README's method section. Every value was read back from the machine or the banked data.
+- New evidence used: the `/proc/stat` witness in every run directory lists `cpu0`–`cpu15` only,
+  which proves from the data that the SMT siblings 16–23 were offline during the 2026-09-10
+  DCPerf captures (then a manual, gate-verified step) as well as the 2026-09-14 ones.
+- New tool `local_agents/kit/validate/realised_clock.py`: unhalted cycles per fence
+  CPU-second from the `priv` pass. Result: SPEC (26), DCPerf (2) and the compute-bound JVM
+  benchmarks realise 3.18–3.19 GHz on both capture days (so the 09-10 passes without the
+  explicit min = max write ran at the same clock); wake-heavy servers realise less (tomcat 2.81,
+  cassandra 2.63, finagle-http 2.91; the agentic rubocop task 2.88) and the window clock falls
+  with the window's switch rate (Spearman −0.75 to −0.99). Inference: post-idle ramp
+  (C-states are not restricted in any capture). Plotted metrics unaffected; noted as a rule for
+  throughput claims; C-state restriction NOT applied (would break comparability) — mentor call.
+- The 2026-09-14 FeedSim recheck run was in the session scratchpad; copied to
+  `local_agents/DCPerf/data/recheck_2026-09-14/` (gitignored data tree) so §8's evidence
+  survives the session.
+- Reviewer question (mentor, via chat): are all metrics aggregated the same way? Answer from
+  the code: yes for fig01 — every metric is a per-window value, one vote per workload (median
+  of its windows; SPEC enters as one window-median per benchmark), violin over workloads. In
+  fig02–05 every agentic/DCPerf/JVM column is one workload's windows, while the two SPEC
+  columns are distributions over benchmark medians (14 / 12). The two pack READMEs and
+  `DCPerf/README.md` §5 said "every column is a distribution over windows" — corrected.
+- ISO-PROOF bookkeeping over the whole DCPerf/JVM period (campaign.log from the first FeedSim
+  profiling shield): 98 shield applications, 0 failures; one shield (05:08, before the recheck) needed five
+  quiet samples, worst passing sample 2.0 %; all other samples ≤ 1 %.

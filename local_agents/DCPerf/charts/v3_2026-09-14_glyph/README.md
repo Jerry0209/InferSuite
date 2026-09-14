@@ -9,7 +9,9 @@ SPEC CPU 2026 (26 benchmarks), the agentic 36 (SWE-bench Multilingual) and DCPer
 benchmark, so it is drawn as a marker at its vote — the median of its steady-state
 windows, the same statistic every other vote uses — with a bar for its own window
 IQR, which is a within-workload spread and a different quantity. fig02–fig05 are the
-unit-consistent companions: every column there is a distribution over 100 ms windows.
+per-window companions: every agentic and DCPerf column is a distribution over that one
+workload's 100 ms windows; the two SPEC columns are distributions over their benchmarks'
+window medians (14 int, 12 fp), the same per-benchmark statistic fig01 uses.
 
 Method, operating point and findings: `../../README.md`.
 
