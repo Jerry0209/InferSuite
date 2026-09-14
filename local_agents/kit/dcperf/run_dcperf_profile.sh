@@ -28,7 +28,12 @@
 set -o pipefail
 KITD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$KITD/../../.." && pwd)"
-BENCH="${BENCH:?benchmark name (feedsim|...)}"
+BENCH="${BENCH:?bench module (feedsim|video_transcode|renaissance|dacapo)}"
+# SUITE names the benchmark family and prefixes run dirs / scope units; WORKLOAD names one
+# benchmark inside a multi-benchmark module (renaissance: finagle-http, dacapo: cassandra ...).
+# DCPerf modules leave WORKLOAD unset, so their layout is unchanged: dcperf_feedsim/run_N.
+SUITE="${SUITE:-dcperf}"
+WL="${WORKLOAD:-$BENCH}"
 export DCPERF_ROOT="${DCPERF_ROOT:-$HOME/dcperf-infra/DCPerf}"
 export DATA_ROOT="${DATA_ROOT:-$REPO/local_agents/DCPerf/data}"
 export WINSEC="${WINSEC:-0.1}"
@@ -41,7 +46,46 @@ mkdir -p "$DATA_ROOT"
 source "$REPO/local_agents/kit/campaign/run_glm_campaign.sh" noop
 source "$KITD/bench_${BENCH}.sh"
 
-dlog(){ printf '[dcperf %s] %s\n' "$(date +%H:%M:%S)" "$*" | tee -a "$KITD/dcperf.log"; }
+dlog(){ printf '[%s %s] %s\n' "$SUITE" "$(date +%H:%M:%S)" "$*" | tee -a "$KITD/dcperf.log"; }
+
+# SHARED MACHINE GUARD (same rule as replay_l3_profile.sh): the PMU is one shared resource;
+# never compete with a colleague's collectors, never kill them. Checked at start (before any
+# core is offlined) and again before every pass.
+foreign_perf(){ for pp in $(pgrep -x perf 2>/dev/null); do
+    [ "$(stat -c %u "/proc/$pp" 2>/dev/null)" != "$(id -u)" ] && { echo "$pp"; return 0; }; done; return 1; }
+
+# SMT SIBLINGS. The iso36 captures ran with the measured cores' SMT siblings OFFLINE (an online
+# sibling shares the core's front end and would make the families incomparable). This used to
+# be a manual step gated by the check below; it is now done here, remembered, and undone by the
+# EXIT trap -- so the environment no longer depends on anyone having prepared the box.
+smt_siblings(){ python3 - "$CPUS_MEASURED" <<'PY'
+import sys
+def expand(spec):
+    out = []
+    for part in spec.split(","):
+        a, _, b = part.partition("-"); out += list(range(int(a), int(b or a) + 1))
+    return out
+meas = set(expand(sys.argv[1])); sib = set()
+for c in meas:
+    try:
+        sib |= set(expand(open(f"/sys/devices/system/cpu/cpu{c}/topology/thread_siblings_list").read().strip()))
+    except OSError:
+        pass
+print(" ".join(str(c) for c in sorted(sib - meas)))
+PY
+}
+SMT_OFFLINED=""
+smt_off(){ local c; for c in $(smt_siblings); do
+    if [ "$(cat /sys/devices/system/cpu/cpu$c/online 2>/dev/null)" = 1 ]; then
+      echo 0 | sudo tee "/sys/devices/system/cpu/cpu$c/online" >/dev/null && SMT_OFFLINED="$SMT_OFFLINED $c"
+    fi; done
+  [ -n "$SMT_OFFLINED" ] && dlog "SMT siblings offlined:$SMT_OFFLINED (restored on exit)"; return 0; }
+smt_restore(){ local c; for c in $SMT_OFFLINED; do echo 1 | sudo tee "/sys/devices/system/cpu/cpu$c/online" >/dev/null; done
+  [ -n "$SMT_OFFLINED" ] && dlog "SMT siblings back online:$SMT_OFFLINED"; SMT_OFFLINED=""; return 0; }
+trap 'smt_restore; cleanup' EXIT      # cleanup = the sourced kit's isolation restore
+
+if fp=$(foreign_perf); then dlog "STOP: foreign perf pid $fp on the box — refusing to compete"; exit 3; fi
+[ "${SMT_OFF:-1}" = 1 ] && smt_off
 
 [ -n "$PERF" ] && [ -x "$PERF" ] || { dlog "FATAL: perf not found"; exit 1; }
 
@@ -90,7 +134,7 @@ bench_preflight || { dlog "FATAL: $BENCH preflight failed"; exit 1; }
 NG=$(echo $PROF_GROUPS | wc -w); n=0
 for g in $PROF_GROUPS; do
   n=$((n+1))
-  OUT="$DATA_ROOT/dcperf_${BENCH}/run_${n}"
+  OUT="$DATA_ROOT/${SUITE}_${WL}/run_${n}"
   if [ -f "$OUT/DONE" ] && [ "$(cat "$OUT/l3group.txt" 2>/dev/null)" = "$g" ]; then
     dlog "skip pass $n ($g) — DONE"; continue
   fi
@@ -112,7 +156,7 @@ for g in $PROF_GROUPS; do
   RAN_WORK=1
   apply_isolation || { dlog "FATAL: isolation/ISO-PROOF failed"; exit 1; }
 
-  UNIT="dcperf-${BENCH}-r${n}"
+  UNIT="${SUITE}-${WL}-r${n}"
   if ! bench_start "$OUT" "$UNIT"; then
     dlog "pass $n ($g) FAILED to reach steady state"; bench_stop "$OUT" "$UNIT"
     restore_isolation; continue
@@ -122,8 +166,8 @@ for g in $PROF_GROUPS; do
 
   start_pollers "$OUT" "$CG"
   start_tma_cont "$OUT" "$CG"
-  write_metadata "$OUT" "dcperf_${BENCH}" "$BENCH" "$n" \
-    "{\"bench\":\"$BENCH\",\"server_cg\":\"$CG\",\"capture_s\":$CAPTURE_S,\"group\":\"$g\",\"load\":$(cat "$OUT/.load_json" 2>/dev/null || echo '{}')}"
+  write_metadata "$OUT" "${SUITE}_${WL}" "$WL" "$n" \
+    "{\"suite\":\"$SUITE\",\"bench\":\"$BENCH\",\"workload\":\"$WL\",\"server_cg\":\"$CG\",\"capture_s\":$CAPTURE_S,\"group\":\"$g\",\"load\":$(cat "$OUT/.load_json" 2>/dev/null || echo '{}')}"
 
   GORDER="$g" cycle_stats "$OUT" "$CG" "[ -d /sys/fs/cgroup/$CG ]" "$CAPTURE_S"
 
@@ -140,4 +184,4 @@ for g in $PROF_GROUPS; do
   fi
   sleep 20   # settle before the next pass
 done
-dlog "ALL PASSES DONE for $BENCH"
+dlog "ALL PASSES DONE for $SUITE/$WL"

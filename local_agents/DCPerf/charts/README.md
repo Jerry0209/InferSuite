@@ -7,7 +7,8 @@ version; assemble a new one with
 
 | Version | Status | Contents |
 |---|---|---|
-| `v2_2026-09-10_feedsim-video/` | **CURRENT** | SPEC vs agentic 36 vs **two** DCPerf benchmarks (FeedSim + VideoTranscodeBench), one column per benchmark |
+| `v3_2026-09-14_glyph/` | **CURRENT** | same data as v2; inner glyph changed to the readable white-IQR-box / black-median / white-diamond-mean form in the per-window figures (fig02–fig05) |
+| `v2_2026-09-10_feedsim-video/` | superseded | SPEC vs agentic 36 vs **two** DCPerf benchmarks (FeedSim + VideoTranscodeBench), one column per benchmark |
 | `v1_2026-09-10_feedsim/` | superseded | the first pack, FeedSim only (single DCPerf column) |
 
 `../plots/paper_v1` is the render workspace the generators write into; this tree is the

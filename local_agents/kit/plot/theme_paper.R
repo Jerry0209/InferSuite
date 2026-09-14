@@ -92,6 +92,18 @@ paper_inner_stats <- function(scale = 1) {
     stat_summary(fun = mean, geom = "point", shape = 21, size = 1.5 * scale,
                  fill = "black", colour = "black", stroke = 0.3 * scale))
 }
+# The readable inner glyph (PI 2026-09-14, "mimic Jef's pictures"): a thin WHITE IQR box with a
+# thin dark border, a BLACK crossbar at the median, a WHITE diamond at the mean. Supersedes
+# paper_inner_stats wherever a median must read at a glance -- the thick black IQR bar hid its
+# tiny white median square in narrow columns. `width` is in x-axis units (a violin is ~0.7-0.85).
+paper_inner_box <- function(width = 0.08, lw = 0.28, diamond = 1.5) list(
+  geom_boxplot(width = width, outlier.shape = NA, linewidth = lw, colour = "grey15",
+               fill = "white", alpha = 0.95, coef = 0),
+  stat_summary(fun = median, geom = "crossbar", width = width, linewidth = lw + 0.02,
+               colour = "black"),
+  stat_summary(fun = mean, geom = "point", shape = 23, size = diamond, fill = "white",
+               colour = "black", stroke = 0.4))
+
 PAPER_STATS_SUBTITLE <- paste("violin outline thin black; whisker = 5th-95th pct,",
                               "thick black bar = IQR, white square = median,",
                               "black circle = mean")

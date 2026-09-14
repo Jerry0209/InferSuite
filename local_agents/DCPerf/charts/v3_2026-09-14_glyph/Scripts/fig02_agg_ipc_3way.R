@@ -1,4 +1,8 @@
 #!/usr/bin/env Rscript
+# fig02_agg_ipc_3way — COPY of the canonical generator local_agents/kit/plot/plot_paper_agg_groups3.R
+# (single source of truth; edit THERE). Runs from the repo root against the banked
+# data tree and writes into local_agents/DCPerf/plots/paper_v1/.
+# Regenerate: see this pack's README.md.
 # plot_paper_agg_groups3.R -- the per-window group pictures EXTENDED with DCPerf columns.
 #
 # This is the unit-consistent companion to dcperf_agg_compact3: every column here is a

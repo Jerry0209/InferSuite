@@ -134,6 +134,40 @@ print(" ".join(map(str, out)))
 PYEOF
 }
 
+mask_eq(){ python3 -c 'import sys; a,b=[int(x.replace(",",""),16) for x in sys.argv[1:3]]; sys.exit(0 if a==b else 1)' "$1" "$2"; }
+iso_foreign_residents(){
+  python3 - "$CPUS_MEASURED" "$MSLICE" "${ISO_ALLOW_FOREIGN:-0}" <<'PY'
+import os, sys
+def parse(spec):
+    out = set()
+    for part in spec.split(","):
+        if not part: continue
+        a, _, b = part.partition("-"); out |= set(range(int(a), int(b or a) + 1))
+    return out
+meas, mslice, allow = parse(sys.argv[1]), sys.argv[2], sys.argv[3] == "1"
+bad = []
+for pid in filter(str.isdigit, os.listdir("/proc")):
+    try:
+        if not open(f"/proc/{pid}/cmdline", "rb").read(): continue      # kernel thread
+        cg = open(f"/proc/{pid}/cgroup").read()
+        if mslice in cg: continue                                        # ours
+        allowed = ""
+        for ln in open(f"/proc/{pid}/status"):
+            if ln.startswith("Cpus_allowed_list:"): allowed = ln.split(":", 1)[1].strip(); break
+        if parse(allowed) & meas:
+            comm = open(f"/proc/{pid}/comm").read().strip()
+            bad.append((pid, comm, allowed, cg.strip().split("::", 1)[-1][:60]))
+    except (OSError, ValueError):
+        continue
+if bad:
+    print(f"  ISO-PROOF {'WARN' if allow else 'FAIL'}: {len(bad)} foreign user-space task(s) allowed onto measured cores:")
+    for pid, comm, allowed, cg in bad[:10]:
+        print(f"      pid {pid:<8} {comm:<18} cpus={allowed:<12} cgroup={cg}")
+    if len(bad) > 10: print(f"      ... and {len(bad) - 10} more")
+    sys.exit(0 if allow else 1)
+print("  ISO-PROOF foreign-resident scan: none")
+PY
+}
 apply_isolation(){
   if [ -f "$STATE/iso_applied" ]; then
     log "ISOLATION: iso_applied present — keeping existing baseline snapshot (crash-rerun safe)"
@@ -152,10 +186,26 @@ apply_isolation(){
     # The ORIGINAL slice cpusets. Restoring these to "all online CPUs" destroys a housekeeping
     # partition someone else configured — it reset an operator's 0-3,12-15 split to 0-15 and
     # let OS work back onto the measured cores.
-    local sl
+    # SELF-SUFFICIENT SHIELD (2026-09-14). The housekeeping partition on this box was being
+    # established by ANOTHER operator's boot entry and runtime writes (irqaffinity=,
+    # workqueue.unbound_cpus=, cgroupfs cpuset writes that systemd does not see). That operator
+    # will release those cores, so nothing here may depend on them: every knob is snapshotted,
+    # applied, PROVEN by ISO-PROOF, and restored by this shield itself.
+    #   - a slice whose systemd AllowedCPUs property is EMPTY is snapshotted by its EFFECTIVE
+    #     cpuset (a cgroupfs-set partition) so restore puts back what was really there; the old
+    #     "restore to all online CPUs" fallback silently widened 0-3,12-15 to 0-15;
+    #   - an effective cpuset equal to the online set means "unrestricted" and is restored to
+    #     the machine's POSSIBLE cpus, so cores brought online later are not excluded.
+    local sl prop online_now; online_now=$(cat /sys/devices/system/cpu/online)
     for sl in system.slice user.slice init.scope "$MSLICE"; do
-      systemctl show "$sl" -p AllowedCPUs --value 2>/dev/null > "$STATE/cpuset_${sl%%.*}"
+      prop=$(systemctl show "$sl" -p AllowedCPUs --value 2>/dev/null | tr ' ' ',')
+      if [ -z "$prop" ]; then
+        prop=$(cat "/sys/fs/cgroup/$sl/cpuset.cpus.effective" 2>/dev/null)
+        [ "$prop" = "$online_now" ] && prop="UNRESTRICTED"
+      fi
+      printf '%s' "$prop" > "$STATE/cpuset_${sl%%.*}"
     done
+    cat /sys/devices/virtual/workqueue/cpumask > "$STATE/wq_cpumask"
     cat /sys/devices/system/cpu/intel_pstate/no_turbo          > "$STATE/no_turbo"
     grep -o '\[.*\]' /sys/kernel/mm/transparent_hugepage/enabled | tr -d '[]' > "$STATE/thp"
     grep -o '\[.*\]' /sys/kernel/mm/transparent_hugepage/defrag  | tr -d '[]' > "$STATE/thp_defrag"
@@ -202,6 +252,12 @@ PY
   fi
   sudo systemctl set-property --runtime system.slice AllowedCPUs="$CPUS_HOUSE"
   sudo systemctl set-property --runtime user.slice   AllowedCPUs="$CPUS_HOUSE"
+  sudo systemctl set-property --runtime init.scope   AllowedCPUs="$CPUS_HOUSE"
+  # UNBOUND kernel workqueues (kworkers not tied to a CPU): the only remaining kernel-side
+  # path onto the measured cores once IRQs are pinned. On this box the boot parameter
+  # workqueue.unbound_cpus= set it, and a runtime write later narrowed it (0x3003 observed
+  # 2026-09-14) -- both belong to another operator. Own it: house mask, snapshot-restored.
+  echo "$HOUSE_IRQ_MASK" | sudo tee /sys/devices/virtual/workqueue/cpumask >/dev/null
   if [ "${SKIP_K3S:-0}" != 1 ] && grep -q '^active' "$STATE/k3s" 2>/dev/null; then
     sudo systemctl stop k3s
     # 'stop k3s' leaves the PODS alive under kubepods.slice (cpuset 0-23 — OUTSIDE the
@@ -221,6 +277,15 @@ PY
   local GOVCPU="${CPUS_MEASURED%%[-,]*}"   # first measured core (was hardcoded cpu2, a house core since the 2026-08-05 re-partition)
   [ "$(cat /sys/devices/system/cpu/cpu$GOVCPU/cpufreq/scaling_governor)" = performance ] || { log "ISO-PROOF FAIL: governor (cpu$GOVCPU)"; iso_fail=1; }
   [ "$(cat /sys/devices/system/cpu/intel_pstate/no_turbo)" = 1 ] || { log "ISO-PROOF FAIL: no_turbo"; iso_fail=1; }
+  [ "$(cat /sys/fs/cgroup/init.scope/cpuset.cpus.effective)" = "$CPUS_HOUSE" ]  || { log "ISO-PROOF FAIL: init.scope cpuset"; iso_fail=1; }
+  [ "$(cat /sys/fs/cgroup/$MSLICE/cpuset.cpus.effective)" = "$CPUS_MEASURED" ] || { log "ISO-PROOF FAIL: $MSLICE cpuset"; iso_fail=1; }
+  mask_eq "$(cat /sys/devices/virtual/workqueue/cpumask)" "$HOUSE_IRQ_MASK" \
+    || { log "ISO-PROOF FAIL: workqueue cpumask $(cat /sys/devices/virtual/workqueue/cpumask) != house $HOUSE_IRQ_MASK"; iso_fail=1; }
+  mask_eq "$(cat /proc/irq/default_smp_affinity)" "$HOUSE_IRQ_MASK" \
+    || { log "ISO-PROOF FAIL: default IRQ affinity $(cat /proc/irq/default_smp_affinity) != house $HOUSE_IRQ_MASK"; iso_fail=1; }
+  # FOREIGN RESIDENTS: a user-space task outside $MSLICE that is still ALLOWED onto a measured
+  # core is a latent contaminant even while idle (it can wake mid-capture). Refuse, and name it.
+  iso_foreign_residents || iso_fail=1
   # Settle-and-retry (2026-07-29): the check runs ~1 s after the cpuset migration, so it used to
   # sample DURING the drain of whatever was still on the measured partition (interactive tooling,
   # the operator's own editor/agent processes). Measured empirically: 2 of 5 consecutive 1.5-s
@@ -260,6 +325,7 @@ restore_isolation(){
   [ -f "$STATE/thp_defrag" ] && cat "$STATE/thp_defrag" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag  >/dev/null
   [ -f "$STATE/nmi" ] && cat "$STATE/nmi" | sudo tee /proc/sys/kernel/nmi_watchdog >/dev/null
   [ -f "$STATE/irq_default" ] && cat "$STATE/irq_default" | sudo tee /proc/irq/default_smp_affinity >/dev/null
+  [ -f "$STATE/wq_cpumask" ] && cat "$STATE/wq_cpumask" | sudo tee /sys/devices/virtual/workqueue/cpumask >/dev/null && rm -f "$STATE/wq_cpumask"
   local f n
   for f in "$STATE"/irq_[0-9]*; do
     [ -f "$f" ] || continue
@@ -276,10 +342,12 @@ restore_isolation(){
     sf="$STATE/cpuset_${sl%%.*}"
     [ -f "$sf" ] || continue
     want=$(tr -d '\n' < "$sf")
-    if [ -n "$want" ]; then
-      sudo systemctl set-property --runtime "$sl" AllowedCPUs="$want" 2>/dev/null
+    if [ "$want" = "UNRESTRICTED" ] || [ -z "$want" ]; then
+      # no restriction existed: allow every POSSIBLE cpu, so cores brought back online after
+      # this restore (SMT siblings) are not left excluded
+      sudo systemctl set-property --runtime "$sl" AllowedCPUs="$(cat /sys/devices/system/cpu/possible)" 2>/dev/null
     else
-      sudo systemctl set-property --runtime "$sl" AllowedCPUs="$(cat /sys/devices/system/cpu/online)" 2>/dev/null
+      sudo systemctl set-property --runtime "$sl" AllowedCPUs="$want" 2>/dev/null
     fi
     rm -f "$sf"
   done
@@ -901,6 +969,9 @@ stage_isolation_test(){
   [ "$EFF" = "$CPUS_MEASURED" ] || { log "ISOTEST FAIL container cpuset ($EFF != $CPUS_MEASURED)"; fail=1; }
   local SYS_EFF=$(cat /sys/fs/cgroup/system.slice/cpuset.cpus.effective)
   [ "$SYS_EFF" = "$CPUS_HOUSE" ] || { log "ISOTEST FAIL system.slice cpuset ($SYS_EFF)"; fail=1; }
+  [ "$(cat /sys/fs/cgroup/init.scope/cpuset.cpus.effective)" = "$CPUS_HOUSE" ] || { log "ISOTEST FAIL init.scope cpuset"; fail=1; }
+  mask_eq "$(cat /sys/devices/virtual/workqueue/cpumask)" "$HOUSE_IRQ_MASK" || { log "ISOTEST FAIL workqueue cpumask"; fail=1; }
+  mask_eq "$(cat /proc/irq/default_smp_affinity)" "$HOUSE_IRQ_MASK" || { log "ISOTEST FAIL default IRQ affinity"; fail=1; }
   restore_isolation
   SKIP_K3S=0
   local G=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)

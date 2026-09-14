@@ -1,4 +1,8 @@
 #!/usr/bin/env Rscript
+# fig01_agg_compact3 — COPY of the canonical generator local_agents/kit/plot/plot_paper_agg_compact3.R
+# (single source of truth; edit THERE). Runs from the repo root against the banked
+# data tree and writes into local_agents/DCPerf/plots/paper_v1/.
+# Regenerate: see this pack's README.md.
 # plot_paper_agg_compact3.R -- the 12-panel grid extended to THREE workload families:
 # SPEC CPU 2026, the agentic 36 (SWE-bench Multilingual), and DCPerf.
 #
