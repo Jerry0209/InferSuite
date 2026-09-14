@@ -6,14 +6,18 @@
 #            cassandra, tomcat, kafka  -- 8 benchmarks
 #   Agentic  the 36 SWE-bench Multilingual tasks
 #
-# Unit rule (unchanged): a violin is a distribution over WORKLOADS, one vote per workload, the
-# vote being the median of that workload's 100 ms windows for the metric. n = 26 / 8 / 36.
-# SERVER_MODE=windows draws the Server violin over every 100 ms window of the 8 benchmarks
-# instead (each contributed a fixed-length capture, ~1 500 windows per metric, so pooling is
-# equal-weighted here -- the runtime bias that forbids pooling elsewhere does not arise).
-# EXT_ROWS = colon-separated <suite>_rows_long.csv files that make up the Server set.
-# DCPerf (FeedSim, VideoTranscodeBench) is NOT in the Server set: the mentor's list names the
-# JVM suites only; the per-benchmark companion (plot_paper_agg_compact_ext.R) still shows it.
+# Unit rule: a violin is a distribution over WORKLOADS, one value per workload. n = 26 / 10 / 36.
+# VOTE=runtime (default, mentor's rule 2026-09-15): the value is the metric computed over the
+#   workload's WHOLE RUNTIME -- raw counters summed over every window, ratio taken once (IPC =
+#   total instructions / total cycles, ...), read from runtime_votes.csv
+#   (export_runtime_votes.py, one implementation for all four families).
+# VOTE=median: the value is the median of the workload's per-window values (the rule before
+#   2026-09-15, kept for comparison).
+# SERVER_MODE=windows draws the Server violin over every 100 ms window of the server benchmarks
+#   instead (fixed-length captures, ~1 500 windows per metric each, so pooling is equal-weighted).
+# Server set = DCPerf FeedSim + VideoTranscodeBench, Renaissance finagle-http, finagle-chirper,
+# page-rank, naive-bayes, neo4j-analytics, DaCapo Chopin cassandra, tomcat, kafka (10; the mentor
+# confirmed DCPerf belongs in it, 2026-09-15). EXT_ROWS = their <suite>_rows_long.csv files.
 suppressPackageStartupMessages({
   library(ggplot2); library(dplyr); library(ragg); library(scales); library(patchwork)
 })
@@ -22,16 +26,21 @@ source(file.path(repo, "local_agents/kit/plot/theme_paper.R"))
 ADJ <- as.numeric(Sys.getenv("ADJ", "1.0"))
 SERVER_MODE <- Sys.getenv("SERVER_MODE", "votes")
 stopifnot(SERVER_MODE %in% c("votes", "windows"))
+VOTE <- Sys.getenv("VOTE", "runtime")
+stopifnot(VOTE %in% c("runtime", "median"))
+RV_FILE <- file.path(repo, Sys.getenv("RUNTIME_VOTES", "local_agents/JVMbench/data/l3_study/runtime_votes.csv"))
 EXT_FILES <- strsplit(Sys.getenv("EXT_ROWS",
-  paste(file.path(repo, "local_agents/JVMbench/data/l3_study/renaissance_rows_long.csv"),
+  paste(file.path(repo, "local_agents/DCPerf/data/l3_study/dcperf_rows_long.csv"),
+        file.path(repo, "local_agents/JVMbench/data/l3_study/renaissance_rows_long.csv"),
         file.path(repo, "local_agents/JVMbench/data/l3_study/dacapo_rows_long.csv"), sep = ":")),
   ":")[[1]]
 EXT_FILES <- EXT_FILES[file.exists(EXT_FILES)]
 stopifnot(length(EXT_FILES) > 0)
 OUT <- file.path(repo, Sys.getenv("EXT_OUT", "local_agents/JVMbench/plots/paper_v1"))
 dir.create(OUT, showWarnings = FALSE, recursive = TRUE)
-STEM <- Sys.getenv("EXT_STEM", if (SERVER_MODE == "votes") "multi_server_compact"
-                                else "multi_server_compact_windows")
+STEM <- Sys.getenv("EXT_STEM", paste0("multi_server_compact",
+                                      if (SERVER_MODE == "windows") "_windows" else "",
+                                      if (VOTE == "median") "_medianvote" else ""))
 
 SIDES <- c("SPEC", "Server", "Agentic")
 COLS <- c(SPEC = unname(PAPER_PAIR["blue_dark"]), Server = "#1a9850",
@@ -47,20 +56,34 @@ logm <- "Context switches (/CPU-s)"
 d <- read.csv(file.path(repo, "local_agents/ML_iso36/data/l3_study/agg_rows_long.csv"),
               stringsAsFactors = FALSE) |> filter(fence == "both")
 srv <- bind_rows(lapply(EXT_FILES, read.csv, stringsAsFactors = FALSE)) |> filter(fence == "both")
-srv_votes <- srv |> group_by(metric, wl = col, suite = grp) |>
-  summarise(v = median(value), q25 = quantile(value, .25), q75 = quantile(value, .75),
-            nwin = n(), .groups = "drop")
-server_pts <- if (SERVER_MODE == "votes") srv_votes |> transmute(metric, wl, v, side = "Server") else
-  srv |> transmute(metric, wl = col, v = value, side = "Server")
-
-per_workload <- bind_rows(
-  d |> filter(grp %in% c("SPEC-int", "SPEC-fp")) |>
-    group_by(metric, wl = paste(grp, ave(value, metric, grp, FUN = seq_along))) |>
-    summarise(v = first(value), .groups = "drop") |> mutate(side = "SPEC"),
-  d |> filter(grp %in% langs) |>
-    group_by(metric, wl = col) |>
-    summarise(v = median(value), .groups = "drop") |> mutate(side = "Agentic"),
-  server_pts)
+# within-workload spread of each server benchmark (its window IQR) -- reported in the numbers
+srv_iqr <- srv |> group_by(metric, wl = col, suite = grp) |>
+  summarise(q25 = quantile(value, .25), q75 = quantile(value, .75), nwin = n(), .groups = "drop")
+if (VOTE == "runtime") {
+  rv <- read.csv(RV_FILE, stringsAsFactors = FALSE)
+  side_of <- c(spec26 = "SPEC", agentic36 = "Agentic", dcperf = "Server",
+               renaissance = "Server", dacapo = "Server")
+  votes <- rv |> transmute(metric, wl = workload, v = value, side = unname(side_of[family])) |>
+    filter(!is.na(side))
+  srv_votes <- votes |> filter(side == "Server") |> select(metric, wl, v) |>
+    inner_join(srv_iqr, by = c("metric", "wl"))
+  server_pts <- if (SERVER_MODE == "votes") srv_votes |> transmute(metric, wl, v, side = "Server") else
+    srv |> transmute(metric, wl = col, v = value, side = "Server")
+  per_workload <- bind_rows(votes |> filter(side != "Server"), server_pts)
+} else {
+  srv_votes <- srv |> group_by(metric, wl = col) |> summarise(v = median(value), .groups = "drop") |>
+    inner_join(srv_iqr, by = c("metric", "wl"))
+  server_pts <- if (SERVER_MODE == "votes") srv_votes |> transmute(metric, wl, v, side = "Server") else
+    srv |> transmute(metric, wl = col, v = value, side = "Server")
+  per_workload <- bind_rows(
+    d |> filter(grp %in% c("SPEC-int", "SPEC-fp")) |>
+      group_by(metric, wl = paste(grp, ave(value, metric, grp, FUN = seq_along))) |>
+      summarise(v = first(value), .groups = "drop") |> mutate(side = "SPEC"),
+    d |> filter(grp %in% langs) |>
+      group_by(metric, wl = col) |>
+      summarise(v = median(value), .groups = "drop") |> mutate(side = "Agentic"),
+    server_pts)
+}
 per_workload$side <- factor(per_workload$side, levels = SIDES)
 
 # numbers: one summary row per (metric, side) + one row per server benchmark (its vote and
@@ -145,16 +168,20 @@ panel <- function(m) {
 }
 
 legend_strip <- function() {
+  n_suite <- sapply(c("DCPerf", "Renaissance", "DaCapo"), function(f) sum(srv_iqr$suite[srv_iqr$metric == "IPC"] == f))
   srv_lab <- if (SERVER_MODE == "votes")
-    sprintf("Server (%d JVM benchmarks: Renaissance 5 + DaCapo 3, 1 vote each)", n_side[["Server"]]) else
-    "Server (8 JVM benchmarks, every 100 ms window pooled, equal capture length)"
-  items <- list(list(kind = "rect", col = COLS[["SPEC"]], lab = sprintf("SPEC (%d benchmarks, 1 vote each)", n_side[["SPEC"]])),
+    sprintf("Server (%d: DCPerf %d · Renaissance %d · DaCapo %d)", n_side[["Server"]], n_suite[["DCPerf"]], n_suite[["Renaissance"]], n_suite[["DaCapo"]]) else
+    sprintf("Server (%d benchmarks, every 100 ms window pooled)", length(unique(srv$col)))
+  rule <- if (VOTE == "runtime") "one value per workload = metric over its whole runtime" else
+    "one value per workload = median of its 100 ms windows"
+  items <- list(list(kind = "rect", col = COLS[["SPEC"]], lab = sprintf("SPEC (%d)", n_side[["SPEC"]])),
                 list(kind = "rect", col = COLS[["Server"]], lab = srv_lab),
-                list(kind = "rect", col = COLS[["Agentic"]], lab = sprintf("Agentic (%d tasks, 1 vote each)", n_side[["Agentic"]])),
+                list(kind = "rect", col = COLS[["Agentic"]], lab = sprintf("Agentic (%d)", n_side[["Agentic"]])),
                 list(kind = "bar", col = "black", lab = "median"),
-                list(kind = "diamond", col = "white", lab = "mean"))
+                list(kind = "diamond", col = "white", lab = "mean"),
+                list(kind = "none", col = NA, lab = rule))
   cw <- 0.0052; gap <- 0.028
-  widths <- sapply(items, function(it) 0.03 + nchar(it$lab) * cw)
+  widths <- sapply(items, function(it) (if (it$kind == "none") 0.0 else 0.03) + nchar(it$lab) * cw)
   x0 <- (1 - (sum(widths) + gap * (length(items) - 1))) / 2
   g <- ggplot() + xlim(0, 1) + ylim(0, 1) + theme_void() + theme(plot.margin = margin(2, 8, 4, 8))
   x <- x0
@@ -166,8 +193,9 @@ legend_strip <- function() {
                                                 fill = it$col, colour = "black", stroke = 0.45)
     if (it$kind == "bar") g <- g + annotate("segment", x = x, xend = x + 0.02, y = 0.5, yend = 0.5,
                                             colour = "black", linewidth = 1.0)
-    g <- g + annotate("text", x = x + 0.028, y = 0.5, label = it$lab, hjust = 0, size = 2.35,
-                      family = PAPER_SERIF)
+    g <- g + annotate("text", x = x + (if (it$kind == "none") 0 else 0.028), y = 0.5, label = it$lab,
+                      hjust = 0, size = 2.35, family = PAPER_SERIF,
+                      fontface = if (it$kind == "none") "italic" else "plain")
     x <- x + widths[i] + gap
   }
   g

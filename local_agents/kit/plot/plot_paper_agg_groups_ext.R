@@ -39,6 +39,17 @@ dir.create(OUT, showWarnings = FALSE, recursive = TRUE)
 
 d <- read.csv(file.path(repo, "local_agents/ML_iso36/data/l3_study/agg_rows_long.csv"),
               stringsAsFactors = FALSE) |> filter(fence == "both", grp != "Python")
+# VOTE=runtime (default since 2026-09-15): the two SPEC columns hold each benchmark's metric over
+# its whole runtime (runtime_votes.csv) instead of the median of its windows.
+VOTE <- Sys.getenv("VOTE", "runtime")
+stopifnot(VOTE %in% c("runtime", "median"))
+if (VOTE == "runtime") {
+  rv <- read.csv(file.path(repo, Sys.getenv("RUNTIME_VOTES", "local_agents/JVMbench/data/l3_study/runtime_votes.csv")),
+                 stringsAsFactors = FALSE)
+  d <- bind_rows(rv |> filter(family == "spec26") |>
+                   transmute(fence = "both", metric, grp = subgroup, col = subgroup, value),
+                 d |> filter(!grp %in% c("SPEC-int", "SPEC-fp")))
+}
 # DCPerf per-window rows use the identical schema and metric labels (export_dcperf_rows.py),
 # so they simply bind on as additional columns at the right-hand end.
 EXT_FILES <- strsplit(Sys.getenv("EXT_ROWS",

@@ -220,6 +220,10 @@ misprediction, 3.60 MPKI, with FeedSim's 3.38 the only neighbour. On every other
 to 11th of 12. Servers have a capacity pathology (huge, well-predicted code); the agent has a
 prediction pathology (moderate footprint, never-trained branches).
 
+Re-derived on 2026-09-15 under the mentor's whole-runtime rule (`../JVMbench/README.md` §9):
+the agentic family is still first on branch-direction misprediction alone (3.36 MPKI, FeedSim
+3.32 next) and 4th–10th on everything else, so the single-axis statement stands under both rules.
+
 The earlier companion claim, **lowest memory traffic, did not survive**. It was stated here on
 2026-09-14 as half of a distinctive combination, at a time when DaCapo `cassandra` had been
 wrongly excluded by a defective steady-state gate ([`../JVMbench/README.md`](../JVMbench/README.md)
@@ -438,6 +442,13 @@ Within-workload spread is not thrown away: it is exactly what the per-window gro
 show, and for the DCPerf markers it is the p25–p75 bar (labelled in the key as a
 within-workload quantity, precisely because it is not comparable to a violin's width).
 
+> **Rule change, 2026-09-15.** The mentor set the per-workload statistic to the metric over the
+> workload's **whole runtime** (counters summed over all windows, ratio taken once), replacing
+> the window median described above. The multi-suite figures (`../JVMbench/charts/v3_…`) follow
+> it; `../JVMbench/README.md` §9 has the definition and implementation. The two objections
+> above — pooling weights by runtime, medians drop inter-workload variation — are exactly what
+> the rule answers. The DCPerf-only pack in `charts/` has not been re-drawn under it yet.
+
 ### 7.8 How many profiling runs stand behind each vote (reviewer question, 2026-09-14)
 
 **One run per counter group per workload. No metric in any figure averages over repeated runs
@@ -471,8 +482,9 @@ DCPerf, JVM) a metric is derived only from the run that carried its counters:
 | `dram_bw` | DRAM read (GB/s) |
 | `priv` | Context switches (/CPU-s) |
 
-So a workload's **vote for one metric is the median over the windows of a single run** — never
-over several runs, and never over several groups. Ratios are always co-counted: the denominator
+So a workload's **value for one metric comes from the single run that carried its counters** —
+summed over that run's windows since 2026-09-15 (`../JVMbench/README.md` §9), the median of
+them before — never from several groups. Ratios are always co-counted: the denominator
 (instructions or cycles) comes from the same window as the numerator, which is why a metric may
 not borrow instructions from another group's run.
 

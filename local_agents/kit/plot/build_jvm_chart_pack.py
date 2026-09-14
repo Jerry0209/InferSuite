@@ -12,7 +12,7 @@ subdirectory so a reader (or their agent) can tell what each file is without ask
         Scripts/               a copy of each generator (canonical source: kit/plot/)
         Scripts/README.md      script-by-script: what it draws, inputs, env knobs, how to run
 
-    VERSION=v2_2026-09-14_cassandra-reinstated python3 local_agents/kit/plot/build_jvm_chart_pack.py
+    VERSION=v3_2026-09-15_runtime-votes python3 local_agents/kit/plot/build_jvm_chart_pack.py
 
 Figures are NOT regenerated here (the R scripts write plots/paper_v1/; this copies them), so
 run the generators first. Never rebuild a version that has been circulated -- make a new one.
@@ -27,7 +27,7 @@ REPO = os.path.expanduser("~/InferSuite")
 JV = f"{REPO}/local_agents/JVMbench"
 KP = f"{REPO}/local_agents/kit/plot"
 SRC = f"{JV}/plots/paper_v1"
-VERSION = os.environ.get("VERSION", "v2_2026-09-14_cassandra-reinstated")
+VERSION = os.environ.get("VERSION", "v3_2026-09-15_runtime-votes")
 CH = f"{JV}/charts/{VERSION}"
 RAW, SCR = f"{CH}/Raw data", f"{CH}/Scripts"
 FPDF, FPNG = f"{CH}/Figures/PDF", f"{CH}/Figures/PNG"
@@ -37,9 +37,9 @@ for d in (RAW, SCR, FPDF, FPNG):
 # (fig id, pack name, generator script, source stem in plots/paper_v1, one-line description)
 FIGS = [
     ("fig01", "agg_compact_server", "plot_paper_agg_compact_server.R", "multi_server_compact",
-     "12-metric grid, THREE violins per panel: SPEC (26), Server (8 JVM benchmarks), Agentic (36); one vote per workload"),
+     "12-metric grid, THREE violins per panel: SPEC (26), Server (10: DCPerf 2 + Renaissance 5 + DaCapo 3), Agentic (36); one whole-runtime value per workload"),
     ("fig02", "agg_ipc_server", "plot_paper_agg_groups_server.R", "multi_server_ipc",
-     "IPC: SPEC-int, SPEC-fp, Server columns (one vote per benchmark) then one column per agentic task (its 100 ms windows)"),
+     "IPC: SPEC-int, SPEC-fp, Server columns (one whole-runtime value per benchmark) then one column per agentic task (its 100 ms windows)"),
     ("fig03", "agg_frontend_server", "plot_paper_agg_groups_server.R", "multi_server_frontend",
      "frontend metrics, same columns as fig02"),
     ("fig04", "agg_memory_server", "plot_paper_agg_groups_server.R", "multi_server_memory",
@@ -77,6 +77,9 @@ for f in ("multi_server_compact_numbers.csv", "multi_server_numbers.csv",
           "multi_agg_compact_numbers.csv", "multi_agg_numbers.csv"):
     if os.path.exists(f"{SRC}/{f}"):
         shutil.copy(f"{SRC}/{f}", f"{RAW}/{f}")
+RV = f"{JV}/data/l3_study/runtime_votes.csv"
+if os.path.exists(RV):
+    shutil.copy(RV, f"{RAW}/runtime_votes.csv")
 with open(f"{REPO}/local_agents/ML_iso36/data/l3_study/agg_rows_long.csv", "rb") as src, \
         gzip.open(f"{RAW}/spec_agentic_rows_long.csv.gz", "wb") as dst:
     shutil.copyfileobj(src, dst)
@@ -93,24 +96,32 @@ if os.path.isdir(TS):
         if f.startswith("timeseries_") and f.endswith(".csv.gz"):
             shutil.copy(f"{TS}/{f}", f"{RAW}/{f}"); ts_files.append(f)
 shutil.copy(f"{KP}/export_timeseries_rows.py", f"{SCR}/export_timeseries_rows.py")
+shutil.copy(f"{KP}/export_runtime_votes.py", f"{SCR}/export_runtime_votes.py")
 shutil.copy(f"{KP}/export_dcperf_rows.py", f"{SCR}/export_suite_rows.py")
 shutil.copy(f"{KP}/export_agg_rows_long.py", f"{SCR}/export_spec_agentic_rows.py")
 
 # ---- READMEs -------------------------------------------------------------------------------
-UNIT = """**The unit rule, which every figure here follows.** A *vote* is one number per workload: the
-median of that workload's 100 ms windows for the metric. A violin in the compact grid is a
-distribution over votes — SPEC 26, Server 8, Agentic 36 — never a pool of windows, because
-pooling weights each workload by how long it ran (SPEC spans 70 to 2 658 windows per
-benchmark). In the per-window figures the three reference columns (SPEC-int, SPEC-fp, Server)
-are distributions over benchmark votes, while each agentic column is that task's own windows.
-`Raw data/` carries the per-window rows in time order so any other aggregation can be tried."""
+UNIT = """**The rule every figure here follows (mentor, 2026-09-15).** One number per workload, computed
+over the workload's **whole runtime**: the raw counters are summed over every window the
+workload was measured in and the ratio is taken once — IPC = total instructions / total
+cycles, branch MPKI = 1000 × total mispredictions / total instructions, DRAM GB/s = total bytes
+/ total seconds, context switches = total switches / total task-clock. Neither the median of
+per-window values (which weights every 100 ms equally, busy or idle) nor a pool of windows
+(which weights each workload by how long it ran). A violin in the compact grid is then a
+distribution over those per-workload values — SPEC 26, Server 10, Agentic 36. In the per-window
+figures the three reference columns (SPEC-int, SPEC-fp, Server) hold those same per-benchmark
+values, while each agentic column is that task's own 100 ms windows. All four families go
+through one implementation (`Scripts/export_runtime_votes.py`, built on the SPEC comparison
+kit's loader); denominators are co-counted, i.e. summed over exactly the windows in which the
+numerator's counter was live. `Raw data/runtime_votes.csv` holds every value drawn;
+`Raw data/timeseries_*.csv.gz` the per-window rows in time order."""
 
 top = [f"# Multi-suite chart pack — {VERSION}", "",
-       "SPEC CPU 2026 (26 benchmarks) · **Server** = the JVM server set requested by the mentor on",
-       "2026-09-14 (Renaissance finagle-http, finagle-chirper, page-rank, naive-bayes, neo4j-analytics;",
-       "DaCapo Chopin cassandra, tomcat, kafka) · Agentic 36 (SWE-bench Multilingual). DCPerf's two",
-       "benchmarks appear only in the per-benchmark companions (fig06–fig10), since the Server set",
-       "was defined as the JVM suites.", "",
+       "SPEC CPU 2026 (26 benchmarks) · **Server** = DCPerf FeedSim and VideoTranscodeBench,",
+       "Renaissance finagle-http, finagle-chirper, page-rank, naive-bayes, neo4j-analytics, DaCapo",
+       "Chopin cassandra, tomcat, kafka (10; the mentor's set, DCPerf confirmed in it 2026-09-15) ·",
+       "Agentic 36 (SWE-bench Multilingual). fig06–fig10 are the per-benchmark companions that show",
+       "which server benchmark sits where.", "",
        "One PDF (paper) + one PNG (slides) per figure. Each subdirectory has its own README:",
        "[`Figures/`](Figures/README.md) how to read them · [`Raw data/`](Raw%20data/README.md) what",
        "every file holds · [`Scripts/`](Scripts/README.md) what every script does and how to run it.",
@@ -151,7 +162,10 @@ open(f"{CH}/Figures/README.md", "w").write("\n".join(figs_md))
 raw_md = ["# Raw data — what every file is", "",
           "All CSVs are UTF-8, comma-separated, header row first; `.gz` files are gzip and read",
           "directly by pandas (`pd.read_csv(path)`) or R (`read.csv(gzfile(path))`).", "",
-          "## The exact inputs the figure scripts read", "",
+          "## The values the violins are drawn over", "",
+          "| File | Schema | What a row is |", "|---|---|---|",
+          "| `runtime_votes.csv` | `family, subgroup, workload, metric, value, windows, runs` | **one row per workload and metric: the metric over the workload's whole runtime** (counters summed over all its windows, ratio taken once). `family` = spec26 / agentic36 / dcperf / renaissance / dacapo; `subgroup` = SPEC-int or SPEC-fp, the task's language, or the suite; `windows` = how many 100 ms windows carried that metric's counters; `runs` = profiling runs summed (SPEC 1, all others 9). This is the input of every violin and marker in fig01 and fig06 and of the SPEC / Server columns in the per-window figures. |", "",
+          "## The per-window inputs (agentic columns, marker IQR bars, and the older median rule)", "",
           "| File | Rows | Schema | What a row is |", "|---|---|---|---|",
           "| `spec_agentic_rows_long.csv.gz` | SPEC + agentic | `fence, metric, grp, col, value` | SPEC (`grp` = `SPEC-int`/`SPEC-fp`): **one row per benchmark**, `value` = that benchmark's median over its windows (26 rows per metric per fence). Agentic (`grp` = language, `col` = task): **one row per 100 ms window**. Three `fence` values: `tool` (sandbox container), `harness` (agent process), `both` (their sum at the raw-count level) — every figure uses `both`. 16 metrics; the figures show 12. |",
           "| `renaissance_per_window_rows.csv.gz` | 5 benchmarks | same schema | one row per 100 ms window, `grp` = `Renaissance`, `col` = benchmark, `fence` = `both` (the whole JVM) |",
@@ -193,7 +207,7 @@ raw_md += ["",
            "that variant.", "",
            "## Every number that is drawn", "",
            "| File | What |", "|---|---|",
-           "| `multi_server_compact_numbers.csv` | fig01: per (metric, side) the n / min / max / median / mean / sd of the votes; plus one row per Server benchmark (`side` = `Server:Renaissance` or `Server:DaCapo`, `workload` = benchmark) giving its vote (`median`) and window IQR (`min` = p25, `max` = p75) |",
+           "| `multi_server_compact_numbers.csv` | fig01: per (metric, side) the n / min / max / median / mean / sd of the per-workload values; plus one row per Server benchmark (`side` = `Server:DCPerf`, `Server:Renaissance` or `Server:DaCapo`, `workload` = benchmark) giving its whole-runtime value (`median`) and its window IQR (`min` = p25, `max` = p75) |",
            "| `multi_server_numbers.csv` | fig02–05: per (metric, column) the median, mean and n of the points in that column |",
            "| `multi_agg_compact_numbers.csv` | fig06: as for fig01, with one row per external benchmark marker (`side` = suite) |",
            "| `multi_agg_numbers.csv` | fig07–10: per (metric, column) median, mean, n |", "",
@@ -212,6 +226,8 @@ scr_md = ["# Scripts — what each one does", "",
           "```bash",
           "cd ~/InferSuite",
           "RS=~/miniforge3/envs/rplot/bin/Rscript",
+          "$PY=~/miniforge3/envs/infersuite-full/bin/python3",
+          "$PY local_agents/kit/plot/export_runtime_votes.py             # runtime_votes.csv (all families)",
           f"$RS local_agents/kit/plot/plot_paper_agg_compact_server.R     # fig01",
           f"$RS local_agents/kit/plot/plot_paper_agg_groups_server.R      # fig02-05 (all four)",
           f"$RS local_agents/kit/plot/plot_paper_agg_compact_ext.R        # fig06",
@@ -220,10 +236,11 @@ scr_md = ["# Scripts — what each one does", "",
           f"VERSION={VERSION} python3 local_agents/kit/plot/build_jvm_chart_pack.py",
           "```", "",
           "| Script | Draws | Reads | Knobs (environment variables) |", "|---|---|---|---|",
-          "| `fig01_agg_compact_server.R` | the 12-panel grid with three violins (SPEC, Server, Agentic) | `spec_agentic_rows_long` + the Server suites' rows | `SERVER_MODE=votes` (default: one vote per benchmark) or `windows` (pool the 8 benchmarks' windows); `EXT_ROWS` = colon-separated rows files that form the Server set; `ADJ` = violin bandwidth multiplier; `EXT_OUT`, `EXT_STEM` output dir/stem (repo-relative) |",
-          "| `fig02–05_agg_*_server.R` | the four per-window group figures with a single Server column | same | `SERVER_MODE`, `EXT_ROWS`, `EXT_OUT` as above |",
-          "| `fig06_agg_compact_per_benchmark.R` | the grid with one diamond per external benchmark | `spec_agentic_rows_long` + dcperf/renaissance/dacapo rows | `EXT_ROWS`, `ADJ`, `EXT_OUT`, `EXT_STEM` |",
-          "| `fig07–10_agg_*_per_benchmark.R` | per-window figures with one column per external benchmark, one block per suite | same | `EXT_ROWS`, `EXT_OUT`; `VARIANT=broken_axis` cuts the frontend/memory y axes |",
+          "| `fig01_agg_compact_server.R` | the 12-panel grid with three violins (SPEC, Server, Agentic) | `runtime_votes.csv` (the values) + the Server suites' per-window rows (window IQRs for the numbers file) | `VOTE=runtime` (default: whole-runtime value per workload) or `median` (median of its windows, the pre-2026-09-15 rule); `SERVER_MODE=votes` (default) or `windows` (pool the server benchmarks' windows); `EXT_ROWS` = colon-separated rows files that form the Server set; `RUNTIME_VOTES` = path of the votes file; `ADJ` = violin bandwidth multiplier; `EXT_OUT`, `EXT_STEM` output dir/stem (repo-relative) |",
+          "| `fig02–05_agg_*_server.R` | the four per-window group figures with a single Server column | `runtime_votes.csv` for the SPEC and Server columns, `spec_agentic_rows_long` for the agentic columns | `VOTE`, `SERVER_MODE`, `EXT_ROWS`, `RUNTIME_VOTES`, `EXT_OUT` as above |",
+          "| `fig06_agg_compact_per_benchmark.R` | the grid with one diamond per external benchmark | `runtime_votes.csv` + the per-window rows (marker IQR bars) | `VOTE`, `EXT_ROWS`, `RUNTIME_VOTES`, `ADJ`, `EXT_OUT`, `EXT_STEM` |",
+          "| `fig07–10_agg_*_per_benchmark.R` | per-window figures with one column per external benchmark, one block per suite | `runtime_votes.csv` for the SPEC columns, per-window rows for every other column | `VOTE`, `EXT_ROWS`, `EXT_OUT`; `VARIANT=broken_axis` cuts the frontend/memory y axes |",
+          "| `export_runtime_votes.py` | — | every family's raw window files, through the SPEC comparison kit's `extract_metrics.py` (one implementation for all four) | `--out DIR`; writes `runtime_votes.csv`: one whole-runtime value per workload and metric |",
           "| `export_spec_agentic_rows.py` | — | the SPEC kit's per-window metrics and the agentic `all_windows_*.csv` | writes `agg_rows_long.csv` (= `Raw data/spec_agentic_rows_long.csv.gz`) |",
           "| `export_suite_rows.py` | — | an external suite's `all_windows_*.csv` | `--suite --label --data --out`; writes `<suite>_rows_long.csv` (= `Raw data/<suite>_per_window_rows.csv.gz`); skips a workload with an `EXCLUDED` marker |",
           "| `export_timeseries_rows.py` | — | the same per-window files, keeping time order | `--out DIR`; writes `Raw data/timeseries_<family>.csv.gz` |", "",

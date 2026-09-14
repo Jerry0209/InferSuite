@@ -12,12 +12,18 @@
 # the numbers CSV; the compact grid's job is the family-level picture.
 #
 # EXT_ROWS = colon-separated list of <suite>_rows_long.csv files (export_dcperf_rows.py).
+# VOTE=runtime (default since 2026-09-15, mentor's rule): every vote and marker is the metric over
+# the workload's WHOLE RUNTIME (runtime_votes.csv, export_runtime_votes.py); VOTE=median: the
+# median of the workload's windows (the previous rule). The marker bar stays the window IQR.
 suppressPackageStartupMessages({
   library(ggplot2); library(dplyr); library(ragg); library(scales); library(patchwork)
 })
 repo <- path.expand("~/InferSuite")
 source(file.path(repo, "local_agents/kit/plot/theme_paper.R"))
 ADJ <- as.numeric(Sys.getenv("ADJ", "1.0"))
+VOTE <- Sys.getenv("VOTE", "runtime")
+stopifnot(VOTE %in% c("runtime", "median"))
+RV_FILE <- file.path(repo, Sys.getenv("RUNTIME_VOTES", "local_agents/JVMbench/data/l3_study/runtime_votes.csv"))
 EXT_FILES <- strsplit(Sys.getenv("EXT_ROWS",
   paste(file.path(repo, "local_agents/DCPerf/data/l3_study/dcperf_rows_long.csv"),
         file.path(repo, "local_agents/JVMbench/data/l3_study/renaissance_rows_long.csv"),
@@ -27,7 +33,7 @@ EXT_FILES <- EXT_FILES[file.exists(EXT_FILES)]
 stopifnot(length(EXT_FILES) > 0)
 OUT <- file.path(repo, Sys.getenv("EXT_OUT", "local_agents/JVMbench/plots/paper_v1"))
 dir.create(OUT, showWarnings = FALSE, recursive = TRUE)
-STEM <- Sys.getenv("EXT_STEM", "multi_agg_compact")
+STEM <- Sys.getenv("EXT_STEM", if (VOTE == "runtime") "multi_agg_compact" else "multi_agg_compact_medianvote")
 
 FAM_COL <- c(DCPerf = "#1b7837", Renaissance = "#e6ab02", DaCapo = "#7570b3")
 langs <- c("C", "C++", "Rust", "Go", "Java", "PHP", "Ruby", "JavaScript", "TypeScript")
@@ -53,6 +59,14 @@ FAMS <- intersect(names(FAM_COL), unique(ext$grp))
 ext_vote <- ext |> group_by(metric, fam = grp, wl = col) |>
   summarise(v = median(value), q25 = quantile(value, .25), q75 = quantile(value, .75),
             nwin = n(), .groups = "drop")
+if (VOTE == "runtime") {
+  rv <- read.csv(RV_FILE, stringsAsFactors = FALSE)
+  per_workload <- rv |> filter(family %in% c("spec26", "agentic36")) |>
+    transmute(metric, wl = workload, v = value, side = ifelse(family == "spec26", "SPEC", "Agentic"))
+  ext_vote <- ext_vote |> select(-v) |>
+    inner_join(rv |> filter(!family %in% c("spec26", "agentic36")) |>
+                 transmute(metric, wl = workload, v = value), by = c("metric", "wl"))
+}
 SIDES <- c("SPEC", "Agentic", FAMS)
 COLS <- c(SPEC = unname(PAPER_PAIR["blue_dark"]), Agentic = unname(PAPER_PAIR["red_dark"]),
           FAM_COL[FAMS])
@@ -158,8 +172,10 @@ legend_strip <- function() {
   items[[length(items) + 1]] <- list(kind = "bar", col = "black", lab = "median")
   items[[length(items) + 1]] <- list(kind = "diamond", col = "white", lab = "mean")
   items[[length(items) + 1]] <- list(kind = "iqr", col = "grey30", lab = "marker bar = window IQR (within-workload)")
+  items[[length(items) + 1]] <- list(kind = "none", col = NA, lab = if (VOTE == "runtime")
+    "vote = metric over the workload's whole runtime" else "vote = median of the workload's windows")
   cw <- 0.0052; gap <- 0.028
-  widths <- sapply(items, function(it) 0.03 + nchar(it$lab) * cw)
+  widths <- sapply(items, function(it) (if (it$kind == "none") 0.0 else 0.03) + nchar(it$lab) * cw)
   x0 <- (1 - (sum(widths) + gap * (length(items) - 1))) / 2
   g <- ggplot() + xlim(0, 1) + ylim(0, 1) + theme_void() + theme(plot.margin = margin(2, 8, 4, 8))
   x <- x0
@@ -173,8 +189,9 @@ legend_strip <- function() {
                                             colour = "black", linewidth = 1.0)
     if (it$kind == "iqr") g <- g + annotate("segment", x = x + 0.01, xend = x + 0.01, y = 0.25, yend = 0.75,
                                             colour = it$col, linewidth = 0.55)
-    g <- g + annotate("text", x = x + 0.028, y = 0.5, label = it$lab, hjust = 0, size = 2.35,
-                      family = PAPER_SERIF)
+    g <- g + annotate("text", x = x + (if (it$kind == "none") 0 else 0.028), y = 0.5, label = it$lab,
+                      hjust = 0, size = 2.35, family = PAPER_SERIF,
+                      fontface = if (it$kind == "none") "italic" else "plain")
     x <- x + widths[i] + gap
   }
   g

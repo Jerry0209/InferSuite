@@ -73,24 +73,27 @@ pass every validation gate.
 > been reinstated. See [§8](#8-the-cassandra-false-alarm-and-the-gate-fix) for the evidence and
 > the fix; every figure and number below includes cassandra.
 
-Votes are one per workload — the median of that workload's windows — exactly as for SPEC, the
-agentic 36 and DCPerf. Columns are suites' benchmarks; SPEC and Agentic are their family
-medians. Ratios to SPEC and every vote are in `plots/paper_v1/multi_agg_compact_numbers.csv`.
+Values are one per workload, **computed over the workload's whole runtime** (the mentor's rule,
+2026-09-15, §9): the raw counters are summed over every window and the ratio is taken once —
+IPC = total instructions / total cycles, MPKI = 1000 × total events / total co-counted
+instructions, and so on. Columns are the ten server benchmarks; SPEC and Agentic are their
+family medians of 26 and 36 such values. Every value is in
+`plots/paper_v1/multi_server_compact_numbers.csv` and `data/l3_study/runtime_votes.csv`.
 
 | Metric | SPEC | Agentic | FeedSim | Video | chirper | fin-http | naive-bayes | neo4j | page-rank | cassandra | kafka | tomcat |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| IPC | 2.185 | 1.749 | 1.725 | 2.62 | 1.954 | 1.423 | 3.601 | 3.297 | 2.09 | **0.905** | 1.358 | 1.333 |
-| Branch MPKI | 0.8473 | 4.301 | 4.865 | 2.265 | 1.26 | 0.5337 | 0.3084 | 0.4054 | 1.127 | 3.278 | 0.5275 | 2.525 |
-| Branch-direction MPKI | 0.8249 | 3.597 | 3.379 | 2.186 | 1.043 | 0.3222 | 0.274 | 0.3936 | 1.106 | 2.73 | 0.4268 | 2.265 |
-| BTB MPKI (BAClears) | 0.007845 | 0.7746 | 1.635 | 0.0477 | 0.668 | 1.699 | 0.0342 | 0.0135 | 0.0233 | 2.237 | 0.2433 | 2.283 |
-| L1I MPKI (code-read) | 0.8454 | 15.63 | 5.995 | 12.03 | 25.46 | 52.69 | 0.7955 | 5.512 | 0.4434 | **70.84** | 18.44 | 43.79 |
-| uop-cache (DSB) MPKI | 9.279 | 46.91 | 18.02 | 54.1 | 51.77 | 113.3 | 7.075 | 38.68 | 5.607 | **113.9** | 65.08 | 76.84 |
-| DSB coverage (%) | 93.9 | 66.12 | 82.17 | 56.67 | 60.13 | 13.31 | 91.95 | 63.1 | 96.15 | **11.22** | 43.69 | 37.55 |
-| L1D-load MPKI | 8.129 | 4.839 | 11.73 | 4.601 | 9.044 | 12.8 | 0.9983 | 1.085 | 1.838 | 12.33 | 6.23 | 7.068 |
-| L2-load MPKI | 0.3344 | 0.5454 | 4.238 | 0.1511 | 0.5229 | 0.6123 | 0.1045 | 0.311 | 0.7694 | 1.506 | 0.6274 | 0.3948 |
-| LLC MPKI | 0.0429 | 0.1439 | 0.4793 | 0.0663 | 0.0618 | 0.0133 | 0.07565 | 0.1185 | 0.3806 | 0.3201 | 0.297 | 0.0284 |
-| DRAM read (GB/s) | 1.517 | 0.4567 | 11.5 | 3.802 | 6.681 | 6.613 | 8.89 | 1.643 | 4.081 | **0.0185** | 0.738 | 0.5676 |
-| Context switches (/CPU-s) | 0 | 549.4 | 190.9 | 159 | 8415 | 4.1e+04 | 180 | 440 | 106.2 | **4.936e+04** | 3853 | 3.695e+04 |
+| IPC | 2.413 | 1.904 | 1.82 | 2.619 | 1.93 | 1.423 | 3.272 | 3.265 | 2.149 | 1.046 | 1.422 | 1.373 |
+| Branch MPKI | 1.176 | 3.994 | 4.685 | 2.271 | 1.333 | 0.5785 | 0.4222 | 0.4283 | 1.306 | 1.679 | 1.887 | 2.829 |
+| Branch-direction MPKI | 1.036 | 3.356 | 3.324 | 2.198 | 1.105 | 0.3639 | 0.369 | 0.4174 | 1.293 | 1.371 | 1.645 | 2.467 |
+| BTB MPKI (BAClears) | 0.01521 | 0.6409 | 1.406 | 0.04953 | 0.7227 | 1.698 | 0.04461 | 0.02002 | 0.03441 | 1.738 | 0.3614 | 2.101 |
+| L1I MPKI (code-read) | 0.9834 | 12.79 | 5.667 | 11.86 | 25.5 | 52.25 | 1.578 | 5.435 | 1.087 | 61.91 | 16.21 | 38.92 |
+| uop-cache (DSB) MPKI | 11.1 | 39.33 | 16.79 | 53.17 | 51.77 | 112.2 | 9.842 | 34.27 | 8.084 | 101.4 | 51.82 | 68.96 |
+| DSB coverage (%) | 92.51 | 70.91 | 82.49 | 57.11 | 60.19 | 14.42 | 88.74 | 68.18 | 94.69 | 20.77 | 59.93 | 46.23 |
+| L1D-load MPKI | 6.709 | 4.273 | 11.68 | 4.721 | 8.992 | 12.71 | 1.061 | 1.087 | 1.935 | 11.79 | 5.799 | 7.199 |
+| L2-load MPKI | 0.6927 | 0.4964 | 4.217 | 0.1666 | 0.5406 | 0.6175 | 0.1291 | 0.292 | 0.6903 | 0.7898 | 0.6407 | 0.4161 |
+| LLC MPKI | 0.1001 | 0.1824 | 0.4804 | 0.08751 | 0.07329 | 0.01798 | 0.09248 | 0.1311 | 0.3867 | 0.129 | 0.2983 | 0.03946 |
+| DRAM read (GB/s) | 1.683 | 1.053 | 11.67 | 4.694 | 7.679 | 7.594 | 9.944 | 2.226 | 5.717 | 2.009 | 1.009 | 0.7429 |
+| Context switches (/CPU-s) | 4.545 | 1012 | 193.7 | 319.9 | 9278 | 4.058e+04 | 817.3 | 620.7 | 227.4 | 4.713e+04 | 5051 | 3.371e+04 |
 
 Fence load during capture (**mean** cores of 8, the statistic that survives a duty cycle):
 naive-bayes 6.5, fin-http 6.6, chirper 6.3, page-rank 3.6, neo4j 2.4, **cassandra 1.9, tomcat 1.0,
@@ -102,33 +105,33 @@ valid, the workload is simply light. Cassandra also runs a ~50 % duty cycle at 1
 ### What the mentor's list adds
 
 **The instruction-supply extreme is the JIT-compiled server, not the agent.** `cassandra` misses
-the L1I 4.5× as often as the agentic median (70.8 vs 15.6 MPKI), `finagle-http` 3.4×, `tomcat`
-2.8×, and their uop-cache coverage collapses to 11%, 13% and 38% against the agent's 66%. This is
+the L1I 4.8× as often as the agentic median (61.9 vs 12.8 MPKI), `finagle-http` 4.1×, `tomcat`
+3.0×, and their uop-cache coverage collapses to 21%, 14% and 46% against the agent's 71%. This is
 the second time a new family has moved this conclusion: FeedSim alone made the agent look unique
 on instruction supply, video transcoding matched it, and JVM servers now sit far beyond it.
 
-**Context switching: the agent is mid-pack among servers.** 549 switches per CPU-second looked
-extreme next to SPEC's zero; `cassandra` runs at 49 000, `finagle-http` and `tomcat` at ~40 000,
-`finagle-chirper` at 8 400, `kafka` at 3 900. Caveat that cuts the other way: those JVMs carry their load-generating
+**Context switching: the agent is mid-pack among servers.** 1 012 switches per CPU-second looked
+extreme next to SPEC's 4.5; `cassandra` runs at 47 000, `finagle-http` at 40 600, `tomcat` at
+33 700, `finagle-chirper` at 9 300, `kafka` at 5 100. Caveat that cuts the other way: those JVMs carry their load-generating
 client threads *inside* the fence, whereas the agent's model proxy is excluded — so the
 comparison, if anything, flatters the agent.
 
 **What still singles the agentic workload out is branch *direction*, and nothing else.** Rank the
 agentic median against the other eleven workload-level values on each of the sixteen derived
-metrics and it comes first on exactly one: branch-direction misprediction, 3.60 MPKI (FeedSim
-3.38 is the only neighbour; `cassandra` 2.73, `tomcat` 2.27, every other JVM server 0.3–1.1, and
-`finagle-http` at 0.32 predicts better than SPEC). On every other axis it ranks 5th to 11th of
-12. The mechanism reads naturally: servers run hot loops the predictor learns even though their
+metrics and it comes first on exactly one: branch-direction misprediction, 3.36 MPKI (FeedSim
+3.32 is the only neighbour; `tomcat` 2.47, `kafka` 1.65, `cassandra` 1.37, every other JVM
+server 0.36–1.3, and `finagle-http` at 0.36 predicts better than SPEC). On every other axis it
+ranks 4th to 10th of 12 — derived first under the window-median rule, re-derived under the
+whole-runtime rule (§9), the same single axis under both. The mechanism reads naturally: servers run hot loops the predictor learns even though their
 *footprint* thrashes the caches (a capacity pathology); an agent runs unfamiliar code briefly —
 compilers, test runners, package managers, a new process image every few seconds — so the
 predictor never trains (a prediction pathology). Same symptom, "front-end bound", two different
 diseases.
 
-**Memory silence did not survive cassandra.** Before this correction the agentic family also held
-the lowest DRAM traffic (0.46 GB/s) and the finding was stated as a *combination* of branch
-hostility and memory quiet. `cassandra` reads 0.0185 GB/s, 25× less, and `tomcat` 0.57 is
-comparable to the agent, so the agentic family now ranks 11th of 12 on that axis rather than
-last. The single-axis claim above is what the twelve workloads support.
+**Memory silence did not survive cassandra.** Before the cassandra correction the agentic family
+also held the lowest DRAM traffic and the finding was stated as a *combination* of branch
+hostility and memory quiet. Under whole-runtime values the agentic 1.05 GB/s ranks 10th of 12:
+`tomcat` 0.74 and `kafka` 1.01 read less, `cassandra` 2.0 more. The single-axis claim above is what the twelve workloads support.
 
 **Rahul's Spark and Neo4j picks are the compute corner, not the serving corner.** `naive-bayes`
 and `neo4j-analytics` post the highest IPC of anything measured (3.6, 3.3), SPEC-grade branch
@@ -143,34 +146,35 @@ memory bandwidth. Useful as a reference, but not evidence about serving.
   of fence load, the loopback network stack's kernel work — softirq that belongs to no cgroup —
   is a visible share of what ran on the measured cores; kafka's fence totals are lower bounds.
 - One run per benchmark, JDK 21, eight fixed-frequency cores; no run-to-run repeats yet.
-- **cassandra is duty-cycled**, roughly 50 % idle at 100 ms granularity. Its per-window metrics
-  come from the busy windows (the analyzer's instruction floor drops the idle ones, as it does
-  for every workload), and its mean fence load of 1.9 cores is flat across the capture. Read its
-  rates as "while serving", not as an average over wall-clock.
+- **cassandra is duty-cycled**, roughly 50 % idle at 100 ms granularity, and its mean fence load
+  of 1.9 cores is flat across the capture. Under the whole-runtime rule its values are naturally
+  busy-weighted (an idle window adds almost nothing to either sum); under the older window-median
+  rule they were the median of the busy windows, which is why its branch MPKI read 3.3 then and
+  1.7 now.
 
 ## 4. Figures
 
-Two layouts, both in the current chart pack `charts/v2_2026-09-14_cassandra-reinstated/`
-(every subdirectory of a pack has its own README):
+Two layouts, both in the current chart pack `charts/v3_2026-09-15_runtime-votes/` (every
+subdirectory of a pack has its own README). Every per-workload value in them follows the
+whole-runtime rule of §9.
 
-- **Three-violin layout (mentor's request, 2026-09-14): fig01–fig05.**
-  `plots/paper_v1/multi_server_compact` is the 12-panel grid with SPEC (26), **Server** and
-  Agentic (36) violins, where Server is the eight JVM benchmarks — Renaissance finagle-http,
-  finagle-chirper, page-rank, naive-bayes, neo4j-analytics and DaCapo cassandra, tomcat, kafka —
-  one vote each. `multi_server_{ipc,frontend,memory,system}` are the per-window companions with
-  columns SPEC-int, SPEC-fp, Server, then one column per agentic task. The Server column holds
-  the eight benchmark votes, the same statistic as the SPEC columns beside it; `SERVER_MODE=windows`
-  pools the eight benchmarks' windows instead (equal capture lengths make that equal-weighted).
-  DCPerf is not part of the Server set and does not appear in these five.
+- **Three-violin layout (mentor's request): fig01–fig05.** `plots/paper_v1/multi_server_compact`
+  is the 12-panel grid with SPEC (26), **Server** (10) and Agentic (36) violins, where Server is
+  DCPerf FeedSim and VideoTranscodeBench, Renaissance finagle-http, finagle-chirper, page-rank,
+  naive-bayes, neo4j-analytics and DaCapo cassandra, tomcat, kafka — one value each.
+  `multi_server_{ipc,frontend,memory,system}` are the per-window companions with columns
+  SPEC-int, SPEC-fp, Server, then one column per agentic task; the three reference columns hold
+  the per-benchmark whole-runtime values, the agentic columns that task's 100 ms windows.
+  `SERVER_MODE=windows` pools the ten benchmarks' windows into the Server column instead.
 - **Per-benchmark layout: fig06–fig10.** `multi_agg_compact` keeps SPEC and Agentic violins and
-  draws one diamond per external benchmark (DCPerf 2, Renaissance 5, DaCapo 3) at its vote with
-  its window IQR, so the reader can see which benchmark sits where;
-  `multi_agg_{ipc,frontend,memory,system}` give each external benchmark its own per-window column.
+  draws one diamond per server benchmark at its whole-runtime value with a bar for its window
+  IQR, so the reader can see which benchmark sits where; `multi_agg_{ipc,frontend,memory,system}`
+  give each server benchmark its own per-window column.
 
-Unit rule for all of them: `../DCPerf/README.md` §5 and §7.7; run counts behind every vote: §7
-below. The pack's `Raw data/` carries the exact inputs of every script plus time-ordered
-per-window rows for all families (`timeseries_<family>.csv.gz`) so other aggregations can be
-tried; the mentor is taking a pass on that question.
+Run counts behind every value: §7. The pack's `Raw data/` carries `runtime_votes.csv` (every
+value drawn), the per-window rows the scripts read, and time-ordered per-window rows for all
+families (`timeseries_<family>.csv.gz`). `v2_2026-09-14_cassandra-reinstated/` is the same
+pair of layouts under the previous window-median rule, kept for provenance.
 
 ## 5. Files
 
@@ -242,9 +246,8 @@ in the sweep, all 72 kept (cassandra's nine were briefly excluded and are reinst
 
 Across the eight benchmarks the per-metric window count runs 1 481 to 1 552, except cassandra's
 context-switch metric at 759: its `priv` pass spends half of every 100 ms below the analyzer's
-activity floor because the workload is duty-cycled, so the idle half is dropped. A benchmark's
-vote for a metric is the median over that single run's windows, with the denominator co-counted
-in the same window.
+activity floor because the workload is duty-cycled, so the idle half is dropped. A benchmark's value for a metric is computed over that single run's windows — counters summed,
+ratio taken once (§9) — with the denominator co-counted over the same windows.
 
 This matches every other family: SPEC is one execution per benchmark with the groups rotating
 inside it, the agentic 36 are nine dedicated-group replays of one recorded trajectory each, and
@@ -314,3 +317,42 @@ a mean load of 1.93 cores.
 published finding that turned out to depend on the missing point: with cassandra present the
 agentic family is no longer the lowest-DRAM workload (§3). The lesson worth keeping is that a
 relative test needs an absolute floor, and that a robust statistic can still be the wrong one.
+
+## 9. The aggregation rule (mentor, 2026-09-15)
+
+**Rule.** One number per workload, computed over the workload's whole runtime: sum the raw
+counters over every window the workload was measured in, then take the ratio once. For
+`727.cppcheck_r`, 10 B instructions over the run in 6 B cycles is IPC 1.67 — one value, and the
+SPEC violin is the 26 such values. Not the median of per-window values (which weights every
+100 ms equally, busy or idle, and throws away the between-window information), and not a pool
+of all windows (which weights a workload by how long it ran). This replaces the window-median
+rule used until 2026-09-14 (`../DCPerf/README.md` §7.7 records that rule and why pooling was
+rejected; both objections stand, the mentor's rule answers both).
+
+**Implementation.** `local_agents/kit/plot/export_runtime_votes.py` runs the SPEC comparison
+kit's own loader (`~/spec26-infra/infra/scripts/extract_metrics.py`: `load_episode` sums every
+event over its group's windows with co-counted denominators, `metrics` takes the ratios) over
+all four families, so SPEC, the agentic 36, DCPerf and the JVM suites go through one
+implementation. Checked: its agentic values equal the banked `comparison_iso36.json` to the
+last digit. Output `data/l3_study/runtime_votes.csv`; every figure script takes
+`VOTE=runtime` (default) or `VOTE=median` (the old rule, for comparison).
+
+Three details worth knowing:
+
+- **Which windows count.** SPEC: the single episode, restricted to the nine counter groups the
+  other families rotate (as the banked comparison does). Agentic, DCPerf, JVM: all nine
+  dedicated-group runs are summed, so each metric comes from the run that carried its group and
+  IPC pools the eight runs that counted plain cycles and instructions (`priv` counts only the
+  user/kernel split). For the agentic tasks the nine runs are nine replays of one trajectory.
+- **Busy-weighting is the intended semantics.** A duty-cycled workload's idle windows add almost
+  nothing to either sum, so the value describes the work it did. This is why `cassandra`'s
+  branch MPKI is 1.7 here and was 3.3 under the median rule, and why SPEC's context switches
+  are 4.5 per CPU-second here and rounded to 0 there.
+- **What did not change.** The per-window figures still show each agentic task's windows (the
+  within-workload variation the mentor wants kept visible); only the per-workload reference
+  values moved. The findings in §3 were re-derived under the new rule and the single-axis
+  conclusion holds; the DRAM ordering shifted (`cassandra` is no longer the floor, `tomcat` is).
+
+**Not yet refreshed:** the DCPerf-only pack (`../DCPerf/charts/`) and the ML_iso36 paper pack
+still use window medians for their per-workload votes; their headline SPEC-vs-agent numbers
+(`comparison_iso36.json`) were whole-runtime all along.

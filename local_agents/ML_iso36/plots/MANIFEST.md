@@ -128,6 +128,11 @@ frontend counters land on the separating side.
   medians, not the ratio.
 - TMA panels pool census counts across a task's 9 episodes (group-independent instrument,
   duration-weighted); the per-episode min–max is banked in `iso36_tma_values.json`.
+- **Per-workload statistic (2026-09-15).** The mentor set the per-workload value to the metric
+  over the workload's whole runtime (counters summed over all windows, one ratio) — the
+  statistic `comparison_iso36.json` and the headline numbers below already use. The compact
+  grids in this pack still use the median of each workload's windows as its vote; they have
+  not been re-drawn under the rule yet (the multi-suite packs in `../../JVMbench/charts/` have).
 - **One profiling run per counter group; n = 1 run-to-run.** Each of the 36 tasks was replayed
   9 times, once per dedicated counter group, so a metric's per-window distribution comes from
   exactly one replay (IPC/branch MPKI from `fpbr`, branch-direction/BTB/uop-cache from

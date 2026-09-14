@@ -1,5 +1,18 @@
 # Wiki log
 
+## [2026-09-15] decision | Per-workload statistic = the metric over the workload's whole runtime
+
+Mentor's rule for every workload-level violin: one value per workload, computed by summing the
+raw counters over the workload's entire measured runtime and taking the ratio once (IPC = total
+instructions / total cycles), with co-counted denominators. Not the median of per-window values
+(equal weight to busy and idle windows, loses between-window information), not a pool of windows
+(weights workloads by runtime). Implemented for all four families by
+[export_runtime_votes.py](../../local_agents/kit/plot/export_runtime_votes.py) on top of the SPEC
+comparison kit's loader; the multi-suite figures follow it (`VOTE=runtime`). Consequence:
+busy-weighted values (cassandra branch MPKI 1.7 vs 3.3 under medians; SPEC context switches
+4.5/CPU-s vs 0). The single-axis agentic finding (branch-direction misprediction) holds under
+both rules. Source: `local_agents/JVMbench/README.md` §9.
+
 ## [2026-09-14] update | A duty-cycled workload broke the steady-state gate (median vs mean)
 
 `validate_dcperf.py` gate D4 compared per-sample MEDIANS of the 10 Hz fence-load series and

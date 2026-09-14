@@ -143,3 +143,22 @@ traffic" claim was an artifact of cassandra's wrongful exclusion.)
   three READMEs by hand plus the SPEC+agentic input file it lacked. `Raw data/README.md` lists
   the three aggregation options (votes, pooled, equal-weight pooled) and which file supports them.
 - Link for the mentor: https://github.com/Jerry0209/InferSuite/tree/dcperf/local_agents/JVMbench/charts
+
+## Addendum 4 (2026-09-15): mentor's aggregation rule — whole-runtime value per workload
+- Mentor's decision (documented for both of us): a violin's points are one value per
+  workload, computed over the workload's ENTIRE runtime — total instructions / total cycles
+  for IPC, etc. — not the median of per-window values, not a pool of windows. Also: DCPerf
+  belongs in the Server set (the v2 legend omitted it) → Server = 10.
+- Implementation: `kit/plot/export_runtime_votes.py` drives the SPEC comparison kit's
+  `extract_metrics.py` (load_episode + metrics, co-counted denominators) over all four
+  families → `JVMbench/data/l3_study/runtime_votes.csv` (72 workloads × 16 metrics). Agentic
+  values match the banked `comparison_iso36.json` exactly. SPEC restricted to the nine shared
+  groups; the other families sum their nine runs (IPC pools the eight non-priv runs).
+- All four multi-suite scripts take `VOTE=runtime` (default) / `median`; pack
+  `v3_2026-09-15_runtime-votes` (10 figures, runtime_votes.csv in Raw data, READMEs updated).
+- Findings re-derived: single-axis conclusion holds (agentic first on branch-direction MPKI,
+  3.36 vs FeedSim 3.32; 4th–10th elsewhere). Numbers moved: agentic IPC 1.90 (was 1.75 under
+  medians), ctx 1 012/CPU-s (was 549; equals the thesis headline), DRAM 1.05 GB/s (was 0.46,
+  rank 10/12, floor now tomcat 0.74); cassandra branch MPKI 1.68 (was 3.28: busy-weighting).
+- Not yet re-drawn under the rule: the DCPerf-only pack and the ML_iso36 paper pack (noted in
+  their READMEs/MANIFEST) — PI's call, since those are the thesis figures.
