@@ -150,11 +150,27 @@ memory bandwidth. Useful as a reference, but not evidence about serving.
 
 ## 4. Figures
 
-`plots/paper_v1/multi_agg_compact` is the 12-panel grid over every family profiled so far;
-each external benchmark is one marker at its vote, grouped under its suite (see the unit rule in
-`../DCPerf/README.md` §5 and §7.7). `plots/paper_v1/multi_agg_{ipc,frontend,memory,system}`
-are the per-window companions with one column per benchmark (each column a distribution over
-that benchmark's windows; only the two SPEC columns are distributions over benchmark medians). Chart packs live under `charts/`.
+Two layouts, both in the current chart pack `charts/v2_2026-09-14_cassandra-reinstated/`
+(every subdirectory of a pack has its own README):
+
+- **Three-violin layout (mentor's request, 2026-09-14): fig01–fig05.**
+  `plots/paper_v1/multi_server_compact` is the 12-panel grid with SPEC (26), **Server** and
+  Agentic (36) violins, where Server is the eight JVM benchmarks — Renaissance finagle-http,
+  finagle-chirper, page-rank, naive-bayes, neo4j-analytics and DaCapo cassandra, tomcat, kafka —
+  one vote each. `multi_server_{ipc,frontend,memory,system}` are the per-window companions with
+  columns SPEC-int, SPEC-fp, Server, then one column per agentic task. The Server column holds
+  the eight benchmark votes, the same statistic as the SPEC columns beside it; `SERVER_MODE=windows`
+  pools the eight benchmarks' windows instead (equal capture lengths make that equal-weighted).
+  DCPerf is not part of the Server set and does not appear in these five.
+- **Per-benchmark layout: fig06–fig10.** `multi_agg_compact` keeps SPEC and Agentic violins and
+  draws one diamond per external benchmark (DCPerf 2, Renaissance 5, DaCapo 3) at its vote with
+  its window IQR, so the reader can see which benchmark sits where;
+  `multi_agg_{ipc,frontend,memory,system}` give each external benchmark its own per-window column.
+
+Unit rule for all of them: `../DCPerf/README.md` §5 and §7.7; run counts behind every vote: §7
+below. The pack's `Raw data/` carries the exact inputs of every script plus time-ordered
+per-window rows for all families (`timeseries_<family>.csv.gz`) so other aggregations can be
+tried; the mentor is taking a pass on that question.
 
 ## 5. Files
 

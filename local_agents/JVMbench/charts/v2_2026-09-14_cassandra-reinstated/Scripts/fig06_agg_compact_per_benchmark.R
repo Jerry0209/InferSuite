@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# fig01_agg_compact — COPY of the canonical generator local_agents/kit/plot/plot_paper_agg_compact_ext.R
+# fig06_agg_compact_per_benchmark — COPY of the canonical generator local_agents/kit/plot/plot_paper_agg_compact_ext.R
 # (single source of truth; edit THERE). Runs from the repo root against the banked
 # data trees and writes into local_agents/JVMbench/plots/paper_v1/.
 # plot_paper_agg_compact_ext.R -- the 12-panel grid over SPEC, the agentic 36, and EVERY

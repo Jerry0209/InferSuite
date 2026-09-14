@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# fig02_agg_ipc — COPY of the canonical generator local_agents/kit/plot/plot_paper_agg_groups_ext.R
+# fig07_agg_ipc_per_benchmark — COPY of the canonical generator local_agents/kit/plot/plot_paper_agg_groups_ext.R
 # (single source of truth; edit THERE). Runs from the repo root against the banked
 # data trees and writes into local_agents/JVMbench/plots/paper_v1/.
 # plot_paper_agg_groups_ext.R -- the per-window group pictures extended with a column per

@@ -122,3 +122,24 @@ traffic" claim was an artifact of cassandra's wrongful exclusion.)
   branch-direction misprediction, 3.60 MPKI, first of 12, everything else 5th–11th.
 - Lesson worth keeping: a relative test needs an absolute floor, and a robust statistic (the
   median) can still be the wrong statistic for the question.
+
+## Addendum 3 (night 2026-09-14): mentor's three-violin layout, READMEs everywhere, data pushed
+- Mentor: the aggregated plot should have three violins — SPEC, Server, Agentic — with Server =
+  Renaissance {finagle-http, finagle-chirper, page-rank, naive-bayes, neo4j-analytics} + DaCapo
+  {cassandra, tomcat, kafka}; same for the four per-window figures; cassandra included; in v2.
+  Built: `plot_paper_agg_compact_server.R` (three violins, one vote per workload, 26/8/36) and
+  `plot_paper_agg_groups_server.R` (columns SPEC-int, SPEC-fp, Server, then the 36 tasks; the
+  Server column = the 8 benchmark votes, same statistic as the SPEC columns; `SERVER_MODE=windows`
+  pools windows instead). DCPerf is not in his Server list, so it is absent from fig01–05 and
+  kept in the per-benchmark companions fig06–10. Pack v2 now carries both sets.
+- Mentor: neither "pool the medians" nor "pool all windows" is obviously right (loses
+  inter-workload variation vs. runtime-weights the long runs); he will take a pass on the
+  plotting himself and asked for (1) the exact data behind the charts pushed, (2) a README in
+  every directory/subdirectory explaining each file and script, (3) the link. Done:
+  `export_timeseries_rows.py` writes time-ordered per-window rows for all families
+  (`timeseries_{spec26,agentic36,dcperf,renaissance,dacapo}.csv.gz`, 6.7 MB, with run / group /
+  window index / seconds since capture start / agentic command tag); the pack builder now writes
+  `README.md` into the pack, `Figures/`, `Raw data/` and `Scripts/`; v1 (frozen) got the same
+  three READMEs by hand plus the SPEC+agentic input file it lacked. `Raw data/README.md` lists
+  the three aggregation options (votes, pooled, equal-weight pooled) and which file supports them.
+- Link for the mentor: https://github.com/Jerry0209/InferSuite/tree/dcperf/local_agents/JVMbench/charts
