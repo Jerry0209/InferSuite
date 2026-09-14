@@ -49,8 +49,10 @@ JVM-specific mechanics (`bench_jvm_common.sh`, `bench_renaissance.sh`, `bench_da
   repeats its operation for at least the capture window plus warm-up; DaCapo with `-n 80`
   iterations, more than the window needs, and the scope is stopped afterwards.
 - **Steady state.** JVM start-up and JIT warm-up are a variable-length ramp, so the module waits
-  until the fence has been busy for eight consecutive seconds, then holds a further 45 s
-  before windowing begins. The 10 Hz poller covers the whole capture and the validator's
+  until the fence's CPU rate, averaged over a 10 s moving window, reaches one core, then holds
+  a further 45 s before windowing begins. A moving *mean* rather than "every second busy"
+  because DaCapo's iterations have a lightly-loaded reload gap between them (cassandra:
+  ~2.4 s in every ~7.9 s) that a per-second rule mistakes for the benchmark ending. The 10 Hz poller covers the whole capture and the validator's
   steady-state gate (D4) measures the drift afterwards rather than trusting the hold.
 - **JDK 21.** Renaissance runs unmodified. DaCapo Chopin refuses to start `cassandra` on JDK 17+
   unless `-Djava.security.manager=allow` is passed — its own exit message names the flag — so
