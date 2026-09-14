@@ -16,7 +16,10 @@ bench_preflight(){
 }
 bench_start(){ # $1 OUT, $2 UNIT
   echo "{\"jar\":\"$(basename "$DJAR")\",\"benchmark\":\"$DWL\",\"iterations\":$D_ITERS,\"size\":\"$D_SIZE\",\"java\":\"$("$JAVA" -version 2>&1 | head -1 | tr -d '"')\"}" > "$1/.load_json"
-  jvm_launch "$1" "$2" dacapo.log -jar "$DJAR" -n "$D_ITERS" -s "$D_SIZE" --no-validation "$DWL"
+  # DaCapo Chopin refuses to run cassandra (and other benchmarks using deprecated APIs) on
+  # JDK 17+ unless the security manager is explicitly allowed -- its own exit message names
+  # this flag. Harmless for the benchmarks that do not need it.
+  jvm_launch "$1" "$2" dacapo.log -Djava.security.manager=allow -jar "$DJAR" -n "$D_ITERS" -s "$D_SIZE" --no-validation "$DWL"
   jvm_wait_steady "$1" "$2"
 }
 bench_stop(){ jvm_stop "$1" "$2"; }

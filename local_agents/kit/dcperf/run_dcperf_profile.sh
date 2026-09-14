@@ -159,7 +159,11 @@ for g in $PROF_GROUPS; do
   UNIT="${SUITE}-${WL}-r${n}"
   if ! bench_start "$OUT" "$UNIT"; then
     dlog "pass $n ($g) FAILED to reach steady state"; bench_stop "$OUT" "$UNIT"
-    restore_isolation; continue
+    restore_isolation
+    # "whatever works on first shot": a workload that cannot even reach steady state on its
+    # FIRST pass is not going to on the next eight -- abort this workload, leave it undone
+    if [ "$n" -eq 1 ]; then dlog "ABORT $SUITE/$WL: first pass could not start (see $OUT)"; exit 4; fi
+    continue
   fi
   CG="$(cat "$OUT/.server_cg")"
   dlog "steady state reached; server fence = $CG"
