@@ -17,6 +17,7 @@ silently invalidate the comparison against SPEC and the agentic 36:
   D7 metric coverage    all 12 displayed metrics derived, from the groups that own them
 
     ~/miniforge3/envs/infersuite-full/bin/python3 local_agents/kit/dcperf/validate_dcperf.py [bench]
+    SUITE=renaissance DATA=local_agents/JVMbench/data ... validate_dcperf.py finagle-http
 """
 from __future__ import annotations
 
@@ -29,8 +30,13 @@ import sys
 
 REPO = os.path.expanduser("~/InferSuite")
 BENCH = sys.argv[1] if len(sys.argv) > 1 else "feedsim"
-BASE = f"{REPO}/local_agents/DCPerf/data/dcperf_{BENCH}"
-L3 = f"{REPO}/local_agents/DCPerf/data/l3_study"
+SUITE = os.environ.get("SUITE", "dcperf")
+DATA = os.environ.get("DATA", f"{REPO}/local_agents/DCPerf/data")
+if not DATA.startswith("/"):
+    DATA = f"{REPO}/{DATA}"
+BASE = f"{DATA}/{SUITE}_{BENCH}"
+L3 = f"{DATA}/l3_study"
+MEASURED = os.environ.get("CPUS_MEASURED", "4-11")
 GROUPS = ["fpbr", "cache", "mlp", "fe", "fe_lat", "core_ports", "dram_bw", "priv", "fe_miss"]
 # benchmarks whose DCPerf definition is a latency target, and which therefore owe an SLA receipt
 SLA_BENCHES = {"feedsim", "tao_bench", "mediawiki", "django_workload"}
@@ -63,7 +69,7 @@ def cpu_rate_series(path):
 
 
 runs = sorted(glob.glob(f"{BASE}/run_*"), key=lambda p: int(p.rsplit("_", 1)[1]))
-print(f"== DCPerf validation: {BENCH} ({len(runs)} run dirs) ==\n")
+print(f"== {SUITE} validation: {BENCH} ({len(runs)} run dirs) ==\n")
 
 # ---- D1 pass coverage ----
 done = {}
@@ -80,7 +86,7 @@ mux_examples = []
 for g, rd in sorted(done.items()):
     for wf in sorted(glob.glob(f"{rd}/group_{g}_w*.txt")):
         txt = open(wf).read()
-        if "dcperf-" not in txt:
+        if f"{SUITE}-" not in txt:
             continue
         n_win += 1
         # perf prints "(NN.NN%)" only when a counter was time-multiplexed
@@ -121,7 +127,9 @@ for g, rd in sorted(done.items()):
     pf = f"{rd}/procstat_partition.tsv"
     if not os.path.exists(pf):
         continue
-    meas = set(range(4, 12))
+    meas = set()
+    for part in MEASURED.split(","):
+        a, _, b = part.partition("-"); meas |= set(range(int(a), int(b or a) + 1))
     first, last = {}, {}
     for ln in open(pf):
         p = ln.split()
@@ -164,7 +172,7 @@ else:
 sla = []
 receipt_dirs = list(sorted(done.items())) + [
     ("confirm", d) for d in sorted(glob.glob(
-        f"{REPO}/local_agents/DCPerf/data/confirm/dcperf_{BENCH}/run_*"))]
+        f"{DATA}/confirm/{SUITE}_{BENCH}/run_*"))]
 for g, rd in receipt_dirs:
     f = f"{rd}/feedsim_results.txt"
     if not os.path.exists(f):

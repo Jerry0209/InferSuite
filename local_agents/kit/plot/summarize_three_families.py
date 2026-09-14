@@ -18,7 +18,13 @@ import sys
 
 REPO = os.path.expanduser("~/InferSuite")
 AGG = f"{REPO}/local_agents/ML_iso36/data/l3_study/agg_rows_long.csv"
-DCP = f"{REPO}/local_agents/DCPerf/data/l3_study/dcperf_rows_long.csv"
+# every external suite's rows (export_dcperf_rows.py --suite ...), colon-separated; missing
+# files are skipped so the table degrades gracefully to whatever has been profiled
+EXT = [f for f in os.environ.get("EXT_ROWS", ":".join([
+    f"{REPO}/local_agents/DCPerf/data/l3_study/dcperf_rows_long.csv",
+    f"{REPO}/local_agents/JVMbench/data/l3_study/renaissance_rows_long.csv",
+    f"{REPO}/local_agents/JVMbench/data/l3_study/dacapo_rows_long.csv"])).split(":")
+       if os.path.exists(f)]
 LANGS = ["C", "C++", "Rust", "Go", "Java", "PHP", "Ruby", "JavaScript", "TypeScript"]
 METRICS = ["IPC", "Branch MPKI", "Branch-direction MPKI", "BTB MPKI (BAClears)",
            "L1I MPKI (code-read)", "uop-cache (DSB) MPKI", "DSB coverage (%)",
@@ -38,13 +44,16 @@ for r in csv.DictReader(open(AGG)):
         ag[r["metric"]][r["col"]].append(v)  # per-window; median = the task's vote
 
 dc = collections.defaultdict(lambda: collections.defaultdict(list))
-if os.path.exists(DCP):
-    for r in csv.DictReader(open(DCP)):
+fam_of = {}
+for f in EXT:
+    for r in csv.DictReader(open(f)):
         if r["fence"] == "both" and r["metric"] in METRICS:
             dc[r["metric"]][r["col"]].append(float(r["value"]))
+            fam_of[r["col"]] = r["grp"]
 
-benches = sorted({b for m in dc for b in dc[m]})
-hdr = ["Metric", "SPEC", "Agentic 36"] + [f"DCPerf {b}" for b in benches] + \
+order = {"DCPerf": 0, "Renaissance": 1, "DaCapo": 2}
+benches = sorted({b for m in dc for b in dc[m]}, key=lambda b: (order.get(fam_of.get(b, ""), 9), b))
+hdr = ["Metric", "SPEC", "Agentic 36"] + [f"{fam_of[b]}:{b}" for b in benches] + \
       ["Agentic/SPEC"] + [f"{b}/SPEC" for b in benches]
 rows = []
 for m in METRICS:
@@ -70,5 +79,6 @@ else:
     for r in rows:
         print("  ".join(c.ljust(wds[i]) for i, c in enumerate(r)))
 n_ag = len(ag["IPC"]) if ag["IPC"] else 0
-print(f"\nvotes: SPEC {len(spec['IPC'])} benchmarks · Agentic {n_ag} tasks · "
-      f"DCPerf {len(benches)} benchmark(s) [{', '.join(benches)}]", file=sys.stderr)
+fams = collections.Counter(fam_of[b] for b in benches)
+print(f"\nvotes: SPEC {len(spec['IPC'])} benchmarks · Agentic {n_ag} tasks · " +
+      " · ".join(f"{f} {n} benchmark(s)" for f, n in fams.items()), file=sys.stderr)
