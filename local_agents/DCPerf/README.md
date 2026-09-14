@@ -1,6 +1,6 @@
 # DCPerf on P7 — task choice, profiling method, and how it differs from SPEC and the agentic 36
 
-**Branch:** `dcperf` · **Started:** 2026-09-10 · **Profiled so far:** FeedSim, VideoTranscodeBench (2 of 6)
+**Branch:** `dcperf` · **Started:** 2026-09-10 · **Profiled so far:** FeedSim, VideoTranscodeBench (2 of 6) · **Isolation hardened:** 2026-09-14 (§8)
 
 Suite-level bring-up notes (install recipe, per-benchmark feasibility, traps) live in
 [`docs/handoff/dcperf_bringup.md`](../../docs/handoff/dcperf_bringup.md). This document is the
@@ -412,3 +412,58 @@ claims:
 Within-workload spread is not thrown away: it is exactly what the per-window group figures
 show, and for the DCPerf markers it is the p25–p75 bar (labelled in the key as a
 within-workload quantity, precisely because it is not comparable to a violin's width).
+
+## 8. Isolation made self-sufficient (2026-09-14)
+
+**Why this was needed.** The measurement environment on P7 was, without anyone intending it,
+partly a colleague's: the housekeeping partition (`system.slice`/`user.slice` on cores
+0-3,12-15) had been set through cgroupfs by Jeferson's setup, the unbound-workqueue mask sat
+at `0x3003` from a runtime write of his, and the IRQ affinity came from his GRUB entry. Our
+shield pinned the slices itself but silently relied on the rest — and Jeferson will release
+those cores when his profiling ends. From that moment, a capture that only re-pinned slices
+would have let unbound kernel work and stray tasks onto the measured cores mid-window.
+
+**What changed.** Every knob is now snapshotted, applied, *proven* and restored by our own
+code, in `local_agents/kit/campaign/run_glm_campaign.sh` (so every agent campaign gets it
+too) and `local_agents/kit/dcperf/run_dcperf_profile.sh`:
+
+| Knob | Before | Now |
+|---|---|---|
+| `system.slice` / `user.slice` cpuset | applied + verified | unchanged |
+| `init.scope` cpuset | untouched | applied to house cores + verified |
+| `measured.slice` cpuset | applied | + verified |
+| unbound workqueue cpumask (`/sys/devices/virtual/workqueue/cpumask`) | **inherited from the boot entry / a colleague's write** | applied to the house mask, verified, restored from snapshot |
+| default IRQ affinity | applied | + verified |
+| per-IRQ affinities, governor, `no_turbo`, THP, `nmi_watchdog` | applied + verified | unchanged |
+| clock on the measured cores | `performance` governor + `no_turbo=1` — which holds 3.2 GHz in practice, but `scaling_min_freq` was left at 800 MHz (live state 2026-09-14, co-tenant unit active) | `scaling_min_freq = scaling_max_freq = base_frequency` (3.2 GHz) applied per measured core, verified, restored — the clock asserted, not inferred |
+| foreign residents | only an indirect "cores are quiet" sample | explicit scan: any user-space task outside `measured.slice` still *allowed* onto a measured core fails ISO-PROOF and is named — it can wake mid-capture even if idle now |
+| SMT siblings of the measured cores | manual step, verified by a gate | offlined automatically at sweep start, remembered, restored by the EXIT trap; gate kept as verification |
+| snapshot of slice cpusets | systemd `AllowedCPUs` property — **empty** when the partition was set via cgroupfs, so restore fell back to "all online CPUs" and widened 0-3,12-15 to 0-15 | effective cpuset when the property is empty; a slice with no restriction is marked `UNRESTRICTED` and restored to the machine's *possible* CPUs, so cores brought back online later are not excluded |
+| shared-PMU guard | per pass | + at sweep start, before any core is offlined |
+
+The kit's `isolation-test` stage (apply → verify every knob → revert → verify reverted) checks
+the new knobs as well.
+
+**Does it work.** Two pieces of evidence, both from 2026-09-14:
+
+1. `run_glm_campaign.sh isolation-test` passed: every ISO-PROOF check including the new
+   ones, foreign-resident scan clean, partition quiet, then **every knob restored
+   bit-for-bit** — workqueue mask `003003`, IRQ default `00f00f`, slices `0-3,12-15`,
+   `init.scope` `0-23`, governor `powersave`, `no_turbo` `0`, identical before and after.
+   The old widening defect is gone.
+2. A FeedSim pass re-captured on 2026-09-14 under the hardened shield (siblings offlined by
+   the orchestrator, clock pinned, foreign-resident scan clean) **reproduces the banked
+   2026-09-10 capture**: IPC 1.718 vs 1.725 (−0.4%), server load 3.32 vs 3.29 cores, SLA
+   receipt 15.91 QPS at p95 475 ms vs 15.96 / 472 ms. Branch MPKI came out 5.22 vs 4.87 (+7%),
+   which sits inside that metric's own window IQR (3.5–7.6) and is what a shorter slice
+   (120 s vs 300 s) of a stochastic request stream looks like; IPC and load, the two
+   quantities a leaking partition would move first, did not move.
+
+**Were the two DCPerf captures reliable?** Yes, and the evidence is measured, not assumed:
+ISO-PROOF passed before every one of the 18 passes; the SMT gate passed at every sweep start;
+the workqueue mask (`0x3003`) and IRQ affinity (`0xf00f`) that the old shield relied on were
+in place for the entire period and are unchanged today, so they were in place during the
+captures; and the partition witness (gate D5 — `/proc/stat` on the measured cores minus the
+fence's own `cpu.stat`) bounds everything that ran on those cores outside our fence at
+**≤ 2.5% (FeedSim) and ≤ 2.7% (VideoTranscodeBench)** of busy time. The captures were taken
+under the same conditions the hardened shield now guarantees on its own; they stand.
