@@ -4,7 +4,7 @@
 |---|---|
 | Owner | LLM maintained, human reviewed |
 | Status | Validated |
-| Last updated | 2026-08-05 |
+| Last updated | 2026-09-14 |
 | Sources | [CLAUDE.md](../../../CLAUDE.md), [harden_isolation.sh](../../../scripts/harden_isolation.sh), [run_glm_campaign.sh](../../../local_agents/kit/campaign/run_glm_campaign.sh) |
 
 ## Purpose
@@ -43,3 +43,13 @@ gate, not an "OK" line.
 
 - [Service data path](../architecture/service-data-path.md) — where the k3s-pod-escape lesson bites.
 - [Agent measurement design](../architecture/measurement-design.md) — the housekeeping/measured split.
+
+## Self-sufficient shield (2026-09-14)
+
+*Decision.* The runtime shield no longer borrows any knob from the co-tenant stack on P7: it
+pins `init.scope`, writes the unbound-workqueue cpumask, asserts a fixed clock on the measured
+cores (`scaling_min = scaling_max = base_frequency`), refuses foreign resident tasks, and
+snapshots slice cpusets by their effective value when systemd's property is empty. The DCPerf
+orchestrator offlines and restores SMT siblings itself. Procedure, file table and the
+verification evidence are in the [isolation setup runbook](isolation-setup-runbook.md)
+(§ "Since 2026-09-14").

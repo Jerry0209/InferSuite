@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
-"""export_dcperf_rows.py — put DCPerf per-window metrics into the SAME long format and the
-same metric vocabulary as the SPEC and agentic rows, so one plotting path serves all three.
+"""export_dcperf_rows.py — put an external benchmark SUITE's per-window metrics into the same
+long format and metric vocabulary as the SPEC and agentic rows, so one plotting path serves
+every family. Generalised 2026-09-14 from DCPerf-only to any suite profiled by
+kit/dcperf/run_dcperf_profile.sh (DCPerf, Renaissance, DaCapo ...).
 
-Input : local_agents/DCPerf/data/l3_study/all_windows_<bench>.csv
-        (written by analyze_l3_windows.py -- the SAME derivation code the 36 tasks use,
-         invoked with L3_BASE_PREFIX=dcperf_ and a single-fence L3_FENCES map)
-Output: local_agents/DCPerf/data/l3_study/dcperf_rows_long.csv
-        columns: fence, metric, grp, col, value      (grp = "DCPerf", col = benchmark name)
+Input : <data>/l3_study/all_windows_<workload>.csv for each <data>/<suite>_<workload>/ run dir
+        (written by analyze_l3_windows.py -- the SAME derivation code the 36 tasks use)
+Output: <out> with columns fence, metric, grp, col, value   (grp = <label>, col = workload)
 
-Only the merged fence is exported ("both"), which for a single-fence DCPerf benchmark is the
-server fence itself -- the counterpart of the agent's merged tool+harness fence.
+Only the merged fence is exported ("both"), which for a single-fence benchmark is the server
+fence itself -- the counterpart of the agent's merged tool+harness fence.
 
-    ~/miniforge3/envs/infersuite-full/bin/python3 local_agents/kit/plot/export_dcperf_rows.py
+    export_dcperf_rows.py [--suite dcperf] [--label DCPerf] [--data local_agents/DCPerf/data]
+                          [--out <data>/l3_study/<suite>_rows_long.csv]
 """
 from __future__ import annotations
 
+import argparse
 import csv
 import glob
 import os
@@ -22,7 +24,15 @@ import statistics as st
 import sys
 
 REPO = os.path.expanduser("~/InferSuite")
-L3 = f"{REPO}/local_agents/DCPerf/data/l3_study"
+ap = argparse.ArgumentParser()
+ap.add_argument("--suite", default="dcperf")
+ap.add_argument("--label", default=None, help="family label in the figures (default: suite, DCPerf for dcperf)")
+ap.add_argument("--data", default=f"{REPO}/local_agents/DCPerf/data")
+ap.add_argument("--out", default=None)
+a = ap.parse_args()
+LABEL = a.label or {"dcperf": "DCPerf", "renaissance": "Renaissance", "dacapo": "DaCapo"}.get(a.suite, a.suite)
+L3 = f"{a.data}/l3_study"
+OUT = a.out or f"{L3}/{a.suite}_rows_long.csv"
 
 # (window-metric key, display label) -- identical labels to export_agg_rows_long.py's METRICS
 METRICS = [
@@ -45,19 +55,26 @@ METRICS = [
 ]
 LAB = dict(METRICS)
 
-files = sorted(glob.glob(f"{L3}/all_windows_*.csv"))
-if not files:
-    sys.exit(f"no all_windows_*.csv under {L3} — run analyze_l3_windows.py first")
+# the suite's workloads are the run dirs that carry its prefix and are complete
+wls = []
+for d in sorted(glob.glob(f"{a.data}/{a.suite}_*")):
+    if not os.path.isdir(d):
+        continue
+    wl = os.path.basename(d)[len(a.suite) + 1:]
+    if glob.glob(f"{d}/run_*/DONE") and os.path.exists(f"{L3}/all_windows_{wl}.csv"):
+        wls.append(wl)
+if not wls:
+    sys.exit(f"no derived workloads for suite '{a.suite}' under {a.data} — run derive first")
 
-out = open(f"{L3}/dcperf_rows_long.csv", "w", newline="")
+os.makedirs(L3, exist_ok=True)
+out = open(OUT, "w", newline="")
 w = csv.writer(out)
 w.writerow(["fence", "metric", "grp", "col", "value"])
 n = 0
 summary = {}
-for f in files:
-    bench = os.path.basename(f)[len("all_windows_"):-len(".csv")]
+for wl in wls:
     vals = {}
-    for r in csv.DictReader(open(f)):
+    for r in csv.DictReader(open(f"{L3}/all_windows_{wl}.csv")):
         if r["fence"] != "both":
             continue
         lab = LAB.get(r["metric"])
@@ -66,13 +83,13 @@ for f in files:
         vals.setdefault(lab, []).append(float(r["value"]))
     for lab, v in vals.items():
         for x in v:
-            w.writerow(["both", lab, "DCPerf", bench, x])
+            w.writerow(["both", lab, LABEL, wl, x])
             n += 1
-        summary.setdefault(bench, {})[lab] = (len(v), st.median(v))
+        summary.setdefault(wl, {})[lab] = (len(v), st.median(v))
 out.close()
-print(f"wrote {L3}/dcperf_rows_long.csv: {n} rows")
-for bench, m in summary.items():
-    print(f"\n{bench}:")
+print(f"wrote {OUT}: {n} rows, family '{LABEL}', workloads {wls}")
+for wl, m in summary.items():
+    print(f"\n{wl}:")
     for _k, lab in METRICS:
         if lab in m:
             cnt, med = m[lab]

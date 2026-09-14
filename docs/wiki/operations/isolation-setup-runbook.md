@@ -4,7 +4,7 @@
 |---|---|
 | Owner | LLM maintained, human reviewed |
 | Status | Implemented |
-| Last updated | 2026-08-05 |
+| Last updated | 2026-09-14 |
 | Sources | [harden_isolation.sh](../../../scripts/harden_isolation.sh), [run_glm_campaign.sh](../../../local_agents/kit/campaign/run_glm_campaign.sh), [campaign.conf](../../../local_agents/kit/campaign/campaign.conf), `~/spec26-infra/infra/scripts/run_spec_campaign.sh` (SPEC CPU 2026 sibling kit, outside this repo), live `Intel Xeon w5-3425` state read 2026-08-05 |
 
 ## Purpose
@@ -247,7 +247,44 @@ for f in /proc/irq/*/smp_affinity; do echo f00f | sudo tee "$f" >/dev/null 2>&1;
 # THP + NMI watchdog, in case the boot layer is absent
 echo never | sudo tee /sys/kernel/mm/transparent_hugepage/{enabled,defrag} >/dev/null
 echo 0     | sudo tee /proc/sys/kernel/nmi_watchdog >/dev/null
+
+# since 2026-09-14 -- nothing borrowed from a co-tenant's boot entry or units any more:
+sudo systemctl set-property --runtime init.scope AllowedCPUs=0-3,12-15
+echo f00f | sudo tee /sys/devices/virtual/workqueue/cpumask >/dev/null     # unbound kworkers
+for c in $(seq 4 11); do d=/sys/devices/system/cpu/cpu$c/cpufreq            # fixed clock
+  cat $d/cpuinfo_min_freq | sudo tee $d/scaling_min_freq >/dev/null
+  cat $d/base_frequency   | sudo tee $d/scaling_max_freq >/dev/null
+  cat $d/base_frequency   | sudo tee $d/scaling_min_freq >/dev/null; done
 ```
+
+### Since 2026-09-14: the shield is self-sufficient
+
+*Fact.* Until 2026-09-14 the runtime shield silently depended on state it did not own: the
+`0-3,12-15` housekeeping partition had been written through cgroupfs by the co-tenant stack
+(so systemd's `AllowedCPUs` property read empty), the unbound-workqueue cpumask sat at `0x3003`
+from a runtime write of the same stack, and the IRQ affinity came from its GRUB entry. The clock
+was a subtler case: this page had *inferred* from the co-tenant's config that his `host-policy`
+unit pins `scaling_{min,max}_freq` on the measured cores, but the live state read on 2026-09-14
+with that unit active was `min=800000 max=3200000` — the cores were held at 3.2 GHz only by
+`performance` + `no_turbo=1`, not by an explicit pin. That operator will release the cores when
+his profiling ends.
+
+*Decision.* Every one of those knobs is now snapshotted, applied, verified by ISO-PROOF and
+restored by [run_glm_campaign.sh](../../../local_agents/kit/campaign/run_glm_campaign.sh)
+itself: `init.scope` pinned; the unbound workqueue cpumask written to the house mask;
+`scaling_min_freq = scaling_max_freq = base_frequency` on every measured core (asserted, not
+inferred from `performance` + `no_turbo`); and the SMT siblings offlined by the DCPerf
+orchestrator ([run_dcperf_profile.sh](../../../local_agents/kit/dcperf/run_dcperf_profile.sh))
+at sweep start and restored by its `EXIT` trap. The snapshot of a slice whose systemd property
+is empty is now its **effective** cpuset; a slice with no restriction is marked `UNRESTRICTED`
+and restored to the machine's *possible* CPUs, so siblings brought back online later are not
+excluded. The old fallback ("restore to all online CPUs") had widened `0-3,12-15` to `0-15`
+after every campaign — observed 2026-09-10 — and is gone.
+
+*Observation.* The `isolation-test` stage passed on 2026-09-14 with the new checks, and every
+knob was restored bit-for-bit: workqueue mask `003003`, IRQ default `00f00f`, slices
+`0-3,12-15`, `init.scope` `0-23`, governor `powersave`, `no_turbo` `0`, identical before and
+after.
 
 > **k3s pods escape slice shields.** Stopping `k3s` leaves the pods alive under `kubepods.slice`,
 > whose cpuset is the full machine — outside the fence. The kit stops k3s, runs
@@ -286,6 +323,13 @@ What it checks, and what you should check by hand if you are doing this manually
    just a pass/fail verdict.
 4. No other user's `perf` holding **hardware** counters. On a shared box, coordinate — never
    `pkill` someone else's capture.
+5. *(since 2026-09-14)* `init.scope` and `measured.slice` effective cpusets; the unbound
+   workqueue cpumask and the default IRQ affinity equal to the house mask; and
+   `scaling_min_freq = scaling_max_freq = base_frequency` on every measured core.
+6. *(since 2026-09-14)* **No foreign residents**: a user-space task outside `measured.slice`
+   whose `Cpus_allowed_list` still intersects the measured cores fails the gate and is named
+   (pid, comm, cgroup) — idle now is not safe, it can wake mid-capture. `ISO_ALLOW_FOREIGN=1`
+   downgrades this to a warning for the operator who knows better.
 
 ---
 
@@ -341,6 +385,9 @@ Copy this table when someone asks "what did you change on my machine?".
 | `/proc/sys/kernel/nmi_watchdog` | `0` |
 | `/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor` | `performance` (all online CPUs) |
 | `/sys/devices/system/cpu/intel_pstate/no_turbo` | `1` |
+| `/sys/fs/cgroup/init.scope/cpuset.cpus` *(since 2026-09-14)* | `0-3,12-15` |
+| `/sys/devices/virtual/workqueue/cpumask` *(since 2026-09-14)* | `f00f` — unbound kworkers onto the house cores |
+| `/sys/devices/system/cpu/cpu{4..11}/cpufreq/scaling_{min,max}_freq` *(since 2026-09-14)* | `base_frequency` (3200000 on the w5-3425) — the clock asserted, not inferred |
 
 Every layer-3 value is snapshotted into the kit's `.state/` directory **before** any mutation —
 `gov_cpuN` per CPU, `no_turbo`, `thp`, `thp_defrag`, `nmi`, `irq_default`, `irq_N` per IRQ,
@@ -352,7 +399,11 @@ still restores cleanly on the next run.
 > everywhere flattened a per-core policy — cpu0 was `powersave` while the workload cores were
 > `performance`, and the single-value restore silently downgraded them. **(2)** Snapshot the slice
 > cpusets. Restoring them to "all online CPUs" destroyed an operator's existing `0-3,12-15` split
-> and let OS work back onto the measured cores.
+> and let OS work back onto the measured cores. **(3)** *(2026-09-14)* Do not snapshot a slice
+> cpuset through systemd's `AllowedCPUs` property alone: it reads **empty** when the partition was
+> established through cgroupfs by someone else, and an empty snapshot restored as "all online
+> CPUs" is bug (2) again by another route. Snapshot the effective cpuset when the property is
+> empty, and mark a genuinely unrestricted slice so it is restored to *possible*, not *online*.
 
 ---
 
@@ -373,6 +424,11 @@ is confirmed, the *script* was not read.
 
 Practical consequence for a colleague reproducing this: on a machine without that stack, run steps
 2 and 3 by hand (or install them as your own boot unit). Do not assume a reboot restores them.
+
+*Since 2026-09-14* the kit no longer needs those units for anything but layer 1: the SMT
+offlining, the clock pin, the workqueue mask and the housekeeping partition are applied by the
+kit itself and proven by ISO-PROOF before any capture, and restored afterwards. The co-tenant
+releasing his cores changes nothing the measurement depends on.
 
 ---
 

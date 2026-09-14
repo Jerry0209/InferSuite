@@ -134,6 +134,11 @@ print(" ".join(map(str, out)))
 PYEOF
 }
 
+expand_cpus(){ python3 -c 'import sys
+out=[]
+for part in sys.argv[1].split(","):
+    a,_,b=part.partition("-"); out+=range(int(a),int(b or a)+1)
+print(" ".join(map(str,out)))' "$1"; }
 mask_eq(){ python3 -c 'import sys; a,b=[int(x.replace(",",""),16) for x in sys.argv[1:3]]; sys.exit(0 if a==b else 1)' "$1" "$2"; }
 iso_foreign_residents(){
   python3 - "$CPUS_MEASURED" "$MSLICE" "${ISO_ALLOW_FOREIGN:-0}" <<'PY'
@@ -182,6 +187,10 @@ apply_isolation(){
     for gc in $(online_cpus); do
       [ -e "/sys/devices/system/cpu/cpu$gc/cpufreq/scaling_governor" ] && \
         cat "/sys/devices/system/cpu/cpu$gc/cpufreq/scaling_governor" > "$STATE/gov_cpu$gc"
+      local fk; for fk in scaling_min_freq scaling_max_freq; do
+        [ -e "/sys/devices/system/cpu/cpu$gc/cpufreq/$fk" ] && \
+          cat "/sys/devices/system/cpu/cpu$gc/cpufreq/$fk" > "$STATE/${fk}_cpu$gc"
+      done
     done
     # The ORIGINAL slice cpusets. Restoring these to "all online CPUs" destroys a housekeeping
     # partition someone else configured — it reset an operator's 0-3,12-15 split to 0-15 and
@@ -223,6 +232,19 @@ apply_isolation(){
   log "ISOLATION: applying"
   echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor >/dev/null
   echo 1           | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo         >/dev/null
+  # FIXED CLOCK on the measured cores, pinned by US: scaling_min = scaling_max = the base
+  # (non-turbo) frequency. governor=performance + no_turbo=1 lands there in practice, but the
+  # co-tenant's host-policy unit was pinning scaling_{min,max}_freq explicitly on this box and
+  # will go away with his profiling -- assert the clock rather than infer it. Order matters:
+  # drop min to the floor first so a max write below the old min is not rejected.
+  local mc base fdir
+  for mc in $(expand_cpus "$CPUS_MEASURED"); do
+    fdir="/sys/devices/system/cpu/cpu$mc/cpufreq"
+    base=$(cat "$fdir/base_frequency" 2>/dev/null) || continue
+    cat "$fdir/cpuinfo_min_freq" | sudo tee "$fdir/scaling_min_freq" >/dev/null 2>&1
+    echo "$base" | sudo tee "$fdir/scaling_max_freq" >/dev/null 2>&1
+    echo "$base" | sudo tee "$fdir/scaling_min_freq" >/dev/null 2>&1
+  done
   echo never       | sudo tee /sys/kernel/mm/transparent_hugepage/enabled           >/dev/null
   echo never       | sudo tee /sys/kernel/mm/transparent_hugepage/defrag            >/dev/null
   echo 0           | sudo tee /proc/sys/kernel/nmi_watchdog                         >/dev/null
@@ -276,6 +298,14 @@ PY
   [ "$(cat /sys/fs/cgroup/user.slice/cpuset.cpus.effective)" = "$CPUS_HOUSE" ]   || { log "ISO-PROOF FAIL: user.slice cpuset"; iso_fail=1; }
   local GOVCPU="${CPUS_MEASURED%%[-,]*}"   # first measured core (was hardcoded cpu2, a house core since the 2026-08-05 re-partition)
   [ "$(cat /sys/devices/system/cpu/cpu$GOVCPU/cpufreq/scaling_governor)" = performance ] || { log "ISO-PROOF FAIL: governor (cpu$GOVCPU)"; iso_fail=1; }
+  local fc fdir fbase
+  for fc in $(expand_cpus "$CPUS_MEASURED"); do
+    fdir="/sys/devices/system/cpu/cpu$fc/cpufreq"
+    fbase=$(cat "$fdir/base_frequency" 2>/dev/null) || continue
+    if [ "$(cat "$fdir/scaling_min_freq")" != "$fbase" ] || [ "$(cat "$fdir/scaling_max_freq")" != "$fbase" ]; then
+      log "ISO-PROOF FAIL: cpu$fc clock not pinned (min=$(cat "$fdir/scaling_min_freq") max=$(cat "$fdir/scaling_max_freq") base=$fbase)"; iso_fail=1; break
+    fi
+  done
   [ "$(cat /sys/devices/system/cpu/intel_pstate/no_turbo)" = 1 ] || { log "ISO-PROOF FAIL: no_turbo"; iso_fail=1; }
   [ "$(cat /sys/fs/cgroup/init.scope/cpuset.cpus.effective)" = "$CPUS_HOUSE" ]  || { log "ISO-PROOF FAIL: init.scope cpuset"; iso_fail=1; }
   [ "$(cat /sys/fs/cgroup/$MSLICE/cpuset.cpus.effective)" = "$CPUS_MEASURED" ] || { log "ISO-PROOF FAIL: $MSLICE cpuset"; iso_fail=1; }
@@ -320,6 +350,16 @@ restore_isolation(){
     rm -f "$gf"
   done
   rm -f "$STATE/governor"
+  # clock policy back per CPU (min to the floor first, then max, then min -- same ordering rule)
+  local rc_ rdir
+  for rc_ in $(online_cpus); do
+    rdir="/sys/devices/system/cpu/cpu$rc_/cpufreq"
+    [ -f "$STATE/scaling_max_freq_cpu$rc_" ] || continue
+    cat "$rdir/cpuinfo_min_freq" | sudo tee "$rdir/scaling_min_freq" >/dev/null 2>&1
+    sudo tee "$rdir/scaling_max_freq" < "$STATE/scaling_max_freq_cpu$rc_" >/dev/null 2>&1
+    sudo tee "$rdir/scaling_min_freq" < "$STATE/scaling_min_freq_cpu$rc_" >/dev/null 2>&1
+    rm -f "$STATE/scaling_max_freq_cpu$rc_" "$STATE/scaling_min_freq_cpu$rc_"
+  done
   [ -f "$STATE/no_turbo" ] && cat "$STATE/no_turbo" | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo >/dev/null
   [ -f "$STATE/thp" ]        && cat "$STATE/thp"        | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null
   [ -f "$STATE/thp_defrag" ] && cat "$STATE/thp_defrag" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag  >/dev/null
@@ -962,6 +1002,8 @@ stage_isolation_test(){
   log "ISOTEST: verifying"
   local fail=0
   [ "$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)" = performance ] || { log "ISOTEST FAIL governor"; fail=1; }
+  local tc tdir; tc="${CPUS_MEASURED%%[-,]*}"; tdir="/sys/devices/system/cpu/cpu$tc/cpufreq"
+  [ "$(cat "$tdir/scaling_min_freq")" = "$(cat "$tdir/base_frequency" 2>/dev/null || cat "$tdir/scaling_min_freq")" ] || { log "ISOTEST FAIL clock pin (cpu$tc)"; fail=1; }
   [ "$(cat /sys/devices/system/cpu/intel_pstate/no_turbo)" = 1 ] || { log "ISOTEST FAIL no_turbo"; fail=1; }
   grep -q '\[never\]' /sys/kernel/mm/transparent_hugepage/enabled || { log "ISOTEST FAIL thp"; fail=1; }
   [ "$(cat /proc/sys/kernel/nmi_watchdog)" = 0 ] || { log "ISOTEST FAIL nmi"; fail=1; }

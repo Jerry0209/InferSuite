@@ -1,5 +1,16 @@
 # Wiki log
 
+## [2026-09-14] update | Isolation shield made self-sufficient
+
+Updated [isolation setup runbook](operations/isolation-setup-runbook.md) and
+[isolation & hardening](operations/isolation-hardening.md): the runtime shield in
+[run_glm_campaign.sh](../../local_agents/kit/campaign/run_glm_campaign.sh) now owns every knob it
+used to inherit from the co-tenant stack (housekeeping partition via effective-cpuset snapshot,
+unbound workqueue cpumask, `init.scope`, fixed clock on the measured cores), ISO-PROOF verifies
+them and scans for foreign resident tasks, and the DCPerf orchestrator offlines/restores SMT
+siblings itself. Motivation: the co-tenant will release the cores. Verified by the
+`isolation-test` stage on 2026-09-14 (all knobs restored bit-for-bit).
+
 ## [2026-08-05] ingest | Isolation setup runbook — SMT, DVFS, core isolation
 
 Added [isolation setup runbook](operations/isolation-setup-runbook.md), the procedural companion to
