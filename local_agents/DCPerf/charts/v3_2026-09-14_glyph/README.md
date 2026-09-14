@@ -28,3 +28,11 @@ these figures; `feedsim_operating_point_calibration.csv` is the QPS sweep that c
 the 16 QPS operating point (highest point meeting DCPerf's own p95 ≤ 500 ms).
 Regenerate: run the scripts with the `rplot` env Rscript from the repo root, then
 rerun `local_agents/kit/plot/build_dcperf_chart_pack.py` with VERSION set.
+
+**Runs behind a vote.** One profiling run per counter group per workload: SPEC 1 execution per
+benchmark (11 groups rotating inside it), the agentic 36 and DCPerf 9 runs each (one dedicated
+group per run). A metric's vote is the median over the windows of the single run that carried
+its counters — IPC and branch MPKI from `fpbr`, the branch-direction/BTB/uop-cache triple from
+`fe_miss`, L1I from `fe_lat`, DSB coverage from `fe`, the cache MPKIs from `cache`, DRAM from
+`dram_bw`, context switches from `priv`. Run-to-run repetition is n = 1 in every family.
+Details: `../../README.md` §7.8.

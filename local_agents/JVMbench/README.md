@@ -190,3 +190,32 @@ does not touch the plotted metrics — IPC uses unhalted cycles, MPKI are per in
 switches are per CPU-second. It must be remembered for any throughput or cycles-per-second
 claim, and disabling C-states to remove it would break comparability with the SPEC and agentic
 captures (taken with C6 enabled), so it was not done.
+
+## 7. How many profiling runs stand behind each benchmark
+
+**Nine — one per counter group — and no metric averages over repeated runs.** The PMU cannot
+count every event at once, so a *run* is one JVM execution with one counter group live; the
+metric derived from that group comes from that run alone. Eight benchmarks × 9 groups = 72 runs
+in the sweep, of which 63 are kept (cassandra's 9 are excluded, §3).
+
+| Counter group | Metrics it produces | Windows per benchmark |
+|---|---|---|
+| `fpbr` | IPC, Branch MPKI | ~1 530 |
+| `fe_miss` | Branch-direction MPKI, BTB MPKI, uop-cache (DSB) MPKI | ~1 512 |
+| `fe_lat` | L1I MPKI (code-read) | ~1 513 |
+| `fe` | DSB coverage (%) | ~1 514 |
+| `cache` | L1D-load / L2-load / LLC MPKI | ~1 511 |
+| `dram_bw` | DRAM read (GB/s) | ~1 534 |
+| `priv` | Context switches (/CPU-s) | ~1 544 |
+
+Across the seven kept benchmarks the per-metric window count runs 1 481 to 1 552; the excluded
+cassandra capture is the outlier at 759 for its worst metric, a consequence of the ~40 % duty
+cycle that failed gate D4. A benchmark's vote for a metric is the median over that single run's
+windows, with the denominator co-counted in the same window.
+
+This matches every other family: SPEC is one execution per benchmark with the groups rotating
+inside it, the agentic 36 are nine dedicated-group replays of one recorded trajectory each, and
+DCPerf is nine executions per benchmark. Run-to-run repetition is **n = 1 throughout** — the
+violins show spread across workloads, the per-window figures spread across windows inside one
+run, and neither is a reproducibility measurement. Full table and reasoning:
+`../DCPerf/README.md` §7.8.

@@ -18,3 +18,9 @@ windows; the two SPEC columns are distributions over benchmark medians). Method 
 
 `Raw data/*_per_window_rows.csv.gz` hold every external per-window value; the two
 `*_numbers.csv` files hold every displayed vote and column median.
+
+**Runs behind a vote.** One profiling run per counter group per workload: SPEC 1 execution per
+benchmark (groups rotating inside it), the agentic 36, DCPerf, Renaissance and DaCapo 9 runs
+each (one dedicated group per run). A metric's vote is the median over the windows of the single
+run that carried its counters; run-to-run repetition is n = 1 in every family. Details:
+`../../README.md` §7 and `../../../DCPerf/README.md` §7.8.

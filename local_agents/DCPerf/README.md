@@ -429,6 +429,67 @@ Within-workload spread is not thrown away: it is exactly what the per-window gro
 show, and for the DCPerf markers it is the p25–p75 bar (labelled in the key as a
 within-workload quantity, precisely because it is not comparable to a violin's width).
 
+### 7.8 How many profiling runs stand behind each vote (reviewer question, 2026-09-14)
+
+**One run per counter group per workload. No metric in any figure averages over repeated runs
+of the same workload.** The PMU cannot count all 60-odd events at once, so the events are split
+into groups; a *run* is one execution of the workload with one group live. Which group a metric
+comes from therefore decides which run it comes from.
+
+| Family | Workloads | Profiling runs per workload | What one run is | Total runs |
+|---|---|---|---|---|
+| SPEC CPU 2026 | 26 | **1** | one full benchmark execution; the 11 groups rotate *inside* it, one group per 100 ms window, shuffled each cycle | 26 |
+| Agentic 36 | 36 | **9** | one deterministic replay of that task's recorded trajectory, with one group dedicated to the whole replay | 324 |
+| DCPerf | 2 | **9** | a fresh benchmark execution per group (FeedSim at 16 QPS; VideoTranscodeBench batch) | 18 |
+| Renaissance + DaCapo | 8 | **9** | a fresh JVM execution per group | 72 (63 kept; cassandra's 9 excluded) |
+
+The two instruments differ because the subjects do. SPEC benchmarks are deterministic and long,
+so rotating groups inside one execution is exact and cheap. An agent replay is a phased,
+several-minute thing whose rotation would phase-lock with the agent loop, so each group gets its
+own replay of the *same* trajectory — which is also why the external suites, profiled with the
+identical code, use the same one-run-per-group scheme.
+
+**Which run each displayed metric comes from.** In the dedicated-group families (agentic,
+DCPerf, JVM) a metric is derived only from the run that carried its counters:
+
+| Counter group | Metrics it produces |
+|---|---|
+| `fpbr` | IPC, Branch MPKI |
+| `fe_miss` | Branch-direction MPKI, BTB MPKI (BAClears), uop-cache (DSB) MPKI |
+| `fe_lat` | L1I MPKI (code-read) |
+| `fe` | DSB coverage (%) |
+| `cache` | L1D-load / L2-load / LLC MPKI |
+| `dram_bw` | DRAM read (GB/s) |
+| `priv` | Context switches (/CPU-s) |
+
+So a workload's **vote for one metric is the median over the windows of a single run** — never
+over several runs, and never over several groups. Ratios are always co-counted: the denominator
+(instructions or cycles) comes from the same window as the numerator, which is why a metric may
+not borrow instructions from another group's run.
+
+**Windows behind one vote** (the sample size that median is taken over):
+
+| Family | Windows per metric per workload |
+|---|---|
+| SPEC | **6 to 242** for the group-specific metrics (median 49); IPC is the exception at **70 to 2 658**, because every group carries cycles and instructions, so IPC is defined in every window of the episode |
+| Agentic 36 | **115 to 2 269**, median about 500 |
+| DCPerf | 2 497–2 559 (FeedSim), 1 500–1 536 (VideoTranscodeBench) |
+| Renaissance + DaCapo | 1 481–1 552 for the seven kept benchmarks |
+
+The short SPEC benchmarks are the weakest cell in the whole comparison: `736.ocio_r`,
+`729.abc_r` and `748.flightdm_r` give a group only 6–7 windows, so their votes for the
+group-specific metrics rest on a handful of 100 ms samples. The export requires at least 5
+windows before a benchmark votes at all; no benchmark was dropped by that rule.
+
+**Run-to-run repetition is n = 1 everywhere**, in all four families. Each workload was profiled
+once per group, and the agentic replays repeat a *fixed recorded trajectory*, so they do not
+resample the agent's own nondeterminism either. The violins therefore show variation **across
+workloads**, and the per-window figures and IQR bars show variation **across windows within one
+run** — neither shows run-to-run reproducibility. The only repeats that exist are three captures
+of FeedSim's `fpbr` group (the profiling pass, the 2026-09-10 confirmation run and the
+2026-09-14 isolation recheck), which agree on IPC within 0.5 % (§8); they are evidence about the
+instrument, not inputs to any figure.
+
 ## 8. Isolation made self-sufficient (2026-09-14)
 
 **Why this was needed.** The measurement environment on P7 was, without anyone intending it,

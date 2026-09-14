@@ -128,6 +128,16 @@ frontend counters land on the separating side.
   medians, not the ratio.
 - TMA panels pool census counts across a task's 9 episodes (group-independent instrument,
   duration-weighted); the per-episode min–max is banked in `iso36_tma_values.json`.
+- **One profiling run per counter group; n = 1 run-to-run.** Each of the 36 tasks was replayed
+  9 times, once per dedicated counter group, so a metric's per-window distribution comes from
+  exactly one replay (IPC/branch MPKI from `fpbr`, branch-direction/BTB/uop-cache from
+  `fe_miss`, L1I from `fe_lat`, DSB coverage from `fe`, cache MPKIs from `cache`, DRAM from
+  `dram_bw`, context switches from `priv`), and the replays repeat one recorded trajectory, so
+  the agent's own nondeterminism is not resampled either. SPEC contributes one execution per
+  benchmark with the 11 groups rotating inside it, which gives its group-specific metrics only
+  6–242 windows per benchmark (median 49; IPC is defined in every window, 70–2 658). Nothing in
+  these figures measures run-to-run reproducibility. Full table:
+  `../../DCPerf/README.md` §7.8.
 - Small-fence picks (several PHP/Ruby/search cells, 5–54 core-s) are represented by design —
   the count-view cell exists, so it is profiled; their per-window boxes rest on fewer busy
   windows (n is banked per box).
