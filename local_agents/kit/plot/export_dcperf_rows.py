@@ -61,6 +61,9 @@ for d in sorted(glob.glob(f"{a.data}/{a.suite}_*")):
     if not os.path.isdir(d):
         continue
     wl = os.path.basename(d)[len(a.suite) + 1:]
+    if os.path.exists(f"{d}/EXCLUDED"):        # a capture that failed validation; reason inside
+        print(f"  excluded {a.suite}/{wl}: {open(f'{d}/EXCLUDED').read().strip()}", file=sys.stderr)
+        continue
     if glob.glob(f"{d}/run_*/DONE") and os.path.exists(f"{L3}/all_windows_{wl}.csv"):
         wls.append(wl)
 if not wls:

@@ -1,6 +1,6 @@
 # DCPerf on P7 — task choice, profiling method, and how it differs from SPEC and the agentic 36
 
-**Branch:** `dcperf` · **Started:** 2026-09-10 · **Profiled so far:** FeedSim, VideoTranscodeBench (2 of 6) · **Isolation hardened:** 2026-09-14 (§8)
+**Branch:** `dcperf` · **Started:** 2026-09-10 · **Profiled so far:** FeedSim, VideoTranscodeBench (2 of 6) · **Isolation hardened:** 2026-09-14 (§8) · **JVM suites:** see `../JVMbench/`
 
 Suite-level bring-up notes (install recipe, per-benchmark feasibility, traps) live in
 [`docs/handoff/dcperf_bringup.md`](../../docs/handoff/dcperf_bringup.md). This document is the
@@ -204,6 +204,18 @@ lands in the agentic corner** — profiling datacenter workloads instead of agen
 still miss the context-switch extreme and the branch-plus-instruction-fetch combination, and
 profiling SPEC misses nearly everything. That remains the case for treating agentic work as
 its own benchmark class, but it now rests on the combination rather than on any single metric.
+
+### Revised again with the JVM server suites (2026-09-14)
+
+Seven Renaissance and DaCapo benchmarks were profiled with the same kit
+([`../JVMbench/README.md`](../JVMbench/README.md)). They move the synthesis above once more:
+"instruction-hungry" and "OS-dominated" are no longer distinctive of the agentic workload —
+JIT-compiled servers miss the L1I up to 3.4× as often and context-switch up to 75× as often.
+What survives is narrower and, for the first time, stable across three new families: the
+agentic 36 has the **highest branch-direction misprediction of every workload measured**
+(3.6 MPKI) together with the **lowest memory traffic** (0.46 GB/s). Servers have a capacity
+pathology (huge, well-predicted code); the agent has a prediction pathology (moderate
+footprint, never-trained branches). The n = 2 caveat above was right to expect movement.
 
 **Caveats.**
 - DCPerf here is **n = 2 of 6**. The four remaining benchmarks are blocked on infrastructure

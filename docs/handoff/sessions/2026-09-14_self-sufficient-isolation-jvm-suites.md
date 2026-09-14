@@ -41,7 +41,28 @@ partition `0-3,12-15` (restored by hand on 2026-09-10), co-tenant units
 - `du` on the 6.3 GB DaCapo zip + 14 GB extraction dropped disk to 15 GB; the zip is deleted.
 
 ## Machine state left
-JVM SWEEP STATUS PLACEHOLDER
+**Restored to baseline by the kit itself** after the last pass (checked 11:25): 24 CPUs online,
+`powersave`, `no_turbo=0`, clock policy `800000-3200000`, `system.slice`/`user.slice`
+`0-3,12-15`, `init.scope` `0-23`, workqueue mask `003003`, IRQ default `00f00f`, no `perf`, no
+`iso_applied` flag. Disk 30 GB free (DaCapo data tree pruned to the three used benchmarks).
+
+## JVM sweep outcome (05:33–11:20, ~5 h 50 min)
+| Benchmark | Passes | Validation | Note |
+|---|---|---|---|
+| renaissance/finagle-http | 9/9 | PASS | 6.7 cores; ctx 41 000/CPU-s, L1I 52.7 MPKI, DSB coverage 13% |
+| renaissance/finagle-chirper | 9/9 | PASS | 6.5 cores |
+| renaissance/page-rank | 9/9 | PASS | 3.0 cores; Spark, compute-dense |
+| renaissance/naive-bayes | 9/9 | PASS | 7.6 cores; IPC 3.6, the highest measured |
+| renaissance/neo4j-analytics | 9/9 | PASS | 2.1 cores |
+| dacapo/cassandra | 9/9 | **FAIL D4** | degraded run (~40% duty cycle, client NPEs); **excluded**, reason in `data/dacapo_cassandra/EXCLUDED` |
+| dacapo/tomcat | 9/9 | PASS | 0.9 cores; ctx 37 000/CPU-s |
+| dacapo/kafka | 9/9 | PASS | 0.5 cores; **D5 residual 17.8%** (loopback softirq is unfenced kernel work) — lower bound |
+
+Findings (full text in `local_agents/JVMbench/README.md` §3, addendum in `DCPerf/README.md`
+§4): JIT-compiled servers are the instruction-supply and context-switch extremes, not the
+agent; what remains distinctive of the agentic 36 across all twelve workloads is the highest
+branch-*direction* misprediction (3.6 MPKI) with the lowest memory traffic (0.46 GB/s) —
+a prediction pathology, versus the servers' capacity pathology.
 
 ## Open / next
 - Renaissance + DaCapo sweep outcomes and the multi-suite figures: see the end of this log.

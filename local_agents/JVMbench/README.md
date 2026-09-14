@@ -64,7 +64,72 @@ JVM-specific mechanics (`bench_jvm_common.sh`, `bench_renaissance.sh`, `bench_da
 
 ## 3. Results
 
-RESULTS_PLACEHOLDER
+Seven of the eight benchmarks profiled cleanly (nine counter passes each, ~1 500 windows per
+pass) and pass every validation gate. **DaCapo `cassandra` is excluded**: its capture failed the
+steady-state gate (median fence load 0.03 cores) because the run degraded into a ~40% duty
+cycle with client `NullPointerException`s once the embedded session dropped, so its per-window
+medians describe an idle JVM. Per the mentor's rule it was not debugged; the capture is kept
+with the reason on disk (`data/dacapo_cassandra/EXCLUDED`).
+
+Votes are one per workload — the median of that workload's windows — exactly as for SPEC, the
+agentic 36 and DCPerf. Columns are suites' benchmarks; SPEC and Agentic are their family
+medians. Ratios to SPEC and every vote are in `plots/paper_v1/multi_agg_compact_numbers.csv`.
+
+| Metric | SPEC | Agentic | FeedSim | Video | chirper | fin-http | naive-bayes | neo4j | page-rank | kafka | tomcat |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| IPC | 2.185 | 1.749 | 1.725 | 2.62 | 1.954 | 1.423 | 3.601 | 3.297 | 2.09 | 1.358 | 1.333 |
+| Branch MPKI | 0.8473 | 4.301 | 4.865 | 2.265 | 1.26 | 0.5337 | 0.3084 | 0.4054 | 1.127 | 0.5275 | 2.525 |
+| Branch-direction MPKI | 0.8249 | 3.597 | 3.379 | 2.186 | 1.043 | 0.3222 | 0.274 | 0.3936 | 1.106 | 0.4268 | 2.265 |
+| BTB MPKI (BAClears) | 0.007845 | 0.7746 | 1.635 | 0.0477 | 0.668 | 1.699 | 0.0342 | 0.0135 | 0.0233 | 0.2433 | 2.283 |
+| L1I MPKI (code-read) | 0.8454 | 15.63 | 5.995 | 12.03 | 25.46 | 52.69 | 0.7955 | 5.512 | 0.4434 | 18.44 | 43.79 |
+| uop-cache (DSB) MPKI | 9.279 | 46.91 | 18.02 | 54.1 | 51.77 | 113.3 | 7.075 | 38.68 | 5.607 | 65.08 | 76.84 |
+| DSB coverage (%) | 93.9 | 66.12 | 82.17 | 56.67 | 60.13 | 13.31 | 91.95 | 63.1 | 96.15 | 43.69 | 37.55 |
+| L1D-load MPKI | 8.129 | 4.839 | 11.73 | 4.601 | 9.044 | 12.8 | 0.9983 | 1.085 | 1.838 | 6.23 | 7.068 |
+| L2-load MPKI | 0.3344 | 0.5454 | 4.238 | 0.1511 | 0.5229 | 0.6123 | 0.1045 | 0.311 | 0.7694 | 0.6274 | 0.3948 |
+| LLC MPKI | 0.0429 | 0.1439 | 0.4793 | 0.0663 | 0.0618 | 0.0133 | 0.07565 | 0.1185 | 0.3806 | 0.297 | 0.0284 |
+| DRAM read (GB/s) | 1.517 | 0.4567 | 11.5 | 3.802 | 6.681 | 6.613 | 8.89 | 1.643 | 4.081 | 0.738 | 0.5676 |
+| Context switches (/CPU-s) | 0 | 549.4 | 190.9 | 159 | 8415 | 4.1e+04 | 180 | 440 | 106.2 | 3853 | 3.695e+04 |
+
+Fence load during capture (median cores of 8): fin-http 6.7, chirper 6.5, naive-bayes 7.6,
+page-rank 3.0, neo4j 2.1, **tomcat 0.9, kafka 0.5** — DaCapo's default sizes do not saturate the
+partition; per-instruction metrics remain valid, the workload is simply light.
+
+### What the mentor's list adds
+
+**The instruction-supply extreme is the JIT-compiled server, not the agent.** `finagle-http`
+misses the L1I 3.4× as often as the agentic median (52.7 vs 15.6 MPKI), `tomcat` 2.8×, and
+their uop-cache coverage collapses to 13% and 38% against the agent's 66%. This is the second
+time a new family has moved this conclusion: FeedSim alone made the agent look unique on
+instruction supply, video transcoding matched it, and JVM servers now sit far beyond it.
+
+**Context switching: the agent is mid-pack among servers.** 549 switches per CPU-second looked
+extreme next to SPEC's zero; `finagle-http` and `tomcat` run at ~40 000, `finagle-chirper` at
+8 400, `kafka` at 3 900. Caveat that cuts the other way: those JVMs carry their load-generating
+client threads *inside* the fence, whereas the agent's model proxy is excluded — so the
+comparison, if anything, flatters the agent.
+
+**What still singles the agentic workload out is branch *direction* — and memory silence.**
+Its branch-direction MPKI of 3.6 is the highest of all twelve workloads measured (FeedSim 3.4
+is the only neighbour; every JVM server is at 0.3–2.3, `finagle-http` at 0.32 predicts better
+than SPEC), while its DRAM traffic, 0.46 GB/s, is the lowest. The mechanism reads naturally:
+servers run hot loops the predictor learns even though their *footprint* thrashes the caches
+(a capacity pathology); an agent runs unfamiliar code briefly — compilers, test runners,
+package managers, a new process image every few seconds — so the predictor never trains (a
+prediction pathology). Same symptom, "front-end bound", two different diseases.
+
+**Rahul's Spark and Neo4j picks are the compute corner, not the serving corner.** `naive-bayes`
+and `neo4j-analytics` post the highest IPC of anything measured (3.6, 3.3), SPEC-grade branch
+behaviour, and 92–96% uop-cache coverage on the Spark pair; they behave like SPEC with more
+memory bandwidth. Useful as a reference, but not evidence about serving.
+
+### Caveats
+- **In-fence clients** (all five web/database JVM benchmarks): context-switch and
+  instruction-supply figures include the client threads. They are consistent with each other,
+  not with FeedSim, where the client was excluded by construction.
+- **kafka's unfenced residual is 17.8%** (gate D5; every other workload ≤ 2.5%). At 0.46 cores
+  of fence load, the loopback network stack's kernel work — softirq that belongs to no cgroup —
+  is a visible share of what ran on the measured cores; kafka's fence totals are lower bounds.
+- One run per benchmark, JDK 21, eight fixed-frequency cores; no run-to-run repeats yet.
 
 ## 4. Figures
 
