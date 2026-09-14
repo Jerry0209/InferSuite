@@ -208,15 +208,24 @@ its own benchmark class, but it now rests on the combination rather than on any 
 
 ### Revised again with the JVM server suites (2026-09-14)
 
-Seven Renaissance and DaCapo benchmarks were profiled with the same kit
+Eight Renaissance and DaCapo benchmarks were profiled with the same kit
 ([`../JVMbench/README.md`](../JVMbench/README.md)). They move the synthesis above once more:
 "instruction-hungry" and "OS-dominated" are no longer distinctive of the agentic workload —
-JIT-compiled servers miss the L1I up to 3.4× as often and context-switch up to 75× as often.
-What survives is narrower and, for the first time, stable across three new families: the
-agentic 36 has the **highest branch-direction misprediction of every workload measured**
-(3.6 MPKI) together with the **lowest memory traffic** (0.46 GB/s). Servers have a capacity
-pathology (huge, well-predicted code); the agent has a prediction pathology (moderate
-footprint, never-trained branches). The n = 2 caveat above was right to expect movement.
+JIT-compiled servers miss the L1I up to 4.5× as often (`cassandra` 70.8 MPKI) and context-switch
+up to 90× as often (`cassandra` 49 000 per CPU-second).
+
+What survives is a **single axis**. Ranking the agentic median against the other eleven
+workload-level values on each derived metric, it comes first on exactly one: branch-*direction*
+misprediction, 3.60 MPKI, with FeedSim's 3.38 the only neighbour. On every other axis it sits 5th
+to 11th of 12. Servers have a capacity pathology (huge, well-predicted code); the agent has a
+prediction pathology (moderate footprint, never-trained branches).
+
+The earlier companion claim, **lowest memory traffic, did not survive**. It was stated here on
+2026-09-14 as half of a distinctive combination, at a time when DaCapo `cassandra` had been
+wrongly excluded by a defective steady-state gate ([`../JVMbench/README.md`](../JVMbench/README.md)
+§8). Cassandra reads **0.0185 GB/s**, 25× below the agentic 0.46, and `tomcat` at 0.57 is
+comparable; the agentic family ranks 11th of 12 on DRAM, not last. The n = 2 caveat below was
+right to expect movement, and so was the instinct to distrust a two-metric combination.
 
 **Caveats.**
 - DCPerf here is **n = 2 of 6**. The four remaining benchmarks are blocked on infrastructure
@@ -441,7 +450,7 @@ comes from therefore decides which run it comes from.
 | SPEC CPU 2026 | 26 | **1** | one full benchmark execution; the 11 groups rotate *inside* it, one group per 100 ms window, shuffled each cycle | 26 |
 | Agentic 36 | 36 | **9** | one deterministic replay of that task's recorded trajectory, with one group dedicated to the whole replay | 324 |
 | DCPerf | 2 | **9** | a fresh benchmark execution per group (FeedSim at 16 QPS; VideoTranscodeBench batch) | 18 |
-| Renaissance + DaCapo | 8 | **9** | a fresh JVM execution per group | 72 (63 kept; cassandra's 9 excluded) |
+| Renaissance + DaCapo | 8 | **9** | a fresh JVM execution per group | 72 |
 
 The two instruments differ because the subjects do. SPEC benchmarks are deterministic and long,
 so rotating groups inside one execution is exact and cheap. An agent replay is a phased,
@@ -474,7 +483,7 @@ not borrow instructions from another group's run.
 | SPEC | **6 to 242** for the group-specific metrics (median 49); IPC is the exception at **70 to 2 658**, because every group carries cycles and instructions, so IPC is defined in every window of the episode |
 | Agentic 36 | **115 to 2 269**, median about 500 |
 | DCPerf | 2 497–2 559 (FeedSim), 1 500–1 536 (VideoTranscodeBench) |
-| Renaissance + DaCapo | 1 481–1 552 for the seven kept benchmarks |
+| Renaissance + DaCapo | 1 481–1 552, except cassandra's context-switch metric at 759 (duty-cycled workload, idle windows below the analyzer's activity floor) |
 
 The short SPEC benchmarks are the weakest cell in the whole comparison: `736.ocio_r`,
 `729.abc_r` and `748.flightdm_r` give a group only 6–7 windows, so their votes for the
@@ -588,7 +597,7 @@ so their ratio is the mean unhalted clock over the workload's own CPU time.
 | DaCapo kafka / Renaissance finagle-chirper | 3.13 / 3.13 | 5 051 / 9 278 |
 | Renaissance finagle-http | 2.91 | 40 575 |
 | DaCapo tomcat | 2.81 | 33 713 |
-| DaCapo cassandra (excluded capture) | 2.63 | 47 050 |
+| DaCapo cassandra | 2.63 | 47 050 |
 
 Every SPEC benchmark, both DCPerf benchmarks and the compute-bound JVM benchmarks realise the
 pinned 3.2 GHz to within 0.5 %, on both capture days, so the pin held and the 2026-09-10

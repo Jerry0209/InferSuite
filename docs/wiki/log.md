@@ -1,5 +1,18 @@
 # Wiki log
 
+## [2026-09-14] update | A duty-cycled workload broke the steady-state gate (median vs mean)
+
+`validate_dcperf.py` gate D4 compared per-sample MEDIANS of the 10 Hz fence-load series and
+normalised by the first fifth's value. DaCapo `cassandra` is ~50 % idle at 100 ms granularity, so
+its median was 0.03 cores and a 0.01 → 0.65 core difference read as 4 627 % drift; the benchmark
+was wrongly excluded from every multi-suite figure. Rewritten to smooth to 10 s, compare means,
+normalise by the larger side, and add an absolute idle floor; verified against synthetic
+steady / duty-cycled / dying / decaying / idle / ramping series. Generalisable rule for this
+project: **a relative drift test needs an absolute floor, and a median measures duty cycle, not
+drift.** Consequence for findings: with cassandra reinstated the agentic family is no longer the
+lowest-DRAM workload, and the surviving distinction is single-axis (highest branch-direction
+misprediction). Source: `local_agents/JVMbench/README.md` §8.
+
 ## [2026-09-14] update | Applied clock vs realised clock (C-state ramp on wake-heavy workloads)
 
 Added an Observation to the [isolation setup runbook](operations/isolation-setup-runbook.md)

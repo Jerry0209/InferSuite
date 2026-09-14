@@ -54,15 +54,16 @@ partition `0-3,12-15` (restored by hand on 2026-09-10), co-tenant units
 | renaissance/page-rank | 9/9 | PASS | 3.0 cores; Spark, compute-dense |
 | renaissance/naive-bayes | 9/9 | PASS | 7.6 cores; IPC 3.6, the highest measured |
 | renaissance/neo4j-analytics | 9/9 | PASS | 2.1 cores |
-| dacapo/cassandra | 9/9 | **FAIL D4** | degraded run (~40% duty cycle, client NPEs); **excluded**, reason in `data/dacapo_cassandra/EXCLUDED` |
+| dacapo/cassandra | 9/9 | PASS (after the gate fix) | first reported FAIL D4 and excluded; the gate was wrong, not the run — see the addendum below |
 | dacapo/tomcat | 9/9 | PASS | 0.9 cores; ctx 37 000/CPU-s |
 | dacapo/kafka | 9/9 | PASS | 0.5 cores; **D5 residual 17.8%** (loopback softirq is unfenced kernel work) — lower bound |
 
 Findings (full text in `local_agents/JVMbench/README.md` §3, addendum in `DCPerf/README.md`
 §4): JIT-compiled servers are the instruction-supply and context-switch extremes, not the
 agent; what remains distinctive of the agentic 36 across all twelve workloads is the highest
-branch-*direction* misprediction (3.6 MPKI) with the lowest memory traffic (0.46 GB/s) —
-a prediction pathology, versus the servers' capacity pathology.
+branch-*direction* misprediction (3.60 MPKI) and **that alone** — a prediction pathology, versus
+the servers' capacity pathology. (Revised in the second addendum: the companion "lowest memory
+traffic" claim was an artifact of cassandra's wrongful exclusion.)
 
 ## Open / next
 - Renaissance + DaCapo sweep outcomes and the multi-suite figures: see the end of this log.
@@ -96,3 +97,28 @@ a prediction pathology, versus the servers' capacity pathology.
 - ISO-PROOF bookkeeping over the whole DCPerf/JVM period (campaign.log from the first FeedSim
   profiling shield): 98 shield applications, 0 failures; one shield (05:08, before the recheck) needed five
   quiet samples, worst passing sample 2.0 %; all other samples ≤ 1 %.
+
+## Addendum 2 (evening 2026-09-14): cassandra was never broken — the steady-state gate was
+- PI asked what was actually wrong with cassandra. Re-reading the evidence: nothing.
+- **Gate defect.** D4 took the MEDIAN of the 10 Hz load samples over the first and last fifth of
+  a capture and divided by the first. Cassandra is duty-cycled at 100 ms granularity (~4 cores or
+  idle, about half the samples idle), so its median is 0.03 cores and a 0.01 → 0.65 core
+  difference read as 4 627 % drift. Its 10 s means were flat at ~2 cores for the whole capture.
+  Two mistakes: a median measures duty cycle, not drift; and a percentage of a near-zero
+  denominator is meaningless.
+- **The NPE flood was teardown.** First client error lands 0.3 s AFTER the last capture window
+  closes, in all nine passes, each at its own end time — our `systemctl stop` of the scope. No
+  window contains post-failure data. Every pass did 27 iterations at 34 400–34 900 req/s; the
+  earlier 40-iteration smoke run completed clean at 36 400 req/s.
+- **Fix** in `kit/dcperf/validate_dcperf.py`: 10 s smoothing, compare MEANS, normalise by the
+  larger side (bounded at 100 %), plus an absolute idle floor of 0.10 cores. Validated against
+  six synthetic series (steady and duty-cycled PASS; dies-halfway, decaying, idle and ramping
+  FAIL). All ten captures pass; cassandra's worst drift 10.5 %, mean load 1.93 cores.
+- **Consequences.** Cassandra reinstated in every figure; chart pack
+  `v2_2026-09-14_cassandra-reinstated`. It is the front-end extreme of the study (L1I 70.8 MPKI,
+  DSB 11 %, IPC 0.91) and the context-switch extreme (49 000/CPU-s). Its DRAM read of
+  0.0185 GB/s **retired the "agentic = lowest memory traffic" half** of the previous finding;
+  the agentic family ranks 11th of 12 on DRAM. The surviving claim is single-axis: highest
+  branch-direction misprediction, 3.60 MPKI, first of 12, everything else 5th–11th.
+- Lesson worth keeping: a relative test needs an absolute floor, and a robust statistic (the
+  median) can still be the wrong statistic for the question.

@@ -107,18 +107,57 @@ gate(n_mux == 0, "D3 zero multiplexing",
      else f"{n_mux} windows show multiplexing ({', '.join(mux_examples)})")
 
 # ---- D4 steady state ----
+# The workload must do the SAME AMOUNT OF WORK at the end of a capture as at the start.
+# REWRITTEN 2026-09-14 after this gate wrongly failed DaCapo cassandra. Two defects:
+#   (1) it compared per-sample MEDIANS. A duty-cycled workload alternates busy and idle inside
+#       the 10 Hz poll -- cassandra sat at ~4 cores or ~0 in any given 100 ms, so half its
+#       samples were near zero and its median was 0.03 cores, while its 10 s means were flat at
+#       ~2 cores for the whole capture. The median asks "where did the middle sample fall",
+#       which is a question about duty cycle, not about drift. The MEAN integrates the bursts
+#       and is the quantity the gate actually means. Smooth to 10 s first so one burst boundary
+#       cannot move the verdict.
+#   (2) it divided by the first fifth's value with no floor, so 0.01 -> 0.65 cores read as
+#       4627% drift. A percentage of a near-zero denominator carries no information. Normalise
+#       by the LARGER of the two (bounded at 100%) and add an ABSOLUTE idle floor, because the
+#       failure this gate exists to catch -- a process alive but no longer doing its work -- is
+#       an absolute statement, not a relative one.
+D4_IDLE_CORES = 0.10        # mean fence load below this is not a running workload
+D4_MAX_DRIFT = 25.0         # percent, first fifth vs last fifth of the 10 s means
+
+
+def smooth(series, win_s=10.0):
+    """Non-overlapping means over win_s seconds -> [(t_start, mean rate)]."""
+    out, bucket, t0 = [], [], None
+    for t, r in series:
+        if t0 is None:
+            t0 = t
+        if t - t0 >= win_s and bucket:
+            out.append((t0, st.mean(bucket)))
+            bucket, t0 = [], t
+        bucket.append(r)
+    if bucket:
+        out.append((t0, st.mean(bucket)))
+    return out
+
+
 drifts = []
 for g, rd in sorted(done.items()):
     s = cpu_rate_series(f"{rd}/cpustat_scope1.tsv")
     if len(s) < 50:
         continue
-    n = len(s) // 5
-    a, b = st.median([r for _t, r in s[:n]]), st.median([r for _t, r in s[-n:]])
-    drifts.append((g, a, b, 100 * abs(b - a) / max(a, 1e-9), st.median([r for _t, r in s])))
+    sm = smooth(s)
+    if len(sm) < 5:                       # capture too short to smooth: use raw samples
+        sm = s
+    n = max(1, len(sm) // 5)
+    a = st.mean([r for _t, r in sm[:n]])
+    b = st.mean([r for _t, r in sm[-n:]])
+    drifts.append((g, a, b, 100 * abs(b - a) / max(a, b, 1e-9), st.mean([r for _t, r in s])))
 worst = max(drifts, key=lambda x: x[3]) if drifts else None
-gate(bool(drifts) and worst[3] <= 25, "D4 steady state",
-     f"max drift {worst[3]:.1f}% (group {worst[0]}: {worst[1]:.2f} -> {worst[2]:.2f} cores); "
-     f"median server load {st.median([d[4] for d in drifts]):.2f} cores"
+idle = [d for d in drifts if d[4] < D4_IDLE_CORES]
+gate(bool(drifts) and worst[3] <= D4_MAX_DRIFT and not idle, "D4 steady state",
+     (f"max drift {worst[3]:.1f}% (group {worst[0]}: {worst[1]:.2f} -> {worst[2]:.2f} cores, "
+      f"10 s means); mean server load {st.mean([d[4] for d in drifts]):.2f} cores"
+      + (f"; IDLE: {len(idle)} group(s) below {D4_IDLE_CORES} cores mean" if idle else ""))
      if worst else "no poller series")
 
 # ---- D5 fence completeness (partition witness) ----
