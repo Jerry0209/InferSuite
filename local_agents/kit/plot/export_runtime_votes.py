@@ -19,7 +19,8 @@ counters are summed across all nine, so each metric comes from the run that carr
 and IPC pools every run that counted plain cycles + instructions (all but priv).
 
 Output: <out>/runtime_votes.csv with
-    family     spec26 | agentic36 | dcperf | renaissance | dacapo
+    family     spec26 | agentic36 | dcperf | renaissance | dacapo | realdata (realistic-dataset
+               re-characterisations: neo4j-livejournal, cassandra-ycsb20m, ...)
     subgroup   SPEC-int / SPEC-fp | language | DCPerf / Renaissance / DaCapo
     workload   name as in the figures
     metric     display label (the figures' vocabulary)
@@ -131,7 +132,8 @@ def main() -> int:
     # external suites profiled with kit/dcperf: nine runs each, EXCLUDED markers honoured
     for family, label, data in (("dcperf", "DCPerf", f"{REPO}/local_agents/DCPerf/data"),
                                 ("renaissance", "Renaissance", f"{REPO}/local_agents/JVMbench/data"),
-                                ("dacapo", "DaCapo", f"{REPO}/local_agents/JVMbench/data")):
+                                ("dacapo", "DaCapo", f"{REPO}/local_agents/JVMbench/data"),
+                                ("realdata", "RealData", f"{REPO}/local_agents/RealData/data")):
         for d in sorted(glob.glob(f"{data}/{family}_*")):
             wl = os.path.basename(d)[len(family) + 1:]
             if os.path.exists(f"{d}/EXCLUDED"):

@@ -122,7 +122,8 @@ def main() -> int:
     # ---- external suites profiled with kit/dcperf: nine dedicated-group runs each
     for family, data in (("dcperf", f"{REPO}/local_agents/DCPerf/data"),
                          ("renaissance", f"{REPO}/local_agents/JVMbench/data"),
-                         ("dacapo", f"{REPO}/local_agents/JVMbench/data")):
+                         ("dacapo", f"{REPO}/local_agents/JVMbench/data"),
+                         ("realdata", f"{REPO}/local_agents/RealData/data")):
         p, fh, w = opener(family)
         n = 0
         for d in sorted(glob.glob(f"{data}/{family}_*")):

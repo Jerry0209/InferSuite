@@ -30,7 +30,7 @@ ap.add_argument("--label", default=None, help="family label in the figures (defa
 ap.add_argument("--data", default=f"{REPO}/local_agents/DCPerf/data")
 ap.add_argument("--out", default=None)
 a = ap.parse_args()
-LABEL = a.label or {"dcperf": "DCPerf", "renaissance": "Renaissance", "dacapo": "DaCapo"}.get(a.suite, a.suite)
+LABEL = a.label or {"dcperf": "DCPerf", "renaissance": "Renaissance", "dacapo": "DaCapo", "realdata": "RealData"}.get(a.suite, a.suite)
 L3 = f"{a.data}/l3_study"
 OUT = a.out or f"{L3}/{a.suite}_rows_long.csv"
 
