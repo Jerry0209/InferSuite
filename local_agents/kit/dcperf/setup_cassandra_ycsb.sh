@@ -44,14 +44,22 @@ PY
 fi
 
 start_node(){
-  ( taskset -c "$CPUS_MEASURED" "$CAS/bin/cassandra" -f -R ) > "$INFRA/logs/cassandra_setup_node.log" 2>&1 &
+  # a shell in user.slice is confined to the housekeeping cpuset, so it cannot taskset onto the
+  # measured cores itself; systemd puts the node into measured.slice first (what the
+  # orchestrator does for every profiled server), then taskset is allowed
+  sudo systemctl stop realdata-cassandra-setup.scope 2>/dev/null || true; sudo systemctl reset-failed realdata-cassandra-setup.scope 2>/dev/null || true
+  ( sudo systemd-run --collect --scope --slice=measured.slice --unit=realdata-cassandra-setup \
+      -E JAVA_HOME="$JAVA_HOME" -E CASSANDRA_HOME="$CAS" -E CASSANDRA_CONF="$CAS/conf" \
+      -E MAX_HEAP_SIZE="$MAX_HEAP_SIZE" -E HEAP_NEWSIZE="$HEAP_NEWSIZE" -E PATH="$JAVA_HOME/bin:/usr/bin:/bin" \
+      -- taskset -c "$CPUS_MEASURED" "$CAS/bin/cassandra" -f -R ) > "$INFRA/logs/cassandra_setup_node.log" 2>&1 &
   CAS_PID=$!
   local i; for i in $(seq 1 180); do "$CAS/bin/nodetool" -h 127.0.0.1 status 2>/dev/null | grep -q '^UN' && break; sleep 2; done
   "$CAS/bin/nodetool" -h 127.0.0.1 status 2>/dev/null | grep -q '^UN' || { log "node did not come up"; return 1; }
   log "node up (pid $CAS_PID)"
 }
-stop_node(){ "$CAS/bin/nodetool" -h 127.0.0.1 drain >/dev/null 2>&1 || true; kill -TERM "$CAS_PID" 2>/dev/null || true
-  local i; for i in $(seq 1 60); do kill -0 "$CAS_PID" 2>/dev/null || break; sleep 1; done; }
+stop_node(){ "$CAS/bin/nodetool" -h 127.0.0.1 drain >/dev/null 2>&1 || true
+  sudo systemctl stop realdata-cassandra-setup.scope 2>/dev/null || true; kill -TERM "$CAS_PID" 2>/dev/null || true
+  local i; for i in $(seq 1 60); do pgrep -f "$CAS/bin" >/dev/null || break; sleep 1; done; }
 
 if [ -f "$DS/SETUP_DONE" ]; then log "already built ($(cat "$DS/SETUP_DONE"))"; exit 0; fi
 start_node
@@ -63,9 +71,14 @@ log "schema created"
 log "YCSB load: $RECORDS records x 10 fields x 100 B, $LOAD_THREADS threads"
 ( cd "$YCSB" && taskset -c "$CPUS_HOUSE" env JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 PATH=/usr/lib/jvm/java-21-openjdk-amd64/bin:$PATH \
     bash bin/ycsb.sh load cassandra-cql -P workloads/workloada -p recordcount="$RECORDS" -p hosts=127.0.0.1 \
-    -p cassandra.writeconsistencylevel=ONE -threads "$LOAD_THREADS" -s ) > "$INFRA/logs/ycsb_load.log" 2>&1 \
+    -p cassandra.writeconsistencylevel=ONE -p core_workload_insertion_retry_limit=10 \
+    -p core_workload_insertion_retry_interval=2 -threads "$LOAD_THREADS" -s ) > "$INFRA/logs/ycsb_load.log" 2>&1 \
   || { log "YCSB load FAILED (see logs/ycsb_load.log)"; stop_node; exit 1; }
-log "load done: $(grep -E '\[OVERALL\], (RunTime|Throughput)' "$INFRA/logs/ycsb_load.log" | tr '\n' ' ')"
+log "load done: $(grep -E '\[OVERALL\], (RunTime|Throughput)|\[INSERT\], (Operations|Return=)' "$INFRA/logs/ycsb_load.log" | tr '\n' ' ')"
+# YCSB kills a client thread on an insert error unless retries are enabled (2026-09-21: 6 write
+# timeouts silently dropped 12 % of the key space); the retry knobs above are the fix, this is the check
+INSERTED=$(sed -nE 's/^\[INSERT\], Operations, ([0-9]+).*/\1/p' "$INFRA/logs/ycsb_load.log" | head -1)
+[ "${INSERTED:-0}" -ge "$RECORDS" ] || { log "LOAD INCOMPLETE: $INSERTED of $RECORDS inserts"; stop_node; exit 1; }
 # 4. settle the store: flush memtables, compact fully, so no pass profiles a compaction backlog
 "$CAS/bin/nodetool" -h 127.0.0.1 flush >> "$INFRA/logs/setup_cassandra.log" 2>&1
 log "compacting"; "$CAS/bin/nodetool" -h 127.0.0.1 compact ycsb >> "$INFRA/logs/setup_cassandra.log" 2>&1 || true

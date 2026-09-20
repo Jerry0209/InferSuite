@@ -18,8 +18,26 @@ VT_LEVELS="${VT_LEVELS:-6:9}"          # SVT-AV1 preset range; higher = faster/c
 VT_PROCS="${VT_PROCS:-8}"              # pool size == measured physical cores
 VT_PARALLELISM="${VT_PARALLELISM:-1}"  # encoder-internal threads (DCPerf default)
 
+# VT_CUTS (2026-09-21): the DCPerf runner reads ./datasets/cuts RELATIVE to its own directory,
+# so a different source set (the 4K Netflix sequences for the realistic-dataset study) is
+# selected by pointing datasets/cuts at it: the original directory is kept beside it as
+# datasets/cuts_1080p_xiph and cuts becomes a symlink. Unset = leave the tree as it is.
+VT_CUTS="${VT_CUTS:-}"
+vt_select_cuts(){
+  [ -n "$VT_CUTS" ] || return 0
+  [ -d "$VT_CUTS" ] || { dlog "VT_CUTS=$VT_CUTS is not a directory"; return 1; }
+  local cur="$VT_DIR/datasets/cuts"
+  if [ -d "$cur" ] && [ ! -L "$cur" ]; then
+    sudo mv "$cur" "$VT_DIR/datasets/cuts_1080p_xiph" || return 1
+    dlog "original cuts kept as datasets/cuts_1080p_xiph"
+  fi
+  [ "$(readlink -f "$cur" 2>/dev/null)" = "$(readlink -f "$VT_CUTS")" ] || { sudo rm -f "$cur"; sudo ln -s "$(readlink -f "$VT_CUTS")" "$cur" || return 1; }
+  dlog "datasets/cuts -> $(readlink -f "$cur")"
+}
+
 bench_preflight(){
   [ -d "$VT_DIR" ] || { dlog "video_transcode_bench not installed at $VT_DIR"; return 1; }
+  vt_select_cuts || return 1
   local n
   n=$(sudo find "$VT_DIR/datasets/cuts" -name '*.y4m' 2>/dev/null | wc -l)
   [ "$n" -gt 0 ] || { dlog "no .y4m clips in $VT_DIR/datasets/cuts — see the dataset note"; return 1; }
