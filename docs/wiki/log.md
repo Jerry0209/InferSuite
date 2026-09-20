@@ -1,5 +1,15 @@
 # Wiki log
 
+## [2026-09-20] observation | Server-benchmark data footprints are cache-sized except FeedSim
+
+Measured live-heap-after-GC / cgroup peak for the ten server benchmarks
+(`local_agents/kit/dcperf/measure_footprint.sh`): FeedSim 3.5 GB resident; the JVM servers
+20–190 MB (finagle-http 20, tomcat 20, chirper 30, neo4j 110, cassandra 160 on 10 MB of rows,
+kafka 190); Spark jobs 0.3–1.8 GB on tiny or replicated inputs; video = 2 s 1080p shots. The
+memory side of the JVM-server signature therefore reflects dataset size, not the software; the
+instruction-side signature does not scale with data. Re-characterisation plan in
+`local_agents/JVMbench/README.md` §10.
+
 ## [2026-09-15] decision | Per-workload statistic = the metric over the workload's whole runtime
 
 Mentor's rule for every workload-level violin: one value per workload, computed by summing the

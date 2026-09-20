@@ -152,6 +152,10 @@ memory bandwidth. Useful as a reference, but not evidence about serving.
   rule they were the median of the busy windows, which is why its branch MPKI read 3.3 then and
   1.7 now.
 
+> **Data footprint (2026-09-20).** Every JVM server benchmark here except the two Spark jobs
+> works on 20–190 MB of live data, inside or at the edge of the 30 MB L3; only FeedSim carries
+> a production-sized (3.5 GB) working set. §10 has the audit and the re-characterisation plan.
+
 ## 4. Figures
 
 Two layouts, both in the current chart pack `charts/v3_2026-09-15_runtime-votes/` (every
@@ -356,3 +360,80 @@ Three details worth knowing:
 **Not yet refreshed:** the DCPerf-only pack (`../DCPerf/charts/`) and the ML_iso36 paper pack
 still use window medians for their per-workload votes; their headline SPEC-vs-agent numbers
 (`comparison_iso36.json`) were whole-runtime all along.
+
+## 10. Data footprint audit — what each server benchmark actually works on (mentor question, 2026-09-20)
+
+**Question.** For each server workload: what dataset does it use, how big is it, and is it like
+the real thing? If any ran on a small dataset, re-characterise it with a realistic one.
+
+**Method.** Two sources, both banked in `data/footprint_2026-09-20/`. *Static:* the
+benchmark's own configuration (Renaissance `benchmarks.properties` and the resources inside its
+jars, DaCapo's `.cnf` size definitions and `dat/` trees, DCPerf's `run.sh` and dataset
+directory). *Measured:* each benchmark run briefly on the measured cores inside a
+memory-accounted systemd scope (`kit/dcperf/measure_footprint.sh`, no perf, no isolation
+change) reading the cgroup's `memory.peak`, and for the JVMs the **live heap after garbage
+collection** from a GC log — the honest data-footprint number for a JVM, because the resident
+size mostly reflects how far the collector let the heap grow. Third, the banked profiling
+numbers themselves: a workload whose LLC misses are ~0.1 per thousand instructions and whose
+DRAM traffic is ≤ 2 GB/s is telling you its working set fits the 30 MB L3.
+
+**Machine reference:** L1d 48 KB and L2 2 MB per core, L3 30 MB shared, 62 GB RAM.
+
+| Benchmark | What the data is | On disk | Live in memory (measured) | Working set sits in | LLC MPKI / DRAM GB/s (profiled) |
+|---|---|---|---|---|---|
+| **FeedSim** (DCPerf) | synthetic ranking graph generated at start-up, `graph_scale=21` (2²¹ vertices, 2 M subset), 2 000 objects per request — Meta's production-derived proxy | none (generated) | **3.5 GB steady, 4.8 GB peak** (native, RSS) | DRAM | 0.48 / 11.7 |
+| **VideoTranscodeBench** (DCPerf) | six 2-second, 51-frame 1080p shots cut from Xiph `in_to_tree` and `park_joy`, downscaled to 8 resolutions = 48 clips, encoded at several quality points; DCPerf specifies Netflix *El Fuente* (4K) | 908 MB raw y4m | 1.4 GB per SVT-AV1 encode (1080p) | DRAM | 0.09 / 4.7 |
+| **finagle-http** | no dataset: 12 000 small HTTP requests × 8 clients per iteration, in-process | 0 | 20 MB | L3 | 0.02 / 7.6 |
+| **finagle-chirper** | simulated microblog: 5 000 users, 1 250 requests, tweet text drawn from a 486 KB CSV | 0.5 MB | 30 MB | L3 | 0.07 / 7.7 |
+| **page-rank** | SNAP *web-BerkStan* (685 k pages, 7.6 M links, a 2002 crawl), 2 iterations | 20 MB zip (~110 MB text) | 330 MB median, 1.1 GB max | DRAM | 0.39 / 5.7 |
+| **naive-bayes** | Spark's 100-row `sample_libsvm_data.txt` (105 KB) replicated 8 000× | 0.1 MB | 1.3 GB median, 1.8 GB max | DRAM | 0.09 / 9.9 |
+| **neo4j-analytics** | a movie graph, 70 MB of JSON (32 MB vertices + 38 MB edges); 150 short, 1 long, 12 mutating queries per iteration | 70 MB | 110 MB median (2.3 GB while loading) | L3 / DRAM edge | 0.13 / 2.2 |
+| **cassandra** (DaCapo `default`) | YCSB CoreWorkload: **10 000 records × 1 KB**, 200 000 operations per iteration, 50/50 read/update, zipfian | ~10 MB of rows | 160 MB (Cassandra's own structures dominate) | L3 | 0.13 / 2.0 |
+| cassandra (DaCapo `large`, not profiled) | 100 000 records, 2 M operations | ~100 MB | 650 MB median, 0.9 GB max | DRAM | — |
+| **tomcat** (DaCapo) | Tomcat's bundled sample web applications; 80 000 requests per iteration from 8 clients | 14 MB tree | 20 MB | L3 | 0.04 / 0.7 |
+| **kafka** (DaCapo) | Trogdor produce bench: 1 M messages per iteration to 2 topics × 10 partitions at 200 k msg/s, default Trogdor payload | 112 KB config | 190 MB | L3 / DRAM edge | 0.30 / 1.0 |
+
+The DRAM column is offcore read bandwidth over the whole capture; for the two Finagle servers
+and naive-bayes it is allocation and GC traffic on a small live set, not a large working set —
+their LLC miss rates say so.
+
+**Verdicts.**
+
+- **Realistic by construction:** FeedSim. It carries a multi-gigabyte resident graph and is
+  the one benchmark whose data footprint Meta calibrated to production. Keep as is.
+- **Real content, unrealistic scale:** VideoTranscodeBench (two-second 1080p shots where the
+  specification asks for 4K *El Fuente*), page-rank (a real but 7.6 M-edge crawl; production
+  graphs are 10²–10³× larger), neo4j-analytics (a 70 MB movie graph).
+- **Not realistic:** cassandra (10 MB of rows against a database built for terabytes; even
+  DaCapo's `large` is 100 MB), naive-bayes (a toy sample copied 8 000 times), kafka (one-million
+  message bursts on an otherwise empty broker; production brokers stream against hundreds of
+  gigabytes of log).
+- **Small by nature, not by mistake:** finagle-http, finagle-chirper, tomcat. These are
+  request-serving tiers; their design has no dataset, and their footprint is instruction-side
+  (which is exactly what the profiling found: L1I 25–52 MPKI, uop-cache coverage 14–60 %). A
+  "realistic dataset" for them means a realistic request mix and a real application behind the
+  server, not more bytes; that is a different benchmark, not a bigger input.
+
+**Consequence for the findings so far.** The JVM server signature reported in §3 — instruction
+supply and context switches as the extremes, memory traffic small — was measured on working
+sets that fit or nearly fit the L3. For cassandra, neo4j and kafka the memory side of the
+signature is therefore a property of the dataset size, not of the software, and must not be
+read as "databases are memory-light". The instruction-side signature is much less exposed to
+this: code footprint does not grow with the data.
+
+**Plan for the re-characterisation** (in priority order; disk today 135 GB free, all sizes
+fit with margin):
+
+| # | Workload | Realistic dataset | Size | How | Effort |
+|---|---|---|---|---|---|
+| 1 | Neo4j | SNAP `soc-LiveJournal1` (4.8 M nodes, 69 M edges; store ≈ 10–15 GB) first; SNAP `twitter-2010` (42 M nodes, 1.47 B edges, ≈ 25 GB text, store > 100 GB) is the mentor's example but exceeds comfortable disk and needs hours of import — second step if wanted; LDBC SNB SF10 is the alternative with a standard query set | 1–25 GB raw | standalone Neo4j 5 server in the fence, `neo4j-admin import`, a query driver (k-hop neighbourhoods, shortest paths, PageRank via GDS) on the housekeeping cores; same nine-pass capture | 1–2 days |
+| 2 | Cassandra | YCSB 0.17 (the version DaCapo bundles) with **20 M records × 1 KB = 20 GB**, workloads A (50/50) and C (read-only), zipfian | 20 GB | standalone Cassandra 5 in the fence, YCSB client on the housekeeping cores (the DaCapo harness keeps the client in-fence and is limited to 100 k rows) | 1 day |
+| 3 | page-rank, naive-bayes | Spark jobs on real inputs: PageRank on `soc-LiveJournal1` (reuse from #1) or `twitter-2010`; Naive Bayes on a real corpus (RCV1-v2, ≈ 800 k documents, ≈ 1 GB libsvm) | 1–25 GB | `spark-submit` of the Renaissance benchmark classes' own algorithms with a file input, in the fence | 0.5 day |
+| 4 | Kafka | `kafka-producer-perf-test` / consumer at **20 M × 1 KB messages** (20 GB log, beyond the page cache's comfort), sustained rather than burst | 20 GB | standalone Kafka 3.3 in the fence, producer/consumer on the housekeeping cores | 0.5 day |
+| 5 | Video | 4K sources: *El Fuente* / *Chimera* need a CDVL registration (the PI's action), or Xiph's freely licensed Netflix 4K test sequences (`media.xiph.org/video/derf`: Aerial, Boat, FoodMarket …) | 5–20 GB | drop the clips into `datasets/cuts/`, rerun the existing module; encodes take minutes per clip at 4K, so capture length is no longer a constraint | 0.5 day |
+| — | finagle-http, finagle-chirper, tomcat, FeedSim | no change | | | |
+
+Each item is a new benchmark harness (server in the fence, client outside, same nine-pass
+capture and validation), not a parameter change to the suite benchmark, because Renaissance
+and DaCapo hard-wire their inputs. The first two are the ones whose current numbers are least
+defensible and whose realistic versions are most likely to change the picture.

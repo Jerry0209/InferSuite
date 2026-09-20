@@ -162,3 +162,22 @@ traffic" claim was an artifact of cassandra's wrongful exclusion.)
   rank 10/12, floor now tomcat 0.74); cassandra branch MPKI 1.68 (was 3.28: busy-weighting).
 - Not yet re-drawn under the rule: the DCPerf-only pack and the ML_iso36 paper pack (noted in
   their READMEs/MANIFEST) — PI's call, since those are the thesis figures.
+
+## Addendum 5 (2026-09-20): data footprint audit of the ten server benchmarks
+- Mentor: what dataset does each server workload use, how big, is it realistic; redo any
+  small-dataset workload with a realistic one (e.g. Neo4j on a Twitter/SNAP graph).
+- Static audit from the suites' own configs + measured live heap after GC / cgroup peak
+  (`kit/dcperf/measure_footprint.sh`, `parse_footprint.py`; raw outputs banked in
+  `JVMbench/data/footprint_2026-09-20/`). Written up as `JVMbench/README.md` §10, pointer in
+  `DCPerf/README.md` §7.9.
+- Result: FeedSim 3.5 GB resident (realistic by construction); video = six 2 s 1080p shots
+  (spec: 4K El Fuente); finagle-http 20 MB, chirper 30 MB, tomcat 20 MB (request tiers, small by
+  design); neo4j 110 MB live (70 MB movie JSON); cassandra 160 MB live on 10 MB of rows
+  (DaCapo large = 100 MB rows → 650 MB live); kafka 190 MB; page-rank 330 MB–1.1 GB on a
+  7.6 M-edge SNAP crawl; naive-bayes 1.3–1.8 GB of a 105 KB sample copied 8 000×. Corroborated
+  by the banked LLC MPKI (0.02–0.13 for the web/db JVMs) and DRAM (≤ 2.2 GB/s).
+- Plan (not started — PI's call on scope/spend): Neo4j on SNAP LiveJournal (then twitter-2010
+  or LDBC SF10), Cassandra + YCSB 20 M rows, Spark PageRank/NaiveBayes on real inputs, Kafka
+  20 M × 1 KB sustained, 4K video sources. Each is a new harness (server in fence, client out).
+- Box: measurements ran on the measured cores under Jef's re-applied partition (15 Sep), no
+  perf, isolation untouched; scopes removed afterwards.

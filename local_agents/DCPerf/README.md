@@ -511,6 +511,14 @@ of FeedSim's `fpbr` group (the profiling pass, the 2026-09-10 confirmation run a
 2026-09-14 isolation recheck), which agree on IPC within 0.5 % (§8); they are evidence about the
 instrument, not inputs to any figure.
 
+### 7.9 Data footprint of the server benchmarks (2026-09-20)
+
+Measured for all ten server benchmarks in `../JVMbench/README.md` §10: FeedSim holds a
+3.5 GB resident graph (4.8 GB peak) and is realistic by construction; VideoTranscodeBench runs
+on six two-second 1080p shots where DCPerf specifies 4K *El Fuente*; the JVM databases and
+servers work on 20–190 MB. The plan to re-characterise cassandra, Neo4j, the Spark jobs, kafka
+and video on realistic datasets is there too.
+
 ## 8. Isolation made self-sufficient (2026-09-14)
 
 **Why this was needed.** The measurement environment on P7 was, without anyone intending it,
