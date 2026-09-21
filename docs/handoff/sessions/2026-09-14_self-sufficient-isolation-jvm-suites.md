@@ -192,8 +192,11 @@ traffic" claim was an artifact of cassandra's wrongful exclusion.)
   (`VT_CUTS`); one-time setup scripts per store.
 - Profiled 9/9 and validated: neo4j-livejournal (SNAP LiveJournal, 69 M edges, 2.9 GB store),
   cassandra-ycsb20m (20 M rows, 21 GB), kafka-20g (21 GB retention window, 120 MB/s ingest, six
-  backlog consumers), pagerank-livejournal, naivebayes-rcv1 (518 k docs); video-4k (two Netflix
-  4K sequences from Xiph) sweep launched last.
+  backlog consumers), pagerank-livejournal, naivebayes-rcv1 (518 k docs), video-4k (two
+  Netflix 4K sequences from Xiph; LLC misses 4.6×, DRAM 1.7×, front end easier than the
+  1080p-shot batch). Packs: RealData v1_2026-09-21_realistic-datasets, JVMbench
+  v4_2026-09-21_realistic-server-set (fig01b). DCPerf cuts dir restored; 4K working copies
+  removed (disk 58 GB free).
 - Traps: YCSB kills client threads on insert errors (retry limit 0) → 12 % of keys missing,
   fixed with retries + completeness check; a shell in user.slice cannot taskset onto the
   measured cores (systemd must place the process into measured.slice first); `set -e` +

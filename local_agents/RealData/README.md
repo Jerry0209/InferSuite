@@ -17,7 +17,7 @@ housekeeping cores — the FeedSim arrangement.
 | `pagerank-livejournal` | Renaissance `page-rank` (SNAP web-BerkStan, 7.6 M edges) | the same RDD PageRank on SNAP LiveJournal, 69 M edges | **profiled 2026-09-21, 9/9 passes, validated** |
 | `naivebayes-rcv1` | Renaissance `naive-bayes` (a 100-row sample copied 8 000×) | Spark ML multinomial Naive Bayes on RCV1-v2, 518 571 Reuters documents × 47 236 features | **profiled 2026-09-21, 9/9 passes, validated** |
 | `kafka-20g` | DaCapo `kafka` (1 M-message bursts on an empty broker) | Kafka 4.3 KRaft broker with a 21 GB retention window, 120 MB/s sustained ingest, six consumers reading the backlog | **profiled 2026-09-21, 9/9 passes, validated** |
-| `video-4k` | DCPerf VideoTranscodeBench on six 2 s 1080p shots | the same runner on two Netflix 4K sequences from Xiph (Boat 301 frames, FoodMarket 601 frames, 4096×2160 @60) | profiling |
+| `video-4k` | DCPerf VideoTranscodeBench on six 2 s 1080p shots | the same runner on two Netflix 4K sequences from Xiph (Boat 301 frames, FoodMarket 601 frames, 4096×2160 @60) | **profiled 2026-09-21, 9/9 passes, validated** |
 
 Data is banked under `data/<suite>_<workload>/run_1..9` (gitignored, irreplaceable) with the
 same layout as every other campaign; derived rows in `data/l3_study/`. Infrastructure (servers,
@@ -314,19 +314,59 @@ deteriorates too (3.5–3.9×), the data-dependent loops over sparse rows being 
 predictable than dense fixed-length ones. Nothing about the software changed; the suite
 benchmark was measuring the cache, not the algorithm.
 
-## 7. What the five re-characterisations say together
+## 6b. video-4k
 
-Five of the ten server benchmarks have now been profiled twice with the same instrument: as
+**Input.** Two Netflix 4K test sequences from Xiph's freely licensed collection (the set DCPerf
+names, obtained without the CDVL registration the original *El Fuente* cuts need): *Boat*
+(301 frames, 3.7 GB raw) and *FoodMarket* (601 frames, 7.4 GB raw), 4096×2160 at 60 fps,
+8-bit 4:2:0 — against the six 51-frame 1080p shots the earlier capture used. The runner is
+DCPerf's own, unchanged (`VT_CUTS` only points its `datasets/cuts` at the new directory): it
+downscales each source into the 720p → 144p ladder and encodes every rung and the source with
+SVT-AV1 at preset 6, eight encoders in parallel. Because the downscale of 4K sources saturates
+the cores for a while on its own, the module now waits for the runner's encode-stage marker
+before judging steady state.
+
+**Validation:** D1–D5 and D7 pass, mean load 7.97 cores, D4 drift 0.2 %, residual ≤ 2.6 %.
+The batch is dominated by the 4K and 1080p encodes (minutes each), so a 180 s window sits
+inside them.
+
+**Toy versus realistic** (whole-runtime values):
+
+| Metric | six 2 s 1080p shots | two 4K sequences | ratio |
+|---|---|---|---|
+| IPC | 2.62 | 2.46 | 0.94× |
+| Branch MPKI | 2.27 | 1.37 | 0.60× |
+| Branch-direction MPKI | 2.20 | 1.33 | 0.60× |
+| BTB MPKI (BAClears) | 0.050 | 0.031 | 0.62× |
+| L1I MPKI (code-read) | 11.9 | 7.6 | 0.64× |
+| uop-cache (DSB) MPKI | 53 | 43 | 0.80× |
+| DSB coverage (%) | 57 | 64 | — |
+| L1D-load MPKI | 4.7 | 5.4 | 1.1× |
+| L2-load MPKI | 0.17 | 0.47 | 2.8× |
+| LLC MPKI | 0.09 | 0.40 | 4.6× |
+| DRAM read (GB/s) | 4.7 | 8.0 | 1.7× |
+| Context switches (/CPU-s) | 320 | 71 | 0.22× |
+
+The same shape as the other data-bound workloads, milder: a 4K frame's reference and
+reconstruction buffers no longer fit the L2, so L2 and LLC misses rise 3–5× and DRAM traffic
+1.7×, while the front end gets *easier* — the short 1080p batch was dominated by its tiny
+low-resolution rungs (144p–540p), where per-block control flow outweighs pixel work; on 4K
+frames the encoder spends its time in long straight-line kernels, branch misses fall by 40 %
+and context switches by 78 %. The encoder was never the problem; the two-second shots were.
+
+## 7. What the six re-characterisations say together
+
+Six of the ten server benchmarks have now been profiled twice with the same instrument: as
 the suite ships them, and with the same software on a dataset of realistic size and shape
 (`plots/paper_v1/realdata_pairs.png`, values in `realdata_pairs_numbers.csv`). Every one of
 them moved, and they moved in two distinct ways.
 
-**Data-bound workloads moved on the memory axes.** Cassandra, PageRank and Naive Bayes are
-computations over their data, and the toy datasets fit the caches: L1D/L2/LLC miss rates and
-DRAM traffic rose by 2× (Cassandra, PageRank) to 25–80× (Naive Bayes), IPC fell by a fifth to
-a half, and three of the five realistic versions now read 11–26 GB/s from DRAM, more than any
-suite benchmark except FeedSim. The suite versions were measuring the cache hierarchy's
-ability to hold a toy, not the algorithm.
+**Data-bound workloads moved on the memory axes.** Cassandra, PageRank, Naive Bayes and the
+video encoder are computations over their data, and the toy datasets fit the caches: L2/LLC
+miss rates and DRAM traffic rose by 2–5× (Cassandra, PageRank, video) to 25–80× (Naive
+Bayes), IPC fell by 6 % to a half, and four of the six realistic versions now read 8–26 GB/s
+from DRAM, more than any suite benchmark except FeedSim. The suite versions were measuring
+the cache hierarchy's ability to hold a toy, not the algorithm.
 
 **Serving workloads moved on the front end and the OS.** Neo4j and Kafka, re-run as real
 servers with clients outside the fence, changed less in their memory numbers and more in
@@ -367,8 +407,9 @@ PageRank if the memory side is to be pushed further.
 
 | Figure | What |
 |---|---|
-| `plots/paper_v1/realdata_pairs.{png,pdf}` | 12 metrics; per metric the five workloads as toy → realistic pairs with SPEC and agentic medians as reference lines (`realdata_pairs_numbers.csv` has every value and ratio) |
-| `../JVMbench/plots/paper_v1/multi_server_compact_realistic.{png,pdf}` | the three-violin grid (SPEC · Server · Agentic) with the five suite benchmarks replaced by their realistic versions; the suite-set version is `multi_server_compact` |
+| `plots/paper_v1/realdata_pairs.{png,pdf}` | 12 metrics; per metric the six workloads as toy → realistic pairs with SPEC and agentic medians as reference lines (`realdata_pairs_numbers.csv` has every value and ratio) |
+| `../JVMbench/plots/paper_v1/multi_server_compact_realistic.{png,pdf}` | the three-violin grid (SPEC · Server · Agentic) with the six suite benchmarks replaced by their realistic versions; the suite-set version is `multi_server_compact` |
+| `charts/v1_2026-09-21_realistic-datasets/` | the chart pack (figures, every number, scripts, READMEs in every subfolder); the multi-suite pack `../JVMbench/charts/v4_2026-09-21_realistic-server-set/` carries the realistic-set grid as fig01b |
 
 | What | Where |
 |---|---|
