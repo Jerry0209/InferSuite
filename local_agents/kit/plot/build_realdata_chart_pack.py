@@ -52,6 +52,10 @@ for f in (f"{RD}/plots/paper_v1/realdata_pairs_numbers.csv",
           f"{REPO}/local_agents/JVMbench/data/l3_study/runtime_votes.csv"):
     if os.path.exists(f):
         shutil.copy(f, f"{RAW}/{os.path.basename(f)}")
+for f in ("workload_index.csv", "server_set_shift.csv"):
+    src = f"{RD}/data/l3_study/{f}"
+    if os.path.exists(src):
+        shutil.copy(src, f"{RAW}/{f}")
 rows = f"{RD}/data/l3_study/realdata_rows_long.csv"
 if os.path.exists(rows):
     with open(rows, "rb") as src, gzip.open(f"{RAW}/realdata_per_window_rows.csv.gz", "wb") as dst:
@@ -59,7 +63,7 @@ if os.path.exists(rows):
 ts = f"{REPO}/local_agents/JVMbench/data/l3_study/timeseries/timeseries_realdata.csv.gz"
 if os.path.exists(ts):
     shutil.copy(ts, f"{RAW}/timeseries_realdata.csv.gz")
-for f in ("export_runtime_votes.py", "export_timeseries_rows.py"):
+for f in ("export_runtime_votes.py", "export_timeseries_rows.py", "export_server_set_shift.py"):
     shutil.copy(f"{KP}/{f}", f"{SCR}/{f}")
 
 open(f"{CH}/README.md", "w").write("\n".join([
@@ -93,7 +97,9 @@ open(f"{RAW}/README.md", "w").write("\n".join([
     "| `realdata_pairs_numbers.csv` | fig01: one row per (workload, metric): `toy` and `real` whole-runtime values, `spec` and `agentic` medians, `ratio` = real / toy |",
     "| `multi_server_compact_realistic_numbers.csv` | fig02: per (metric, side) n / min / max / median / mean / sd of the per-workload values; one row per Server benchmark (`side` = `Server:<suite>` or `Server:RealData`) with its value (`median`) and, for suite benchmarks, its window IQR |",
     "| `multi_server_compact_numbers.csv` | fig03: the same for the suite Server set |",
-    "| `runtime_votes.csv` | every whole-runtime value of every workload in every family (`family` = spec26 / agentic36 / dcperf / renaissance / dacapo / realdata; `windows` and `runs` behind each) — the input of every figure |",
+    "| `runtime_votes.csv` | **the master table**: every whole-runtime value of every workload in every family — `family, subgroup, workload, metric, value, windows, runs` (78 workloads x 16 metrics). Every figure in this pack is a grouping of these rows |",
+    "| `workload_index.csv` | **how to group them**: one row per workload — `side` (SPEC / Server / Agentic), `in_suite_server_set`, `in_realistic_server_set`, `pairs_with`, `pair_role`, `dataset`. Join to `runtime_votes.csv` on `workload` to reproduce any of the three figures without touching the raw captures |",
+    "| `server_set_shift.csv` | per metric, the Server median under the suite set and under the realistic set, their ratio, and the SPEC and agentic medians for scale (the table in `../../README.md` §7) |",
     "| `realdata_per_window_rows.csv.gz` | the realistic workloads' per-window values (`fence, metric, grp, col, value`; fence `both` = the whole server) |",
     "| `timeseries_realdata.csv.gz` | the same in time order (`run, group, win, t_rel_s, dur_s, metric, value`) for other aggregations |", "",
     "Values are co-counted inside each window; a metric exists only in windows whose counter group",
@@ -115,5 +121,11 @@ open(f"{SCR}/README.md", "w").write("\n".join([
     "| `fig01_realdata_pairs.R` | the toy → realistic pair grid | `RUNTIME_VOTES` (values file), `EXT_OUT` (output dir, repo-relative); pairs are listed at the top of the script |",
     "| `fig02/fig03_agg_compact_server_*.R` | the three-violin grid | `SERVER_SET=realistic` or `suite`; `VOTE=runtime` or `median`; `SERVER_MODE=votes` or `windows`; `EXT_ROWS`, `RUNTIME_VOTES`, `ADJ`, `EXT_OUT`, `EXT_STEM` |",
     "| `export_runtime_votes.py` | — | writes one whole-runtime value per workload and metric through the SPEC comparison kit's loader |",
-    "| `export_timeseries_rows.py` | — | writes the per-window rows of every family in time order |", ""]))
+    "| `export_timeseries_rows.py` | — | writes the per-window rows of every family in time order |",
+    "| `export_server_set_shift.py` | — | writes `workload_index.csv` and `server_set_shift.csv` from `runtime_votes.csv` alone |", "",
+    "**Replotting from scratch, without this repository's raw captures:** `runtime_votes.csv` +",
+    "`workload_index.csv` are sufficient. Join on `workload`; filter `side` for the three violins;",
+    "use `in_realistic_server_set` (or `in_suite_server_set`) to pick which Server set; use",
+    "`pairs_with` for the toy-vs-realistic pairs. Values are already per-workload, so no further",
+    "aggregation is needed — the violin is just the set of values for a side.", ""]))
 print("pack builder written; assembled at", CH, "with", len(present), "figures")

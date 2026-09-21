@@ -82,6 +82,10 @@ for f in ("multi_server_compact_numbers.csv", "multi_server_compact_realistic_nu
 RV = f"{JV}/data/l3_study/runtime_votes.csv"
 if os.path.exists(RV):
     shutil.copy(RV, f"{RAW}/runtime_votes.csv")
+for f in ("workload_index.csv", "server_set_shift.csv"):
+    src = f"{REPO}/local_agents/RealData/data/l3_study/{f}"
+    if os.path.exists(src):
+        shutil.copy(src, f"{RAW}/{f}")
 with open(f"{REPO}/local_agents/ML_iso36/data/l3_study/agg_rows_long.csv", "rb") as src, \
         gzip.open(f"{RAW}/spec_agentic_rows_long.csv.gz", "wb") as dst:
     shutil.copyfileobj(src, dst)
@@ -99,6 +103,7 @@ if os.path.isdir(TS):
             shutil.copy(f"{TS}/{f}", f"{RAW}/{f}"); ts_files.append(f)
 shutil.copy(f"{KP}/export_timeseries_rows.py", f"{SCR}/export_timeseries_rows.py")
 shutil.copy(f"{KP}/export_runtime_votes.py", f"{SCR}/export_runtime_votes.py")
+shutil.copy(f"{KP}/export_server_set_shift.py", f"{SCR}/export_server_set_shift.py")
 shutil.copy(f"{KP}/export_dcperf_rows.py", f"{SCR}/export_suite_rows.py")
 shutil.copy(f"{KP}/export_agg_rows_long.py", f"{SCR}/export_spec_agentic_rows.py")
 

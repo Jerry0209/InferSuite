@@ -566,6 +566,41 @@ fig02 and fig03. They are drawn so a reader can see where a server sits relative
 families in the main comparison, and whether the dataset swap moved it across one of them: it
 does, Cassandra crosses the agentic DRAM line and Naive Bayes crosses both on the cache metrics.
 
+### CSVs for replotting (for Jeferson, 2026-09-21)
+
+Everything drawn in this study is in git as plain CSV, so the figures can be rebuilt from
+another machine with no access to the raw captures. All paths are inside
+`charts/v1_2026-09-21_realistic-datasets/Raw data/`:
+
+| File | Rows | What it is |
+|---|---|---|
+| `runtime_votes.csv` | 1 248 | **the master table**: `family, subgroup, workload, metric, value, windows, runs` — one whole-runtime value per workload and metric, 78 workloads × 16 metrics, all six families (SPEC 26, agentic 36, DCPerf 2, Renaissance 5, DaCapo 3, RealData 6) |
+| `workload_index.csv` | 78 | **how to group them**: `workload, family, subgroup, side, in_suite_server_set, in_realistic_server_set, pairs_with, pair_role, dataset`. Join on `workload` |
+| `server_set_shift.csv` | 12 | per metric: Server median under the suite set, under the realistic set, their ratio, and the SPEC and agentic medians (the §7 table) |
+| `realdata_pairs_numbers.csv` | 72 | fig01 exactly: per (workload, metric) the `toy` and `real` values, `spec` and `agentic` medians, and `ratio` |
+| `multi_server_compact_realistic_numbers.csv`, `multi_server_compact_numbers.csv` | — | fig02 / fig03 exactly: per (metric, side) n / min / max / median / mean / sd, plus one row per Server benchmark |
+| `realdata_per_window_rows.csv.gz`, `timeseries_realdata.csv.gz` | 142 410 each | the per-window values behind the realistic workloads, the second in time order — only needed for a *different* aggregation |
+
+**Recipe for the three violins**, with no aggregation step required, because the values are
+already per workload:
+
+```python
+import pandas as pd
+v = pd.read_csv("runtime_votes.csv")
+ix = pd.read_csv("workload_index.csv")
+d = v.merge(ix[["workload", "side", "in_realistic_server_set"]], on="workload")
+ipc = d[d.metric == "IPC"]
+spec    = ipc[ipc.side == "SPEC"].value                                   # 26 points
+agentic = ipc[ipc.side == "Agentic"].value                                # 36 points
+server  = ipc[(ipc.side == "Server") & (ipc.in_realistic_server_set == 1)].value   # 10 points
+# swap in_realistic_server_set -> in_suite_server_set for the suite version of the Server violin
+```
+
+The pair figure is the same join with `pairs_with` and `pair_role`, or simply
+`realdata_pairs_numbers.csv`, which already has both ends of every pair on one row.
+`local_agents/kit/plot/export_server_set_shift.py` regenerates the index and the shift table
+from `runtime_votes.csv` alone, so they cannot drift from the master.
+
 | Figure | What |
 |---|---|
 | `plots/paper_v1/realdata_pairs.{png,pdf}` | 12 metrics; per metric the six workloads as toy → realistic pairs with SPEC and agentic medians as reference lines (`realdata_pairs_numbers.csv` has every value and ratio) |

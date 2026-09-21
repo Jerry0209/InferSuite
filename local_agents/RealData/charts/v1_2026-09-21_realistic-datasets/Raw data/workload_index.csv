@@ -1,0 +1,79 @@
+workload,family,subgroup,side,in_suite_server_set,in_realistic_server_set,pairs_with,pair_role,dataset
+jq-2598,agentic36,C,Agentic,0,0,,,
+micropython-13039,agentic36,C,Agentic,0,0,,,
+redis-10068,agentic36,C,Agentic,0,0,,,
+redis-12272,agentic36,C,Agentic,0,0,,,
+fmt-2457,agentic36,C++,Agentic,0,0,,,
+fmt-3750,agentic36,C++,Agentic,0,0,,,
+fmt-3901,agentic36,C++,Agentic,0,0,,,
+json-4237,agentic36,C++,Agentic,0,0,,,
+caddy-4774,agentic36,Go,Agentic,0,0,,,
+gin-2121,agentic36,Go,Agentic,0,0,,,
+hugo-12579,agentic36,Go,Agentic,0,0,,,
+prometheus-10720,agentic36,Go,Agentic,0,0,,,
+gson-1093,agentic36,Java,Agentic,0,0,,,
+gson-2134,agentic36,Java,Agentic,0,0,,,
+javaparser-4538,agentic36,Java,Agentic,0,0,,,
+lombok-3479,agentic36,Java,Agentic,0,0,,,
+axios-5892,agentic36,JavaScript,Agentic,0,0,,,
+babel-15649,agentic36,JavaScript,Agentic,0,0,,,
+preact-3763,agentic36,JavaScript,Agentic,0,0,,,
+three.js-26589,agentic36,JavaScript,Agentic,0,0,,,
+carbon-2752,agentic36,PHP,Agentic,0,0,,,
+framework-52684,agentic36,PHP,Agentic,0,0,,,
+php-cs-fixer-8064,agentic36,PHP,Agentic,0,0,,,
+phpspreadsheet-3463,agentic36,PHP,Agentic,0,0,,,
+fastlane-20958,agentic36,Ruby,Agentic,0,0,,,
+fluentd-3328,agentic36,Ruby,Agentic,0,0,,,
+jekyll-8167,agentic36,Ruby,Agentic,0,0,,,
+rubocop-13560,agentic36,Ruby,Agentic,0,0,,,
+axum-1730,agentic36,Rust,Agentic,0,0,,,
+bat-2835,agentic36,Rust,Agentic,0,0,,,
+nushell-13831,agentic36,Rust,Agentic,0,0,,,
+ripgrep-2209,agentic36,Rust,Agentic,0,0,,,
+core-11870,agentic36,TypeScript,Agentic,0,0,,,
+docusaurus-10130,agentic36,TypeScript,Agentic,0,0,,,
+docusaurus-9897,agentic36,TypeScript,Agentic,0,0,,,
+immutable-js-2006,agentic36,TypeScript,Agentic,0,0,,,
+cassandra,dacapo,DaCapo,Server,1,0,cassandra-ycsb20m,suite (toy),"DaCapo YCSB workload-default: 10 000 rows x 1 KB, in-process client"
+kafka,dacapo,DaCapo,Server,1,0,kafka-20g,suite (toy),"DaCapo Trogdor produce bench: 1 M messages into an empty broker, in-process"
+tomcat,dacapo,DaCapo,Server,1,1,,,"Tomcat's bundled sample web applications, 14 MB, in-process client"
+feedsim,dcperf,DCPerf,Server,1,1,,,"synthetic ranking graph, graph_scale=21, 3.5 GB resident (generated at start-up)"
+video_transcode,dcperf,DCPerf,Server,1,0,video-4k,suite (toy),"six 51-frame 1080p shots cut from Xiph in_to_tree / park_joy, 908 MB"
+cassandra-ycsb20m,realdata,RealData,Server,0,1,cassandra,realistic,"YCSB CoreWorkload A on 20 M rows x 1 KB, 21 GB store, external client"
+kafka-20g,realdata,RealData,Server,0,1,kafka,realistic,"Kafka 4.3 broker, 21 GB retention window, 120 MB/s ingest, 6 backlog consumers"
+naivebayes-rcv1,realdata,RealData,Server,0,1,naive-bayes,realistic,"RCV1-v2 Reuters corpus, 518 571 documents x 47 236 features (777 MB)"
+neo4j-livejournal,realdata,RealData,Server,0,1,neo4j-analytics,realistic,"SNAP soc-LiveJournal1 in a standalone Neo4j 5.26 server, 2.9 GB store"
+pagerank-livejournal,realdata,RealData,Server,0,1,page-rank,realistic,"SNAP soc-LiveJournal1, 69 M edges (1.03 GB edge list)"
+video-4k,realdata,RealData,Server,0,1,video_transcode,realistic,"two Netflix 4K sequences from Xiph (Boat 301 frames, FoodMarket 601), 11.1 GB"
+finagle-chirper,renaissance,Renaissance,Server,1,1,,,"5 000 simulated users, tweet text from a 486 KB CSV, in-process client"
+finagle-http,renaissance,Renaissance,Server,1,1,,,"none by design: 12 000 small HTTP requests per iteration, in-process client"
+naive-bayes,renaissance,Renaissance,Server,1,0,naivebayes-rcv1,suite (toy),Spark's 100-row sample_libsvm_data.txt (105 KB) replicated 8 000x
+neo4j-analytics,renaissance,Renaissance,Server,1,0,neo4j-livejournal,suite (toy),"embedded Neo4j movie database, 70 MB of JSON, in-process queries"
+page-rank,renaissance,Renaissance,Server,1,0,pagerank-livejournal,suite (toy),"SNAP web-BerkStan, 7.6 M edges (20 MB zipped)"
+709.cactus_r,spec26,SPEC-fp,SPEC,0,0,,,
+722.palm_r,spec26,SPEC-fp,SPEC,0,0,,,
+731.astcenc_r,spec26,SPEC-fp,SPEC,0,0,,,
+736.ocio_r,spec26,SPEC-fp,SPEC,0,0,,,
+737.gmsh_r,spec26,SPEC-fp,SPEC,0,0,,,
+748.flightdm_r,spec26,SPEC-fp,SPEC,0,0,,,
+749.fotonik3d_r,spec26,SPEC-fp,SPEC,0,0,,,
+765.roms_r,spec26,SPEC-fp,SPEC,0,0,,,
+766.femflow_r,spec26,SPEC-fp,SPEC,0,0,,,
+767.nest_r,spec26,SPEC-fp,SPEC,0,0,,,
+772.marian_r,spec26,SPEC-fp,SPEC,0,0,,,
+782.lbm_r,spec26,SPEC-fp,SPEC,0,0,,,
+706.stockfish_r,spec26,SPEC-int,SPEC,0,0,,,
+707.ntest_r,spec26,SPEC-int,SPEC,0,0,,,
+708.sqlite_r,spec26,SPEC-int,SPEC,0,0,,,
+710.omnetpp_r,spec26,SPEC-int,SPEC,0,0,,,
+714.cpython_r,spec26,SPEC-int,SPEC,0,0,,,
+721.gcc_r,spec26,SPEC-int,SPEC,0,0,,,
+723.llvm_r,spec26,SPEC-int,SPEC,0,0,,,
+727.cppcheck_r,spec26,SPEC-int,SPEC,0,0,,,
+729.abc_r,spec26,SPEC-int,SPEC,0,0,,,
+734.vpr_r,spec26,SPEC-int,SPEC,0,0,,,
+735.gem5_r,spec26,SPEC-int,SPEC,0,0,,,
+750.sealcrypto_r,spec26,SPEC-int,SPEC,0,0,,,
+753.ns3_r,spec26,SPEC-int,SPEC,0,0,,,
+777.zstd_r,spec26,SPEC-int,SPEC,0,0,,,
