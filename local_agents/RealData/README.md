@@ -17,7 +17,7 @@ housekeeping cores — the FeedSim arrangement.
 | `pagerank-livejournal` | Renaissance `page-rank` (SNAP web-BerkStan, 7.6 M edges) | the same RDD PageRank on SNAP LiveJournal, 69 M edges | **profiled 2026-09-21, 9/9 passes, validated** |
 | `naivebayes-rcv1` | Renaissance `naive-bayes` (a 100-row sample copied 8 000×) | Spark ML multinomial Naive Bayes on RCV1-v2, 518 571 Reuters documents × 47 236 features | **profiled 2026-09-21, 9/9 passes, validated** |
 | `kafka-20g` | DaCapo `kafka` (1 M-message bursts on an empty broker) | Kafka 4.3 KRaft broker with a 21 GB retention window, 120 MB/s sustained ingest, six consumers reading the backlog | **profiled 2026-09-21, 9/9 passes, validated** |
-| Video | DCPerf VideoTranscodeBench on 2 s 1080p shots | 4K sources | planned |
+| `video-4k` | DCPerf VideoTranscodeBench on six 2 s 1080p shots | the same runner on two Netflix 4K sequences from Xiph (Boat 301 frames, FoodMarket 601 frames, 4096×2160 @60) | profiling |
 
 Data is banked under `data/<suite>_<workload>/run_1..9` (gitignored, irreplaceable) with the
 same layout as every other campaign; derived rows in `data/l3_study/`. Infrastructure (servers,
@@ -313,3 +313,68 @@ highest of every workload measured**, and IPC falls by more than half. Branch be
 deteriorates too (3.5–3.9×), the data-dependent loops over sparse rows being far less
 predictable than dense fixed-length ones. Nothing about the software changed; the suite
 benchmark was measuring the cache, not the algorithm.
+
+## 7. What the five re-characterisations say together
+
+Five of the ten server benchmarks have now been profiled twice with the same instrument: as
+the suite ships them, and with the same software on a dataset of realistic size and shape
+(`plots/paper_v1/realdata_pairs.png`, values in `realdata_pairs_numbers.csv`). Every one of
+them moved, and they moved in two distinct ways.
+
+**Data-bound workloads moved on the memory axes.** Cassandra, PageRank and Naive Bayes are
+computations over their data, and the toy datasets fit the caches: L1D/L2/LLC miss rates and
+DRAM traffic rose by 2× (Cassandra, PageRank) to 25–80× (Naive Bayes), IPC fell by a fifth to
+a half, and three of the five realistic versions now read 11–26 GB/s from DRAM, more than any
+suite benchmark except FeedSim. The suite versions were measuring the cache hierarchy's
+ability to hold a toy, not the algorithm.
+
+**Serving workloads moved on the front end and the OS.** Neo4j and Kafka, re-run as real
+servers with clients outside the fence, changed less in their memory numbers and more in
+instruction supply and context switching: the Neo4j server mispredicts 4×, misses the BTB 36×
+and switches 28× as often as the in-process movie-graph benchmark; the Kafka broker misses
+the L1I 3× as often and switches 5× as often as DaCapo's producer burst, while its memory side
+got *lighter* because the payload bytes never touch its user-space code. Here the toy was
+measuring the wrong process — the in-process client — as much as the wrong dataset.
+
+**The Server family as a whole moves away from the agentic profile.** Replacing the five suite
+benchmarks by their realistic versions (`SERVER_SET=realistic` in the three-violin grid,
+`multi_server_compact_realistic.png`) shifts the Server medians: IPC 1.88 → 1.56, L1I
+14 → 20 MPKI, DRAM 5.2 → 7.6 GB/s, context switches 2 900 → 12 900 per CPU-second. On every
+one of those axes the agentic 36 sits on the *other* side (IPC 1.90, L1I 12.8, DRAM 1.05,
+549 switches), so the distance between "server" and "agent" grows when the servers are real.
+
+**The agentic finding is unchanged.** Ranking the agentic median against SPEC and the ten
+server values under either set, it is first on exactly one metric — branch-direction
+misprediction, 3.36 MPKI against FeedSim's 3.32 — and between 2nd and 10th on the other
+eleven. The realistic servers push the agentic family further *down* the memory rankings
+(L1D 9th → 10th, L2 8th → 10th, LLC 4th → 6th), which sharpens the earlier statement: what is
+distinctive about an agent is not that it is instruction-hungry or memory-heavy, both of which
+real servers do more of, but that its branches are the least predictable of any workload
+measured while it touches almost no data.
+
+**Caveats that stay.** One profiling run per counter group per workload, n = 1 run-to-run
+(`../JVMbench/README.md` §7). The Neo4j operating point is client-limited by the Python driver
+(the server ran at 3.8 of 8 cores); Cassandra's throughput fell by a third across its nine
+passes as the store accumulated updates; Kafka's broker runs at 0.7 cores because a broker's
+data path is kernel zero-copy, and 15 % of the partition's busy time is unfenced loopback
+network work. All stores are memory-resident (21 GB Cassandra, 2.9 GB Neo4j, 21 GB Kafka window
+against 62 GB RAM) — realistic in shape and far beyond any cache, but not the disk-bound regime
+of a node holding terabytes. The larger graph the mentor named, `twitter-2010` (1.5 B edges),
+would need more disk than this box has free and is the natural next point for Neo4j and
+PageRank if the memory side is to be pushed further.
+
+## 8. Figures and files
+
+| Figure | What |
+|---|---|
+| `plots/paper_v1/realdata_pairs.{png,pdf}` | 12 metrics; per metric the five workloads as toy → realistic pairs with SPEC and agentic medians as reference lines (`realdata_pairs_numbers.csv` has every value and ratio) |
+| `../JVMbench/plots/paper_v1/multi_server_compact_realistic.{png,pdf}` | the three-violin grid (SPEC · Server · Agentic) with the five suite benchmarks replaced by their realistic versions; the suite-set version is `multi_server_compact` |
+
+| What | Where |
+|---|---|
+| Orchestrator (shared) | `local_agents/kit/dcperf/run_dcperf_profile.sh` with `SUITE=realdata BENCH=<module> WORKLOAD=<name>` |
+| Modules | `bench_neo4j.sh` + `neo4j_client.py`, `bench_cassandra.sh`, `bench_kafka.sh`, `bench_spark.sh` + `spark/{pagerank,naivebayes}.scala`, `bench_video_transcode.sh` (`VT_CUTS`) |
+| One-time builds | `setup_neo4j_livejournal.sh`, `setup_cassandra_ycsb.sh`, `setup_kafka.sh` |
+| Captures (gitignored) | `data/realdata_<workload>/run_1..9`; derived rows `data/l3_study/` |
+| Infrastructure (outside the repo) | `~/realdata-infra/`: `neo4j/` (5.26.12 + store), `cassandra/` (5.0.9 + 21 GB store), `kafka/` (4.3.1 + 20 GB log), `spark/` (3.5.9), `ycsb/` (0.17), `venv/` (Python driver), `datasets/` (LiveJournal CSV + edge list, RCV1, 4K clips), `downloads/` |
+| Validation / derivation | `validate_dcperf.py` and `derive_dcperf.sh` with `SUITE=realdata DATA=local_agents/RealData/data` |

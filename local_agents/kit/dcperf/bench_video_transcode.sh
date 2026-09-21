@@ -64,6 +64,18 @@ bench_start(){ # $1 OUT, $2 UNIT
   [ -d "/sys/fs/cgroup/$CG" ] || { dlog "encode scope never appeared"; return 1; }
   echo "$CG" > "$OUT/.server_cg"
 
+  # ENCODE STAGE GATE (2026-09-21): the runner first copies the reference clips and downscales
+  # them into the resolution ladder, and with 4K sources that stage saturates the cores for a
+  # minute or more on its own -- the 4K smoke declared steady state 22 s after launch, inside
+  # the downscale. The runner prints "Running M<level>" when the encode loop starts; wait for
+  # it (up to 20 min) before judging saturation, so every window is an encode window.
+  for i in $(seq 1 1200); do
+    grep -q 'Running M' "$OUT/vtb_run.log" 2>/dev/null && break
+    kill -0 "$VT_RUN_PID" 2>/dev/null || { dlog "batch exited before the encode stage"; return 1; }
+    sleep 1
+  done
+  grep -q 'Running M' "$OUT/vtb_run.log" 2>/dev/null || { dlog "encode stage never started"; return 1; }
+  dlog "encode stage started ($(grep -o 'Running M[0-9]*' "$OUT/vtb_run.log" | tail -1)) after ${i}s of copy + downscale"
   # STEADY STATE for a batch workload = the pool is saturated. Wait until the fence has been
   # busy above half the pool for several consecutive samples, rather than assuming a fixed
   # warm-up: command generation and the first ffmpeg spawns take a variable amount of time.
