@@ -23,7 +23,12 @@ if [ ! -f "$CONF" ]; then
       -e "s|^controller.quorum.bootstrap.servers=.*|controller.quorum.bootstrap.servers=127.0.0.1:9093|" \
       "$KAFKA/config/server.properties" > "$CONF"
   # keep the broker honest about disk: no deletion during the study, segments of 1 GB
-  printf '\nlog.retention.hours=-1\nlog.segment.bytes=1073741824\nnum.io.threads=8\nnum.network.threads=4\n' >> "$CONF"
+  # BOUNDED log (2026-09-21): the first smoke ingested 205 MB/s and grew the log by 40 GB in
+  # four minutes. A broker's steady state is a fixed retention window, so the topic keeps
+  # RETENTION_BYTES per partition (12 x 1.75 GB = 21 GB) in 512 MB segments and the broker
+  # checks retention every 10 s instead of every 5 min; consumers "from earliest" then read a
+  # moving 21 GB backlog and disk use stays at ~21-27 GB whatever the ingest rate.
+  printf '\nlog.retention.hours=-1\nlog.retention.check.interval.ms=10000\nlog.segment.bytes=536870912\nnum.io.threads=8\nnum.network.threads=4\n' >> "$CONF"
   log "broker config written ($CONF)"
 fi
 if [ -f "$DS/SETUP_DONE" ]; then log "already built ($(cat "$DS/SETUP_DONE"))"; exit 0; fi
@@ -46,8 +51,10 @@ start_broker(){
 stop_broker(){ sudo systemctl stop realdata-kafka-setup.scope 2>/dev/null || true; kill -TERM "$BROKER_PID" 2>/dev/null || true
   local i; for i in $(seq 1 60); do pgrep -f "$KAFKA/bin" >/dev/null || break; sleep 1; done; }
 start_broker
+RETENTION_BYTES="${RETENTION_BYTES:-1750000000}"     # per partition
 "$KAFKA/bin/kafka-topics.sh" --bootstrap-server 127.0.0.1:9092 --create --if-not-exists --topic "$TOPIC" \
-  --partitions "$PARTITIONS" --replication-factor 1 >> "$INFRA/logs/setup_kafka.log" 2>&1
+  --partitions "$PARTITIONS" --replication-factor 1 \
+  --config retention.bytes="$RETENTION_BYTES" --config segment.bytes=536870912 >> "$INFRA/logs/setup_kafka.log" 2>&1
 log "topic '$TOPIC' ($PARTITIONS partitions)"
 log "pre-filling: $MESSAGES x $RECORD_BYTES B (producer on the housekeeping cores)"
 ( taskset -c "$CPUS_HOUSE" "$KAFKA/bin/kafka-producer-perf-test.sh" --topic "$TOPIC" --num-records "$MESSAGES" \
@@ -56,5 +63,5 @@ log "pre-filling: $MESSAGES x $RECORD_BYTES B (producer on the housekeeping core
   || { log "pre-fill FAILED"; stop_broker; exit 1; }
 log "pre-fill done: $(tail -1 "$INFRA/logs/kafka_prefill.log" | cut -c1-150)"
 sleep 5; stop_broker
-echo "messages=$MESSAGES record_bytes=$RECORD_BYTES partitions=$PARTITIONS topic=$TOPIC log=$(du -sh "$KAFKA/data" | cut -f1) built=$(date -Is)" > "$DS/SETUP_DONE"
+echo "messages=$MESSAGES record_bytes=$RECORD_BYTES partitions=$PARTITIONS retention_bytes_per_partition=$RETENTION_BYTES topic=$TOPIC log=$(du -sh "$KAFKA/data" | cut -f1) built=$(date -Is)" > "$DS/SETUP_DONE"
 log "SETUP DONE: $(cat "$DS/SETUP_DONE")"
