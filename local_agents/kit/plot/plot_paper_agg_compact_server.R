@@ -28,6 +28,15 @@ SERVER_MODE <- Sys.getenv("SERVER_MODE", "votes")
 stopifnot(SERVER_MODE %in% c("votes", "windows"))
 VOTE <- Sys.getenv("VOTE", "runtime")
 stopifnot(VOTE %in% c("runtime", "median"))
+# SERVER_SET=realistic (2026-09-21): the Server set with the five suite benchmarks that were
+# re-characterised on realistic datasets REPLACED by those versions (neo4j-analytics ->
+# neo4j-livejournal, cassandra -> cassandra-ycsb20m, kafka -> kafka-20g, page-rank ->
+# pagerank-livejournal, naive-bayes -> naivebayes-rcv1, video_transcode -> video-4k when
+# profiled); "suite" (default) = the ten suite benchmarks as the mentor listed them.
+SERVER_SET <- Sys.getenv("SERVER_SET", "suite")
+stopifnot(SERVER_SET %in% c("suite", "realistic"))
+REAL_SWAP <- c("neo4j-analytics" = "neo4j-livejournal", "cassandra" = "cassandra-ycsb20m", "kafka" = "kafka-20g",
+               "page-rank" = "pagerank-livejournal", "naive-bayes" = "naivebayes-rcv1", "video_transcode" = "video-4k")
 RV_FILE <- file.path(repo, Sys.getenv("RUNTIME_VOTES", "local_agents/JVMbench/data/l3_study/runtime_votes.csv"))
 EXT_FILES <- strsplit(Sys.getenv("EXT_ROWS",
   paste(file.path(repo, "local_agents/DCPerf/data/l3_study/dcperf_rows_long.csv"),
@@ -40,7 +49,8 @@ OUT <- file.path(repo, Sys.getenv("EXT_OUT", "local_agents/JVMbench/plots/paper_
 dir.create(OUT, showWarnings = FALSE, recursive = TRUE)
 STEM <- Sys.getenv("EXT_STEM", paste0("multi_server_compact",
                                       if (SERVER_MODE == "windows") "_windows" else "",
-                                      if (VOTE == "median") "_medianvote" else ""))
+                                      if (VOTE == "median") "_medianvote" else "",
+                                      if (SERVER_SET == "realistic") "_realistic" else ""))
 
 SIDES <- c("SPEC", "Server", "Agentic")
 COLS <- c(SPEC = unname(PAPER_PAIR["blue_dark"]), Server = "#1a9850",
@@ -62,11 +72,20 @@ srv_iqr <- srv |> group_by(metric, wl = col, suite = grp) |>
 if (VOTE == "runtime") {
   rv <- read.csv(RV_FILE, stringsAsFactors = FALSE)
   side_of <- c(spec26 = "SPEC", agentic36 = "Agentic", dcperf = "Server",
-               renaissance = "Server", dacapo = "Server")
-  votes <- rv |> transmute(metric, wl = workload, v = value, side = unname(side_of[family])) |>
+               renaissance = "Server", dacapo = "Server", realdata = "Server")
+  votes <- rv |> transmute(metric, wl = workload, v = value, side = unname(side_of[family]), family) |>
     filter(!is.na(side))
+  if (SERVER_SET == "realistic") {
+    have <- intersect(unname(REAL_SWAP), unique(votes$wl[votes$family == "realdata"]))
+    drop <- names(REAL_SWAP)[REAL_SWAP %in% have]
+    votes <- votes |> filter(!(wl %in% drop), !(family == "realdata" & !(wl %in% have)))
+  } else {
+    votes <- votes |> filter(family != "realdata")
+  }
+  votes <- votes |> select(-family)
   srv_votes <- votes |> filter(side == "Server") |> select(metric, wl, v) |>
-    inner_join(srv_iqr, by = c("metric", "wl"))
+    left_join(srv_iqr, by = c("metric", "wl")) |>
+    mutate(suite = ifelse(is.na(suite), "RealData", suite), nwin = ifelse(is.na(nwin), 0L, nwin))
   server_pts <- if (SERVER_MODE == "votes") srv_votes |> transmute(metric, wl, v, side = "Server") else
     srv |> transmute(metric, wl = col, v = value, side = "Server")
   per_workload <- bind_rows(votes |> filter(side != "Server"), server_pts)
@@ -168,8 +187,9 @@ panel <- function(m) {
 }
 
 legend_strip <- function() {
-  n_suite <- sapply(c("DCPerf", "Renaissance", "DaCapo"), function(f) sum(srv_iqr$suite[srv_iqr$metric == "IPC"] == f))
-  srv_lab <- if (SERVER_MODE == "votes")
+  n_suite <- sapply(c("DCPerf", "Renaissance", "DaCapo", "RealData"), function(f) sum(srv_votes$suite[srv_votes$metric == "IPC"] == f))
+  srv_lab <- if (SERVER_MODE == "votes" && SERVER_SET == "realistic")
+    sprintf("Server (%d: %d on realistic datasets · DCPerf %d · Renaissance %d · DaCapo %d)", n_side[["Server"]], n_suite[["RealData"]], n_suite[["DCPerf"]], n_suite[["Renaissance"]], n_suite[["DaCapo"]]) else if (SERVER_MODE == "votes")
     sprintf("Server (%d: DCPerf %d · Renaissance %d · DaCapo %d)", n_side[["Server"]], n_suite[["DCPerf"]], n_suite[["Renaissance"]], n_suite[["DaCapo"]]) else
     sprintf("Server (%d benchmarks, every 100 ms window pooled)", length(unique(srv$col)))
   rule <- if (VOTE == "runtime") "one value per workload = metric over its whole runtime" else
