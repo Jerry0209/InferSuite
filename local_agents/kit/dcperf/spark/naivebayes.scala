@@ -9,13 +9,13 @@ val t0 = System.nanoTime
 val data = spark.read.format("libsvm").option("numFeatures", "47236").load(path)
   .withColumn("label", $"label" - 1).cache()   // labels 1..53 -> 0..52
 val n = data.count()
-println(s"[rd] corpus loaded: $n documents in ${(System.nanoTime - t0) / 1e9}%.1f s")
+println(f"[rd] corpus loaded: $n documents in ${(System.nanoTime - t0) / 1e9}%.1f s")
 var pass = 0
 while ((System.nanoTime - t0) / 1e9 < seconds) {
   val model = new NaiveBayes().setModelType("multinomial").fit(data)
   val acc = model.transform(data).filter($"label" === $"prediction").count().toDouble / n
   pass += 1
-  println(s"[rd] pass $pass done at ${(System.nanoTime - t0) / 1e9}%.0f s; train accuracy ${"%.3f".format(acc)}")
+  println(f"[rd] pass $pass done at ${(System.nanoTime - t0) / 1e9}%.0f s; train accuracy ${acc}%.3f")
 }
 println(s"[rd] finished $pass passes")
 System.exit(0)

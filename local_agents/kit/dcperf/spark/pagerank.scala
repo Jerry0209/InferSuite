@@ -8,10 +8,12 @@ val edges = sys.env("RD_EDGES"); val iters = sys.env.getOrElse("RD_ITERS", "3").
 val seconds = sys.env.getOrElse("RD_SECONDS", "600").toLong
 val t0 = System.nanoTime
 val lines = sc.textFile(edges, 64).filter(l => !l.startsWith("#"))
+// no distinct(): the SNAP edge list has no duplicate edges, and the extra full shuffle
+// doubled the one-off load stage (2026-09-21)
 val links = lines.map { s => val p = s.split("\\s+"); (p(0).toLong, p(1).toLong) }
-  .distinct().groupByKey().persist(StorageLevel.MEMORY_ONLY)
+  .groupByKey(64).persist(StorageLevel.MEMORY_ONLY)
 val nLinks = links.count()
-println(s"[rd] graph loaded: $nLinks source vertices in ${(System.nanoTime - t0) / 1e9}%.1f s")
+println(f"[rd] graph loaded: $nLinks source vertices in ${(System.nanoTime - t0) / 1e9}%.1f s")
 var pass = 0
 while ((System.nanoTime - t0) / 1e9 < seconds) {
   var ranks = links.mapValues(_ => 1.0)
@@ -22,7 +24,7 @@ while ((System.nanoTime - t0) / 1e9 < seconds) {
   }
   val top = ranks.top(3)(Ordering.by(_._2))
   pass += 1
-  println(s"[rd] pass $pass done at ${(System.nanoTime - t0) / 1e9}%.0f s; top rank ${top.head}")
+  println(f"[rd] pass $pass done at ${(System.nanoTime - t0) / 1e9}%.0f s; top rank ${top.head}")
 }
 println(s"[rd] finished $pass passes")
 System.exit(0)

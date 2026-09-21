@@ -33,6 +33,16 @@ bench_start(){ # $1 OUT, $2 UNIT
          --conf spark.default.parallelism=64 -i "$RD_SCRIPT" ) > "$OUT/spark.log" 2>&1 &
   JVM_RUN_PID=$!
   dlog "spark-shell launched (pid $JVM_RUN_PID): $(basename "$RD_SCRIPT") on $(basename "$RD_INPUT") for ${secs}s"
+  # the input load (parse + shuffle + cache) is a one-off stage that must not be what the
+  # capture sees: wait for the script's "loaded" marker (up to 15 min), then the JVM rule
+  local i
+  for i in $(seq 1 900); do
+    tr '\r' '\n' < "$OUT/spark.log" 2>/dev/null | grep -qE '\[rd\] (graph|corpus) loaded' && break
+    kill -0 "$JVM_RUN_PID" 2>/dev/null || { dlog "spark-shell exited during load (see $OUT/spark.log)"; return 1; }
+    sleep 1
+  done
+  tr '\r' '\n' < "$OUT/spark.log" | grep -qE '\[rd\] (graph|corpus) loaded' || { dlog "input never finished loading"; return 1; }
+  dlog "input loaded: $(tr '\r' '\n' < "$OUT/spark.log" | grep -E '\[rd\] (graph|corpus) loaded' | tail -1 | cut -c1-100)"
   jvm_wait_steady "$OUT" "$UNIT"
 }
-bench_stop(){ jvm_stop "$1" "$2"; grep -E '^\[rd\]' "$1/spark.log" | tail -3 > "$1/spark_receipt.txt" 2>/dev/null; sudo systemctl stop "$2.scope" 2>/dev/null; }
+bench_stop(){ jvm_stop "$1" "$2"; tr '\r' '\n' < "$1/spark.log" | grep -E '\[rd\]' > "$1/spark_receipt.txt" 2>/dev/null; sudo systemctl stop "$2.scope" 2>/dev/null; }
