@@ -422,7 +422,10 @@ read as "databases are memory-light". The instruction-side signature is much les
 this: code footprint does not grow with the data.
 
 **Plan for the re-characterisation** (in priority order; disk today 135 GB free, all sizes
-fit with margin):
+fit with margin). **Executed 2026-09-20/21** — every row below except the twitter-2010 step
+was profiled and validated; the results are in
+[`../RealData/README.md`](../RealData/README.md) (toy-vs-realistic tables per workload and
+the synthesis in its §7).
 
 | # | Workload | Realistic dataset | Size | How | Effort |
 |---|---|---|---|---|---|

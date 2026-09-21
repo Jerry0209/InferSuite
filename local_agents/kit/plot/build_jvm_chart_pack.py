@@ -27,7 +27,7 @@ REPO = os.path.expanduser("~/InferSuite")
 JV = f"{REPO}/local_agents/JVMbench"
 KP = f"{REPO}/local_agents/kit/plot"
 SRC = f"{JV}/plots/paper_v1"
-VERSION = os.environ.get("VERSION", "v3_2026-09-15_runtime-votes")
+VERSION = os.environ.get("VERSION", "v4_2026-09-21_realistic-server-set")
 CH = f"{JV}/charts/{VERSION}"
 RAW, SCR = f"{CH}/Raw data", f"{CH}/Scripts"
 FPDF, FPNG = f"{CH}/Figures/PDF", f"{CH}/Figures/PNG"
@@ -46,6 +46,8 @@ FIGS = [
      "memory metrics, same columns as fig02"),
     ("fig05", "agg_system_server", "plot_paper_agg_groups_server.R", "multi_server_system",
      "context switches per CPU-second (log axis), same columns as fig02"),
+    ("fig01b", "agg_compact_server_realistic", "plot_paper_agg_compact_server.R", "multi_server_compact_realistic",
+     "fig01 with the suite benchmarks that were re-characterised on realistic datasets (cassandra, kafka, neo4j, page-rank, naive-bayes, video) replaced by those versions; see local_agents/RealData/README.md"),
     ("fig06", "agg_compact_per_benchmark", "plot_paper_agg_compact_ext.R", "multi_agg_compact",
      "the same grid with SPEC and Agentic violins and ONE MARKER per external benchmark (DCPerf 2, Renaissance 5, DaCapo 3) so you can see which benchmark sits where"),
     ("fig07", "agg_ipc_per_benchmark", "plot_paper_agg_groups_ext.R", "multi_agg_ipc",
@@ -73,7 +75,7 @@ for fid, name, script, stem, desc in FIGS:
     present.append((fid, name, script, stem, desc))
 
 # ---- Raw data: every input the scripts read, plus every displayed number -------------------
-for f in ("multi_server_compact_numbers.csv", "multi_server_numbers.csv",
+for f in ("multi_server_compact_numbers.csv", "multi_server_compact_realistic_numbers.csv", "multi_server_numbers.csv",
           "multi_agg_compact_numbers.csv", "multi_agg_numbers.csv"):
     if os.path.exists(f"{SRC}/{f}"):
         shutil.copy(f"{SRC}/{f}", f"{RAW}/{f}")

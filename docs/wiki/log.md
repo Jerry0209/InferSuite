@@ -1,5 +1,18 @@
 # Wiki log
 
+## [2026-09-21] observation | Suite server benchmarks measure their toy datasets, not the software
+
+Five server benchmarks re-profiled on realistic datasets with the same instrument
+(`local_agents/RealData/README.md`). Data-bound workloads (Cassandra, PageRank, Naive Bayes)
+moved on the memory axes — Naive Bayes on RCV1: L1D misses 25×, LLC 43×, DRAM 26 GB/s, IPC
+3.27 → 1.40 — while serving workloads run as real servers with clients outside the fence
+(Neo4j, Kafka) moved on the front end and the OS (Neo4j branch MPKI 4×, BTB 36×, context
+switches 28×; Kafka L1I 3×, switches 5×) and got lighter on memory. The realistic Server set
+sits further from the agentic profile than the suite set on every axis; the agentic family's
+single distinctive axis (branch-direction misprediction) is unchanged. Rule for this project:
+a suite benchmark's memory-side signature is a property of its dataset size; do not read it as
+a property of the software.
+
 ## [2026-09-20] observation | Server-benchmark data footprints are cache-sized except FeedSim
 
 Measured live-heap-after-GC / cgroup peak for the ten server benchmarks

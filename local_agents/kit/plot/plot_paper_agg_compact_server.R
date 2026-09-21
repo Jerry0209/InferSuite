@@ -189,7 +189,7 @@ panel <- function(m) {
 legend_strip <- function() {
   n_suite <- sapply(c("DCPerf", "Renaissance", "DaCapo", "RealData"), function(f) sum(srv_votes$suite[srv_votes$metric == "IPC"] == f))
   srv_lab <- if (SERVER_MODE == "votes" && SERVER_SET == "realistic")
-    sprintf("Server (%d: %d on realistic datasets · DCPerf %d · Renaissance %d · DaCapo %d)", n_side[["Server"]], n_suite[["RealData"]], n_suite[["DCPerf"]], n_suite[["Renaissance"]], n_suite[["DaCapo"]]) else if (SERVER_MODE == "votes")
+    sprintf("Server (%d: %d on realistic data + %d suite)", n_side[["Server"]], n_suite[["RealData"]], n_side[["Server"]] - n_suite[["RealData"]]) else if (SERVER_MODE == "votes")
     sprintf("Server (%d: DCPerf %d · Renaissance %d · DaCapo %d)", n_side[["Server"]], n_suite[["DCPerf"]], n_suite[["Renaissance"]], n_suite[["DaCapo"]]) else
     sprintf("Server (%d benchmarks, every 100 ms window pooled)", length(unique(srv$col)))
   rule <- if (VOTE == "runtime") "one value per workload = metric over its whole runtime" else

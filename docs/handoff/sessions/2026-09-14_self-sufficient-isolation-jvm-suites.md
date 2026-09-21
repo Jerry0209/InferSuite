@@ -181,3 +181,30 @@ traffic" claim was an artifact of cassandra's wrongful exclusion.)
   20 M × 1 KB sustained, 4K video sources. Each is a new harness (server in fence, client out).
 - Box: measurements ran on the measured cores under Jef's re-applied partition (15 Sep), no
   perf, isolation untouched; scopes removed afterwards.
+
+## Addendum 6 (2026-09-20 → 21): the realistic-dataset re-characterisations (RealData)
+- PI approved the plan ("do as what you suggest"). Built `~/realdata-infra/` outside the repo
+  (Neo4j 5.26.12, Cassandra 5.0.9 + JDK 17, Kafka 4.3.1 KRaft, Spark 3.5.9, YCSB 0.17, Python
+  driver venv, datasets) and `local_agents/RealData/` (README, data/, plots/, charts/).
+- Harness pattern = FeedSim's: server in `measured.slice`, client on the housekeeping cores,
+  via `run_dcperf_profile.sh` with `SUITE=realdata BENCH=<module>`; modules bench_neo4j /
+  bench_cassandra / bench_kafka / bench_spark (+ scala scripts) / bench_video_transcode
+  (`VT_CUTS`); one-time setup scripts per store.
+- Profiled 9/9 and validated: neo4j-livejournal (SNAP LiveJournal, 69 M edges, 2.9 GB store),
+  cassandra-ycsb20m (20 M rows, 21 GB), kafka-20g (21 GB retention window, 120 MB/s ingest, six
+  backlog consumers), pagerank-livejournal, naivebayes-rcv1 (518 k docs); video-4k (two Netflix
+  4K sequences from Xiph) sweep launched last.
+- Traps: YCSB kills client threads on insert errors (retry limit 0) → 12 % of keys missing,
+  fixed with retries + completeness check; a shell in user.slice cannot taskset onto the
+  measured cores (systemd must place the process into measured.slice first); `set -e` +
+  `systemctl stop` of a not-yet-existing scope; `pkill -f` matching the caller's own command
+  line; Kafka ingest without retention grew the log 40 GB in 4 min and briefly filled the disk
+  (fixed by a per-partition retention window + 10 s check interval); `--from-latest false`
+  mis-parsed as `--from-latest`; Spark's carriage-return progress bars defeat `^`-anchored
+  greps; the 4K downscale stage saturates the cores before encoding (gate on "Running M").
+- Findings: data-bound workloads moved on the memory axes (Naive Bayes L1D 25×, LLC 43×,
+  DRAM 26 GB/s; PageRank and Cassandra DRAM 2× and 5.5×), serving workloads on the front end
+  and OS (Neo4j branch 4×, BTB 36×, ctx 28×; Kafka L1I 3×, ctx 5×). Realistic Server set moves
+  away from the agentic profile; agentic single-axis finding (branch-direction first) holds.
+- Disk: 135 → 44 GB free (stores + 4K sources). Docker images untouched (Jef's dominate; ours
+  are re-pullable SWE-bench sandboxes, first to go if needed).
