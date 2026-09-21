@@ -70,23 +70,46 @@ panel <- function(m) {
   }
   p
 }
-legend_strip <- function() {
-  items <- list(list(kind = "pt", col = COL_TOY, lab = "suite benchmark (toy dataset)"),
-                list(kind = "pt", col = COL_REAL, lab = "same software on a realistic dataset"),
-                list(kind = "ln", col = PAPER_PAIR[["blue_dark"]], lab = "SPEC median (26)"),
-                list(kind = "ln", col = PAPER_PAIR[["red_dark"]], lab = "Agentic median (36)"),
-                list(kind = "none", col = NA, lab = "one value per workload = metric over its whole runtime"))
+# Legend, laid out over TWO centred rows. One row overflowed the panel (2026-09-21: the five
+# entries measured 1.03 of the available 1.0, so the centred row started at x = -0.016 and the
+# first marker -- the white "suite benchmark" circle -- was clipped away entirely). Rows are
+# centred independently and each is checked against the panel width.
+legend_rows <- function(rows) {
   cw <- 0.0052; gap <- 0.028
-  widths <- sapply(items, function(it) (if (it$kind == "none") 0 else 0.03) + nchar(it$lab) * cw)
-  x <- (1 - (sum(widths) + gap * (length(items) - 1))) / 2
-  g <- ggplot() + xlim(0, 1) + ylim(0, 1) + theme_void() + theme(plot.margin = margin(2, 8, 4, 8))
-  for (i in seq_along(items)) { it <- items[[i]]
-    if (it$kind == "pt") g <- g + annotate("point", x = x + 0.01, y = 0.5, shape = 21, size = 2.2, fill = it$col, colour = "black", stroke = 0.45)
-    if (it$kind == "ln") g <- g + annotate("segment", x = x, xend = x + 0.02, y = 0.5, yend = 0.5, colour = it$col, linewidth = 0.6, linetype = "22")
-    g <- g + annotate("text", x = x + (if (it$kind == "none") 0 else 0.028), y = 0.5, label = it$lab, hjust = 0, size = 2.35,
-                      family = PAPER_SERIF, fontface = if (it$kind == "none") "italic" else "plain")
-    x <- x + widths[i] + gap }
+  g <- ggplot() + xlim(0, 1) + ylim(0, 1) + theme_void() + theme(plot.margin = margin(2, 8, 2, 8))
+  for (r in seq_along(rows)) {
+    items <- rows[[r]]
+    y <- 1 - (r - 0.5) / length(rows)
+    widths <- sapply(items, function(it) (if (it$kind == "none") 0 else 0.035) + nchar(it$lab) * cw)
+    total <- sum(widths) + gap * (length(items) - 1)
+    stopifnot(total <= 1)                       # never silently clip a legend entry again
+    x <- (1 - total) / 2
+    for (i in seq_along(items)) {
+      it <- items[[i]]
+      if (it$kind == "pt")
+        g <- g + annotate("point", x = x + 0.012, y = y, shape = 21, size = 2.2, fill = it$col,
+                          colour = "black", stroke = 0.45)
+      if (it$kind == "ln")
+        g <- g + annotate("segment", x = x, xend = x + 0.024, y = y, yend = y, colour = it$col,
+                          linewidth = 0.6, linetype = "22")
+      if (it$kind == "arrow")
+        g <- g + annotate("segment", x = x, xend = x + 0.024, y = y, yend = y, colour = "grey35",
+                          linewidth = 0.6, arrow = arrow(length = unit(0.08, "cm"), type = "closed"))
+      g <- g + annotate("text", x = x + (if (it$kind == "none") 0 else 0.033), y = y, label = it$lab,
+                        hjust = 0, size = 2.35, family = PAPER_SERIF,
+                        fontface = if (it$kind == "none") "italic" else "plain")
+      x <- x + widths[i] + gap
+    }
+  }
   g
 }
-fig <- (legend_strip() / wrap_plots(lapply(METRICS, panel), ncol = 4)) + plot_layout(heights = c(0.04, 1))
-paper_save(fig, file.path(OUT, "realdata_pairs"), width = 10.4, height = 7.6)
+legend_strip <- function() legend_rows(list(
+  list(list(kind = "pt", col = COL_TOY, lab = "suite benchmark, as shipped"),
+       list(kind = "pt", col = COL_REAL, lab = "same software, realistic dataset"),
+       list(kind = "arrow", col = NA, lab = "the move (connector, not a range)")),
+  list(list(kind = "ln", col = PAPER_PAIR[["blue_dark"]], lab = "median of the 26 SPEC workloads"),
+       list(kind = "ln", col = PAPER_PAIR[["red_dark"]], lab = "median of the 36 agentic tasks"),
+       list(kind = "none", col = NA, lab = "every point = that workload's metric over its whole runtime"))))
+
+fig <- (legend_strip() / wrap_plots(lapply(METRICS, panel), ncol = 4)) + plot_layout(heights = c(0.075, 1))
+paper_save(fig, file.path(OUT, "realdata_pairs"), width = 10.4, height = 7.8)

@@ -19,6 +19,42 @@ housekeeping cores — the FeedSim arrangement.
 | `kafka-20g` | DaCapo `kafka` (1 M-message bursts on an empty broker) | Kafka 4.3 KRaft broker with a 21 GB retention window, 120 MB/s sustained ingest, six consumers reading the backlog | **profiled 2026-09-21, 9/9 passes, validated** |
 | `video-4k` | DCPerf VideoTranscodeBench on six 2 s 1080p shots | the same runner on two Netflix 4K sequences from Xiph (Boat 301 frames, FoodMarket 601 frames, 4096×2160 @60) | **profiled 2026-09-21, 9/9 passes, validated** |
 
+**The four server workloads that were NOT re-characterised, and why.**
+
+| Workload | Why it stays as it is |
+|---|---|
+| DCPerf **FeedSim** | already realistic: it generates a 2²¹-vertex ranking graph at start-up and holds **3.5 GB resident**, the one benchmark whose data footprint Meta calibrated against production. Nothing to replace. |
+| Renaissance **finagle-http** | has no dataset by design: 12 000 small HTTP requests per iteration against a server that stores nothing. Its footprint is instruction-side (L1I 52 MPKI), which does not grow with data. |
+| Renaissance **finagle-chirper** | a microblog simulation whose entire corpus is a 486 KB tweet-text file; the load is request handling, not data. |
+| DaCapo **tomcat** | serves Tomcat's bundled sample web applications, 14 MB of static content. Again a request tier. |
+
+For these three request tiers a "realistic dataset" does not exist — what would make them realistic
+is a real application behind the server and a real request mix, which is a different benchmark
+rather than a bigger input. That is a separate study, not a dataset swap, so it was left out.
+
+**What "9/9 passes" means.** The PMU cannot count all the events at once, so each workload is
+profiled **nine times, once per counter group** (`fpbr`, `cache`, `mlp`, `fe`, `fe_lat`,
+`core_ports`, `dram_bw`, `priv`, `fe_miss`) — the same nine the agentic 36, SPEC, DCPerf and the
+JVM suites use. Each pass is a fresh server, its own warm-up, and 180 s of 100 ms counter windows
+(~1 500 windows). "9/9 passes" is therefore *all nine counter groups captured completely*, which
+is what validation gate D1 checks; a metric comes from the single pass whose group carried its
+counters. Run-to-run repetition is still n = 1 (`../JVMbench/README.md` §7).
+
+**Where the datasets come from.**
+
+| Dataset | Source | Size |
+|---|---|---|
+| SNAP `soc-LiveJournal1` (Neo4j, PageRank) | Stanford Network Analysis Project, `snap.stanford.edu/data/soc-LiveJournal1.html` — a 2006 crawl of the LiveJournal friendship graph | 260 MB gzip → 1.03 GB edge list → 2.9 GB Neo4j store |
+| RCV1-v2 (Naive Bayes) | the LIBSVM multiclass collection at `csie.ntu.edu.tw/~cjlin/libsvmtools/datasets`, itself the Reuters Corpus Volume 1 news archive | 292 MB bzip2 → 777 MB libsvm |
+| Netflix 4K sequences (video) | Xiph's freely licensed video collection, `media.xiph.org/video/derf` — the *El Fuente* and *Chimera* sets DCPerf names, in the copies that need no CDVL registration | 3.7 GB (Boat) + 7.4 GB (FoodMarket) |
+| YCSB rows (Cassandra) | **generated**, by YCSB 0.17's own CoreWorkload loader — the schema DaCapo's benchmark uses, at 2 000× its row count | 20 M × 1 KB → 21 GB store |
+| Kafka records (Kafka) | **generated**, by Kafka's own `kafka-producer-perf-test` | 20 M × 1 KB → 21 GB retention window |
+
+The two generated ones are generated because there is no public "real" dataset for them: a
+key-value store's and a broker's realism is in the *shape and volume* of the traffic (row size,
+key distribution, retention window, ingest rate), not in the byte content, and both generators
+are the ones their own projects ship.
+
 Data is banked under `data/<suite>_<workload>/run_1..9` (gitignored, irreplaceable) with the
 same layout as every other campaign; derived rows in `data/l3_study/`. Infrastructure (servers,
 datasets, client venv) lives outside the repository in `~/realdata-infra/`, the same
@@ -26,16 +62,45 @@ arrangement as the SPEC, DCPerf and JVM suites.
 
 ## 1. Method, shared by every workload here
 
-- **Server in the fence.** The database/broker JVM is launched as
+- **Server in the fence.** The server process is launched as
   `measured.slice/realdata-<workload>-rN.scope` with `taskset` to the measured cores 4–11,
   through `run_dcperf_profile.sh` with `SUITE=realdata BENCH=<module>` — the same orchestrator,
   isolation shield, foreign-`perf` guard and counter rotation as DCPerf and the JVM suites.
+  Concretely, what is inside the fence and what is outside it, per workload:
+
+  | Workload | Inside the fence (measured cores 4–11) | Outside (housekeeping cores 0–3, 12–15) |
+  |---|---|---|
+  | neo4j-livejournal | `neo4j console` — the whole Neo4j JVM, including its bolt server threads | `neo4j_client.py` (5 processes × 5 sessions) |
+  | cassandra-ycsb20m | `cassandra -f -R` — the whole Cassandra JVM | YCSB `bin/ycsb.sh run` (24 threads) |
+  | kafka-20g | `kafka-server-start.sh` — the broker JVM | 3 producer + 6 consumer perf-test JVMs |
+  | pagerank-livejournal, naivebayes-rcv1 | the whole `spark-shell` JVM (`local[8]`: driver and executors in one process) | nothing — a batch job has no client |
+  | video-4k | DCPerf's `run.sh` and every `ffmpeg` it spawns | nothing — a batch |
+  | *(reference: feedsim)* | `LeafNodeRank` | `run.sh`, `search_qps.sh`, `DriverNodeRank` |
+
+  In every case the collectors themselves (`perf`, the 10 Hz pollers, the TMA reader) also run
+  on the housekeeping cores, so they never appear in the fence's counts.
+
+  **How it is done in code.** Two mechanisms, both in the module's `bench_start`:
+  `sudo systemd-run --collect --scope --slice=measured.slice --unit="$UNIT" -- taskset -c
+  "$CPUS_MEASURED" <server>` puts the server and every child it forks into one cgroup under
+  `measured.slice` (which the isolation shield has pinned to cores 4–11) *and* pins its
+  affinity; the client is started as a plain background process with `taskset -c "$CPUS_HOUSE"`,
+  inheriting `user.slice`, which the same shield has pinned to the housekeeping cores. The
+  cgroup path is written to `.server_cg` and is exactly what `perf stat --for-each-cgroup`
+  counts, so a metric can only include work done by the server.
 - **Client outside.** The load generator runs on the housekeeping cores (0–3, 12–15) in
   `user.slice`, where the litellm proxy sits during agent campaigns and the FeedSim driver sat.
   This is what the suite benchmarks could not offer: their clients are threads inside the
   measured JVM, so their context-switch and instruction-supply numbers include client work.
-- **Steady state.** Server up → client starts → a warm-up (page cache, JIT) → the fence must be
-  busy (≥ 1 core over 10 s) → capture. The client outlives the capture by 60 s and writes its own
+- **Steady state.** Server up → client starts → a warm-up (page cache, JIT) → **a liveness
+  check on the fence** → capture. The check reads the fence cgroup's `cpu.stat` over 10 s and
+  requires at least 1 core of CPU time (0.5 for the Kafka broker, whose data path is kernel
+  zero-copy, and "at least half the encoder pool for 8 consecutive seconds" for the video
+  batch). It is a floor that catches a server which came up but is not serving — it is *not*
+  the steady-state criterion, which is gate **D4** after the fact: D4 smooths the 10 Hz load
+  series into 10 s means and fails the capture if the first fifth and the last fifth differ by
+  more than 25 %. In practice the real servers ran far above the floor (Neo4j 3.8, Cassandra
+  6.2, Spark 6.7–7.7, video 8.0 cores) and D4 drift was 0.2–5.3 %. The client outlives the capture by 60 s and writes its own
   per-second throughput and latency, summarised into `<workload>_receipt.json` per pass — the
   workload's own receipt, checked alongside the counters.
 - **Isolation, capture, derivation, validation:** identical to `../JVMbench/README.md` §2 and
