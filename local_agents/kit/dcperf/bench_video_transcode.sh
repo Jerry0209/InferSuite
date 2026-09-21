@@ -39,7 +39,7 @@ bench_preflight(){
   [ -d "$VT_DIR" ] || { dlog "video_transcode_bench not installed at $VT_DIR"; return 1; }
   vt_select_cuts || return 1
   local n
-  n=$(sudo find "$VT_DIR/datasets/cuts" -name '*.y4m' 2>/dev/null | wc -l)
+  n=$(sudo find -L "$VT_DIR/datasets/cuts/" -name '*.y4m' 2>/dev/null | wc -l)   # -L + trailing slash: cuts may be a symlink (VT_CUTS)
   [ "$n" -gt 0 ] || { dlog "no .y4m clips in $VT_DIR/datasets/cuts — see the dataset note"; return 1; }
   dlog "video_transcode preflight OK ($n clips, encoder=$VT_ENCODER levels=$VT_LEVELS procs=$VT_PROCS)"
 }

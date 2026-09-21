@@ -15,7 +15,7 @@ housekeeping cores — the FeedSim arrangement.
 | `neo4j-livejournal` | Renaissance `neo4j-analytics` (70 MB movie graph, in-process queries) | SNAP soc-LiveJournal1: 4 847 571 users, 68 993 773 follow edges, 2.9 GB Neo4j store | **profiled 2026-09-20/21, 9/9 passes, validated** |
 | `cassandra-ycsb20m` | DaCapo `cassandra` (10 000 rows) | YCSB CoreWorkload A on 20 000 000 × 1 KB rows, 21 GB store | **profiled 2026-09-21, 9/9 passes, validated** |
 | `pagerank-livejournal` | Renaissance `page-rank` (SNAP web-BerkStan, 7.6 M edges) | the same RDD PageRank on SNAP LiveJournal, 69 M edges | **profiled 2026-09-21, 9/9 passes, validated** |
-| `naivebayes-rcv1` | Renaissance `naive-bayes` (a 100-row sample copied 8 000×) | Spark ML multinomial Naive Bayes on RCV1-v2, 518 571 Reuters documents × 47 236 features | profiling |
+| `naivebayes-rcv1` | Renaissance `naive-bayes` (a 100-row sample copied 8 000×) | Spark ML multinomial Naive Bayes on RCV1-v2, 518 571 Reuters documents × 47 236 features | **profiled 2026-09-21, 9/9 passes, validated** |
 | `kafka-20g` | DaCapo `kafka` (1 M-message bursts on an empty broker) | Kafka 4.3 KRaft broker with a 21 GB retention window, 120 MB/s sustained ingest, six consumers reading the backlog | **profiled 2026-09-21, 9/9 passes, validated** |
 | Video | DCPerf VideoTranscodeBench on 2 s 1080p shots | 4K sources | planned |
 
@@ -268,3 +268,48 @@ Cassandra), and IPC drops by a fifth. The instruction side, already the cleanest
 servers, gets cleaner still — a longer-running loop lets the JIT settle and the uop cache
 covers 97 % of the stream. Both versions are compute-plus-bandwidth kernels; the real one is
 simply further into the memory-bound regime, which is where a production PageRank lives.
+
+## 6. naivebayes-rcv1
+
+**Input.** RCV1-v2, the Reuters news corpus in the LIBSVM multiclass collection: the
+518 571-document test split, 47 236 tf-idf features, 53 topics, 777 MB of sparse libsvm text.
+Renaissance's naive-bayes trains the same Spark ML estimator on Spark's 100-row, 692-feature
+`sample_libsvm_data.txt` replicated 8 000 times — 800 000 rows of the same 100 dense vectors.
+
+**Job.** `kit/dcperf/spark/naivebayes.scala` in Spark 3.5.9's shell (`local[8]`, driver
+24 GB) inside the fence: the corpus is loaded and cached once (4.6 s), then
+`NaiveBayes(multinomial).fit` plus a full `transform` for the training accuracy (0.822) are
+looped for the capture; a pass takes about 2.8 s, so every capture holds about 65. The
+"corpus loaded" marker gates the capture as for PageRank.
+
+**Validation:** D1–D5 and D7 pass, mean load 6.7 cores, D4 drift 1.9 %, unfenced residual
+≤ 2.7 %.
+
+**Toy versus realistic** (whole-runtime values):
+
+| Metric | Renaissance naive-bayes (replicated sample) | RCV1-v2 (518 k documents) | ratio |
+|---|---|---|---|
+| IPC | 3.27 | 1.40 | 0.43× |
+| Branch MPKI | 0.42 | 1.47 | 3.5× |
+| Branch-direction MPKI | 0.37 | 1.44 | 3.9× |
+| BTB MPKI (BAClears) | 0.045 | 0.11 | 2.4× |
+| L1I MPKI (code-read) | 1.6 | 2.9 | 1.8× |
+| uop-cache (DSB) MPKI | 9.8 | 12.6 | 1.3× |
+| DSB coverage (%) | 89 | 90 | — |
+| L1D-load MPKI | 1.06 | 26.3 | **25×** |
+| L2-load MPKI | 0.13 | 10.4 | **81×** |
+| LLC MPKI | 0.09 | 3.95 | **43×** |
+| DRAM read (GB/s) | 9.9 | 26.1 | 2.6× |
+| Context switches (/CPU-s) | 817 | 355 | 0.43× |
+
+The most dramatic change in the study, and the easiest to explain. Eight thousand copies of
+the same hundred dense vectors are a cache-resident kernel: the working set is one sample's
+worth of features, the accesses are sequential, IPC is 3.3 and the LLC miss rate is nine per
+hundred thousand instructions. A real corpus is sparse — 47 000 features, a few hundred
+non-zero per document, scattered across the feature axis — so every document's update touches
+the class-conditional weight table at random offsets. The data-cache ladder collapses at every
+level (L1D 25×, L2 81×, LLC 43× the miss rate), DRAM read bandwidth reaches **26 GB/s, the
+highest of every workload measured**, and IPC falls by more than half. Branch behaviour
+deteriorates too (3.5–3.9×), the data-dependent loops over sparse rows being far less
+predictable than dense fixed-length ones. Nothing about the software changed; the suite
+benchmark was measuring the cache, not the algorithm.
