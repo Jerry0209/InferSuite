@@ -60,6 +60,56 @@ same layout as every other campaign; derived rows in `data/l3_study/`. Infrastru
 datasets, client venv) lives outside the repository in `~/realdata-infra/`, the same
 arrangement as the SPEC, DCPerf and JVM suites.
 
+## 0. The two JVM suites these benchmarks come from
+
+Background for a reader who meets `finagle-chirper` or `dacapo kafka` for the first time (PI's
+summary, 2026-09-21). Both are open-source benchmark suites for measuring the performance of the
+**Java Virtual Machine** — JIT compilers, garbage collectors, runtimes — and the hardware under
+it, using real Java/Scala applications rather than synthetic kernels. Papers often use them
+together because they lean in different directions: Renaissance toward concurrency and
+data-parallel work, DaCapo-Chopin toward large server and enterprise applications with latency
+reporting.
+
+**Renaissance** was introduced at PLDI 2019 by researchers from Charles University, Oracle Labs
+and USI Lugano, and has about 25 benchmarks. Its motivation was that older suites
+under-represented modern JVM workloads, so it emphasises concurrency, parallelism and
+functional-style code: Spark analytics, Akka actors, Finagle RPC services, Scala collections,
+Neo4j graph queries, fork/join and STM programs. It is widely used in JIT-compiler research, for
+example evaluating GraalVM. The five we profile (official names in brackets):
+
+| Group | Benchmark | What it does | Re-characterised here |
+|---|---|---|---|
+| web | `finagle-http` | a Finagle HTTP server (Twitter's RPC framework on Netty) handles many small concurrent client requests — typical async request/response server work | no (no dataset by design) |
+| web | `finagle-chirper` | a simulated microblogging service on Finagle, master node plus cache nodes; clients post "chirps" and fetch feeds. Stresses RPC, futures and shared state | no (486 KB of tweet text) |
+| spark | `page-rank` | iterative PageRank over a graph using Spark RDDs: data-parallel, shuffle-heavy, allocation-intensive | **yes** → §5 |
+| spark | `naive-bayes` | trains a multinomial Naive Bayes classifier with Spark MLlib; vectorised math and aggregation | **yes** → §6 |
+| database | `neo4j-analytics` | analytical Cypher queries against an *embedded* Neo4j movie database; pointer chasing and query execution | **yes** → §2 |
+
+**DaCapo** is the long-standing academic JVM suite, first released in 2006 by Blackburn et al.,
+with releases named after composers. **Chopin** (23.11, November 2023) was the first major update
+since *Bach* in 2009 and has about 22 benchmarks built from large, current open-source
+applications — Cassandra, Kafka, Tomcat, Spring, H2, Lucene, Eclipse. Chopin adds three things:
+**latency metrics** for request-based workloads alongside total execution time, **documented
+minimum heap sizes** for fair GC comparisons, and **per-benchmark characterisation statistics**
+(allocation rate, IPC, cache behaviour) to help pick representative subsets.
+
+| Benchmark | What it does | Re-characterised here |
+|---|---|---|
+| `cassandra` | an Apache Cassandra NoSQL server driven by a YCSB workload (reads and updates): storage engine plus networking stack | **yes** → §3 |
+| `tomcat` | an Apache Tomcat servlet container serving its sample web apps (servlets and JSP): a classic web-server workload | no (14 MB of sample content) |
+| `kafka` | an Apache Kafka broker with producer/consumer clients streaming messages: log-structured I/O and messaging | **yes** → §4 |
+
+In Chopin all three are request-based and latency-sensitive, and report per-request latency
+distributions as well as total execution time, which is what makes them useful as "server-like"
+comparison points at all.
+
+**Why they still needed re-characterising.** The suites' *software* is real; their *inputs* are
+not sized like production (`../JVMbench/README.md` §10). And all five JVM-suite server benchmarks
+run their load generators as threads **inside the measured JVM**, so a capture of the suite
+benchmark mixes client and server work. Both problems are what this study fixes, one workload at
+a time, by running the same software as a standalone server on a realistic dataset with the
+client outside the fence.
+
 ## 1. Method, shared by every workload here
 
 - **Server in the fence.** The server process is launched as
@@ -448,6 +498,40 @@ benchmarks by their realistic versions (`SERVER_SET=realistic` in the three-viol
 one of those axes the agentic 36 sits on the *other* side (IPC 1.90, L1I 12.8, DRAM 1.05,
 549 switches), so the distance between "server" and "agent" grows when the servers are real.
 
+**Which axes move most when the Server family becomes realistic.** fig02 and fig03 are the same
+grid with the same SPEC and Agentic violins; only the Server violin differs, by exactly the six
+swapped workloads. Comparing the two Server medians ranks the axes (ratio = realistic ÷ suite;
+the last two columns are the other two families for scale):
+
+| Metric | Server, suite set | Server, realistic set | ratio | agentic | SPEC |
+|---|---|---|---|---|---|
+| **Context switches (/CPU-s)** | 2 934 | **12 900** | **4.4×** | 1 012 | 4.5 |
+| **LLC MPKI** | 0.111 | **0.234** | **2.1×** | 0.182 | 0.100 |
+| **DRAM read (GB/s)** | 5.21 | **7.82** | **1.5×** | 1.05 | 1.68 |
+| L1I MPKI (code-read) | 14.0 | 19.9 | 1.4× | 12.8 | 0.98 |
+| BTB MPKI (BAClears) | 0.54 | 0.77 | 1.4× | 0.64 | 0.015 |
+| L1D-load MPKI | 6.50 | 8.55 | 1.3× | 4.27 | 6.71 |
+| **IPC** | 1.88 | **1.56** | **0.83×** | 1.90 | 2.41 |
+| uop-cache (DSB) MPKI | 51.8 | 47.2 | 0.91× | 39.3 | 11.1 |
+| Branch-direction MPKI | 1.33 | 1.43 | 1.07× | 3.36 | 1.04 |
+| L2-load MPKI | 0.579 | 0.615 | 1.06× | 0.496 | 0.693 |
+| DSB coverage (%) | 60.1 | 61.9 | 1.03× | 70.9 | 92.5 |
+| Branch MPKI | 1.51 | 1.51 | 1.00× | 3.99 | 1.18 |
+
+The PI's reading of the two figures — that IPC, LLC, DRAM read and context switches change most —
+is right on three of the four and right in spirit on the fourth. Context switches, LLC misses and
+DRAM traffic are the three largest moves by magnitude (4.4×, 2.1×, 1.5×). IPC moves less in
+magnitude (0.83×, seventh by ratio) but it is the one number that unambiguously gets *worse* and
+it moves the whole violin, which is why it reads as a large change: the realistic Server median
+drops from 1.88 to 1.56, from just below the agentic 1.90 to clearly below it. Two axes barely
+move at all — branch MPKI and DSB coverage — which is the useful negative result: **dataset size
+changes how a server touches memory and how often it is interrupted, not how predictable its
+branches are**. That is also why the agentic family keeps the branch axis to itself.
+
+A word on "worse": higher DRAM bandwidth or more context switches are not defects, they are what
+a real server does. The honest statement is that the suite versions understated how
+memory-resident and how OS-involved these servers are, by factors of 1.5 to 4.4.
+
 **The agentic finding is unchanged.** Ranking the agentic median against SPEC and the ten
 server values under either set, it is first on exactly one metric — branch-direction
 misprediction, 3.36 MPKI against FeedSim's 3.32 — and between 2nd and 10th on the other
@@ -469,6 +553,18 @@ would need more disk than this box has free and is the natural next point for Ne
 PageRank if the memory side is to be pushed further.
 
 ## 8. Figures and files
+
+**How to read fig01 (the pair figure).** In each panel a workload is one row: the **open circle**
+is the suite benchmark as shipped, the **green circle** the same software on the realistic
+dataset, and the line between them is a **connector with an arrowhead at the realistic end** — it
+shows which way and how far the workload moved. It is not an error bar, a range or a
+distribution; each end is a single number, that workload's metric over its whole runtime. The two
+**dashed vertical lines** are the median of the 26 SPEC per-benchmark values (blue) and of the 36
+agentic per-task values (red) — the same whole-runtime statistic as every circle, taken across the
+workloads of those families, and the same numbers the SPEC and Agentic violins are centred on in
+fig02 and fig03. They are drawn so a reader can see where a server sits relative to the two
+families in the main comparison, and whether the dataset swap moved it across one of them: it
+does, Cassandra crosses the agentic DRAM line and Naive Bayes crosses both on the cache metrics.
 
 | Figure | What |
 |---|---|
