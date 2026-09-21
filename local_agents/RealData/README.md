@@ -14,7 +14,8 @@ housekeeping cores — the FeedSim arrangement.
 |---|---|---|---|
 | `neo4j-livejournal` | Renaissance `neo4j-analytics` (70 MB movie graph, in-process queries) | SNAP soc-LiveJournal1: 4 847 571 users, 68 993 773 follow edges, 2.9 GB Neo4j store | **profiled 2026-09-20/21, 9/9 passes, validated** |
 | `cassandra-ycsb20m` | DaCapo `cassandra` (10 000 rows) | YCSB CoreWorkload A on 20 000 000 × 1 KB rows, 21 GB store | **profiled 2026-09-21, 9/9 passes, validated** |
-| Spark PageRank / Naive Bayes | Renaissance `page-rank` (7.6 M-edge crawl), `naive-bayes` (replicated sample) | LiveJournal graph; RCV1-v2 corpus | planned |
+| `pagerank-livejournal` | Renaissance `page-rank` (SNAP web-BerkStan, 7.6 M edges) | the same RDD PageRank on SNAP LiveJournal, 69 M edges | **profiled 2026-09-21, 9/9 passes, validated** |
+| `naivebayes-rcv1` | Renaissance `naive-bayes` (a 100-row sample copied 8 000×) | Spark ML multinomial Naive Bayes on RCV1-v2, 518 571 Reuters documents × 47 236 features | profiling |
 | `kafka-20g` | DaCapo `kafka` (1 M-message bursts on an empty broker) | Kafka 4.3 KRaft broker with a 21 GB retention window, 120 MB/s sustained ingest, six consumers reading the backlog | **profiled 2026-09-21, 9/9 passes, validated** |
 | Video | DCPerf VideoTranscodeBench on 2 s 1080p shots | 4K sources | planned |
 
@@ -223,3 +224,47 @@ switches per CPU-second. The payload bytes never touch its user-space data path,
 side is *lighter* than the toy's, whose in-process producer threads were building and copying
 the messages inside the measured JVM. DaCapo's kafka measured a producer library; this measures
 a broker.
+
+## 5. pagerank-livejournal
+
+**Input.** The SNAP LiveJournal edge list already downloaded for Neo4j (1.03 GB of text,
+68 993 773 directed edges, 4 308 452 vertices with out-links), read straight from the file.
+Renaissance's page-rank runs the same algorithm on SNAP web-BerkStan (7.6 M edges, 20 MB
+zipped), 9× fewer edges.
+
+**Job.** `kit/dcperf/spark/pagerank.scala` run by Spark 3.5.9's shell (`local[8]`, driver
+24 GB) inside the fence — one JVM, no client, exactly the Renaissance arrangement. The
+algorithm is the RDD join formulation of Spark's own PageRank example, which is also what
+Renaissance's benchmark runs: `links.join(ranks)` → contributions → `reduceByKey` → damping,
+three iterations per pass, passes looped until the capture is over. The one-off load (parse,
+`groupByKey`, cache: 10.5 s) precedes the capture; the module waits for the script's
+"graph loaded" marker before applying the JVM steady-state rule. `distinct()` was dropped
+from the load because SNAP edge lists carry no duplicate edges and the extra full shuffle
+doubled the load stage. Each three-iteration pass takes 43 s; every capture window holds five.
+
+**Validation:** D1–D5 and D7 pass, mean load **7.7 cores** (the busiest workload in the
+study), D4 drift 1.4 %, unfenced residual ≤ 2.6 %.
+
+**Toy versus realistic** (whole-runtime values):
+
+| Metric | Renaissance page-rank (7.6 M edges) | LiveJournal (69 M edges) | ratio |
+|---|---|---|---|
+| IPC | 2.15 | 1.70 | 0.79× |
+| Branch MPKI | 1.31 | 1.54 | 1.2× |
+| Branch-direction MPKI | 1.29 | 1.54 | 1.2× |
+| BTB MPKI (BAClears) | 0.034 | 0.012 | 0.35× |
+| L1I MPKI (code-read) | 1.09 | 0.46 | 0.42× |
+| uop-cache (DSB) MPKI | 8.1 | 4.5 | 0.56× |
+| DSB coverage (%) | 95 | 97 | — |
+| L1D-load MPKI | 1.94 | 2.60 | 1.3× |
+| L2-load MPKI | 0.69 | 1.13 | 1.6× |
+| LLC MPKI | 0.39 | 0.80 | 2.1× |
+| DRAM read (GB/s) | 5.7 | 11.1 | 1.9× |
+| Context switches (/CPU-s) | 227 | 74 | 0.33× |
+
+The direction one expects from a graph that no longer fits anywhere: the LLC miss rate
+doubles, DRAM read bandwidth doubles to 11.1 GB/s (level with FeedSim and the realistic
+Cassandra), and IPC drops by a fifth. The instruction side, already the cleanest of the
+servers, gets cleaner still — a longer-running loop lets the JIT settle and the uop cache
+covers 97 % of the stream. Both versions are compute-plus-bandwidth kernels; the real one is
+simply further into the memory-bound regime, which is where a production PageRank lives.
