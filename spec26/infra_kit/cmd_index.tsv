@@ -1,0 +1,9 @@
+# Which ref command line each benchmark runs. PI rule (2026-08-04): exactly ONE line
+# per benchmark, defaulting to SPEC's first (index 0); escalate to a longer line only
+# when index 0 is too short to complete one full 11-group rotation (11 groups x WINSEC; 55 s at WINSEC=5).
+# Any row here is a deliberate deviation and must carry a reason.
+#
+# benchmark          index   why
+# 2026-08-05: ALL NINE escalations retired. At WINSEC=0.1 a rotation is 1.32 s, so every
+# benchmark completes 7-31 rotations on index 0 and nothing is too short. Measured
+# per-line runtimes are preserved in cmdline_times.tsv if this ever needs revisiting.

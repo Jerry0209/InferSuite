@@ -1,0 +1,205 @@
+{
+ "calibration": {
+  "session": "_session",
+  "idle_GBs": {
+   "rd": 0.08962452365840615,
+   "wr": 0.04514193130345254
+  },
+  "read": {
+   "kernel_GBs": 13.512,
+   "imc_rd_GBs": 13.44888666328967,
+   "imc_wr_GBs": 0.0017178375413357053,
+   "ocr.reads_to_core.l3_miss_GBs": 13.426427807252942,
+   "ocr.demand_rfo.l3_miss_GBs": 2.9755131959882263e-05,
+   "offcore_requests.data_rd_GBs": 13.565008832035511,
+   "l2_lines_out.non_silent_GBs": 13.564107553612276
+  },
+  "write": {
+   "kernel_GBs": 12.909,
+   "imc_rd_GBs": 12.889895846690257,
+   "imc_wr_GBs": 12.833115501275039,
+   "ocr.reads_to_core.l3_miss_GBs": 12.848182180540672,
+   "ocr.demand_rfo.l3_miss_GBs": 8.959110475854198,
+   "offcore_requests.data_rd_GBs": 0.04819856927054812,
+   "l2_lines_out.non_silent_GBs": 12.95853099416261
+  },
+  "rotate": {
+   "kernel_GBs": 13.498,
+   "cache:mem_load_retired.l1_hit_per_line": 0.09780435936188078,
+   "cache:mem_load_retired.l2_hit_per_line": 0.20649656107077594,
+   "cache:mem_load_retired.l3_hit_per_line": 0.0021469096656294762,
+   "cache:mem_load_retired.l3_miss_per_line": 0.7307069878994419,
+   "dram_bw:offcore_requests.data_rd_GBs": 13.559909973333333,
+   "x_llc:longest_lat_cache.miss_GBs": 13.442979370666666,
+   "x_llc:longest_lat_cache.reference_GBs": 13.593803349333333,
+   "x_llc:mem_load_retired.fb_hit_per_line": 0.9730953982318369,
+   "x_llc:mem_load_retired.l3_miss_per_line": 0.7304990503284438,
+   "x_ocr1:ocr.reads_to_core.l3_miss_GBs": 13.448357376,
+   "x_ocr1:ocr.demand_rfo.l3_miss_GBs": 2.858666666666667e-05,
+   "x_ocr1:offcore_requests.data_rd_GBs": 13.570723285333335,
+   "x_ocr2:ocr.demand_data_rd.l3_miss_GBs": 8.745033472,
+   "x_ocr2:ocr.hwpf_l3.l3_miss_GBs": 0.0,
+   "x_ocr2:longest_lat_cache.miss_GBs": 13.443694378666667,
+   "x_ocr2:mem_load_retired.l3_miss_per_line": 0.7304450136810391,
+   "defects": []
+  }
+ },
+ "stack_control": {
+  "seconds": 60.62613487243652,
+  "rd_GBs": 0.23286779511478461,
+  "wr_GBs": 0.10850678174842082,
+  "idle_GBs": {
+   "rd": 0.07196288704829767,
+   "wr": 0.04416876362885178
+  }
+ },
+ "episodes": {
+  "767.nest_r@0": {
+   "cmd_index": 0,
+   "command": "../run_base_refrate_uarch.0000/nest_r_base.uarch cuba_stdp.sli > cuba_stdp.sli.out 2>> cuba_stdp.sli.err",
+   "wall_s": 30.899060010910034,
+   "inst_G": 171.2834574885336,
+   "inst_G_original": 170.95277675143342,
+   "IPC": 1.8100160231531726,
+   "IPC_original": 1.8086917420550312,
+   "windows_per_group": {
+    "cache": 48,
+    "dram_bw": 48,
+    "x_llc": 48,
+    "x_ocr1": 48,
+    "x_ocr2": 48
+   },
+   "defects": 2,
+   "foreign_witness": {
+    "witness_rows": 23,
+    "rows_with_foreign_task": 0,
+    "mean_foreign_cpu_pct": 7.9,
+    "worst_row": "thu:MainThread[1310562]=5% root:plymouthd[446]=4% viktoryia:claude[871943]=2% messagebus:dbus-daemon[1020]=1% thu:claude[2381823]=1%"
+   },
+   "mean_cores": "1.000",
+   "LLC_MPKI_original": 0.2969849344753385,
+   "LLC_MPKI": 0.34595517115868474,
+   "fb_hit_PKI": 7.726637482510389,
+   "llc_miss_PKI": 3.4342990427659714,
+   "llc_ref_PKI": 11.842759335923027,
+   "ocr_demand_data_rd_l3_miss_PKI": 0.40070558298849973,
+   "ocr_reads_to_core_l3_miss_PKI": 3.17275134114216,
+   "ocr_demand_rfo_l3_miss_PKI": 0.06719246901403521,
+   "ocr_hwpf_l3_l3_miss_PKI": 0.0,
+   "offcore_data_rd_PKI": 11.553999928328476,
+   "l2_lines_out_non_silent_PKI": 12.295979794301724,
+   "DRAM_read_GBs_original": 4.605983359999999,
+   "DRAM_read_GBs": 4.341894533333334,
+   "imc_idle_GBs": {
+    "rd": 0.06818532722635942,
+    "wr": 0.04287729471246798
+   },
+   "imc_rd_GBs": 1.716673483177588,
+   "imc_wr_GBs": 1.054759851393644,
+   "imc_rd_PKI": 4.838798882857784,
+   "imc_wr_PKI": 2.973058558089714,
+   "imc_rd_GBs_bench": 1.4838056880628032,
+   "imc_wr_GBs_bench": 0.9462530696452232,
+   "imc_rd_PKI_bench": 4.182412891056215,
+   "imc_wr_PKI_bench": 2.667209775865333
+  },
+  "767.nest_r@1": {
+   "cmd_index": 1,
+   "command": "../run_base_refrate_uarch.0000/nest_r_base.uarch structural_plasticity_benchmark.sli > structural_plasticity_benchmark.sli.out 2>> structural_plasticity_benchmark.sli.err",
+   "wall_s": 41.91419696807861,
+   "inst_G": 389.9781654142979,
+   "inst_G_original": null,
+   "IPC": 3.0297192762437883,
+   "IPC_original": null,
+   "windows_per_group": {
+    "cache": 66,
+    "dram_bw": 65,
+    "x_llc": 66,
+    "x_ocr1": 65,
+    "x_ocr2": 66
+   },
+   "defects": 0,
+   "foreign_witness": {
+    "witness_rows": 28,
+    "rows_with_foreign_task": 0,
+    "mean_foreign_cpu_pct": 8.1,
+    "worst_row": "root:plymouthd[446]=4% thu:claude[2381823]=3% thu:MainThread[1310562]=2% messagebus:dbus-daemon[1020]=1% thu:claude[3658795]=1%"
+   },
+   "mean_cores": "0.999",
+   "LLC_MPKI_original": null,
+   "LLC_MPKI": 0.010603656801729634,
+   "fb_hit_PKI": 2.229811337382112,
+   "llc_miss_PKI": 0.12436476870271042,
+   "llc_ref_PKI": 5.9377611845746685,
+   "ocr_demand_data_rd_l3_miss_PKI": 0.010222912310644879,
+   "ocr_reads_to_core_l3_miss_PKI": 0.11123192883485565,
+   "ocr_demand_rfo_l3_miss_PKI": 0.0019475835492165092,
+   "ocr_hwpf_l3_l3_miss_PKI": 0.0,
+   "offcore_data_rd_PKI": 5.825543550055176,
+   "l2_lines_out_non_silent_PKI": 6.224198749296818,
+   "DRAM_read_GBs_original": null,
+   "DRAM_read_GBs": 3.6419073083076965,
+   "imc_idle_GBs": {
+    "rd": 0.07871064301880383,
+    "wr": 0.04436198752769438
+   },
+   "imc_rd_GBs": 0.4499980607536837,
+   "imc_wr_GBs": 0.16370743624981807,
+   "imc_rd_PKI": 0.7557036612247642,
+   "imc_wr_PKI": 0.2749218712998519,
+   "imc_rd_GBs_bench": 0.21713026563889906,
+   "imc_wr_GBs_bench": 0.05520065450139724,
+   "imc_rd_PKI_bench": 0.36463743072847987,
+   "imc_wr_PKI_bench": 0.09270114773126312
+  },
+  "767.nest_r@2": {
+   "cmd_index": 2,
+   "command": "../run_base_refrate_uarch.0000/nest_r_base.uarch ArtificialSynchrony.sli > ArtificialSynchrony.sli.out 2>> ArtificialSynchrony.sli.err",
+   "wall_s": 89.96788311004639,
+   "inst_G": 1151.6636701382008,
+   "inst_G_original": null,
+   "IPC": 4.104261770784542,
+   "IPC_original": null,
+   "windows_per_group": {
+    "cache": 144,
+    "dram_bw": 144,
+    "x_llc": 144,
+    "x_ocr1": 144,
+    "x_ocr2": 144
+   },
+   "defects": 1,
+   "foreign_witness": {
+    "witness_rows": 53,
+    "rows_with_foreign_task": 0,
+    "mean_foreign_cpu_pct": 8.1,
+    "worst_row": "thu:MainThread[1310562]=6% root:plymouthd[446]=4% thu:claude[2381823]=1% anton:claude[1223993]=1% avahi:avahi-daemon[1019]=1%"
+   },
+   "mean_cores": "1.000",
+   "LLC_MPKI_original": null,
+   "LLC_MPKI": 0.0004957808276251253,
+   "fb_hit_PKI": 29.279136133596943,
+   "llc_miss_PKI": 0.010497188436526982,
+   "llc_ref_PKI": 0.05116684567531834,
+   "ocr_demand_data_rd_l3_miss_PKI": 0.0009812592585830657,
+   "ocr_reads_to_core_l3_miss_PKI": 0.010226471129940603,
+   "ocr_demand_rfo_l3_miss_PKI": 0.0008146319246121566,
+   "ocr_hwpf_l3_l3_miss_PKI": 0.0,
+   "offcore_data_rd_PKI": 0.031161114379578938,
+   "l2_lines_out_non_silent_PKI": 0.046295779893562886,
+   "DRAM_read_GBs_original": null,
+   "DRAM_read_GBs": 0.02644058666666673,
+   "imc_idle_GBs": {
+    "rd": 0.07554638712660332,
+    "wr": 0.04364928949663224
+   },
+   "imc_rd_GBs": 0.26056192929465827,
+   "imc_wr_GBs": 0.11676370120748503,
+   "imc_rd_PKI": 0.3180481122325096,
+   "imc_wr_PKI": 0.14252456161515975,
+   "imc_rd_GBs_bench": 0.027694134179873615,
+   "imc_wr_GBs_bench": 0.008256919459064201,
+   "imc_rd_PKI_bench": 0.03380412142198242,
+   "imc_wr_PKI_bench": 0.010078593038975786
+  }
+ }
+}
