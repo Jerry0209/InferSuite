@@ -18,7 +18,7 @@ Server (Jef does agentic). Branches: `spec-x86`, `dcperf` (existing), `spec-arm`
 | 3 | Validation gates V1 (synthetic truth), V2 (exact PT cross-check on short programs → LBR recall), V3 (period ×4 sensitivity), V4 (hygiene) before quoting numbers | Makes "lower bound" quantitative; protects against analyzer bugs | Claude |
 | 4 | Server set to re-run = the **realistic Server set** (tomcat, feedsim, finagle-chirper, finagle-http + cassandra-ycsb20m, kafka-20g, naivebayes-rcv1, neo4j-livejournal, pagerank-livejournal, video-4k), per `workload_index.csv` `in_realistic_server_set` | It is the set the latest figures use (`SERVER_SET=realistic`), and the user asked for the realistic datasets | user + Claude |
 | 5 | SPEC on ARM: same 26 benchmarks, ref, copies = 1, threads = 1, **ref command index 0**, pinned to **one** measured core; config `uarch-gcc14-aarch64.cfg` = x86 twin with `-mabi=lp64` + `-mcpu=native` | Comparability with the x86 rows (index 0 everywhere); the user asked for single-core profiling | user + Claude |
-| 6 | SPEC media reaches ARM by scp/rsync of P7's `spec26-orig` media minus the split `.part*` files and `redistributable_sources` (~7.5 GB); the GCS bucket the download script used is gone (HTTP 404) | Only remaining source | Claude |
+| 6 | SPEC media reaches ARM either by cloning the lab's private GitLab mirror `git@gitlab.ethz.ch:safari/spec26.git` on the box through `ssh -A` (preferred; P7's `spec26-orig` is a clone of it), or by rsync/tar from P7 excluding `.git/`, `*.tar.xz.part*` and `redistributable_sources` (6.5 GB); P7's `cpu2026.tar.xz` sha256 checked OK. The GCS bucket the download script used is gone (HTTP 404) | Only remaining sources; no key of Jerry's is left on the shared box | Claude |
 | 7 | The SPEC capture kit (code only) is versioned into `spec26/infra_kit/` on `spec-x86`/`spec-arm`, with the x86 per-benchmark metrics and the LLC/DRAM cross-check summaries | The ARM box cannot reach P7's disk; data must not be lost | Claude |
 | 8 | No code or data from Jef's private repo goes into InferSuite (public repo, HTTP 200 unauthenticated) — reimplement from his method | Licensing/ownership | Claude |
 | 9 | ARM profiling mirrors Jef's Graviton5 method as read from his `feat/arm` (9aa188f): c9gd.metal-48xl, online 0–15, house 0–7, measured 8–15, platform-fixed 3.3 GHz witnessed by `cpu_cycles/cnt_cycles`, one dedicated pass per family (≤ cycles + 6 events), 100 ms windows, gate on `pcnt-running ≥ 99.999` | Comparability with his ARM agentic data; his own per-window mux check reads fields perf 6.17 `-j` does not emit, so we gate on `pcnt-running` directly | user + Claude |
@@ -37,6 +37,9 @@ Server (Jef does agentic). Branches: `spec-x86`, `dcperf` (existing), `spec-arm`
 - P7 root filesystem is full (8.6 GB free). Any LBR/PT capture would truncate. Blocking check
   written into both x86 docs (≥ 60 GB free required).
 - `download_spec26_aria2.sh` points at a GCS bucket that no longer exists (404).
+- The first version of the ARM doc's transfer command (commit `fd8f4e8ff`) did not exclude
+  `spec26-orig/.git/` and would have shipped a 7.2 GB git pack on top of the 6.5 GB media.
+  Fixed in the follow-up commit.
 - `local_agents/DCPerf/README.md` §4/§7.5 call the 1080p video cuts "100-frame"; the files are
   51 frames (F25:1, 158,630,766 B each). Not fixed here (README of another study); noted for
   the next DCPerf edit.
