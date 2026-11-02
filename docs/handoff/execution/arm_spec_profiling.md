@@ -63,33 +63,49 @@ commit 9aa188f), as read on 2026-11-02. Treat every one as **verify on the box**
 
 ## 2. SPEC CPU 2026 onto the box
 
-SPEC is licensed and the repo is public, so SPEC travels by scp/rsync, never by git. The GCS
-bucket used on x86 no longer exists. The source is P7's original media,
-`/home/thu/spec26-infra/spec26-orig` (version 1.0.1). Transfer it minus the redundant split
-archives and the redistributable sources: about 7.5 GB, of which `cpu2026.tar.xz` is 3.8 GB
-and `benchball/` 3.2 GB.
+SPEC is licensed and InferSuite is public, so SPEC never goes through InferSuite. The GCS
+bucket that `download_spec26_aria2.sh` used no longer exists (HTTP 404). Two real sources
+exist, both SPEC CPU 2026 v1.0.1:
 
-**Jerry runs one of these** (P7 has no key for the box today):
+* **The lab's GitLab mirror** `git@gitlab.ethz.ch:safari/spec26.git` (private). P7's media
+  folder `/home/thu/spec26-infra/spec26-orig` is a clone of it. The mirror stores the two
+  archives that exceed GitLab's pack limit as `*.part*` files; `install.sh` reassembles them
+  automatically.
+* **P7's copy** of that media. `install_archives/cpu2026.tar.xz` was checked on 2026-11-02:
+  `sha256sum -c cpu2026.tar.xz.sha256` gives OK
+  (`ba6b6359dbd54997a666333f54c98f507f8a62f36bbd004fde4f9c408dcf2959`). Without `.git/`
+  (7.2 GB), the redundant `*.tar.xz.part*` files and `redistributable_sources/`, it is
+  **6.5 GB**.
+
+**Jerry runs one of these.** P7 has no key for the box today, and the box has no GitLab key.
+Never store Jerry's GitLab key on the shared box.
 
 ```bash
-# (a) from P7, after putting the box's PEM on P7 and a Host block "agenticbox" in ~/.ssh/config
-rsync -a --info=progress2 \
-  --exclude 'install_archives/cpu2026.tar.xz.part*' --exclude 'redistributable_sources/' \
+# (A) preferred: clone the mirror on the box through SSH agent forwarding (no key left on the box)
+ssh -A agenticbox                                   # from a machine whose key can read safari/spec26
+git clone git@gitlab.ethz.ch:safari/spec26.git ~/spec26-media     # ~7.2 GB pack
+
+# (B) from P7, after putting the box's PEM on P7 and a Host block "agenticbox" in ~/.ssh/config
+rsync -a --info=progress2 --exclude '.git/' --exclude '*.tar.xz.part*' --exclude 'redistributable_sources/' \
   /home/thu/spec26-infra/spec26-orig/ agenticbox:~/spec26-media/
 
-# (b) from a laptop that can ssh to both (streams through, stores nothing locally)
-ssh p7 "tar -C /home/thu/spec26-infra -cf - --exclude='spec26-orig/install_archives/cpu2026.tar.xz.part*' \
-        --exclude='spec26-orig/redistributable_sources' spec26-orig" \
-  | ssh agenticbox "mkdir -p ~/spec26-media && tar -xf - -C ~/spec26-media --strip-components=1"
+# (C) from a laptop that can ssh to both (streams through, stores nothing locally)
+ssh p7 "tar -C /home/thu/spec26-infra/spec26-orig -cf - --exclude=.git --exclude='*.tar.xz.part*' \
+        --exclude=redistributable_sources ." \
+  | ssh agenticbox "mkdir -p ~/spec26-media && tar -xf - -C ~/spec26-media"
 ```
 
 **The ARM session:**
 
-* If `~/spec26-media/install.sh` is missing, print command (b) for Jerry and continue with
-  §3–§4 meanwhile.
+* If `~/spec26-media/install.sh` is missing, print options (A)–(C) for Jerry and continue
+  with §3–§4 meanwhile.
 * Once the media is there:
-  * `cd ~/spec26-media/install_archives && sha256sum -c cpu2026.tar.xz.sha256` (it must say
-    OK; md5 `33eed6c9f6a0e4e4c3e9f865a08e5706` is in `cpu2026.tar.xz.md5`);
+  * after (A), first reassemble:
+    `cat install_archives/cpu2026.tar.xz.part* > install_archives/cpu2026.tar.xz` (and the
+    same for `benchball/817.flac_s-1.000000.tar.xz`). `install.sh` would do it anyway, but the
+    checksum must be checked on the reassembled file;
+  * `cd ~/spec26-media/install_archives && sha256sum -c cpu2026.tar.xz.sha256`. It must say
+    OK, with the same hash as on P7 (above);
   * `cd ~/spec26-media && ./install.sh -d ~/spec26-arm/cpu2026 -u linux-aarch64` (check
     `./install.sh -h` first; `-u` picks the prebuilt `tools/bin/linux-aarch64` toolset);
   * `cd ~/spec26-arm/cpu2026 && . ./shrc && runcpu --version`.
