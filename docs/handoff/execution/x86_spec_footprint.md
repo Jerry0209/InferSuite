@@ -81,7 +81,7 @@ for the life of the scope, from the house cores (`taskset -c "$CPUS_HOUSE"`), it
 
 ```bash
 # the contract's capture, scoped to the fence on the measured cores
-$PERF record -z -m 512M -e br_inst_retired.near_taken -c 20011 -j any,save_type \
+$PERF record -z -m 512M -e br_inst_retired.near_taken:pp -c 20011 -j any,save_type \
       -a -C "$CPUS_MEASURED" --cgroup="$CG" -o "$OUT/lbr.data" &
 $PERF stat -x, -a -C "$CPUS_MEASURED" -e instructions,br_inst_retired.near_taken \
       --for-each-cgroup="$CG" -o "$OUT/exact_counts.csv" &

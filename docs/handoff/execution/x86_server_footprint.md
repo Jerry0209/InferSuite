@@ -55,7 +55,7 @@ Add a pseudo-group **`lbr`**. When `g = lbr`, instead of `start_tma_cont` and
 `.server_cg`) for `CAPTURE_S` seconds, from the house cores:
 
 ```bash
-taskset -c "$CPUS_HOUSE" $PERF record -z -m 512M --threads -e br_inst_retired.near_taken -c 20011 \
+taskset -c "$CPUS_HOUSE" $PERF record -z -m 512M --threads -e br_inst_retired.near_taken:pp -c 20011 \
         -j any,save_type -a -C "$CPUS_MEASURED" --cgroup="$CG" -o "$OUT/lbr.data" -- sleep "$CAPTURE_S"
 taskset -c "$CPUS_HOUSE" $PERF stat -x, -a -C "$CPUS_MEASURED" --for-each-cgroup="$CG" \
         -e instructions,br_inst_retired.near_taken -o "$OUT/exact_counts.csv" -- sleep "$CAPTURE_S"
