@@ -94,10 +94,22 @@ bench_start(){ # $1 OUT, $2 UNIT
   dlog "encode pool never saturated"; return 1
 }
 
+vt_restore_cuts(){ # undo vt_select_cuts: datasets/cuts back to the original directory
+  [ -n "$VT_CUTS" ] || return 0
+  local cur="$VT_DIR/datasets/cuts"
+  if [ -L "$cur" ] && [ -d "$VT_DIR/datasets/cuts_1080p_xiph" ]; then
+    sudo rm -f "$cur" && sudo mv "$VT_DIR/datasets/cuts_1080p_xiph" "$cur" \
+      && dlog "datasets/cuts restored to the original 1080p directory"
+  fi
+}
+
 bench_stop(){ # $1 OUT, $2 UNIT
   local OUT="$1" UNIT="$2"
   [ -n "$VT_RUN_PID" ] && sudo kill -TERM "$VT_RUN_PID" 2>/dev/null
+  # ffmpeg in OUR scope only (2026-11-03): a machine-wide `pkill -f ffmpeg` would also kill
+  # other users' encodes. systemctl stop signals every process in the scope anyway.
+  cat "/sys/fs/cgroup/measured.slice/$UNIT.scope/cgroup.procs" 2>/dev/null | xargs -r sudo kill -TERM 2>/dev/null
   sudo systemctl stop "$UNIT.scope" 2>/dev/null
-  sudo pkill -f ffmpeg 2>/dev/null
+  vt_restore_cuts
   sleep 3
 }

@@ -25,6 +25,13 @@
 #
 #   BENCH=feedsim ./run_dcperf_profile.sh
 #   BENCH=feedsim PROF_GROUPS="fpbr" CAPTURE_S=120 ./run_dcperf_profile.sh   # quick bring-up
+#
+# Pseudo-group "lbr" (2026-11-03): Rahul's front-end footprint pass (LBR sampling + exact
+# counts over the same steady-state window instead of the counter rotation; lbr_pass.sh).
+# Always with a FRESH DATA_ROOT: a pass's position in PROF_GROUPS decides its run_N, and a
+# group mismatch below deletes that run_N, so a lone "lbr" pointed at banked counter data
+# would delete its run_1.
+#   PROF_GROUPS=lbr DATA_ROOT=local_agents/DCPerf/data/frontend_footprint BENCH=feedsim ...
 set -o pipefail
 KITD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$KITD/../../.." && pwd)"
@@ -45,6 +52,7 @@ mkdir -p "$DATA_ROOT"
 # functions only — no stage runs. Also installs the cleanup EXIT trap that restores isolation.
 source "$REPO/local_agents/kit/campaign/run_glm_campaign.sh" noop
 source "$KITD/bench_${BENCH}.sh"
+source "$KITD/lbr_pass.sh"
 
 dlog(){ printf '[%s %s] %s\n' "$SUITE" "$(date +%H:%M:%S)" "$*" | tee -a "$KITD/dcperf.log"; }
 
@@ -82,7 +90,7 @@ smt_off(){ local c; for c in $(smt_siblings); do
   [ -n "$SMT_OFFLINED" ] && dlog "SMT siblings offlined:$SMT_OFFLINED (restored on exit)"; return 0; }
 smt_restore(){ local c; for c in $SMT_OFFLINED; do echo 1 | sudo tee "/sys/devices/system/cpu/cpu$c/online" >/dev/null; done
   [ -n "$SMT_OFFLINED" ] && dlog "SMT siblings back online:$SMT_OFFLINED"; SMT_OFFLINED=""; return 0; }
-trap 'smt_restore; cleanup' EXIT      # cleanup = the sourced kit's isolation restore
+trap 'ff_stop_instruments; smt_restore; cleanup' EXIT     # cleanup = the sourced kit's isolation restore
 
 if fp=$(foreign_perf); then dlog "STOP: foreign perf pid $fp on the box — refusing to compete"; exit 3; fi
 [ "${SMT_OFF:-1}" = 1 ] && smt_off
@@ -130,6 +138,7 @@ if bad:
 print("topology gate OK: measured cores online, no online SMT siblings")
 TOPO
 bench_preflight || { dlog "FATAL: $BENCH preflight failed"; exit 1; }
+case " $PROF_GROUPS " in *" lbr "*) lbr_preflight || exit 1;; esac
 
 NG=$(echo $PROF_GROUPS | wc -w); n=0
 for g in $PROF_GROUPS; do
@@ -138,7 +147,7 @@ for g in $PROF_GROUPS; do
   if [ -f "$OUT/DONE" ] && [ "$(cat "$OUT/l3group.txt" 2>/dev/null)" = "$g" ]; then
     dlog "skip pass $n ($g) — DONE"; continue
   fi
-  grep -q "^GRP\[$g\]=" "$REPO/local_agents/kit/campaign/run_glm_campaign.sh" \
+  [ "$g" = lbr ] || grep -q "^GRP\[$g\]=" "$REPO/local_agents/kit/campaign/run_glm_campaign.sh" \
     || { dlog "FATAL: unknown counter group '$g'"; exit 1; }
 
   # SHARED MACHINE GUARD — identical rule to replay_l3_profile.sh: the PMU's GP counters and
@@ -169,17 +178,26 @@ for g in $PROF_GROUPS; do
   dlog "steady state reached; server fence = $CG"
 
   start_pollers "$OUT" "$CG"
-  start_tma_cont "$OUT" "$CG"
+  [ "$g" = lbr ] || start_tma_cont "$OUT" "$CG"
   write_metadata "$OUT" "${SUITE}_${WL}" "$WL" "$n" \
     "{\"suite\":\"$SUITE\",\"bench\":\"$BENCH\",\"workload\":\"$WL\",\"server_cg\":\"$CG\",\"capture_s\":$CAPTURE_S,\"group\":\"$g\",\"load\":$(cat "$OUT/.load_json" 2>/dev/null || echo '{}')}"
 
-  GORDER="$g" cycle_stats "$OUT" "$CG" "[ -d /sys/fs/cgroup/$CG ]" "$CAPTURE_S"
+  if [ "$g" = lbr ]; then
+    lbr_capture "$OUT" "$CG" "$CAPTURE_S"
+  else
+    GORDER="$g" cycle_stats "$OUT" "$CG" "[ -d /sys/fs/cgroup/$CG ]" "$CAPTURE_S"
+  fi
 
   stop_tma_cont; stop_pollers "$OUT"
   bench_stop "$OUT" "$UNIT"
   restore_isolation
 
   echo "$g" > "$OUT/l3group.txt"
+  if [ "$g" = lbr ]; then
+    # analysed after the restore, on the house cores; DONE only if every gate passed
+    lbr_finish "$OUT" && : > "$OUT/DONE"
+    sleep 20; continue
+  fi
   NW=$(($(wc -l < "$OUT/windows.tsv" 2>/dev/null || echo 1) - 1))
   if [ "$NW" -gt 10 ] && [ -s "$OUT/cpustat_scope1.tsv" ]; then
     : > "$OUT/DONE"; dlog "pass $n ($g) OK — $NW windows"

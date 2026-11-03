@@ -288,7 +288,9 @@ PY
     sudo systemctl set-property --runtime kubepods.slice AllowedCPUs="$CPUS_HOUSE" 2>/dev/null
     log "ISOLATION: k3s stopped + pods killed (auto-respawn on restore)"
   fi
-  sudo pkill -9 -x perf 2>/dev/null
+  # OUR stale perf only (2026-11-03): a machine-wide `pkill -x perf` also killed a colleague's
+  # collectors that started between the foreign-perf guard and this line. Never kill theirs.
+  pkill -9 -x -u "$(id -u)" perf 2>/dev/null
   log "ISOLATION: applied (measured=$CPUS_MEASURED house=$CPUS_HOUSE)"
   # ---- quiet-partition PROOF (2026-07-15): applied != verified. Before any episode starts,
   # assert the shield is real: slices pinned, knobs set, and the measured cores actually
@@ -391,10 +393,14 @@ restore_isolation(){
     fi
     rm -f "$sf"
   done
+  # SKIP_DOCKER=1 never touched dockerd, so there is nothing to undo -- and with live-restore
+  # off, a restart here stops every container on the box, a colleague's included (2026-11-03).
+  if [ "${SKIP_DOCKER:-0}" != 1 ]; then
   if [ -f "$STATE/daemon.json.orig" ]; then sudo cp "$STATE/daemon.json.orig" /etc/docker/daemon.json
   else sudo rm -f /etc/docker/daemon.json; fi
   sudo systemctl reset-failed docker.service docker.socket 2>/dev/null
   sudo systemctl restart docker || log "WARN: docker restart failed during restore"
+  fi
   if grep -q '^active' "$STATE/k3s" 2>/dev/null && [ "${SKIP_K3S:-0}" != 1 ]; then
     sudo systemctl start k3s && log "ISOLATION: k3s restarted"
   fi
