@@ -18,6 +18,7 @@ from its description; nothing from his private repo is copied. No SPEC file is i
 | `kit/arm_profile.py` | `qualify / run / check / summary`: the capture driver and per-pass gates |
 | `kit/export.py` | banked passes → per-window / per-benchmark CSVs in Jef's figure schemas (`--selftest`) |
 | `data/raw/` | **git-ignored**: perf JSON per ⟨benchmark, family, attempt⟩, witness, qualification receipts |
+| `data/arm_spec26_raw_20261103.tar.zst` | 25 MB zstd archive of `data/raw/` (every pass: perf JSON, meta, witness, procstat, run.sh) + capture logs and shield snapshots. `tar -I zstd -xf` from `arm/data/` |
 | `data/interim/` | **git-ignored**: build/setup logs, extracted SPEC command lines, shield snapshots |
 | `data/processed/spec26/` | `spec26_arm_windows.csv.gz`, `spec26_arm_votes.csv`, `episodes.csv`, `determinism.csv` |
 | `reports/figures/data/` | figure-ready `spec26_arm_votes.csv`, `metric_parity.csv`, `spec26_arm_vs_x86.csv` |
