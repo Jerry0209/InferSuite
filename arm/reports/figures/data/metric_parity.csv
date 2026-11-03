@@ -1,0 +1,35 @@
+metric,x86_name,label,note
+IPC,IPC,exact,
+Frontend-bound (%),tma.l1.fe_bound,analogue,"Arm topdown L1 from slot stalls, not Intel PERF_METRICS"
+Backend-bound (%),tma.l1.be_bound,analogue,
+Retiring (%),tma.l1.retiring,analogue,
+Bad-speculation (%),tma.l1.bad_spec,analogue,
+Branch MPKI,brMPKI,exact,
+Branch-direction MPKI,branchDir_MPKI,analogue,"immediate (direct) branches incl. unconditional, vs x86 conditional"
+Target-mispredict MPKI,baclears_MPKI,partial,Jef's partial stand-in for x86 BTB MPKI (BAClears)
+L1I MPKI,L1I_MPKI,analogue,
+L1D-load MPKI,L1D_MPKI,analogue,"Arm refills count speculative accesses, stores included; x86 counts retired loads"
+L2-load MPKI,L2_MPKI,analogue,"speculative, stores included"
+LLC MPKI,LLC_MPKI,partial,x86 LLC_MPKI = retired demand loads missing L3 only (spec26_profile_validation.md §1.1); what 'last level' is on Graviton is unverified
+DRAM read (GB/s),DRAM_read_GBs,partial,"core-side LL-miss proxy, no CMN/uncore PMU; x86 DRAM_read_GBs is L2->uncore reads, not DRAM (§1.2)"
+L1D-TLB MPKI,,none,
+L2-TLB MPKI,,none,
+DTLB-walk MPKI,,none,
+ITLB-walk MPKI,itlb_walk_pct,partial,"x86 reports % of cycles in ITLB walks, ARM counts walks per kilo-instruction"
+L1I-TLB MPKI,,none,
+Context switches (/CPU-s),ctx_per_cpu_s,exact,
+Frequency (GHz),,none,cnt_cycles = 1 GHz generic timer; gate +-0.1 GHz of 3.3
+Frontend-stall (% cycles),,none,
+frontend_mem_bound,,none,
+frontend_l1i_bound,,none,
+frontend_l2i_bound,,none,
+frontend_tlb_bound,,none,
+frontend_core_bound,,none,
+frontend_flow_bound,,none,
+frontend_flush_bound,,none,
+,DSB_pct,none,no Arm counterpart (no macro-op/uop-cache event)
+,MITE_pct,none,no Arm counterpart (no macro-op/uop-cache event)
+,MS_pct,none,no Arm counterpart (no macro-op/uop-cache event)
+,LSD_pct,none,no Arm counterpart (no macro-op/uop-cache event)
+,dsb_miss_MPKI,none,no Arm counterpart (no macro-op/uop-cache event)
+,dsb2mite_penalty_pct,none,no Arm counterpart (no macro-op/uop-cache event)
