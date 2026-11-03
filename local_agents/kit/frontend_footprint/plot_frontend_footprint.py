@@ -2,13 +2,20 @@
 """plot_frontend_footprint.py — one violin per headline front-end metric, from long CSVs only.
 
   ~/miniforge3/envs/infersuite-full/bin/python3 plot_frontend_footprint.py CSV [CSV ...]
-        [--out DIR] [--group subgroup|family] [--color FAMILY=#hex ...] [--fmt png[,pdf]]
+        [--out DIR] [--group subgroup|family|side] [--color FAMILY=#hex ...] [--fmt png[,pdf]]
 
 Each CSV has the columns workload,family,subgroup,metric,value[,analyzer_sha,period,...]
 (aggregate.py's frontend_footprint_rows_long.csv; the Server and Agentic CSVs use the same
 schema, extra columns are ignored). Hue = family (lab convention: SPEC blue, Server green,
 Agentic red); lightness = subgroup within the family. Footprint and unique branches are drawn on
 a log axis. Titles are short; the definitions live in the MANIFEST next to the CSV.
+
+--group side pools every family of a side into ONE violin per side (SPEC, Server, Agentic; side
+from the family name: spec* = SPEC, agentic* = Agentic, anything else = Server), as
+plot_paper_agg_compact_server.R does. Points stay one per workload; within a side holding several
+families (the Server's dcperf, dacapo, renaissance, realdata) each family gets its own marker
+shape, named in a small legend with its count (the R script's `suite`). --color SIDE=#hex
+overrides a side's hue in this mode.
 """
 import argparse
 import collections
@@ -22,10 +29,12 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
+from matplotlib.lines import Line2D  # noqa: E402
 from matplotlib.patches import Patch  # noqa: E402
 from matplotlib.ticker import FixedLocator, FuncFormatter, NullFormatter  # noqa: E402
 
-# metric, title, y label, scale factor, log axis
+# metric, title, y label, scale factor, log axis (None = automatic: log when the values span more than
+# 20x, e.g. FeedSim's ICacheBuster call site with 100 000 targets next to SPEC's 1-3)
 HEADLINE = [
     ("footprint_bytes", "Instruction footprint", "KB (sampled lower bound)", 1e-3, True),
     ("unique_taken_branches", "Unique taken branches", "count (sampled lower bound)", 1.0, True),
@@ -37,11 +46,15 @@ for _key, _form, _ylab in (("wavg_targets_{}", "Distinct targets", "targets (sam
                            ("wavg_targets_ge1pct_{}", "Targets \u2265 1 %", "targets \u2265 1 % of executions")):
     for _scope, _what in (("all", "per taken branch"), ("noret", "per taken branch, no returns"),
                           ("indirect", "per indirect branch")):
-        HEADLINE.append((_key.format(_scope), f"{_form} {_what}", _ylab, 1.0, False))
+        HEADLINE.append((_key.format(_scope), f"{_form} {_what}", _ylab, 1.0, None))  # None: log if > 20x span
 # lab palette (local_agents/kit/plot/theme_paper.R + plot_paper_agg_compact_server.R): dark, light
 SIDE_COLORS = {"SPEC": ("#2166ac", "#92c5de"), "Server": ("#1a9850", "#a6d96a"), "Agentic": ("#b2182b", "#f4a582")}
 SIDE_ORDER = ["SPEC", "Server", "Agentic"]
 SUBGROUP_ORDER = ["SPEC-int", "SPEC-fp"]
+# --group side: marker per family inside a multi-family side, assigned in this order (the R
+# script's suite order), other families after them alphabetically; "D" is the mean, never a family
+FAMILY_ORDER = ["dcperf", "renaissance", "dacapo", "realdata"]
+FAMILY_MARKERS = ["o", "s", "^", "v", "P", "X", "h", "*", "p", "<", ">"]
 INK, INK2, MUTED, GRID, AXIS = "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3c2b7"
 
 
@@ -99,8 +112,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("csv", nargs="+")
     ap.add_argument("--out", default="plots")
-    ap.add_argument("--group", choices=("subgroup", "family"), default="subgroup",
-                    help="one violin per family x subgroup (default) or per family")
+    ap.add_argument("--group", choices=("subgroup", "family", "side"), default="subgroup",
+                    help="one violin per family x subgroup (default), per family, or per side "
+                         "(SPEC / Server / Agentic, families pooled, marker = family)")
     ap.add_argument("--color", action="append", default=[], metavar="FAMILY=#hex",
                     help="override a family's dark hue (its light variant is derived)")
     ap.add_argument("--fmt", default="png")
@@ -120,6 +134,26 @@ def main():
         for (fam, _sub), ms in data.items():
             for m, vals in ms.items():
                 pooled[(fam, "")].setdefault(m, {}).update(vals)
+        data = pooled
+    side_fams, marker_of, fam_label = {}, {}, {}
+    if a.group == "side":  # pool every family of a side; a point keeps its family for the marker
+        subs_of = collections.defaultdict(set)
+        for fam, sub in data:
+            subs_of[fam].add(sub)
+        fam_label = {f: (next(iter(s)) if len(s) == 1 and next(iter(s)) else f) for f, s in subs_of.items()}
+        pooled = collections.defaultdict(dict)
+        for (fam, _sub), ms in data.items():
+            for m, vals in ms.items():
+                pooled[(side_of(fam), "")].setdefault(m, {}).update({(fam, w): v for w, v in vals.items()})
+        for fam in subs_of:
+            side_fams.setdefault(side_of(fam), []).append(fam)
+        for sd, fs in side_fams.items():
+            fs.sort(key=lambda f: (FAMILY_ORDER.index(f) if f in FAMILY_ORDER else len(FAMILY_ORDER), f))
+            for i, f in enumerate(fs):
+                marker_of[f] = FAMILY_MARKERS[i % len(FAMILY_MARKERS)] if len(fs) > 1 else "o"
+            if len(fs) > len(FAMILY_MARKERS):
+                print(f"plot: WARNING {sd} has {len(fs)} families, more than {len(FAMILY_MARKERS)} markers; shapes repeat",
+                      file=sys.stderr)
         data = pooled
     fams = sorted({f for f, _ in data}, key=lambda f: (SIDE_ORDER.index(side_of(f)), f))
     groups, colors = [], {}
@@ -144,7 +178,11 @@ def main():
         if not cols:
             print(f"plot: {metric} absent from the input; skipped")
             continue
-        fig, ax = plt.subplots(figsize=(1.6 + 1.1 * len(cols), 3.4))
+        if logy is None:
+            allv = np.concatenate([v for _, v in cols])
+            logy = bool(allv.min() > 0 and allv.max() / allv.min() > 20)
+        keyed = {sd for (sd, _), _v in cols if len(side_fams.get(sd, [])) > 1} if a.group == "side" else set()
+        fig, ax = plt.subplots(figsize=(1.6 + 1.1 * len(cols) + (1.2 if keyed else 0), 3.4))
         for x, (g, v) in enumerate(cols):
             print(f"{metric:34s} {(g[0] + ' ' + g[1]).strip():24s} {len(v):3d} {np.median(v):12.4g} {v.min():12.4g} {v.max():12.4g}")
             y = np.log10(v) if logy else v
@@ -155,7 +193,20 @@ def main():
                     b.set_edgecolor("black")
                     b.set_linewidth(0.3)
                     b.set_alpha(0.75)
-            ax.scatter(x + rng.uniform(-0.2, 0.2, len(y)), y, s=9, color=INK2, alpha=0.7, linewidths=0, zorder=3)
+            if a.group == "side":  # one value per workload, marker = its family
+                pts = data[g].get(metric, {})
+                for fam in side_fams[g[0]]:
+                    yf = np.array([val for (f, _w), val in sorted(pts.items()) if f == fam]) * k
+                    if not len(yf):
+                        continue
+                    if len(side_fams[g[0]]) > 1:
+                        print(f"{metric:34s} {'  ' + fam_label[fam]:24s} {len(yf):3d} {np.median(yf):12.4g} "
+                              f"{yf.min():12.4g} {yf.max():12.4g}")
+                    yf = np.log10(yf) if logy else yf
+                    ax.scatter(x + rng.uniform(-0.2, 0.2, len(yf)), yf, s=14, marker=marker_of[fam], color=INK2,
+                               alpha=0.75, linewidths=0, zorder=3)
+            else:
+                ax.scatter(x + rng.uniform(-0.2, 0.2, len(y)), y, s=9, color=INK2, alpha=0.7, linewidths=0, zorder=3)
             if len(y) >= 2:
                 ax.boxplot([y], positions=[x], widths=0.12, whis=(5, 95), showcaps=False, showfliers=False,
                            patch_artist=True, zorder=4,
@@ -188,7 +239,23 @@ def main():
         for sp in ("left", "bottom"):
             ax.spines[sp].set_color(AXIS)
         sides = list(dict.fromkeys(side_of(f) for f, _ in (g for g, _ in cols)))
-        if multi_family and len(sides) > 1:  # hue = side; the x labels already name each family
+        if keyed:  # the x labels name the sides; the legend names the families behind the markers
+            handles = []
+            for (sd, _), _v in cols:
+                if sd not in keyed:
+                    continue
+                pts = data[(sd, "")].get(metric, {})
+                for fam in side_fams[sd]:
+                    nf = sum(1 for f, _w in pts if f == fam)
+                    if nf:
+                        handles.append(Line2D([], [], linestyle="none", marker=marker_of[fam], markersize=4.2,
+                                              markerfacecolor=INK2, markeredgewidth=0, alpha=0.75,
+                                              label=(f"{fam_label[fam]} ({nf})" if len(keyed) == 1
+                                                     else f"{sd}: {fam_label[fam]} ({nf})")))
+            ax.legend(handles=handles, title=next(iter(keyed)) if len(keyed) == 1 else None, frameon=False,
+                      fontsize=7.5, title_fontsize=8, loc="upper left", bbox_to_anchor=(1.0, 1.0),
+                      handletextpad=0.3, borderaxespad=0.3, alignment="left")
+        elif multi_family and len(sides) > 1 and a.group != "side":  # hue = side; the x labels already name each family
             first = {sd: next(g for g, _ in cols if side_of(g[0]) == sd) for sd in sides}
             ax.legend(handles=[Patch(facecolor=colors[first[sd]], edgecolor="black", linewidth=0.3, label=sd)
                                for sd in sides],
