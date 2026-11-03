@@ -1,0 +1,292 @@
+# profiling_plan.toml — families -> events, formulas, parity labels for the ARM SPEC run.
+#
+# Families, events and formulas follow Jef's Graviton5 plan as written down in
+# docs/handoff/execution/arm_spec_profiling.md §5 (facts: event lists and formulas; no code
+# of his is used). One family = one dedicated perf pass = one full benchmark run, counted
+# with no multiplexing: Neoverse-V3 has 1 cycle counter + 6 programmable counters.
+#
+# Our additions (no programmable counter is taken from Jef's events):
+#   * cpu_cycles in EVERY family. It lives on the dedicated cycle counter, so it costs
+#     nothing and gives every pass a frequency witness (cycles / task-clock).
+#   * inst_retired in the tier-2 families that lack it, in a FREE 6th slot, so the
+#     cross-pass determinism gate (inst_retired totals within 0.5 %) covers every pass.
+# They are listed per family in `added`.
+
+[meta]
+pmu = "armv8_pmuv3_0"
+slots = 10                         # PMMIR.SLOTS (sysfs caps/slots = 0xa)
+window_ms = 100
+measured_cpu = 8
+fence_cgroup = "jerry-measured/spec"
+min_task_clock_ns = 2_000_000      # windows with < 2 ms of fence CPU time are dropped
+nominal_ghz = 3.3
+freq_tolerance_ghz = 0.1
+determinism_tol = 0.005            # inst_retired totals across passes
+pcnt_running_min = 99.999
+environment = ["task-clock", "context-switches", "cpu-migrations", "page-faults"]
+
+# Raw codes without a sysfs alias on perf 6.17 (Neoverse-V3 TRM numbering, from Jef's plan).
+# Opened as armv8_pmuv3_0/event=<code>,name=<name>/ so perf's JSON carries the name.
+[raw]
+br_immed_mis_pred_retired = "0x8111"
+br_ind_mis_pred_retired = "0x8113"
+br_return_mis_pred_retired = "0x8115"
+br_indirect_spec = "0x7a"
+br_return_spec = "0x79"
+stall_frontend_membound = "0x8158"
+stall_frontend_l1i = "0x8159"
+stall_frontend_mem = "0x815b"
+stall_frontend_tlb = "0x815c"
+stall_frontend_cpubound = "0x8160"
+stall_frontend_flow = "0x8161"
+stall_frontend_flush = "0x8162"
+
+[families.anchor]
+tier = 1
+events = ["cpu_cycles", "inst_retired", "stall_slot_frontend", "stall_slot_backend", "op_retired", "op_spec", "br_mis_pred"]
+added = []
+[families.frequency]
+tier = 1
+events = ["cpu_cycles", "cnt_cycles", "inst_retired", "bus_cycles"]
+added = []
+[families.branch]
+tier = 1
+events = ["cpu_cycles", "inst_retired", "br_retired", "br_mis_pred_retired", "br_mis_pred", "br_immed_retired", "br_return_retired"]
+added = ["cpu_cycles"]
+[families.branch-types]
+tier = 1
+events = ["cpu_cycles", "inst_retired", "br_immed_mis_pred_retired", "br_ind_mis_pred_retired", "br_return_mis_pred_retired", "br_indirect_spec", "br_return_spec"]
+added = ["cpu_cycles"]
+[families.cache-l1]
+tier = 1
+events = ["cpu_cycles", "inst_retired", "l1d_cache", "l1d_cache_refill", "l1d_cache_lmiss_rd", "l1i_cache", "l1i_cache_refill"]
+added = ["cpu_cycles"]
+[families.cache-l2-ll]
+tier = 1
+events = ["cpu_cycles", "inst_retired", "l2d_cache", "l2d_cache_refill", "l3d_cache_refill", "ll_cache_rd", "ll_cache_miss_rd"]
+added = ["cpu_cycles"]
+[families.bandwidth]
+tier = 1
+events = ["cpu_cycles", "inst_retired", "ll_cache_miss_rd", "bus_access", "mem_access", "remote_access"]
+added = []
+[families.tlb-data]
+tier = 1
+events = ["cpu_cycles", "inst_retired", "l1d_tlb", "l1d_tlb_refill", "l2d_tlb", "l2d_tlb_refill", "dtlb_walk"]
+added = ["cpu_cycles"]
+[families.tlb-code]
+tier = 1
+events = ["cpu_cycles", "inst_retired", "l1i_tlb", "l1i_tlb_refill", "itlb_walk", "l1i_cache_lmiss", "l1i_cache_refill"]
+added = ["cpu_cycles"]
+[families.frontend-stalls]
+tier = 2
+events = ["cpu_cycles", "stall", "stall_frontend", "stall_slot_frontend", "l1i_cache_lmiss", "br_mis_pred", "inst_retired"]
+added = ["inst_retired"]
+[families.frontend-supply-mem]
+tier = 2
+events = ["cpu_cycles", "stall_frontend", "stall_frontend_membound", "stall_frontend_l1i", "stall_frontend_mem", "stall_frontend_tlb", "inst_retired"]
+added = ["inst_retired"]
+[families.frontend-supply-core]
+tier = 2
+events = ["cpu_cycles", "stall_frontend", "stall_frontend_cpubound", "stall_frontend_flow", "stall_frontend_flush", "inst_retired"]
+added = ["inst_retired"]
+[families.backend]
+tier = 2
+events = ["cpu_cycles", "stall_backend", "stall_backend_mem", "stall_slot_backend", "l1d_cache_lmiss_rd", "l2d_cache_lmiss_rd", "inst_retired"]
+added = ["inst_retired"]
+[families.execution]
+tier = 2
+events = ["cpu_cycles", "inst_spec", "inst_retired", "op_spec", "op_retired", "exc_taken", "br_mis_pred"]
+added = ["cpu_cycles"]
+
+# Metrics. `expr` is evaluated per window over that window's counts of ONE family (all
+# terms co-counted in the same pass), and once over the run's sums (ratio of sums).
+# Names: event names; win_s = window wall seconds; task_clock_s = fence CPU seconds.
+# `name` is spelled exactly as Jef's figures spell it. parity vs x86 (x86 = key in
+# spec26/infra_kit/x86_results/<bench>/metrics.json): exact | analogue | partial | none.
+[[metrics]]
+name = "IPC"
+family = "anchor"
+expr = "inst_retired / cpu_cycles"
+x86 = "IPC"
+parity = "exact"
+[[metrics]]
+name = "Frontend-bound (%)"
+family = "anchor"
+expr = "100 * (stall_slot_frontend / (10 * cpu_cycles) - 4 * br_mis_pred / cpu_cycles)"
+x86 = "tma.l1.fe_bound"
+parity = "analogue"
+note = "Arm topdown L1 from slot stalls, not Intel PERF_METRICS"
+[[metrics]]
+name = "Backend-bound (%)"
+family = "anchor"
+expr = "100 * stall_slot_backend / (10 * cpu_cycles)"
+x86 = "tma.l1.be_bound"
+parity = "analogue"
+[[metrics]]
+name = "Retiring (%)"
+family = "anchor"
+expr = "100 * (op_retired / op_spec) * (1 - (stall_slot_frontend + stall_slot_backend) / (10 * cpu_cycles))"
+x86 = "tma.l1.retiring"
+parity = "analogue"
+[[metrics]]
+name = "Bad-speculation (%)"
+family = "anchor"
+expr = "100 * ((1 - op_retired / op_spec) * (1 - (stall_slot_frontend + stall_slot_backend) / (10 * cpu_cycles)) + 4 * br_mis_pred / cpu_cycles)"
+x86 = "tma.l1.bad_spec"
+parity = "analogue"
+[[metrics]]
+name = "Branch MPKI"
+family = "branch"
+expr = "1000 * br_mis_pred_retired / inst_retired"
+x86 = "brMPKI"
+parity = "exact"
+[[metrics]]
+name = "Branch-direction MPKI"
+family = "branch-types"
+expr = "1000 * br_immed_mis_pred_retired / inst_retired"
+x86 = "branchDir_MPKI"
+parity = "analogue"
+note = "immediate (direct) branches incl. unconditional, vs x86 conditional"
+[[metrics]]
+name = "Target-mispredict MPKI"
+family = "branch-types"
+expr = "1000 * (br_ind_mis_pred_retired + br_return_mis_pred_retired) / inst_retired"
+x86 = "baclears_MPKI"
+parity = "partial"
+note = "Jef's partial stand-in for x86 BTB MPKI (BAClears)"
+[[metrics]]
+name = "L1I MPKI"
+family = "cache-l1"
+expr = "1000 * l1i_cache_refill / inst_retired"
+x86 = "L1I_MPKI"
+parity = "analogue"
+[[metrics]]
+name = "L1D-load MPKI"
+family = "cache-l1"
+expr = "1000 * l1d_cache_refill / inst_retired"
+x86 = "L1D_MPKI"
+parity = "analogue"
+note = "Arm refills count speculative accesses, stores included; x86 counts retired loads"
+[[metrics]]
+name = "L2-load MPKI"
+family = "cache-l2-ll"
+expr = "1000 * l2d_cache_refill / inst_retired"
+x86 = "L2_MPKI"
+parity = "analogue"
+note = "speculative, stores included"
+[[metrics]]
+name = "LLC MPKI"
+family = "cache-l2-ll"
+expr = "1000 * ll_cache_miss_rd / inst_retired"
+x86 = "LLC_MPKI"
+parity = "partial"
+note = "x86 LLC_MPKI = retired demand loads missing L3 only (spec26_profile_validation.md §1.1); what 'last level' is on Graviton is unverified"
+[[metrics]]
+name = "DRAM read (GB/s)"
+family = "bandwidth"
+expr = "64 * ll_cache_miss_rd / win_s / 1e9"
+x86 = "DRAM_read_GBs"
+parity = "partial"
+note = "core-side LL-miss proxy, no CMN/uncore PMU; x86 DRAM_read_GBs is L2->uncore reads, not DRAM (§1.2)"
+[[metrics]]
+name = "L1D-TLB MPKI"
+family = "tlb-data"
+expr = "1000 * l1d_tlb_refill / inst_retired"
+x86 = ""
+parity = "none"
+[[metrics]]
+name = "L2-TLB MPKI"
+family = "tlb-data"
+expr = "1000 * l2d_tlb_refill / inst_retired"
+x86 = ""
+parity = "none"
+[[metrics]]
+name = "DTLB-walk MPKI"
+family = "tlb-data"
+expr = "1000 * dtlb_walk / inst_retired"
+x86 = ""
+parity = "none"
+[[metrics]]
+name = "ITLB-walk MPKI"
+family = "tlb-code"
+expr = "1000 * itlb_walk / inst_retired"
+x86 = "itlb_walk_pct"
+parity = "partial"
+note = "x86 reports % of cycles in ITLB walks, ARM counts walks per kilo-instruction"
+[[metrics]]
+name = "L1I-TLB MPKI"
+family = "tlb-code"
+expr = "1000 * l1i_tlb_refill / inst_retired"
+x86 = ""
+parity = "none"
+[[metrics]]
+name = "Context switches (/CPU-s)"
+family = "anchor"
+expr = "context_switches / task_clock_s"
+x86 = "ctx_per_cpu_s"
+parity = "exact"
+[[metrics]]
+name = "Frequency (GHz)"
+family = "frequency"
+expr = "cpu_cycles / cnt_cycles"
+x86 = ""
+parity = "none"
+note = "cnt_cycles = 1 GHz generic timer; gate +-0.1 GHz of 3.3"
+[[metrics]]
+name = "Frontend-stall (% cycles)"
+family = "frontend-stalls"
+expr = "100 * stall_frontend / cpu_cycles"
+x86 = ""
+parity = "none"
+[[metrics]]
+name = "frontend_mem_bound"
+family = "frontend-supply-mem"
+expr = "100 * stall_frontend_membound / stall_frontend"
+x86 = ""
+parity = "none"
+[[metrics]]
+name = "frontend_l1i_bound"
+family = "frontend-supply-mem"
+expr = "100 * stall_frontend_l1i / stall_frontend"
+x86 = ""
+parity = "none"
+[[metrics]]
+name = "frontend_l2i_bound"
+family = "frontend-supply-mem"
+expr = "100 * stall_frontend_mem / stall_frontend"
+x86 = ""
+parity = "none"
+[[metrics]]
+name = "frontend_tlb_bound"
+family = "frontend-supply-mem"
+expr = "100 * stall_frontend_tlb / stall_frontend"
+x86 = ""
+parity = "none"
+[[metrics]]
+name = "frontend_core_bound"
+family = "frontend-supply-core"
+expr = "100 * stall_frontend_cpubound / stall_frontend"
+x86 = ""
+parity = "none"
+[[metrics]]
+name = "frontend_flow_bound"
+family = "frontend-supply-core"
+expr = "100 * stall_frontend_flow / stall_frontend"
+x86 = ""
+parity = "none"
+[[metrics]]
+name = "frontend_flush_bound"
+family = "frontend-supply-core"
+expr = "100 * stall_frontend_flush / stall_frontend"
+x86 = ""
+parity = "none"
+
+# x86 metrics with no Arm counterpart (no macro-op/uop-cache event in sysfs or perf list on
+# this box, 2026-11-03): DSB_pct, MITE_pct, MS_pct, LSD_pct, dsb_miss_MPKI, dsb2mite_penalty_pct.
+[parity_x86_only]
+none = ["DSB_pct", "MITE_pct", "MS_pct", "LSD_pct", "dsb_miss_MPKI", "dsb2mite_penalty_pct"]
+
+# Suite labels in Jef's figure schema (from SPEC's intrate.bset / fprate.bset, v1.0.1).
+[suites]
+SPEC-int = ["706.stockfish_r", "707.ntest_r", "708.sqlite_r", "710.omnetpp_r", "714.cpython_r", "721.gcc_r", "723.llvm_r", "727.cppcheck_r", "729.abc_r", "734.vpr_r", "735.gem5_r", "750.sealcrypto_r", "753.ns3_r", "777.zstd_r"]
+SPEC-fp = ["709.cactus_r", "722.palm_r", "731.astcenc_r", "736.ocio_r", "737.gmsh_r", "748.flightdm_r", "749.fotonik3d_r", "765.roms_r", "766.femflow_r", "767.nest_r", "772.marian_r", "782.lbm_r"]
