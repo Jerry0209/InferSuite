@@ -205,6 +205,9 @@ push `dcperf`.
     `RET`s are also why user `RET` dominates the unique-branch count (100 556 of 110 807).
   - For Rahul: a property of the benchmark, not an artefact. Any per-side mean of metric 3
     will be dominated by feedsim; use medians, or show it as a labelled point.
+- **Pushed `dcperf` `2e750a7f7..c8c81e089` (2026-11-03 ~18:40):** `0ac0a6cee` (lbr pass + shared-kit fixes),
+  `77dc95c1b` (aggregation, sample-matched, plots), `c8c81e089` (results, report 24, this log). The report
+  check's 11 pre-existing freshness warnings (reports 01–15) were overridden by Jerry, as on `spec-x86`.
 
 ## Open threads
 - **Banked receipts, found while writing `receipt_compare.py`.** These are not defects of this
