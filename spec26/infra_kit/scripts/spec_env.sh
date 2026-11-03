@@ -27,6 +27,7 @@ export SPEC_RATE_BENCHES
 # perf: /usr/bin/perf is a broken wrapper on this box and package updates move
 # the real one — always glob, never hardcode.
 PERF="$(ls -d /usr/lib/linux-tools-6.8*/perf 2>/dev/null | tail -1)"
+PERF="${PERF:-$(command -v perf)}"   # AWS ARM box: /usr/bin/perf (6.17) works
 export PERF
 
 spec_shell() {   # put runcpu/specinvoke/specperl on PATH (sources shrc in THIS shell)

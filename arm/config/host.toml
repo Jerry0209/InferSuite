@@ -1,0 +1,39 @@
+# host.toml — the ARM box as observed for the SPEC CPU 2026 run (2026-11-03).
+# Observed values; `arm/kit/arm_shield.sh status|verify` re-reads the live ones.
+
+[machine]
+instance = "c9gd.metal-48xl"
+cpu = "AWS Graviton5, 192 x Arm Neoverse-V3"
+midr = "0x410fd841"
+numa = "node0 = CPUs 0-95, node1 = CPUs 96-191"
+memory_gib = 377
+caches = "L1I 64 KB + L1D 64 KB per core, L2 2 MB per core, L3 192 MB in 2 instances (lscpu)"
+smt = "none (1 thread per core)"
+
+[software]
+os = "Ubuntu 24.04"
+kernel = "6.17.0-1017-aws"
+perf = "6.17.13 (/usr/bin/perf)"
+compiler = "gcc/g++/gfortran 14.2.0 (14.2.0-4ubuntu2~24.04.1); -mcpu=native names no core (generic tuning + detected features)"
+spec = "SPEC CPU 2026 v1.0.1, linux-aarch64 tools, ~/spec26-arm/cpu2026"
+boot_cmdline = "BOOT_IMAGE=/vmlinuz-6.17.0-1017-aws root=PARTUUID=... ro console=tty1 console=ttyS0 nvme_core.io_timeout=4294967295 panic=-1"
+
+[partition]                         # Jef's 8 + 8 layout, applied at RUNTIME (no reboot; Jerry 2026-11-03)
+online = "0-15"                     # 16-191 offlined by arm_shield.sh, restored after
+housekeeping = "0-7"                # init.scope, system.slice, user.slice AllowedCPUs; IRQs; workqueues
+measured = "8-15"                   # fence /sys/fs/cgroup/jerry-measured (mems 0)
+measured_cpu = 8                    # SPEC pinned to ONE core (leaf jerry-measured/spec)
+irq = "every non-managed IRQ -> 0-7; kernel-managed (per-CPU) IRQs stay on their CPU"
+workqueue_cpumask = "0-7"
+thp = "never (runtime; boot default was madvise)"
+nmi_watchdog = 0                    # already 0 at boot
+isolcpus_nohz_full_rcu_nocbs = "none (as in Jef's controlled boot)"
+
+[pmu]
+device = "armv8_pmuv3_0"
+counters = "1 cycle counter + 6 programmable"
+slots = 10
+spe = "absent (no arm_spe device)"
+uop_cache_event = "none in sysfs (73 aliases) or perf list"
+frequency = "no cpufreq driver; platform-fixed, witnessed per pass as cpu_cycles/cnt_cycles (cnt = 1 GHz)"
+perf_event_paranoid = 4             # unchanged; captures use sudo perf
