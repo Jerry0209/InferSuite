@@ -35,6 +35,7 @@ Full index and reading order: **[reports/README.md](reports/README.md)**.
 | own deck | [20 — TMA profile & bad speculation](reports/20_tma_profile_bad_speculation_radar.md) | TMA radar incl. bad speculation (15.4 % vs 10.0 %); prices the retired SMT caveat — IPC +18.8 %, TMA shape unchanged |
 | own deck | [21 — the agent's position in the SPEC distribution](reports/21_agent_position_in_spec_distribution.md) | Ranks not ratios: L1I p77, MITE p65, DSB p27 — the agent is in SPEC's tail; only kernel time leaves the suite (p96) |
 | — (feeds the P7 selection) | [22 — type identification over SWE-bench Multilingual](reports/22_multiling_typeid_sweep.md) | 285 classification-only live episodes, zero failures: behaviour collapses to search-led (E/B lead 0), PHP/Ruby carry the only co-dominant structure, magnitude nests by mechanism — the measured frame for the ≤30 P7 representatives |
+| own study (Rahul's footprint violins, Server part) | [24 — Server-set front-end footprint on x86](reports/24_server_frontend_footprint_x86.md) | PEBS-LBR footprint, unique taken branches and targets per taken branch for the 10 realistic Server workloads (10/10 gated); ~10× SPEC's footprint and branch counts (6–8× at matched samples), indirect-branch `weff` 2.6× SPEC's |
 
 Companion material elsewhere in the repo:
 

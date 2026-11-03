@@ -1,0 +1,1414 @@
+{
+ "analyzer": "lbr_footprint",
+ "analyzer_version": "1.0",
+ "analyzer_sha": "31c492b25f13b5178b1dfd91aeb2dbe4cbe1fd86",
+ "analyzer_src_sha256": "298e417a3dc3dbd0591380ccc36f6986b6c3aeb2e83c4d5a582759bcbd2dce22",
+ "mode": "lbr",
+ "meta": {
+  "workload": "neo4j-livejournal",
+  "period": "20011"
+ },
+ "footprint_bytes": 3291520,
+ "footprint_bytes_user": 2879488,
+ "footprint_bytes_kernel": 412032,
+ "footprint_lines": 51430,
+ "unique_taken_branches": 52389,
+ "unique_taken_branches_user": 43922,
+ "unique_taken_branches_kernel": 8467,
+ "wavg_targets_all": 4.288185226,
+ "wavg_targets_all_user": 4.319806421,
+ "wavg_targets_all_kernel": 3.961794097,
+ "wavg_targets_noret": 2.864541843,
+ "wavg_targets_noret_user": 3.028454078,
+ "wavg_targets_noret_kernel": 1.031639365,
+ "wavg_targets_indirect": 23.18672909,
+ "wavg_targets_indirect_user": 23.51661239,
+ "wavg_targets_indirect_kernel": 2.863623293,
+ "weff_targets_all": 1.415654834,
+ "weff_targets_all_user": 1.388468435,
+ "weff_targets_all_kernel": 1.696270394,
+ "weff_targets_noret": 1.242254802,
+ "weff_targets_noret_user": 1.261834227,
+ "weff_targets_noret_kernel": 1.023313385,
+ "weff_targets_indirect": 3.906943927,
+ "weff_targets_indirect_user": 3.930725195,
+ "weff_targets_indirect_kernel": 2.441852422,
+ "wavg_targets_ge1pct_all": 1.797593034,
+ "wavg_targets_ge1pct_all_user": 1.775278533,
+ "wavg_targets_ge1pct_all_kernel": 2.027921309,
+ "wavg_targets_ge1pct_noret": 1.459189367,
+ "wavg_targets_ge1pct_noret_user": 1.497844019,
+ "wavg_targets_ge1pct_noret_kernel": 1.026944593,
+ "wavg_targets_ge1pct_indirect": 6.44278591,
+ "wavg_targets_ge1pct_indirect_user": 6.504082768,
+ "wavg_targets_ge1pct_indirect_kernel": 2.666473194,
+ "unique_taken_branches_by_type": {
+  "all": {
+   "COND": 22642,
+   "UNCOND": 7994,
+   "CALL": 12203,
+   "IND_CALL": 1834,
+   "IND": 520,
+   "RET": 7196
+  },
+  "user": {
+   "COND": 19252,
+   "UNCOND": 6882,
+   "CALL": 9822,
+   "IND_CALL": 1733,
+   "IND": 520,
+   "RET": 5713
+  },
+  "kernel": {
+   "COND": 3390,
+   "UNCOND": 1112,
+   "CALL": 2381,
+   "IND_CALL": 101,
+   "IND": 0,
+   "RET": 1483
+  }
+ },
+ "taken_entries_by_type": {
+  "COND": 141577997,
+  "UNCOND": 47290496,
+  "CALL": 70605760,
+  "IND_CALL": 4481722,
+  "IND": 19032949,
+  "RET": 75342464
+ },
+ "far_transfers": {
+  "entries": 120695,
+  "unique_from": 853,
+  "entries_by_type": {
+   "SYSCALL": 59118,
+   "SYSRET": 58917,
+   "ERET": 1412,
+   "IRQ": 1248
+  }
+ },
+ "convergence": {
+  "points": [
+   {
+    "pct": 25,
+    "samples": 2802444,
+    "footprint_bytes": 2626688,
+    "footprint_bytes_user": 2247808,
+    "footprint_bytes_kernel": 378880,
+    "unique_taken_branches": 39693,
+    "unique_taken_branches_user": 32044,
+    "unique_taken_branches_kernel": 7649,
+    "wavg_targets_all": 3.984880752
+   },
+   {
+    "pct": 50,
+    "samples": 5604888,
+    "footprint_bytes": 2890176,
+    "footprint_bytes_user": 2495360,
+    "footprint_bytes_kernel": 394816,
+    "unique_taken_branches": 44597,
+    "unique_taken_branches_user": 36528,
+    "unique_taken_branches_kernel": 8069,
+    "wavg_targets_all": 4.141640272
+   },
+   {
+    "pct": 75,
+    "samples": 8407332,
+    "footprint_bytes": 3105792,
+    "footprint_bytes_user": 2700800,
+    "footprint_bytes_kernel": 404992,
+    "unique_taken_branches": 48833,
+    "unique_taken_branches_user": 40543,
+    "unique_taken_branches_kernel": 8290,
+    "wavg_targets_all": 4.229191088
+   },
+   {
+    "pct": 100,
+    "samples": 11209775,
+    "footprint_bytes": 3291520,
+    "footprint_bytes_user": 2879488,
+    "footprint_bytes_kernel": 412032,
+    "unique_taken_branches": 52389,
+    "unique_taken_branches_user": 43922,
+    "unique_taken_branches_kernel": 8467,
+    "wavg_targets_all": 4.288185226
+   }
+  ],
+  "last_quarter_growth_pct": {
+   "footprint": 5.642621038,
+   "unique_taken_branches": 6.787684438,
+   "footprint_user": 6.205547653,
+   "unique_taken_branches_user": 7.693183371
+  },
+  "note": "share of the final unique count first seen in the last 25 % of the run; well above 0 means the unique counts are still rising, i.e. sampling-limited lower bounds",
+  "unit": "samples",
+  "snapshot_every": 1000,
+  "curve_columns": [
+   "units",
+   "footprint_lines",
+   "footprint_lines_user",
+   "unique_taken_branches",
+   "unique_taken_branches_user",
+   "wavg_targets_all"
+  ],
+  "curve": [
+   [
+    1000,
+    5825,
+    4379,
+    4276,
+    2743,
+    1.771744233
+   ],
+   [
+    114000,
+    20278,
+    16342,
+    15800,
+    11018,
+    3.248883177
+   ],
+   [
+    227000,
+    28733,
+    23998,
+    25680,
+    19904,
+    3.495332498
+   ],
+   [
+    340000,
+    30334,
+    25354,
+    27489,
+    21340,
+    3.637323682
+   ],
+   [
+    453000,
+    31352,
+    26213,
+    28477,
+    22096,
+    3.679741082
+   ],
+   [
+    566000,
+    32102,
+    26796,
+    29320,
+    22677,
+    3.746743671
+   ],
+   [
+    679000,
+    32682,
+    27259,
+    29933,
+    23095,
+    3.761755728
+   ],
+   [
+    792000,
+    33249,
+    27761,
+    30654,
+    23717,
+    3.774901628
+   ],
+   [
+    905000,
+    33574,
+    28063,
+    30978,
+    23994,
+    3.785450636
+   ],
+   [
+    1018000,
+    34056,
+    28505,
+    31447,
+    24399,
+    3.812003665
+   ],
+   [
+    1131000,
+    34649,
+    29074,
+    32039,
+    24941,
+    3.831740342
+   ],
+   [
+    1244000,
+    35235,
+    29645,
+    32692,
+    25555,
+    3.853280805
+   ],
+   [
+    1357000,
+    35669,
+    30054,
+    33074,
+    25898,
+    3.874113693
+   ],
+   [
+    1470000,
+    37238,
+    31596,
+    35156,
+    27927,
+    3.900959135
+   ],
+   [
+    1583000,
+    37802,
+    32126,
+    35857,
+    28573,
+    3.909756211
+   ],
+   [
+    1696000,
+    37943,
+    32258,
+    36011,
+    28707,
+    3.911521504
+   ],
+   [
+    1809000,
+    38378,
+    32641,
+    36460,
+    29093,
+    3.920618389
+   ],
+   [
+    1922000,
+    38491,
+    32738,
+    36584,
+    29183,
+    3.922376912
+   ],
+   [
+    2035000,
+    38850,
+    33049,
+    36996,
+    29525,
+    3.936336358
+   ],
+   [
+    2148000,
+    39339,
+    33502,
+    37591,
+    30071,
+    3.951845394
+   ],
+   [
+    2261000,
+    39488,
+    33642,
+    37746,
+    30209,
+    3.954958124
+   ],
+   [
+    2374000,
+    39815,
+    33958,
+    38055,
+    30499,
+    3.960332102
+   ],
+   [
+    2487000,
+    40080,
+    34188,
+    38330,
+    30738,
+    3.961592748
+   ],
+   [
+    2600000,
+    40216,
+    34315,
+    38475,
+    30864,
+    3.971988653
+   ],
+   [
+    2713000,
+    40993,
+    35077,
+    39624,
+    31988,
+    3.982842291
+   ],
+   [
+    2826000,
+    41067,
+    35147,
+    39722,
+    32069,
+    3.985631285
+   ],
+   [
+    2939000,
+    41128,
+    35208,
+    39786,
+    32130,
+    3.985653254
+   ],
+   [
+    3052000,
+    41421,
+    35479,
+    40148,
+    32462,
+    4.019931562
+   ],
+   [
+    3165000,
+    41521,
+    35579,
+    40242,
+    32555,
+    4.020914201
+   ],
+   [
+    3278000,
+    41755,
+    35800,
+    40552,
+    32847,
+    4.027205612
+   ],
+   [
+    3391000,
+    41992,
+    36029,
+    40780,
+    33062,
+    4.032984621
+   ],
+   [
+    3504000,
+    42101,
+    36134,
+    40929,
+    33195,
+    4.034001636
+   ],
+   [
+    3617000,
+    42194,
+    36206,
+    41027,
+    33263,
+    4.045004626
+   ],
+   [
+    3730000,
+    42325,
+    36325,
+    41154,
+    33364,
+    4.05813699
+   ],
+   [
+    3843000,
+    42394,
+    36394,
+    41237,
+    33444,
+    4.058874135
+   ],
+   [
+    3956000,
+    42453,
+    36447,
+    41314,
+    33501,
+    4.067498078
+   ],
+   [
+    4069000,
+    42981,
+    36963,
+    41943,
+    34109,
+    4.086334434
+   ],
+   [
+    4182000,
+    43072,
+    37051,
+    42021,
+    34177,
+    4.096495139
+   ],
+   [
+    4295000,
+    43374,
+    37313,
+    42366,
+    34454,
+    4.107425847
+   ],
+   [
+    4408000,
+    43446,
+    37371,
+    42437,
+    34502,
+    4.10788661
+   ],
+   [
+    4521000,
+    43607,
+    37527,
+    42651,
+    34705,
+    4.109770889
+   ],
+   [
+    4634000,
+    43651,
+    37568,
+    42704,
+    34755,
+    4.109243511
+   ],
+   [
+    4747000,
+    43711,
+    37625,
+    42776,
+    34816,
+    4.109011714
+   ],
+   [
+    4860000,
+    43758,
+    37672,
+    42865,
+    34905,
+    4.108772401
+   ],
+   [
+    4973000,
+    44114,
+    38023,
+    43315,
+    35349,
+    4.118892752
+   ],
+   [
+    5086000,
+    44358,
+    38261,
+    43560,
+    35574,
+    4.121618126
+   ],
+   [
+    5199000,
+    44431,
+    38331,
+    43725,
+    35732,
+    4.123200661
+   ],
+   [
+    5312000,
+    44648,
+    38490,
+    43987,
+    35936,
+    4.125020077
+   ],
+   [
+    5425000,
+    44830,
+    38672,
+    44287,
+    36233,
+    4.126680342
+   ],
+   [
+    5538000,
+    45068,
+    38909,
+    44501,
+    36444,
+    4.128336327
+   ],
+   [
+    5651000,
+    45210,
+    39021,
+    44650,
+    36554,
+    4.142101895
+   ],
+   [
+    5764000,
+    45321,
+    39128,
+    44758,
+    36658,
+    4.142933413
+   ],
+   [
+    5877000,
+    45541,
+    39339,
+    45043,
+    36934,
+    4.148196027
+   ],
+   [
+    5990000,
+    45699,
+    39465,
+    45235,
+    37093,
+    4.152875152
+   ],
+   [
+    6103000,
+    45781,
+    39547,
+    45353,
+    37211,
+    4.154032933
+   ],
+   [
+    6216000,
+    45928,
+    39694,
+    45504,
+    37361,
+    4.155845452
+   ],
+   [
+    6329000,
+    46004,
+    39770,
+    45568,
+    37424,
+    4.155804744
+   ],
+   [
+    6442000,
+    46140,
+    39872,
+    45719,
+    37512,
+    4.160650299
+   ],
+   [
+    6555000,
+    46903,
+    40630,
+    46839,
+    38627,
+    4.174177025
+   ],
+   [
+    6668000,
+    46983,
+    40710,
+    46942,
+    38730,
+    4.174732609
+   ],
+   [
+    6781000,
+    47186,
+    40895,
+    47175,
+    38936,
+    4.179248119
+   ],
+   [
+    6894000,
+    47219,
+    40928,
+    47213,
+    38972,
+    4.189910327
+   ],
+   [
+    7007000,
+    47270,
+    40974,
+    47274,
+    39026,
+    4.191102892
+   ],
+   [
+    7120000,
+    47300,
+    41004,
+    47311,
+    39063,
+    4.192322732
+   ],
+   [
+    7233000,
+    47356,
+    41059,
+    47398,
+    39146,
+    4.192941274
+   ],
+   [
+    7346000,
+    47396,
+    41099,
+    47441,
+    39189,
+    4.192970196
+   ],
+   [
+    7459000,
+    47478,
+    41178,
+    47537,
+    39282,
+    4.194737565
+   ],
+   [
+    7572000,
+    47608,
+    41307,
+    47691,
+    39432,
+    4.19563893
+   ],
+   [
+    7685000,
+    47790,
+    41473,
+    47966,
+    39689,
+    4.196708504
+   ],
+   [
+    7798000,
+    47867,
+    41549,
+    48042,
+    39764,
+    4.196828698
+   ],
+   [
+    7911000,
+    48096,
+    41778,
+    48426,
+    40147,
+    4.209409766
+   ],
+   [
+    8024000,
+    48170,
+    41850,
+    48494,
+    40212,
+    4.217350146
+   ],
+   [
+    8137000,
+    48188,
+    41868,
+    48522,
+    40240,
+    4.219823502
+   ],
+   [
+    8250000,
+    48425,
+    42103,
+    48768,
+    40484,
+    4.223671747
+   ],
+   [
+    8363000,
+    48522,
+    42200,
+    48827,
+    40543,
+    4.228844573
+   ],
+   [
+    8476000,
+    48533,
+    42205,
+    48848,
+    40558,
+    4.229309796
+   ],
+   [
+    8589000,
+    48660,
+    42323,
+    48957,
+    40655,
+    4.239282275
+   ],
+   [
+    8702000,
+    48740,
+    42387,
+    49072,
+    40740,
+    4.240226584
+   ],
+   [
+    8815000,
+    48752,
+    42399,
+    49099,
+    40764,
+    4.239853406
+   ],
+   [
+    8928000,
+    49136,
+    42783,
+    49504,
+    41168,
+    4.244011879
+   ],
+   [
+    9041000,
+    49204,
+    42851,
+    49585,
+    41244,
+    4.244722651
+   ],
+   [
+    9154000,
+    49267,
+    42914,
+    49666,
+    41325,
+    4.245439783
+   ],
+   [
+    9267000,
+    49341,
+    42988,
+    49735,
+    41392,
+    4.245416799
+   ],
+   [
+    9380000,
+    49359,
+    43006,
+    49761,
+    41413,
+    4.246519204
+   ],
+   [
+    9493000,
+    49436,
+    43082,
+    49817,
+    41464,
+    4.246498864
+   ],
+   [
+    9606000,
+    49467,
+    43113,
+    49854,
+    41496,
+    4.24716953
+   ],
+   [
+    9719000,
+    49586,
+    43229,
+    49976,
+    41613,
+    4.254637616
+   ],
+   [
+    9832000,
+    49652,
+    43281,
+    50037,
+    41660,
+    4.257225228
+   ],
+   [
+    9945000,
+    49742,
+    43371,
+    50130,
+    41751,
+    4.268949452
+   ],
+   [
+    10058000,
+    49959,
+    43578,
+    50462,
+    42071,
+    4.272349859
+   ],
+   [
+    10171000,
+    50427,
+    44041,
+    51255,
+    42859,
+    4.279841635
+   ],
+   [
+    10284000,
+    50497,
+    44111,
+    51305,
+    42909,
+    4.279606898
+   ],
+   [
+    10397000,
+    50549,
+    44151,
+    51347,
+    42939,
+    4.279276109
+   ],
+   [
+    10510000,
+    50609,
+    44211,
+    51414,
+    43004,
+    4.281356849
+   ],
+   [
+    10623000,
+    50634,
+    44232,
+    51458,
+    43040,
+    4.281433241
+   ],
+   [
+    10736000,
+    50641,
+    44236,
+    51467,
+    43046,
+    4.282036889
+   ],
+   [
+    10849000,
+    50750,
+    44344,
+    51621,
+    43195,
+    4.28400228
+   ],
+   [
+    10962000,
+    51064,
+    44647,
+    52057,
+    43615,
+    4.287055139
+   ],
+   [
+    11075000,
+    51187,
+    44769,
+    52159,
+    43713,
+    4.287193038
+   ],
+   [
+    11188000,
+    51424,
+    44986,
+    52385,
+    43918,
+    4.288223014
+   ],
+   [
+    11209775,
+    51430,
+    44992,
+    52389,
+    43922,
+    4.288185226
+   ]
+  ]
+ },
+ "processes_with_samples": 2,
+ "top_processes": [
+  {
+   "pid": 2882231,
+   "comm": "java",
+   "samples": 11209204,
+   "share": 0.9999490623
+  },
+  {
+   "pid": 2882194,
+   "comm": "java",
+   "samples": 571,
+   "share": 5.093768608e-05
+  }
+ ],
+ "top_objects_by_footprint": [
+  {
+   "obj_id": 678,
+   "kind": "anon",
+   "path": "//anon",
+   "pid": 2882231,
+   "footprint_bytes": 1749952,
+   "footprint_share": 0.5316546763,
+   "entries": 314387934,
+   "entries_share": 0.8770710198,
+   "unique_taken_branches": 19189
+  },
+  {
+   "obj_id": 623,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/server/libjvm.so",
+   "footprint_bytes": 1096320,
+   "footprint_share": 0.3330740813,
+   "entries": 9834652,
+   "entries_share": 0.02743644818,
+   "unique_taken_branches": 24096
+  },
+  {
+   "obj_id": 1,
+   "kind": "kernel",
+   "path": "[kernel]",
+   "footprint_bytes": 412032,
+   "footprint_share": 0.1251798561,
+   "entries": 31709705,
+   "entries_share": 0.08846288389,
+   "unique_taken_branches": 8467
+  },
+  {
+   "obj_id": 10,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+   "footprint_bytes": 27008,
+   "footprint_share": 0.00820532763,
+   "entries": 1690677,
+   "entries_share": 0.004716605315,
+   "unique_taken_branches": 526
+  },
+  {
+   "obj_id": 682,
+   "kind": "anon",
+   "path": "//anon",
+   "pid": 2882194,
+   "footprint_bytes": 1728,
+   "footprint_share": 0.0005249854171,
+   "entries": 32,
+   "entries_share": 8.927274109e-08,
+   "unique_taken_branches": 26
+  },
+  {
+   "obj_id": 630,
+   "kind": "file",
+   "path": "/tmp/libnetty_transport_native_epoll_x86_6416375609363903774723.so (deleted)",
+   "footprint_bytes": 1664,
+   "footprint_share": 0.0005055415127,
+   "entries": 154981,
+   "entries_share": 0.000432361834,
+   "unique_taken_branches": 32
+  },
+  {
+   "obj_id": 625,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/libnio.so",
+   "footprint_bytes": 1536,
+   "footprint_share": 0.0004666537041,
+   "entries": 1138,
+   "entries_share": 3.174761855e-06,
+   "unique_taken_branches": 33
+  },
+  {
+   "obj_id": 627,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/libjava.so",
+   "footprint_bytes": 576,
+   "footprint_share": 0.000174995139,
+   "entries": 18100,
+   "entries_share": 5.049489418e-05,
+   "unique_taken_branches": 11
+  },
+  {
+   "obj_id": 27,
+   "kind": "special",
+   "path": "[vdso]",
+   "footprint_bytes": 448,
+   "footprint_share": 0.0001361073304,
+   "entries": 574176,
+   "entries_share": 0.001601820793,
+   "unique_taken_branches": 6
+  },
+  {
+   "obj_id": 28,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+   "footprint_bytes": 128,
+   "footprint_share": 3.888780867e-05,
+   "entries": 80678,
+   "entries_share": 0.0002250733189,
+   "unique_taken_branches": 1
+  },
+  {
+   "obj_id": 624,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/libmanagement.so",
+   "footprint_bytes": 128,
+   "footprint_share": 3.888780867e-05,
+   "entries": 10,
+   "entries_share": 2.789773159e-08,
+   "unique_taken_branches": 2
+  }
+ ],
+ "top_objects_by_entries": [
+  {
+   "obj_id": 678,
+   "kind": "anon",
+   "path": "//anon",
+   "pid": 2882231,
+   "footprint_bytes": 1749952,
+   "footprint_share": 0.5316546763,
+   "entries": 314387934,
+   "entries_share": 0.8770710198,
+   "unique_taken_branches": 19189
+  },
+  {
+   "obj_id": 1,
+   "kind": "kernel",
+   "path": "[kernel]",
+   "footprint_bytes": 412032,
+   "footprint_share": 0.1251798561,
+   "entries": 31709705,
+   "entries_share": 0.08846288389,
+   "unique_taken_branches": 8467
+  },
+  {
+   "obj_id": 623,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/server/libjvm.so",
+   "footprint_bytes": 1096320,
+   "footprint_share": 0.3330740813,
+   "entries": 9834652,
+   "entries_share": 0.02743644818,
+   "unique_taken_branches": 24096
+  },
+  {
+   "obj_id": 10,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+   "footprint_bytes": 27008,
+   "footprint_share": 0.00820532763,
+   "entries": 1690677,
+   "entries_share": 0.004716605315,
+   "unique_taken_branches": 526
+  },
+  {
+   "obj_id": 27,
+   "kind": "special",
+   "path": "[vdso]",
+   "footprint_bytes": 448,
+   "footprint_share": 0.0001361073304,
+   "entries": 574176,
+   "entries_share": 0.001601820793,
+   "unique_taken_branches": 6
+  },
+  {
+   "obj_id": 630,
+   "kind": "file",
+   "path": "/tmp/libnetty_transport_native_epoll_x86_6416375609363903774723.so (deleted)",
+   "footprint_bytes": 1664,
+   "footprint_share": 0.0005055415127,
+   "entries": 154981,
+   "entries_share": 0.000432361834,
+   "unique_taken_branches": 32
+  },
+  {
+   "obj_id": 28,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+   "footprint_bytes": 128,
+   "footprint_share": 3.888780867e-05,
+   "entries": 80678,
+   "entries_share": 0.0002250733189,
+   "unique_taken_branches": 1
+  },
+  {
+   "obj_id": 627,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/libjava.so",
+   "footprint_bytes": 576,
+   "footprint_share": 0.000174995139,
+   "entries": 18100,
+   "entries_share": 5.049489418e-05,
+   "unique_taken_branches": 11
+  },
+  {
+   "obj_id": 625,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/libnio.so",
+   "footprint_bytes": 1536,
+   "footprint_share": 0.0004666537041,
+   "entries": 1138,
+   "entries_share": 3.174761855e-06,
+   "unique_taken_branches": 33
+  },
+  {
+   "obj_id": 682,
+   "kind": "anon",
+   "path": "//anon",
+   "pid": 2882194,
+   "footprint_bytes": 1728,
+   "footprint_share": 0.0005249854171,
+   "entries": 32,
+   "entries_share": 8.927274109e-08,
+   "unique_taken_branches": 26
+  },
+  {
+   "obj_id": 624,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/libmanagement.so",
+   "footprint_bytes": 128,
+   "footprint_share": 3.888780867e-05,
+   "entries": 10,
+   "entries_share": 2.789773159e-08,
+   "unique_taken_branches": 2
+  }
+ ],
+ "diagnostics": {
+  "samples": 11209775,
+  "samples_empty": 0,
+  "entries": 358452083,
+  "near_entries": 358331388,
+  "far_entries": 120695,
+  "zero_address_entries": 0,
+  "unmapped_entries": 0,
+  "kernel_unmapped_entries": 0,
+  "candidate_ranges": 347242308,
+  "discontinuities": 211,
+  "discontinuity_rate": 6.076448495e-07,
+  "discontinuities_by_reason": {
+   "cross_mapping": 6,
+   "negative": 205,
+   "over_4096": 0,
+   "unmapped_end": 0
+  },
+  "range_lines_added": 809960980,
+  "lost_samples": 0,
+  "lost_from_PERF_RECORD_LOST": 0,
+  "lost_from_PERF_RECORD_LOST_SAMPLES": 0,
+  "lost_records": 0,
+  "lost_records_unparsed": 0,
+  "unparsed_lines": 0,
+  "unparsed_examples": [],
+  "type_conflicts": 0,
+  "offset_overflow": 0,
+  "mmap_events": 45050,
+  "mmap_kernel": 381,
+  "mmap_nonexec_ignored": 0,
+  "comm_exec_events": 9171,
+  "fork_process_events": 13190,
+  "fork_thread_events": 910,
+  "exit_events": 12867,
+  "other_events": 0,
+  "pids_tracked": 13201,
+  "objects_total": 685,
+  "unique_edges": 69299,
+  "unique_far_edges": 1804,
+  "input_bytes": 17176707831,
+  "input_lines": 15336536,
+  "elapsed_s": 109.0274298,
+  "samples_per_s": 102816.0989,
+  "input_MB_per_s": 157.5448295
+ },
+ "workload": "neo4j-livejournal",
+ "capture": {
+  "suite": "realdata",
+  "bench": "neo4j",
+  "workload": "neo4j-livejournal",
+  "server_cg": "measured.slice/realdata-neo4j-livejournal-r1.scope",
+  "capture_s": 180,
+  "load": {
+   "server": "neo4j-community-5.26.12",
+   "database": "livejournal",
+   "dataset": "SNAP soc-LiveJournal1",
+   "nodes": 4847571,
+   "heap": "8g",
+   "pagecache": "12g",
+   "client": {
+    "procs": 5,
+    "sessions": 5,
+    "mix": "short 0.80 / long 0.12 / mut 0.08",
+    "duration_s": 390
+   },
+   "warmup_s": 150
+  },
+  "cpus_measured": "4-11",
+  "repo_rev": "2e750a7f7",
+  "kernel": "6.17.0-1030-oem",
+  "frontend_footprint": {
+   "contract": "docs/handoff/execution/frontend_footprint_method.md v1.1",
+   "event": "br_inst_retired.near_taken:pp",
+   "period": 20011,
+   "branch_filter": "any,save_type",
+   "scope": "perf record -a -C <measured> --cgroup=<server fence>",
+   "server_cg": "measured.slice/realdata-neo4j-livejournal-r1.scope",
+   "stat_events": "cycles,instructions,br_inst_retired.near_taken",
+   "window": "steady state: both perf instances enabled (acked) after bench_start's liveness check, disabled CAPTURE_S later; perf stat's window nested inside perf record's",
+   "capture_s": 180,
+   "ts_start": 1793723615.613896,
+   "ts_end": 1793723795.625541,
+   "window_s": 180.01164507865906,
+   "server_alive_through_window": true,
+   "perf_version": "perf version 6.8.12",
+   "perf_record_cmd": "sudo /usr/lib/linux-tools-6.8.0-147/perf record -z -m 512M  -e br_inst_retired.near_taken:pp -c 20011 -j any,save_type -a -C 4-11 --cgroup=measured.slice/realdata-neo4j-livejournal-r1.scope -D -1 --control=fifo:rec.ctl,rec.ack -o lbr.data",
+   "perf_stat_cmd": "/usr/lib/linux-tools-6.8.0-147/perf stat -x, -a -C 4-11 -e cycles,instructions,br_inst_retired.near_taken --for-each-cgroup=measured.slice/realdata-neo4j-livejournal-r1.scope -D -1 --control=fifo:stat.ctl,stat.ack -o exact_counts.csv",
+   "perf_record_rc": "130",
+   "perf_stat_rc": "130",
+   "perf_record_mmap": "512M",
+   "perf_event_max_sample_rate": [
+    100000,
+    100000
+   ],
+   "perf_cpu_time_max_percent": [
+    0,
+    0
+   ],
+   "java_on_path": "openjdk version \"21.0.12.1\" 2026-08-18",
+   "iso_proof": "[glm 17:30:42] ISO-PROOF   ISO-PROOF quiet-check: max busy 0.0% on measured cores (silent) [glm 17:30:42] ISOLATION: PROVEN quiet (slices pinned, knobs set, partition silent)"
+  },
+  "mean_cores": 3.974
+ },
+ "exact_counts": {
+  "cycles": 2165314514987.0,
+  "_cgroup": "measured.slice/realdata-neo4j-livejournal-r1.scope",
+  "instructions": 4580957537486.0,
+  "br_inst_retired.near_taken": 224290407568.0
+ },
+ "gates_v4": {
+  "analyzer_ok": true,
+  "lost_pct": 0.0,
+  "lost_ok": true,
+  "sample_coverage": 1.0001266213624913,
+  "coverage_ok": true,
+  "perf_record_stats": {
+   "TOTAL": 15352844,
+   "MMAP": 176,
+   "COMM": 4054744,
+   "EXIT": 12867,
+   "FORK": 14100,
+   "SAMPLE": 11209775,
+   "MMAP2": 44874,
+   "KSYMBOL": 23,
+   "BPF_EVENT": 23,
+   "FINISHED_ROUND": 126,
+   "ID_INDEX": 1,
+   "THREAD_MAP": 1,
+   "CPU_MAP": 1,
+   "EVENT_UPDATE": 1,
+   "TIME_CONV": 1,
+   "COMPRESSED": 16130,
+   "FINISHED_INIT": 1
+  },
+  "throttle_events": 0,
+  "throttle_ok": true,
+  "alive_ok": true,
+  "unmapped_pct": 0.0,
+  "discontinuity_rate": 6.076448495e-07,
+  "mapped_ok": true,
+  "d4": {
+   "first_fifth_cores": 3.984,
+   "last_fifth_cores": 4.012,
+   "drift_pct": 0.69,
+   "mean_cores": 3.974
+  },
+  "d4_ok": true,
+  "d5": {
+   "partition_core_s": 716.2,
+   "fence_core_s": 714.9,
+   "span_s": 179.9,
+   "residual_pct": 0.19
+  },
+  "d5_ok": true,
+  "witness": {
+   "witness_rows": 87,
+   "rows_with_foreign_task": 0,
+   "mean_foreign_cpu_pct": 7.2,
+   "worst_row": "root:kcompactd0[170]=17% root:plymouthd[440]=4% thu:claude[478160]=3% jeferson:claude[2078287]=1% root:rcu_preempt[15]=1%",
+   "clean": true
+  },
+  "witness_ok": true,
+  "receipt": {
+   "metric": "client ops/s, all classes, capture window",
+   "unit": "ops/s",
+   "new": 11056.4,
+   "banked_median": 10953.7,
+   "banked_n": 9,
+   "ratio": 1.009375827346011,
+   "comparable": true,
+   "reason": null,
+   "rule": "comparable = true iff every GATE metric of the new pass lies within +/-15 % of the banked median OR inside [banked min x 0.95, banked max x 1.05]; feedsim additionally needs the new pass's fixed-QPS p95 <= 500 ms. null (with reason) when the new receipt is missing or unparsable, when no banked run has one, or when new and banked are different workloads. Fence cores use the same band but never gate.",
+   "sla": null,
+   "fence_cores_new": 3.9684,
+   "fence_cores_banked_median": 3.994,
+   "fence_cores_in_band": true,
+   "basis": "workload receipt",
+   "notes": []
+  },
+  "receipt_ok": true,
+  "contract": {
+   "event": "br_inst_retired.near_taken:pp",
+   "period": 20011,
+   "branch_filter": "any,save_type"
+  },
+  "contract_ok": true,
+  "iso_proof": "[glm 17:30:42] ISO-PROOF   ISO-PROOF quiet-check: max busy 0.0% on measured cores (silent) [glm 17:30:42] ISOLATION: PROVEN quiet (slices pinned, knobs set, partition silent)",
+  "perf_event_max_sample_rate": [
+   100000,
+   100000
+  ],
+  "thresholds": {
+   "lost_pct_lt": 1.0,
+   "coverage_tol": 0.005,
+   "throttle_eq": 0,
+   "unmapped_pct_lt": 1.0,
+   "d4_max_drift_pct": 25.0,
+   "d4_min_cores": 0.1,
+   "d5_max_residual_pct": 20.0,
+   "witness": "<= 5 % of rows with a non-kernel-thread task > 10 %, mean foreign <= 25 %",
+   "receipt": "receipt_compare.py verdict_rule (copied in receipt.rule)"
+  },
+  "receipt_override": null,
+  "overrides": [],
+  "all_ok": true
+ }
+}

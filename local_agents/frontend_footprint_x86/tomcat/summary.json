@@ -1,0 +1,1442 @@
+{
+ "analyzer": "lbr_footprint",
+ "analyzer_version": "1.0",
+ "analyzer_sha": "31c492b25f13b5178b1dfd91aeb2dbe4cbe1fd86",
+ "analyzer_src_sha256": "298e417a3dc3dbd0591380ccc36f6986b6c3aeb2e83c4d5a582759bcbd2dce22",
+ "mode": "lbr",
+ "meta": {
+  "workload": "tomcat",
+  "period": "20011"
+ },
+ "footprint_bytes": 7744448,
+ "footprint_bytes_user": 7187712,
+ "footprint_bytes_kernel": 556736,
+ "footprint_lines": 121007,
+ "unique_taken_branches": 143065,
+ "unique_taken_branches_user": 131854,
+ "unique_taken_branches_kernel": 11211,
+ "wavg_targets_all": 17.29802587,
+ "wavg_targets_all_user": 21.42455198,
+ "wavg_targets_all_kernel": 5.867383466,
+ "wavg_targets_noret": 2.052947437,
+ "wavg_targets_noret_user": 2.357795851,
+ "wavg_targets_noret_kernel": 1.040257776,
+ "wavg_targets_indirect": 19.88122595,
+ "wavg_targets_indirect_user": 21.69193456,
+ "wavg_targets_indirect_kernel": 2.479234646,
+ "weff_targets_all": 1.804498417,
+ "weff_targets_all_user": 1.812174515,
+ "weff_targets_all_kernel": 1.783235318,
+ "weff_targets_noret": 1.090700449,
+ "weff_targets_noret_user": 1.109974228,
+ "weff_targets_noret_kernel": 1.026674016,
+ "weff_targets_indirect": 2.606178728,
+ "weff_targets_indirect_user": 2.650709383,
+ "weff_targets_indirect_kernel": 2.178212537,
+ "wavg_targets_ge1pct_all": 1.965507437,
+ "wavg_targets_ge1pct_all_user": 1.920559114,
+ "wavg_targets_ge1pct_all_kernel": 2.090016088,
+ "wavg_targets_ge1pct_noret": 1.155044383,
+ "wavg_targets_ge1pct_noret_user": 1.192380585,
+ "wavg_targets_ge1pct_noret_kernel": 1.031015573,
+ "wavg_targets_ge1pct_indirect": 3.757799042,
+ "wavg_targets_ge1pct_indirect_user": 3.90223534,
+ "wavg_targets_ge1pct_indirect_kernel": 2.369679944,
+ "unique_taken_branches_by_type": {
+  "all": {
+   "COND": 59667,
+   "UNCOND": 25797,
+   "CALL": 37799,
+   "IND_CALL": 4287,
+   "IND": 1014,
+   "RET": 14501
+  },
+  "user": {
+   "COND": 55311,
+   "UNCOND": 24445,
+   "CALL": 34454,
+   "IND_CALL": 4126,
+   "IND": 1014,
+   "RET": 12504
+  },
+  "kernel": {
+   "COND": 4356,
+   "UNCOND": 1352,
+   "CALL": 3345,
+   "IND_CALL": 161,
+   "IND": 0,
+   "RET": 1997
+  }
+ },
+ "taken_entries_by_type": {
+  "COND": 38276774,
+  "UNCOND": 7916055,
+  "CALL": 9836378,
+  "IND_CALL": 1925958,
+  "IND": 1371370,
+  "RET": 11889483
+ },
+ "far_transfers": {
+  "entries": 95080,
+  "unique_from": 490,
+  "entries_by_type": {
+   "SYSCALL": 45438,
+   "SYSRET": 47035,
+   "IRQ": 1220,
+   "ERET": 1387
+  }
+ },
+ "convergence": {
+  "points": [
+   {
+    "pct": 25,
+    "samples": 558082,
+    "footprint_bytes": 5406720,
+    "footprint_bytes_user": 4907264,
+    "footprint_bytes_kernel": 499456,
+    "unique_taken_branches": 92894,
+    "unique_taken_branches_user": 83024,
+    "unique_taken_branches_kernel": 9870,
+    "wavg_targets_all": 11.53690462
+   },
+   {
+    "pct": 50,
+    "samples": 1116164,
+    "footprint_bytes": 6368384,
+    "footprint_bytes_user": 5839936,
+    "footprint_bytes_kernel": 528448,
+    "unique_taken_branches": 112650,
+    "unique_taken_branches_user": 102066,
+    "unique_taken_branches_kernel": 10584,
+    "wavg_targets_all": 13.72693082
+   },
+   {
+    "pct": 75,
+    "samples": 1674246,
+    "footprint_bytes": 7168448,
+    "footprint_bytes_user": 6620864,
+    "footprint_bytes_kernel": 547584,
+    "unique_taken_branches": 129905,
+    "unique_taken_branches_user": 118895,
+    "unique_taken_branches_kernel": 11010,
+    "wavg_targets_all": 15.77816856
+   },
+   {
+    "pct": 100,
+    "samples": 2232328,
+    "footprint_bytes": 7744448,
+    "footprint_bytes_user": 7187712,
+    "footprint_bytes_kernel": 556736,
+    "unique_taken_branches": 143065,
+    "unique_taken_branches_user": 131854,
+    "unique_taken_branches_kernel": 11211,
+    "wavg_targets_all": 17.29802587
+   }
+  ],
+  "last_quarter_growth_pct": {
+   "footprint": 7.437586255,
+   "unique_taken_branches": 9.198616014,
+   "footprint_user": 7.886348257,
+   "unique_taken_branches_user": 9.828294932
+  },
+  "note": "share of the final unique count first seen in the last 25 % of the run; well above 0 means the unique counts are still rising, i.e. sampling-limited lower bounds",
+  "unit": "samples",
+  "snapshot_every": 1000,
+  "curve_columns": [
+   "units",
+   "footprint_lines",
+   "footprint_lines_user",
+   "unique_taken_branches",
+   "unique_taken_branches_user",
+   "wavg_targets_all"
+  ],
+  "curve": [
+   [
+    1000,
+    9191,
+    7027,
+    8185,
+    5914,
+    2.12721114
+   ],
+   [
+    24000,
+    31891,
+    26836,
+    31808,
+    25844,
+    5.059721329
+   ],
+   [
+    47000,
+    39905,
+    34032,
+    40626,
+    33572,
+    6.125866828
+   ],
+   [
+    70000,
+    44377,
+    38286,
+    46230,
+    38813,
+    6.864545007
+   ],
+   [
+    93000,
+    47258,
+    40966,
+    49686,
+    41930,
+    7.232366275
+   ],
+   [
+    116000,
+    49403,
+    42904,
+    52189,
+    44144,
+    7.410710618
+   ],
+   [
+    139000,
+    50961,
+    44282,
+    53927,
+    45670,
+    7.464458868
+   ],
+   [
+    162000,
+    62639,
+    55554,
+    66272,
+    57517,
+    8.310274202
+   ],
+   [
+    185000,
+    64945,
+    57807,
+    69119,
+    60273,
+    8.615839274
+   ],
+   [
+    208000,
+    67159,
+    59981,
+    71714,
+    62797,
+    9.271671088
+   ],
+   [
+    231000,
+    68566,
+    61337,
+    73143,
+    64141,
+    9.521183654
+   ],
+   [
+    254000,
+    69656,
+    62369,
+    74519,
+    65442,
+    9.773763117
+   ],
+   [
+    277000,
+    70565,
+    63271,
+    75634,
+    66533,
+    9.874747784
+   ],
+   [
+    300000,
+    71275,
+    63962,
+    76467,
+    67330,
+    9.952720378
+   ],
+   [
+    323000,
+    72047,
+    64688,
+    77415,
+    68201,
+    9.991573036
+   ],
+   [
+    346000,
+    76411,
+    68772,
+    82492,
+    72901,
+    10.37692873
+   ],
+   [
+    369000,
+    77241,
+    69589,
+    83817,
+    74193,
+    10.62098356
+   ],
+   [
+    392000,
+    77850,
+    70152,
+    84685,
+    74998,
+    10.73400597
+   ],
+   [
+    415000,
+    78305,
+    70594,
+    85429,
+    75708,
+    10.82874741
+   ],
+   [
+    438000,
+    78760,
+    71036,
+    86030,
+    76290,
+    10.86543328
+   ],
+   [
+    461000,
+    79359,
+    71614,
+    86740,
+    76977,
+    10.91174434
+   ],
+   [
+    484000,
+    79792,
+    72034,
+    87317,
+    77531,
+    10.91084138
+   ],
+   [
+    507000,
+    82931,
+    75150,
+    90743,
+    80916,
+    11.16349723
+   ],
+   [
+    530000,
+    83764,
+    75982,
+    91954,
+    82117,
+    11.4090491
+   ],
+   [
+    553000,
+    84369,
+    76565,
+    92735,
+    82865,
+    11.503137
+   ],
+   [
+    576000,
+    84837,
+    77033,
+    93392,
+    83517,
+    11.60751918
+   ],
+   [
+    599000,
+    85227,
+    77422,
+    93952,
+    84063,
+    11.68408505
+   ],
+   [
+    622000,
+    85523,
+    77698,
+    94447,
+    84526,
+    11.69017896
+   ],
+   [
+    645000,
+    85944,
+    78097,
+    94970,
+    85012,
+    11.67841141
+   ],
+   [
+    668000,
+    88170,
+    80258,
+    97536,
+    87476,
+    11.90456962
+   ],
+   [
+    691000,
+    88729,
+    80816,
+    98526,
+    88460,
+    12.10484347
+   ],
+   [
+    714000,
+    89324,
+    81379,
+    99343,
+    89233,
+    12.22836494
+   ],
+   [
+    737000,
+    89625,
+    81679,
+    99940,
+    89822,
+    12.34123825
+   ],
+   [
+    760000,
+    89922,
+    81975,
+    100374,
+    90251,
+    12.38988114
+   ],
+   [
+    783000,
+    90399,
+    82451,
+    100957,
+    90830,
+    12.47470977
+   ],
+   [
+    806000,
+    90802,
+    82834,
+    101486,
+    91322,
+    12.47675284
+   ],
+   [
+    829000,
+    92896,
+    84790,
+    103819,
+    93474,
+    12.56324785
+   ],
+   [
+    852000,
+    93393,
+    85285,
+    104522,
+    94172,
+    12.7237884
+   ],
+   [
+    875000,
+    93867,
+    85753,
+    105247,
+    94887,
+    12.83638132
+   ],
+   [
+    898000,
+    94195,
+    86070,
+    105853,
+    95480,
+    12.9378196
+   ],
+   [
+    921000,
+    94572,
+    86438,
+    106350,
+    95958,
+    12.98905779
+   ],
+   [
+    944000,
+    94938,
+    86787,
+    106834,
+    96425,
+    13.08265862
+   ],
+   [
+    967000,
+    95224,
+    87073,
+    107224,
+    96812,
+    13.09789164
+   ],
+   [
+    990000,
+    96936,
+    88749,
+    109262,
+    98798,
+    13.21480583
+   ],
+   [
+    1013000,
+    97720,
+    89515,
+    110252,
+    99762,
+    13.42937528
+   ],
+   [
+    1036000,
+    98225,
+    90020,
+    110947,
+    100451,
+    13.52353509
+   ],
+   [
+    1059000,
+    98570,
+    90349,
+    111486,
+    100967,
+    13.64434193
+   ],
+   [
+    1082000,
+    98948,
+    90716,
+    111956,
+    101421,
+    13.68656895
+   ],
+   [
+    1105000,
+    99374,
+    91117,
+    112498,
+    101916,
+    13.72723325
+   ],
+   [
+    1128000,
+    99605,
+    91345,
+    112818,
+    102227,
+    13.73178945
+   ],
+   [
+    1151000,
+    101047,
+    92717,
+    114571,
+    103908,
+    13.8025097
+   ],
+   [
+    1174000,
+    101651,
+    93301,
+    115484,
+    104799,
+    13.96222864
+   ],
+   [
+    1197000,
+    102439,
+    94086,
+    116348,
+    105655,
+    14.12921708
+   ],
+   [
+    1220000,
+    102921,
+    94558,
+    116971,
+    106264,
+    14.25049841
+   ],
+   [
+    1243000,
+    103252,
+    94880,
+    117527,
+    106801,
+    14.3639601
+   ],
+   [
+    1266000,
+    103580,
+    95208,
+    117990,
+    107260,
+    14.41790181
+   ],
+   [
+    1289000,
+    103825,
+    95448,
+    118314,
+    107580,
+    14.46442255
+   ],
+   [
+    1312000,
+    104727,
+    96272,
+    119450,
+    108618,
+    14.51080666
+   ],
+   [
+    1335000,
+    105229,
+    96767,
+    120250,
+    109402,
+    14.56163134
+   ],
+   [
+    1358000,
+    105649,
+    97174,
+    120924,
+    110062,
+    14.67626367
+   ],
+   [
+    1381000,
+    106053,
+    97578,
+    121509,
+    110647,
+    14.7727915
+   ],
+   [
+    1404000,
+    106615,
+    98139,
+    122187,
+    111318,
+    14.91837279
+   ],
+   [
+    1427000,
+    106921,
+    98441,
+    122612,
+    111737,
+    14.9763739
+   ],
+   [
+    1450000,
+    107254,
+    98771,
+    122995,
+    112114,
+    15.01797659
+   ],
+   [
+    1473000,
+    107612,
+    99118,
+    123441,
+    112543,
+    15.05117897
+   ],
+   [
+    1496000,
+    108662,
+    100151,
+    124988,
+    114065,
+    15.15501122
+   ],
+   [
+    1519000,
+    108975,
+    100457,
+    125559,
+    114620,
+    15.25542308
+   ],
+   [
+    1542000,
+    109229,
+    100697,
+    126020,
+    115061,
+    15.36115582
+   ],
+   [
+    1565000,
+    109505,
+    100973,
+    126584,
+    115623,
+    15.49137823
+   ],
+   [
+    1588000,
+    109801,
+    101269,
+    126951,
+    115986,
+    15.55171368
+   ],
+   [
+    1611000,
+    110077,
+    101545,
+    127352,
+    116387,
+    15.57103734
+   ],
+   [
+    1634000,
+    110520,
+    101980,
+    127878,
+    116898,
+    15.60784942
+   ],
+   [
+    1657000,
+    111694,
+    103143,
+    129385,
+    118387,
+    15.69847795
+   ],
+   [
+    1680000,
+    112165,
+    103609,
+    130087,
+    119077,
+    15.82101028
+   ],
+   [
+    1703000,
+    112545,
+    103989,
+    130687,
+    119676,
+    15.95690569
+   ],
+   [
+    1726000,
+    112745,
+    104186,
+    130985,
+    119967,
+    16.02880988
+   ],
+   [
+    1749000,
+    113150,
+    104590,
+    131597,
+    120569,
+    16.17843511
+   ],
+   [
+    1772000,
+    113569,
+    105009,
+    132035,
+    121007,
+    16.23384328
+   ],
+   [
+    1795000,
+    113803,
+    105243,
+    132294,
+    121265,
+    16.26645783
+   ],
+   [
+    1818000,
+    114584,
+    105988,
+    133322,
+    122252,
+    16.31240248
+   ],
+   [
+    1841000,
+    115072,
+    106475,
+    134209,
+    123137,
+    16.42179383
+   ],
+   [
+    1864000,
+    115388,
+    106789,
+    134733,
+    123659,
+    16.48653619
+   ],
+   [
+    1887000,
+    115566,
+    106967,
+    135111,
+    124037,
+    16.53315897
+   ],
+   [
+    1910000,
+    115912,
+    107313,
+    135652,
+    124578,
+    16.62626328
+   ],
+   [
+    1933000,
+    116230,
+    107631,
+    136039,
+    124958,
+    16.67753213
+   ],
+   [
+    1956000,
+    116446,
+    107847,
+    136317,
+    125235,
+    16.69896521
+   ],
+   [
+    1979000,
+    117388,
+    108766,
+    137603,
+    126488,
+    16.74650933
+   ],
+   [
+    2002000,
+    117638,
+    109016,
+    138243,
+    127127,
+    16.81745796
+   ],
+   [
+    2025000,
+    117910,
+    109265,
+    138785,
+    127645,
+    16.87360244
+   ],
+   [
+    2048000,
+    118249,
+    109601,
+    139212,
+    128069,
+    16.94439289
+   ],
+   [
+    2071000,
+    118405,
+    109757,
+    139481,
+    128331,
+    16.96669507
+   ],
+   [
+    2094000,
+    118659,
+    110011,
+    139803,
+    128653,
+    17.01529096
+   ],
+   [
+    2117000,
+    118976,
+    110328,
+    140113,
+    128961,
+    17.03180817
+   ],
+   [
+    2140000,
+    119824,
+    111133,
+    141132,
+    129943,
+    17.06236096
+   ],
+   [
+    2163000,
+    120222,
+    111526,
+    141808,
+    130607,
+    17.13881194
+   ],
+   [
+    2186000,
+    120509,
+    111810,
+    142299,
+    131093,
+    17.21216532
+   ],
+   [
+    2209000,
+    120737,
+    112038,
+    142691,
+    131483,
+    17.23987821
+   ],
+   [
+    2232000,
+    121007,
+    112308,
+    143062,
+    131854,
+    17.2973359
+   ],
+   [
+    2232328,
+    121007,
+    112308,
+    143065,
+    131854,
+    17.29802587
+   ]
+  ]
+ },
+ "processes_with_samples": 1,
+ "top_processes": [
+  {
+   "pid": 2785876,
+   "comm": "java",
+   "samples": 2232328,
+   "share": 1
+  }
+ ],
+ "top_objects_by_footprint": [
+  {
+   "obj_id": 646,
+   "kind": "anon",
+   "path": "//anon",
+   "pid": 2785876,
+   "footprint_bytes": 4826816,
+   "footprint_share": 0.6232614642,
+   "entries": 29004627,
+   "entries_share": 0.4067337036,
+   "unique_taken_branches": 74682
+  },
+  {
+   "obj_id": 625,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/server/libjvm.so",
+   "footprint_bytes": 2262016,
+   "footprint_share": 0.2920822762,
+   "entries": 21141338,
+   "entries_share": 0.2964663088,
+   "unique_taken_branches": 54986
+  },
+  {
+   "obj_id": 1,
+   "kind": "kernel",
+   "path": "[kernel]",
+   "footprint_bytes": 556736,
+   "footprint_share": 0.07188840315,
+   "entries": 18938412,
+   "entries_share": 0.2655745393,
+   "unique_taken_branches": 11211
+  },
+  {
+   "obj_id": 10,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+   "footprint_bytes": 43904,
+   "footprint_share": 0.005669093524,
+   "entries": 1046663,
+   "entries_share": 0.0146774209,
+   "unique_taken_branches": 870
+  },
+  {
+   "obj_id": 619,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/libverify.so",
+   "footprint_bytes": 17664,
+   "footprint_share": 0.002280859785,
+   "entries": 8173,
+   "entries_share": 0.0001146104916,
+   "unique_taken_branches": 455
+  },
+  {
+   "obj_id": 61,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libz.so.1.3",
+   "footprint_bytes": 13312,
+   "footprint_share": 0.001718908823,
+   "entries": 279174,
+   "entries_share": 0.003914874512,
+   "unique_taken_branches": 278
+  },
+  {
+   "obj_id": 627,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/libjava.so",
+   "footprint_bytes": 12480,
+   "footprint_share": 0.001611477022,
+   "entries": 115963,
+   "entries_share": 0.001626156422,
+   "unique_taken_branches": 303
+  },
+  {
+   "obj_id": 623,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/libnio.so",
+   "footprint_bytes": 6144,
+   "footprint_share": 0.0007933425339,
+   "entries": 306263,
+   "entries_share": 0.004294745258,
+   "unique_taken_branches": 160
+  },
+  {
+   "obj_id": 622,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/libnet.so",
+   "footprint_bytes": 2944,
+   "footprint_share": 0.0003801432975,
+   "entries": 37108,
+   "entries_share": 0.0005203678115,
+   "unique_taken_branches": 80
+  },
+  {
+   "obj_id": 626,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/libzip.so",
+   "footprint_bytes": 1088,
+   "footprint_share": 0.0001404877404,
+   "entries": 577,
+   "entries_share": 8.09130719e-06,
+   "unique_taken_branches": 23
+  },
+  {
+   "obj_id": 629,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/libjimage.so",
+   "footprint_bytes": 576,
+   "footprint_share": 7.437586255e-05,
+   "entries": 64,
+   "entries_share": 8.974760142e-07,
+   "unique_taken_branches": 9
+  },
+  {
+   "obj_id": 27,
+   "kind": "special",
+   "path": "[vdso]",
+   "footprint_bytes": 448,
+   "footprint_share": 5.78478931e-05,
+   "entries": 185014,
+   "entries_share": 0.002594462926,
+   "unique_taken_branches": 6
+  },
+  {
+   "obj_id": 17,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+   "footprint_bytes": 192,
+   "footprint_share": 2.479195418e-05,
+   "entries": 3,
+   "entries_share": 4.206918816e-08,
+   "unique_taken_branches": 1
+  },
+  {
+   "obj_id": 28,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+   "footprint_bytes": 128,
+   "footprint_share": 1.652796946e-05,
+   "entries": 247719,
+   "entries_share": 0.003473779074,
+   "unique_taken_branches": 1
+  }
+ ],
+ "top_objects_by_entries": [
+  {
+   "obj_id": 646,
+   "kind": "anon",
+   "path": "//anon",
+   "pid": 2785876,
+   "footprint_bytes": 4826816,
+   "footprint_share": 0.6232614642,
+   "entries": 29004627,
+   "entries_share": 0.4067337036,
+   "unique_taken_branches": 74682
+  },
+  {
+   "obj_id": 625,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/server/libjvm.so",
+   "footprint_bytes": 2262016,
+   "footprint_share": 0.2920822762,
+   "entries": 21141338,
+   "entries_share": 0.2964663088,
+   "unique_taken_branches": 54986
+  },
+  {
+   "obj_id": 1,
+   "kind": "kernel",
+   "path": "[kernel]",
+   "footprint_bytes": 556736,
+   "footprint_share": 0.07188840315,
+   "entries": 18938412,
+   "entries_share": 0.2655745393,
+   "unique_taken_branches": 11211
+  },
+  {
+   "obj_id": 10,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+   "footprint_bytes": 43904,
+   "footprint_share": 0.005669093524,
+   "entries": 1046663,
+   "entries_share": 0.0146774209,
+   "unique_taken_branches": 870
+  },
+  {
+   "obj_id": 623,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/libnio.so",
+   "footprint_bytes": 6144,
+   "footprint_share": 0.0007933425339,
+   "entries": 306263,
+   "entries_share": 0.004294745258,
+   "unique_taken_branches": 160
+  },
+  {
+   "obj_id": 61,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libz.so.1.3",
+   "footprint_bytes": 13312,
+   "footprint_share": 0.001718908823,
+   "entries": 279174,
+   "entries_share": 0.003914874512,
+   "unique_taken_branches": 278
+  },
+  {
+   "obj_id": 28,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+   "footprint_bytes": 128,
+   "footprint_share": 1.652796946e-05,
+   "entries": 247719,
+   "entries_share": 0.003473779074,
+   "unique_taken_branches": 1
+  },
+  {
+   "obj_id": 27,
+   "kind": "special",
+   "path": "[vdso]",
+   "footprint_bytes": 448,
+   "footprint_share": 5.78478931e-05,
+   "entries": 185014,
+   "entries_share": 0.002594462926,
+   "unique_taken_branches": 6
+  },
+  {
+   "obj_id": 627,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/libjava.so",
+   "footprint_bytes": 12480,
+   "footprint_share": 0.001611477022,
+   "entries": 115963,
+   "entries_share": 0.001626156422,
+   "unique_taken_branches": 303
+  },
+  {
+   "obj_id": 622,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/libnet.so",
+   "footprint_bytes": 2944,
+   "footprint_share": 0.0003801432975,
+   "entries": 37108,
+   "entries_share": 0.0005203678115,
+   "unique_taken_branches": 80
+  },
+  {
+   "obj_id": 619,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/libverify.so",
+   "footprint_bytes": 17664,
+   "footprint_share": 0.002280859785,
+   "entries": 8173,
+   "entries_share": 0.0001146104916,
+   "unique_taken_branches": 455
+  },
+  {
+   "obj_id": 626,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/libzip.so",
+   "footprint_bytes": 1088,
+   "footprint_share": 0.0001404877404,
+   "entries": 577,
+   "entries_share": 8.09130719e-06,
+   "unique_taken_branches": 23
+  },
+  {
+   "obj_id": 629,
+   "kind": "file",
+   "path": "/usr/lib/jvm/java-21-openjdk-amd64/lib/libjimage.so",
+   "footprint_bytes": 576,
+   "footprint_share": 7.437586255e-05,
+   "entries": 64,
+   "entries_share": 8.974760142e-07,
+   "unique_taken_branches": 9
+  },
+  {
+   "obj_id": 17,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+   "footprint_bytes": 192,
+   "footprint_share": 2.479195418e-05,
+   "entries": 3,
+   "entries_share": 4.206918816e-08,
+   "unique_taken_branches": 1
+  }
+ ],
+ "diagnostics": {
+  "samples": 2232328,
+  "samples_empty": 0,
+  "entries": 71311098,
+  "near_entries": 71216018,
+  "far_entries": 95080,
+  "zero_address_entries": 0,
+  "unmapped_entries": 0,
+  "kernel_unmapped_entries": 0,
+  "candidate_ranges": 69078770,
+  "discontinuities": 133,
+  "discontinuity_rate": 1.925338277e-06,
+  "discontinuities_by_reason": {
+   "cross_mapping": 9,
+   "negative": 124,
+   "over_4096": 0,
+   "unmapped_end": 0
+  },
+  "range_lines_added": 129174027,
+  "lost_samples": 0,
+  "lost_from_PERF_RECORD_LOST": 0,
+  "lost_from_PERF_RECORD_LOST_SAMPLES": 0,
+  "lost_records": 0,
+  "lost_records_unparsed": 0,
+  "unparsed_lines": 0,
+  "unparsed_examples": [],
+  "type_conflicts": 1622,
+  "offset_overflow": 0,
+  "mmap_events": 45748,
+  "mmap_kernel": 359,
+  "mmap_nonexec_ignored": 0,
+  "comm_exec_events": 9419,
+  "fork_process_events": 13471,
+  "fork_thread_events": 932,
+  "exit_events": 13378,
+  "other_events": 0,
+  "pids_tracked": 13488,
+  "objects_total": 658,
+  "unique_edges": 206036,
+  "unique_far_edges": 1054,
+  "input_bytes": 3485372625,
+  "input_lines": 2316691,
+  "elapsed_s": 20.29646344,
+  "samples_per_s": 109986.0577,
+  "input_MB_per_s": 171.7231494
+ },
+ "workload": "tomcat",
+ "capture": {
+  "suite": "dacapo",
+  "bench": "dacapo",
+  "workload": "tomcat",
+  "server_cg": "measured.slice/dacapo-tomcat-r1.scope",
+  "capture_s": 180,
+  "load": {
+   "jar": "dacapo-23.11-MR2-chopin.jar",
+   "benchmark": "tomcat",
+   "iterations": 80,
+   "size": "default",
+   "java": "openjdk version 21.0.12.1 2026-08-18"
+  },
+  "cpus_measured": "4-11",
+  "repo_rev": "2e750a7f7",
+  "kernel": "6.17.0-1030-oem",
+  "frontend_footprint": {
+   "contract": "docs/handoff/execution/frontend_footprint_method.md v1.1",
+   "event": "br_inst_retired.near_taken:pp",
+   "period": 20011,
+   "branch_filter": "any,save_type",
+   "scope": "perf record -a -C <measured> --cgroup=<server fence>",
+   "server_cg": "measured.slice/dacapo-tomcat-r1.scope",
+   "stat_events": "cycles,instructions,br_inst_retired.near_taken",
+   "window": "steady state: both perf instances enabled (acked) after bench_start's liveness check, disabled CAPTURE_S later; perf stat's window nested inside perf record's",
+   "capture_s": 180,
+   "ts_start": 1793719821.96061,
+   "ts_end": 1793720001.968749,
+   "window_s": 180.00813913345337,
+   "server_alive_through_window": true,
+   "perf_version": "perf version 6.8.12",
+   "perf_record_cmd": "sudo /usr/lib/linux-tools-6.8.0-147/perf record -z -m 512M  -e br_inst_retired.near_taken:pp -c 20011 -j any,save_type -a -C 4-11 --cgroup=measured.slice/dacapo-tomcat-r1.scope -D -1 --control=fifo:rec.ctl,rec.ack -o lbr.data",
+   "perf_stat_cmd": "/usr/lib/linux-tools-6.8.0-147/perf stat -x, -a -C 4-11 -e cycles,instructions,br_inst_retired.near_taken --for-each-cgroup=measured.slice/dacapo-tomcat-r1.scope -D -1 --control=fifo:stat.ctl,stat.ack -o exact_counts.csv",
+   "perf_record_rc": "130",
+   "perf_stat_rc": "130",
+   "perf_event_max_sample_rate": [
+    100000,
+    100000
+   ],
+   "perf_cpu_time_max_percent": [
+    0,
+    0
+   ],
+   "java_on_path": "openjdk version \"21.0.12.1\" 2026-08-18",
+   "iso_proof": "[glm 16:29:24] ISO-PROOF   ISO-PROOF quiet-check: max busy 0.0% on measured cores (silent) [glm 16:29:24] ISOLATION: PROVEN quiet (slices pinned, knobs set, partition silent)"
+  },
+  "mean_cores": 0.94
+ },
+ "exact_counts": {
+  "cycles": 483518469464.0,
+  "_cgroup": "measured.slice/dacapo-tomcat-r1.scope",
+  "instructions": 658145481985.0,
+  "br_inst_retired.near_taken": 44677511406.0
+ },
+ "gates_v4": {
+  "analyzer_ok": true,
+  "lost_pct": 0.0,
+  "lost_ok": true,
+  "sample_coverage": 0.9998568452494616,
+  "coverage_ok": true,
+  "perf_record_stats": {
+   "TOTAL": 2320783,
+   "MMAP": 176,
+   "COMM": 10834,
+   "EXIT": 13378,
+   "FORK": 14403,
+   "SAMPLE": 2232328,
+   "MMAP2": 45572,
+   "KSYMBOL": 22,
+   "BPF_EVENT": 22,
+   "FINISHED_ROUND": 6,
+   "ID_INDEX": 1,
+   "THREAD_MAP": 1,
+   "CPU_MAP": 1,
+   "EVENT_UPDATE": 1,
+   "TIME_CONV": 1,
+   "COMPRESSED": 4036,
+   "FINISHED_INIT": 1
+  },
+  "throttle_events": 0,
+  "throttle_ok": true,
+  "alive_ok": true,
+  "unmapped_pct": 0.0,
+  "discontinuity_rate": 1.925338277e-06,
+  "mapped_ok": true,
+  "d4": {
+   "first_fifth_cores": 0.954,
+   "last_fifth_cores": 0.938,
+   "drift_pct": 1.65,
+   "mean_cores": 0.94
+  },
+  "d4_ok": true,
+  "d5": {
+   "partition_core_s": 165.2,
+   "fence_core_s": 169.1,
+   "span_s": 179.9,
+   "residual_pct": 0.0
+  },
+  "d5_ok": true,
+  "witness": {
+   "witness_rows": 89,
+   "rows_with_foreign_task": 0,
+   "mean_foreign_cpu_pct": 5.5,
+   "worst_row": "thu:claude[478160]=9% root:plymouthd[440]=4% network:MainThread[2783160]=1% network:code-261c84cb1e[2783065]=1%",
+   "clean": true
+  },
+  "witness_ok": true,
+  "receipt": {
+   "metric": "mean iteration time",
+   "unit": "ms",
+   "new": 13306.615384615385,
+   "banked_median": 13365.846153846154,
+   "banked_n": 9,
+   "ratio": 0.9955684983540136,
+   "comparable": true,
+   "reason": null,
+   "rule": "comparable = true iff every GATE metric of the new pass lies within +/-15 % of the banked median OR inside [banked min x 0.95, banked max x 1.05]; feedsim additionally needs the new pass's fixed-QPS p95 <= 500 ms. null (with reason) when the new receipt is missing or unparsable, when no banked run has one, or when new and banked are different workloads. Fence cores use the same band but never gate.",
+   "sla": null,
+   "fence_cores_new": 0.9459,
+   "fence_cores_banked_median": 0.9761,
+   "fence_cores_in_band": true,
+   "basis": "workload receipt",
+   "notes": [
+    "new: no timed ('PASSED in N msec') iteration: the run outlasts the capture, every logged iteration is a 'completed warmup' one",
+    "banked (9/9): no timed ('PASSED in N msec') iteration: the run outlasts the capture, every logged iteration is a 'completed warmup' one"
+   ]
+  },
+  "receipt_ok": true,
+  "contract": {
+   "event": "br_inst_retired.near_taken:pp",
+   "period": 20011,
+   "branch_filter": "any,save_type"
+  },
+  "contract_ok": true,
+  "iso_proof": "[glm 16:29:24] ISO-PROOF   ISO-PROOF quiet-check: max busy 0.0% on measured cores (silent) [glm 16:29:24] ISOLATION: PROVEN quiet (slices pinned, knobs set, partition silent)",
+  "perf_event_max_sample_rate": [
+   100000,
+   100000
+  ],
+  "thresholds": {
+   "lost_pct_lt": 1.0,
+   "coverage_tol": 0.005,
+   "throttle_eq": 0,
+   "unmapped_pct_lt": 1.0,
+   "d4_max_drift_pct": 25.0,
+   "d4_min_cores": 0.1,
+   "d5_max_residual_pct": 20.0,
+   "witness": "<= 5 % of rows with a non-kernel-thread task > 10 %, mean foreign <= 25 %",
+   "receipt": "receipt_compare.py verdict_rule (copied in receipt.rule)"
+  },
+  "all_ok": true
+ }
+}

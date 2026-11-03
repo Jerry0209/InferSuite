@@ -1,0 +1,1494 @@
+{
+ "analyzer": "lbr_footprint",
+ "analyzer_version": "1.0",
+ "analyzer_sha": "31c492b25f13b5178b1dfd91aeb2dbe4cbe1fd86",
+ "analyzer_src_sha256": "298e417a3dc3dbd0591380ccc36f6986b6c3aeb2e83c4d5a582759bcbd2dce22",
+ "mode": "lbr",
+ "meta": {
+  "workload": "video-4k",
+  "period": "20011"
+ },
+ "footprint_bytes": 1757184,
+ "footprint_bytes_user": 1247552,
+ "footprint_bytes_kernel": 509632,
+ "footprint_lines": 27456,
+ "unique_taken_branches": 27457,
+ "unique_taken_branches_user": 16985,
+ "unique_taken_branches_kernel": 10472,
+ "wavg_targets_all": 2.875951877,
+ "wavg_targets_all_user": 2.860612277,
+ "wavg_targets_all_kernel": 5.807570952,
+ "wavg_targets_noret": 1.038465604,
+ "wavg_targets_noret_user": 1.038575515,
+ "wavg_targets_noret_kernel": 1.011989869,
+ "wavg_targets_indirect": 2.36868894,
+ "wavg_targets_indirect_user": 2.369867273,
+ "wavg_targets_indirect_kernel": 1.503955342,
+ "weff_targets_all": 1.226562131,
+ "weff_targets_all_user": 1.224954366,
+ "weff_targets_all_kernel": 1.533829194,
+ "weff_targets_noret": 1.014472505,
+ "weff_targets_noret_user": 1.014527557,
+ "weff_targets_noret_kernel": 1.001211268,
+ "weff_targets_indirect": 1.515368794,
+ "weff_targets_indirect_user": 1.51589266,
+ "weff_targets_indirect_kernel": 1.13092332,
+ "wavg_targets_ge1pct_all": 1.411353194,
+ "wavg_targets_ge1pct_all_user": 1.409275377,
+ "wavg_targets_ge1pct_all_kernel": 1.808453992,
+ "wavg_targets_ge1pct_noret": 1.027183081,
+ "wavg_targets_ge1pct_noret_user": 1.027286333,
+ "wavg_targets_ge1pct_noret_kernel": 1.002311167,
+ "wavg_targets_ge1pct_indirect": 1.967995269,
+ "wavg_targets_ge1pct_indirect_user": 1.968973598,
+ "wavg_targets_ge1pct_indirect_kernel": 1.250037315,
+ "unique_taken_branches_by_type": {
+  "all": {
+   "COND": 13603,
+   "UNCOND": 4945,
+   "CALL": 5229,
+   "IND_CALL": 584,
+   "IND": 212,
+   "RET": 2884
+  },
+  "user": {
+   "COND": 9325,
+   "UNCOND": 3555,
+   "CALL": 2267,
+   "IND_CALL": 466,
+   "IND": 211,
+   "RET": 1161
+  },
+  "kernel": {
+   "COND": 4278,
+   "UNCOND": 1390,
+   "CALL": 2962,
+   "IND_CALL": 118,
+   "IND": 1,
+   "RET": 1723
+  }
+ },
+ "taken_entries_by_type": {
+  "COND": 687595799,
+  "UNCOND": 132717321,
+  "CALL": 31691385,
+  "IND_CALL": 19368033,
+  "IND": 5249109,
+  "RET": 51055163
+ },
+ "far_transfers": {
+  "entries": 15043,
+  "unique_from": 1763,
+  "entries_by_type": {
+   "IRQ": 6292,
+   "ERET": 7798,
+   "SYSRET": 482,
+   "SYSCALL": 471
+  }
+ },
+ "convergence": {
+  "points": [
+   {
+    "pct": 25,
+    "samples": 7247637,
+    "footprint_bytes": 1318912,
+    "footprint_bytes_user": 996800,
+    "footprint_bytes_kernel": 322112,
+    "unique_taken_branches": 19599,
+    "unique_taken_branches_user": 13150,
+    "unique_taken_branches_kernel": 6449,
+    "wavg_targets_all": 2.655224628
+   },
+   {
+    "pct": 50,
+    "samples": 14495273,
+    "footprint_bytes": 1411392,
+    "footprint_bytes_user": 1057408,
+    "footprint_bytes_kernel": 353984,
+    "unique_taken_branches": 21296,
+    "unique_taken_branches_user": 14120,
+    "unique_taken_branches_kernel": 7176,
+    "wavg_targets_all": 2.740756719
+   },
+   {
+    "pct": 75,
+    "samples": 21742909,
+    "footprint_bytes": 1742784,
+    "footprint_bytes_user": 1239552,
+    "footprint_bytes_kernel": 503232,
+    "unique_taken_branches": 27123,
+    "unique_taken_branches_user": 16835,
+    "unique_taken_branches_kernel": 10288,
+    "wavg_targets_all": 2.862301302
+   },
+   {
+    "pct": 100,
+    "samples": 28990545,
+    "footprint_bytes": 1757184,
+    "footprint_bytes_user": 1247552,
+    "footprint_bytes_kernel": 509632,
+    "unique_taken_branches": 27457,
+    "unique_taken_branches_user": 16985,
+    "unique_taken_branches_kernel": 10472,
+    "wavg_targets_all": 2.875951877
+   }
+  ],
+  "last_quarter_growth_pct": {
+   "footprint": 0.819493007,
+   "unique_taken_branches": 1.216447536,
+   "footprint_user": 0.6412558354,
+   "unique_taken_branches_user": 0.8831321754
+  },
+  "note": "share of the final unique count first seen in the last 25 % of the run; well above 0 means the unique counts are still rising, i.e. sampling-limited lower bounds",
+  "unit": "samples",
+  "snapshot_every": 1000,
+  "curve_columns": [
+   "units",
+   "footprint_lines",
+   "footprint_lines_user",
+   "unique_taken_branches",
+   "unique_taken_branches_user",
+   "wavg_targets_all"
+  ],
+  "curve": [
+   [
+    1000,
+    3646,
+    3641,
+    2403,
+    2399,
+    1.295
+   ],
+   [
+    291000,
+    12503,
+    10062,
+    10448,
+    7603,
+    1.774072333
+   ],
+   [
+    581000,
+    14847,
+    11968,
+    12760,
+    9250,
+    2.375420573
+   ],
+   [
+    871000,
+    15753,
+    12570,
+    13940,
+    9962,
+    2.477950692
+   ],
+   [
+    1161000,
+    16234,
+    12949,
+    14427,
+    10301,
+    2.498257708
+   ],
+   [
+    1451000,
+    16915,
+    13252,
+    15233,
+    10647,
+    2.575970437
+   ],
+   [
+    1741000,
+    17141,
+    13439,
+    15492,
+    10852,
+    2.566402392
+   ],
+   [
+    2031000,
+    17916,
+    13721,
+    16376,
+    11119,
+    2.539332172
+   ],
+   [
+    2321000,
+    18320,
+    13971,
+    16840,
+    11375,
+    2.568636025
+   ],
+   [
+    2611000,
+    18483,
+    14111,
+    17016,
+    11512,
+    2.582344868
+   ],
+   [
+    2901000,
+    18671,
+    14211,
+    17263,
+    11638,
+    2.596140975
+   ],
+   [
+    3191000,
+    18868,
+    14358,
+    17512,
+    11829,
+    2.582734064
+   ],
+   [
+    3481000,
+    19058,
+    14510,
+    17694,
+    11954,
+    2.596162028
+   ],
+   [
+    3771000,
+    19252,
+    14620,
+    17937,
+    12084,
+    2.595722863
+   ],
+   [
+    4061000,
+    19359,
+    14707,
+    18086,
+    12195,
+    2.609369785
+   ],
+   [
+    4351000,
+    19520,
+    14765,
+    18327,
+    12302,
+    2.636817873
+   ],
+   [
+    4641000,
+    19698,
+    14902,
+    18524,
+    12446,
+    2.62670848
+   ],
+   [
+    4931000,
+    19870,
+    15058,
+    18660,
+    12568,
+    2.624542788
+   ],
+   [
+    5221000,
+    19958,
+    15106,
+    18766,
+    12631,
+    2.622054532
+   ],
+   [
+    5511000,
+    20070,
+    15176,
+    18897,
+    12698,
+    2.640828477
+   ],
+   [
+    5801000,
+    20216,
+    15301,
+    19086,
+    12844,
+    2.633427793
+   ],
+   [
+    6091000,
+    20310,
+    15383,
+    19162,
+    12895,
+    2.651692293
+   ],
+   [
+    6381000,
+    20398,
+    15457,
+    19279,
+    12984,
+    2.646593528
+   ],
+   [
+    6671000,
+    20509,
+    15499,
+    19447,
+    13046,
+    2.649794045
+   ],
+   [
+    6961000,
+    20548,
+    15520,
+    19509,
+    13077,
+    2.656542967
+   ],
+   [
+    7251000,
+    20608,
+    15575,
+    19599,
+    13150,
+    2.655052125
+   ],
+   [
+    7541000,
+    20739,
+    15679,
+    19718,
+    13237,
+    2.652442561
+   ],
+   [
+    7831000,
+    20807,
+    15707,
+    19833,
+    13286,
+    2.64163534
+   ],
+   [
+    8121000,
+    20915,
+    15765,
+    19990,
+    13355,
+    2.658706462
+   ],
+   [
+    8411000,
+    20956,
+    15767,
+    20062,
+    13375,
+    2.657048456
+   ],
+   [
+    8701000,
+    20996,
+    15807,
+    20114,
+    13422,
+    2.668808245
+   ],
+   [
+    8991000,
+    21079,
+    15877,
+    20186,
+    13473,
+    2.66133773
+   ],
+   [
+    9281000,
+    21155,
+    15908,
+    20275,
+    13505,
+    2.660719449
+   ],
+   [
+    9571000,
+    21216,
+    15953,
+    20355,
+    13560,
+    2.662632807
+   ],
+   [
+    9861000,
+    21289,
+    16012,
+    20418,
+    13606,
+    2.68738578
+   ],
+   [
+    10151000,
+    21349,
+    16065,
+    20497,
+    13666,
+    2.683655182
+   ],
+   [
+    10441000,
+    21376,
+    16088,
+    20546,
+    13704,
+    2.691271691
+   ],
+   [
+    10731000,
+    21442,
+    16099,
+    20625,
+    13730,
+    2.691275765
+   ],
+   [
+    11021000,
+    21491,
+    16125,
+    20690,
+    13759,
+    2.690348533
+   ],
+   [
+    11311000,
+    21684,
+    16277,
+    20789,
+    13816,
+    2.696626867
+   ],
+   [
+    11601000,
+    21741,
+    16329,
+    20860,
+    13875,
+    2.693725498
+   ],
+   [
+    11891000,
+    21807,
+    16351,
+    20936,
+    13898,
+    2.699728895
+   ],
+   [
+    12181000,
+    21871,
+    16385,
+    20989,
+    13927,
+    2.697381002
+   ],
+   [
+    12471000,
+    21913,
+    16413,
+    21063,
+    13959,
+    2.702440821
+   ],
+   [
+    12761000,
+    21940,
+    16426,
+    21117,
+    13982,
+    2.717616239
+   ],
+   [
+    13051000,
+    21949,
+    16435,
+    21137,
+    14002,
+    2.719942997
+   ],
+   [
+    13341000,
+    21963,
+    16447,
+    21169,
+    14031,
+    2.718582227
+   ],
+   [
+    13631000,
+    21984,
+    16468,
+    21192,
+    14052,
+    2.728439982
+   ],
+   [
+    13921000,
+    21995,
+    16471,
+    21217,
+    14063,
+    2.726181371
+   ],
+   [
+    14211000,
+    22009,
+    16484,
+    21243,
+    14084,
+    2.726702172
+   ],
+   [
+    14501000,
+    22053,
+    16522,
+    21296,
+    14120,
+    2.74072982
+   ],
+   [
+    14791000,
+    22084,
+    16553,
+    21342,
+    14161,
+    2.738864101
+   ],
+   [
+    15081000,
+    22093,
+    16562,
+    21367,
+    14182,
+    2.739668228
+   ],
+   [
+    15371000,
+    22111,
+    16567,
+    21404,
+    14195,
+    2.74144118
+   ],
+   [
+    15661000,
+    22488,
+    16614,
+    21871,
+    14282,
+    2.740916982
+   ],
+   [
+    15951000,
+    24171,
+    17177,
+    23934,
+    14912,
+    2.767691859
+   ],
+   [
+    16241000,
+    24638,
+    17429,
+    24618,
+    15213,
+    2.7788636
+   ],
+   [
+    16531000,
+    25566,
+    17885,
+    25803,
+    15754,
+    2.781328798
+   ],
+   [
+    16821000,
+    25698,
+    17969,
+    25903,
+    15793,
+    2.771551524
+   ],
+   [
+    17111000,
+    25729,
+    17996,
+    25929,
+    15809,
+    2.762836205
+   ],
+   [
+    17401000,
+    26810,
+    19077,
+    26607,
+    16485,
+    2.802597097
+   ],
+   [
+    17691000,
+    26940,
+    19165,
+    26764,
+    16593,
+    2.807102258
+   ],
+   [
+    17981000,
+    26972,
+    19192,
+    26822,
+    16645,
+    2.81428066
+   ],
+   [
+    18271000,
+    27060,
+    19247,
+    26929,
+    16715,
+    2.826409667
+   ],
+   [
+    18561000,
+    27063,
+    19250,
+    26941,
+    16727,
+    2.843311559
+   ],
+   [
+    18851000,
+    27118,
+    19289,
+    26978,
+    16745,
+    2.843364924
+   ],
+   [
+    19141000,
+    27144,
+    19306,
+    27009,
+    16763,
+    2.84289513
+   ],
+   [
+    19431000,
+    27165,
+    19318,
+    27032,
+    16775,
+    2.842055899
+   ],
+   [
+    19721000,
+    27175,
+    19326,
+    27046,
+    16784,
+    2.841765742
+   ],
+   [
+    20011000,
+    27193,
+    19343,
+    27061,
+    16792,
+    2.845379738
+   ],
+   [
+    20301000,
+    27197,
+    19347,
+    27075,
+    16804,
+    2.84602496
+   ],
+   [
+    20591000,
+    27205,
+    19355,
+    27086,
+    16815,
+    2.855456912
+   ],
+   [
+    20881000,
+    27218,
+    19355,
+    27102,
+    16816,
+    2.860053661
+   ],
+   [
+    21171000,
+    27229,
+    19366,
+    27109,
+    16823,
+    2.861828106
+   ],
+   [
+    21461000,
+    27231,
+    19368,
+    27117,
+    16829,
+    2.862117017
+   ],
+   [
+    21751000,
+    27231,
+    19368,
+    27124,
+    16836,
+    2.862678965
+   ],
+   [
+    22041000,
+    27231,
+    19368,
+    27131,
+    16839,
+    2.863897085
+   ],
+   [
+    22331000,
+    27243,
+    19376,
+    27143,
+    16845,
+    2.867208171
+   ],
+   [
+    22621000,
+    27258,
+    19391,
+    27163,
+    16865,
+    2.867931977
+   ],
+   [
+    22911000,
+    27269,
+    19398,
+    27172,
+    16869,
+    2.866597292
+   ],
+   [
+    23201000,
+    27274,
+    19401,
+    27190,
+    16880,
+    2.868026307
+   ],
+   [
+    23491000,
+    27284,
+    19411,
+    27202,
+    16892,
+    2.868603631
+   ],
+   [
+    23781000,
+    27291,
+    19414,
+    27211,
+    16893,
+    2.872388559
+   ],
+   [
+    24071000,
+    27294,
+    19415,
+    27222,
+    16899,
+    2.872659749
+   ],
+   [
+    24361000,
+    27297,
+    19416,
+    27227,
+    16901,
+    2.874939322
+   ],
+   [
+    24651000,
+    27301,
+    19420,
+    27234,
+    16904,
+    2.874385185
+   ],
+   [
+    24941000,
+    27302,
+    19421,
+    27236,
+    16904,
+    2.87325221
+   ],
+   [
+    25231000,
+    27302,
+    19421,
+    27237,
+    16905,
+    2.873588073
+   ],
+   [
+    25521000,
+    27302,
+    19421,
+    27242,
+    16906,
+    2.873575038
+   ],
+   [
+    25811000,
+    27323,
+    19422,
+    27270,
+    16908,
+    2.872534992
+   ],
+   [
+    26101000,
+    27328,
+    19427,
+    27277,
+    16915,
+    2.874204354
+   ],
+   [
+    26391000,
+    27341,
+    19428,
+    27293,
+    16916,
+    2.878577441
+   ],
+   [
+    26681000,
+    27353,
+    19437,
+    27317,
+    16929,
+    2.878631267
+   ],
+   [
+    26971000,
+    27353,
+    19437,
+    27320,
+    16930,
+    2.877787293
+   ],
+   [
+    27261000,
+    27358,
+    19442,
+    27324,
+    16933,
+    2.876337718
+   ],
+   [
+    27551000,
+    27386,
+    19456,
+    27358,
+    16944,
+    2.875951042
+   ],
+   [
+    27841000,
+    27413,
+    19472,
+    27389,
+    16961,
+    2.873817871
+   ],
+   [
+    28131000,
+    27433,
+    19481,
+    27422,
+    16972,
+    2.876428829
+   ],
+   [
+    28421000,
+    27435,
+    19482,
+    27424,
+    16972,
+    2.877492879
+   ],
+   [
+    28711000,
+    27446,
+    19493,
+    27439,
+    16984,
+    2.875263041
+   ],
+   [
+    28990545,
+    27456,
+    19493,
+    27457,
+    16985,
+    2.875951877
+   ]
+  ]
+ },
+ "processes_with_samples": 29,
+ "top_processes": [
+  {
+   "pid": 2916031,
+   "comm": "ffmpeg",
+   "samples": 3904488,
+   "share": 0.134681428
+  },
+  {
+   "pid": 2916037,
+   "comm": "ffmpeg",
+   "samples": 3765159,
+   "share": 0.1298754128
+  },
+  {
+   "pid": 2916043,
+   "comm": "ffmpeg",
+   "samples": 3706402,
+   "share": 0.1278486486
+  },
+  {
+   "pid": 2916057,
+   "comm": "ffmpeg",
+   "samples": 3539326,
+   "share": 0.1220855282
+  },
+  {
+   "pid": 2916063,
+   "comm": "ffmpeg",
+   "samples": 2071617,
+   "share": 0.07145836686
+  },
+  {
+   "pid": 2916050,
+   "comm": "ffmpeg",
+   "samples": 1991925,
+   "share": 0.06870947062
+  },
+  {
+   "pid": 2916034,
+   "comm": "ffmpeg",
+   "samples": 1953026,
+   "share": 0.06736768833
+  },
+  {
+   "pid": 2916040,
+   "comm": "ffmpeg",
+   "samples": 1919658,
+   "share": 0.06621669237
+  },
+  {
+   "pid": 2923870,
+   "comm": "ffmpeg",
+   "samples": 1581624,
+   "share": 0.05455654594
+  },
+  {
+   "pid": 2923997,
+   "comm": "ffmpeg",
+   "samples": 1558015,
+   "share": 0.05374217698
+  },
+  {
+   "pid": 2924151,
+   "comm": "ffmpeg",
+   "samples": 1523343,
+   "share": 0.05254620084
+  },
+  {
+   "pid": 2924268,
+   "comm": "ffmpeg",
+   "samples": 1475440,
+   "share": 0.05089383452
+  },
+  {
+   "pid": 2916012,
+   "comm": "parallel",
+   "samples": 185,
+   "share": 6.381390898e-06
+  },
+  {
+   "pid": 2923995,
+   "comm": "sh",
+   "samples": 36,
+   "share": 1.241784175e-06
+  },
+  {
+   "pid": 2924149,
+   "comm": "sh",
+   "samples": 36,
+   "share": 1.241784175e-06
+  },
+  {
+   "pid": 2923868,
+   "comm": "sh",
+   "samples": 35,
+   "share": 1.20729017e-06
+  },
+  {
+   "pid": 2924266,
+   "comm": "sh",
+   "samples": 35,
+   "share": 1.20729017e-06
+  },
+  {
+   "pid": 2916039,
+   "comm": "time",
+   "samples": 23,
+   "share": 7.933621117e-07
+  },
+  {
+   "pid": 2916033,
+   "comm": "time",
+   "samples": 22,
+   "share": 7.588681068e-07
+  },
+  {
+   "pid": 2916049,
+   "comm": "time",
+   "samples": 10,
+   "share": 3.449400486e-07
+  }
+ ],
+ "top_objects_by_footprint": [
+  {
+   "obj_id": 626,
+   "kind": "file",
+   "path": "/home/thu/dcperf-infra/DCPerf/benchmarks/video_transcode_bench/ffmpeg_build/bin/ffmpeg",
+   "footprint_bytes": 1134592,
+   "footprint_share": 0.6456876457,
+   "entries": 919936514,
+   "entries_share": 0.9916401777,
+   "unique_taken_branches": 15099
+  },
+  {
+   "obj_id": 1,
+   "kind": "kernel",
+   "path": "[kernel]",
+   "footprint_bytes": 509632,
+   "footprint_share": 0.2900276807,
+   "entries": 4837052,
+   "entries_share": 0.005214071876,
+   "unique_taken_branches": 10472
+  },
+  {
+   "obj_id": 618,
+   "kind": "file",
+   "path": "/usr/bin/perl",
+   "footprint_bytes": 54656,
+   "footprint_share": 0.03110431235,
+   "entries": 2701,
+   "entries_share": 2.911527132e-06,
+   "unique_taken_branches": 816
+  },
+  {
+   "obj_id": 10,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+   "footprint_bytes": 44160,
+   "footprint_share": 0.02513111888,
+   "entries": 2727902,
+   "entries_share": 0.002940525985,
+   "unique_taken_branches": 843
+  },
+  {
+   "obj_id": 28,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+   "footprint_bytes": 9024,
+   "footprint_share": 0.00513548951,
+   "entries": 2088,
+   "entries_share": 2.250747372e-06,
+   "unique_taken_branches": 152
+  },
+  {
+   "obj_id": 651,
+   "kind": "anon",
+   "path": "//anon",
+   "pid": -1,
+   "footprint_bytes": 2752,
+   "footprint_share": 0.001566142191,
+   "entries": 49,
+   "entries_share": 5.281926304e-08,
+   "unique_taken_branches": 49
+  },
+  {
+   "obj_id": 17,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+   "footprint_bytes": 1216,
+   "footprint_share": 0.000692016317,
+   "entries": 185285,
+   "entries_share": 0.0001997268806,
+   "unique_taken_branches": 12
+  },
+  {
+   "obj_id": 27,
+   "kind": "special",
+   "path": "[vdso]",
+   "footprint_bytes": 704,
+   "footprint_share": 0.0004006410256,
+   "entries": 214,
+   "entries_share": 2.306800467e-07,
+   "unique_taken_branches": 6
+  },
+  {
+   "obj_id": 617,
+   "kind": "file",
+   "path": "/usr/bin/time",
+   "footprint_bytes": 384,
+   "footprint_share": 0.0002185314685,
+   "entries": 47,
+   "entries_share": 5.066337475e-08,
+   "unique_taken_branches": 7
+  },
+  {
+   "obj_id": 603,
+   "kind": "file",
+   "path": "/usr/bin/dash",
+   "footprint_bytes": 64,
+   "footprint_share": 3.642191142e-05,
+   "entries": 1,
+   "entries_share": 1.077944144e-09,
+   "unique_taken_branches": 1
+  }
+ ],
+ "top_objects_by_entries": [
+  {
+   "obj_id": 626,
+   "kind": "file",
+   "path": "/home/thu/dcperf-infra/DCPerf/benchmarks/video_transcode_bench/ffmpeg_build/bin/ffmpeg",
+   "footprint_bytes": 1134592,
+   "footprint_share": 0.6456876457,
+   "entries": 919936514,
+   "entries_share": 0.9916401777,
+   "unique_taken_branches": 15099
+  },
+  {
+   "obj_id": 1,
+   "kind": "kernel",
+   "path": "[kernel]",
+   "footprint_bytes": 509632,
+   "footprint_share": 0.2900276807,
+   "entries": 4837052,
+   "entries_share": 0.005214071876,
+   "unique_taken_branches": 10472
+  },
+  {
+   "obj_id": 10,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+   "footprint_bytes": 44160,
+   "footprint_share": 0.02513111888,
+   "entries": 2727902,
+   "entries_share": 0.002940525985,
+   "unique_taken_branches": 843
+  },
+  {
+   "obj_id": 17,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+   "footprint_bytes": 1216,
+   "footprint_share": 0.000692016317,
+   "entries": 185285,
+   "entries_share": 0.0001997268806,
+   "unique_taken_branches": 12
+  },
+  {
+   "obj_id": 618,
+   "kind": "file",
+   "path": "/usr/bin/perl",
+   "footprint_bytes": 54656,
+   "footprint_share": 0.03110431235,
+   "entries": 2701,
+   "entries_share": 2.911527132e-06,
+   "unique_taken_branches": 816
+  },
+  {
+   "obj_id": 28,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+   "footprint_bytes": 9024,
+   "footprint_share": 0.00513548951,
+   "entries": 2088,
+   "entries_share": 2.250747372e-06,
+   "unique_taken_branches": 152
+  },
+  {
+   "obj_id": 27,
+   "kind": "special",
+   "path": "[vdso]",
+   "footprint_bytes": 704,
+   "footprint_share": 0.0004006410256,
+   "entries": 214,
+   "entries_share": 2.306800467e-07,
+   "unique_taken_branches": 6
+  },
+  {
+   "obj_id": 651,
+   "kind": "anon",
+   "path": "//anon",
+   "pid": -1,
+   "footprint_bytes": 2752,
+   "footprint_share": 0.001566142191,
+   "entries": 49,
+   "entries_share": 5.281926304e-08,
+   "unique_taken_branches": 49
+  },
+  {
+   "obj_id": 617,
+   "kind": "file",
+   "path": "/usr/bin/time",
+   "footprint_bytes": 384,
+   "footprint_share": 0.0002185314685,
+   "entries": 47,
+   "entries_share": 5.066337475e-08,
+   "unique_taken_branches": 7
+  },
+  {
+   "obj_id": 603,
+   "kind": "file",
+   "path": "/usr/bin/dash",
+   "footprint_bytes": 64,
+   "footprint_share": 3.642191142e-05,
+   "entries": 1,
+   "entries_share": 1.077944144e-09,
+   "unique_taken_branches": 1
+  }
+ ],
+ "diagnostics": {
+  "samples": 28990545,
+  "samples_empty": 0,
+  "entries": 927691853,
+  "near_entries": 927676810,
+  "far_entries": 15043,
+  "zero_address_entries": 0,
+  "unmapped_entries": 51,
+  "kernel_unmapped_entries": 0,
+  "candidate_ranges": 898701308,
+  "discontinuities": 348024,
+  "discontinuity_rate": 0.0003872521347,
+  "discontinuities_by_reason": {
+   "cross_mapping": 3,
+   "negative": 1595,
+   "over_4096": 346377,
+   "unmapped_end": 49
+  },
+  "range_lines_added": 1987752645,
+  "lost_samples": 0,
+  "lost_from_PERF_RECORD_LOST": 0,
+  "lost_from_PERF_RECORD_LOST_SAMPLES": 0,
+  "lost_records": 0,
+  "lost_records_unparsed": 0,
+  "unparsed_lines": 0,
+  "unparsed_examples": [],
+  "type_conflicts": 0,
+  "offset_overflow": 0,
+  "mmap_events": 45447,
+  "mmap_kernel": 395,
+  "mmap_nonexec_ignored": 0,
+  "comm_exec_events": 9306,
+  "fork_process_events": 13379,
+  "fork_thread_events": 921,
+  "exit_events": 13082,
+  "other_events": 0,
+  "pids_tracked": 13383,
+  "objects_total": 651,
+  "unique_edges": 31827,
+  "unique_far_edges": 3566,
+  "input_bytes": 43443904846,
+  "input_lines": 29074053,
+  "elapsed_s": 263.7211582,
+  "samples_per_s": 109928.7793,
+  "input_MB_per_s": 164.734241
+ },
+ "workload": "video-4k",
+ "capture": {
+  "suite": "realdata",
+  "bench": "video_transcode",
+  "workload": "video-4k",
+  "server_cg": "measured.slice/realdata-video-4k-r1.scope",
+  "capture_s": 180,
+  "load": {
+   "encoder": "svt",
+   "levels": "6:6",
+   "procs": 8,
+   "parallelism": 1
+  },
+  "cpus_measured": "4-11",
+  "repo_rev": "2e750a7f7",
+  "kernel": "6.17.0-1030-oem",
+  "frontend_footprint": {
+   "contract": "docs/handoff/execution/frontend_footprint_method.md v1.1",
+   "event": "br_inst_retired.near_taken:pp",
+   "period": 20011,
+   "branch_filter": "any,save_type",
+   "scope": "perf record -a -C <measured> --cgroup=<server fence>",
+   "server_cg": "measured.slice/realdata-video-4k-r1.scope",
+   "stat_events": "cycles,instructions,br_inst_retired.near_taken",
+   "window": "steady state: both perf instances enabled (acked) after bench_start's liveness check, disabled CAPTURE_S later; perf stat's window nested inside perf record's",
+   "capture_s": 180,
+   "ts_start": 1793724881.839955,
+   "ts_end": 1793725061.848953,
+   "window_s": 180.0089979171753,
+   "server_alive_through_window": true,
+   "perf_version": "perf version 6.8.12",
+   "perf_record_cmd": "sudo /usr/lib/linux-tools-6.8.0-147/perf record -z -m 128M  -e br_inst_retired.near_taken:pp -c 20011 -j any,save_type -a -C 4-11 --cgroup=measured.slice/realdata-video-4k-r1.scope -D -1 --control=fifo:rec.ctl,rec.ack -o lbr.data",
+   "perf_stat_cmd": "/usr/lib/linux-tools-6.8.0-147/perf stat -x, -a -C 4-11 -e cycles,instructions,br_inst_retired.near_taken --for-each-cgroup=measured.slice/realdata-video-4k-r1.scope -D -1 --control=fifo:stat.ctl,stat.ack -o exact_counts.csv",
+   "perf_record_rc": "130",
+   "perf_stat_rc": "130",
+   "perf_record_mmap": "128M",
+   "perf_event_max_sample_rate": [
+    100000,
+    100000
+   ],
+   "perf_cpu_time_max_percent": [
+    0,
+    0
+   ],
+   "java_on_path": "openjdk version \"21.0.12.1\" 2026-08-18",
+   "iso_proof": "[glm 17:54:00] ISO-PROOF   ISO-PROOF quiet-check: max busy 0.0% on measured cores (silent) [glm 17:54:00] ISOLATION: PROVEN quiet (slices pinned, knobs set, partition silent)"
+  },
+  "mean_cores": 7.974
+ },
+ "exact_counts": {
+  "cycles": 4483372534139.0,
+  "_cgroup": "measured.slice/realdata-video-4k-r1.scope",
+  "instructions": 10907255614021.0,
+  "br_inst_retired.near_taken": 580077767979.0
+ },
+ "gates_v4": {
+  "analyzer_ok": true,
+  "lost_pct": 0.0,
+  "lost_ok": true,
+  "sample_coverage": 1.0000896914497883,
+  "coverage_ok": true,
+  "perf_record_stats": {
+   "TOTAL": 29112951,
+   "MMAP": 176,
+   "COMM": 10679,
+   "EXIT": 13082,
+   "FORK": 14300,
+   "SAMPLE": 28990545,
+   "MMAP2": 45271,
+   "KSYMBOL": 23,
+   "BPF_EVENT": 23,
+   "FINISHED_ROUND": 1157,
+   "ID_INDEX": 1,
+   "THREAD_MAP": 1,
+   "CPU_MAP": 1,
+   "EVENT_UPDATE": 1,
+   "TIME_CONV": 1,
+   "COMPRESSED": 37689,
+   "FINISHED_INIT": 1
+  },
+  "throttle_events": 0,
+  "throttle_ok": true,
+  "alive_ok": true,
+  "unmapped_pct": 5.497515132322715e-06,
+  "discontinuity_rate": 0.0003872521347,
+  "mapped_ok": true,
+  "d4": {
+   "first_fifth_cores": 7.996,
+   "last_fifth_cores": 7.998,
+   "drift_pct": 0.03,
+   "mean_cores": 7.974
+  },
+  "d4_ok": true,
+  "d5": {
+   "partition_core_s": 1435.8,
+   "fence_core_s": 1434.3,
+   "span_s": 179.9,
+   "residual_pct": 0.1
+  },
+  "d5_ok": true,
+  "witness": {
+   "witness_rows": 88,
+   "rows_with_foreign_task": 0,
+   "mean_foreign_cpu_pct": 6.5,
+   "worst_row": "root:kcompactd0[170]=29% root:plymouthd[440]=4%",
+   "clean": true
+  },
+  "witness_ok": true,
+  "receipt": {
+   "metric": "throughput receipt (none exists in vtb_run.log)",
+   "unit": null,
+   "new": null,
+   "banked_median": null,
+   "banked_n": 0,
+   "ratio": null,
+   "comparable": null,
+   "reason": "new pass: vtb_run.log has no per-encode completion, fps or elapsed-time line (stage markers only: Running M6); DCPerf's runner reports per-level elapsed time only when the whole batch ends, and the pass is torn down at capture end",
+   "rule": "comparable = true iff every GATE metric of the new pass lies within +/-15 % of the banked median OR inside [banked min x 0.95, banked max x 1.05]; feedsim additionally needs the new pass's fixed-QPS p95 <= 500 ms. null (with reason) when the new receipt is missing or unparsable, when no banked run has one, or when new and banked are different workloads. Fence cores use the same band but never gate.",
+   "sla": null,
+   "fence_cores_new": 7.9752,
+   "fence_cores_banked_median": 7.972,
+   "fence_cores_in_band": true,
+   "basis": "fence-load proxy (batch without a receipt by design)",
+   "notes": [
+    "9/9 banked runs lack 'throughput': vtb_run.log has no per-encode completion, fps or elapsed-time line (stage markers only: Running M6); DCPerf's runner reports per-level elapsed time only when the whole batch ends, and the pass is torn down at capture end",
+    "no throughput receipt exists for this workload; the fence load is the only evidence it ran"
+   ]
+  },
+  "receipt_ok": true,
+  "contract": {
+   "event": "br_inst_retired.near_taken:pp",
+   "period": 20011,
+   "branch_filter": "any,save_type"
+  },
+  "contract_ok": true,
+  "iso_proof": "[glm 17:54:00] ISO-PROOF   ISO-PROOF quiet-check: max busy 0.0% on measured cores (silent) [glm 17:54:00] ISOLATION: PROVEN quiet (slices pinned, knobs set, partition silent)",
+  "perf_event_max_sample_rate": [
+   100000,
+   100000
+  ],
+  "thresholds": {
+   "lost_pct_lt": 1.0,
+   "coverage_tol": 0.005,
+   "throttle_eq": 0,
+   "unmapped_pct_lt": 1.0,
+   "d4_max_drift_pct": 25.0,
+   "d4_min_cores": 0.1,
+   "d5_max_residual_pct": 20.0,
+   "witness": "<= 5 % of rows with a non-kernel-thread task > 10 %, mean foreign <= 25 %",
+   "receipt": "receipt_compare.py verdict_rule (copied in receipt.rule)"
+  },
+  "receipt_override": null,
+  "overrides": [],
+  "all_ok": true
+ }
+}

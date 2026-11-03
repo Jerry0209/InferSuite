@@ -1,0 +1,1379 @@
+{
+ "analyzer": "lbr_footprint",
+ "analyzer_version": "1.0",
+ "analyzer_sha": "31c492b25f13b5178b1dfd91aeb2dbe4cbe1fd86",
+ "analyzer_src_sha256": "298e417a3dc3dbd0591380ccc36f6986b6c3aeb2e83c4d5a582759bcbd2dce22",
+ "mode": "lbr",
+ "meta": {
+  "workload": "feedsim",
+  "period": "20011"
+ },
+ "footprint_bytes": 2137088,
+ "footprint_bytes_user": 1855488,
+ "footprint_bytes_kernel": 281600,
+ "footprint_lines": 33392,
+ "unique_taken_branches": 110807,
+ "unique_taken_branches_user": 105040,
+ "unique_taken_branches_kernel": 5767,
+ "wavg_targets_all": 1381.687475,
+ "wavg_targets_all_user": 1407.508266,
+ "wavg_targets_all_kernel": 4.207389374,
+ "wavg_targets_noret": 1586.029067,
+ "wavg_targets_noret_user": 1611.677806,
+ "wavg_targets_noret_kernel": 1.012894372,
+ "wavg_targets_indirect": 28814.93776,
+ "wavg_targets_indirect_user": 28849.30809,
+ "wavg_targets_indirect_kernel": 1.102824041,
+ "weff_targets_all": 1380.58871,
+ "weff_targets_all_user": 1406.440034,
+ "weff_targets_all_kernel": 1.479740394,
+ "weff_targets_noret": 1585.956875,
+ "weff_targets_noret_user": 1611.604653,
+ "weff_targets_noret_kernel": 1.000129568,
+ "weff_targets_indirect": 28813.62901,
+ "weff_targets_indirect_user": 28847.99787,
+ "weff_targets_indirect_kernel": 1.030658601,
+ "wavg_targets_ge1pct_all": 1.516579519,
+ "wavg_targets_ge1pct_all_user": 1.51523217,
+ "wavg_targets_ge1pct_all_kernel": 1.588457473,
+ "wavg_targets_ge1pct_noret": 1.000009685,
+ "wavg_targets_ge1pct_noret_user": 1.000005236,
+ "wavg_targets_ge1pct_noret_kernel": 1.000284609,
+ "wavg_targets_ge1pct_indirect": 1.000174452,
+ "wavg_targets_ge1pct_indirect_user": 1.000093785,
+ "wavg_targets_ge1pct_indirect_kernel": 1.06779984,
+ "unique_taken_branches_by_type": {
+  "all": {
+   "COND": 4493,
+   "UNCOND": 1553,
+   "CALL": 2816,
+   "IND_CALL": 220,
+   "IND": 160,
+   "RET": 101565
+  },
+  "user": {
+   "COND": 2181,
+   "UNCOND": 759,
+   "CALL": 1240,
+   "IND_CALL": 150,
+   "IND": 159,
+   "RET": 100551
+  },
+  "kernel": {
+   "COND": 2312,
+   "UNCOND": 794,
+   "CALL": 1576,
+   "IND_CALL": 70,
+   "IND": 1,
+   "RET": 1014
+  }
+ },
+ "taken_entries_by_type": {
+  "COND": 573691382,
+  "UNCOND": 75542158,
+  "CALL": 107434505,
+  "IND_CALL": 12870561,
+  "IND": 31176033,
+  "RET": 119388402
+ },
+ "far_transfers": {
+  "entries": 65984,
+  "unique_from": 1134,
+  "entries_by_type": {
+   "SYSRET": 892,
+   "SYSCALL": 1004,
+   "ERET": 31870,
+   "IRQ": 32218
+  }
+ },
+ "convergence": {
+  "points": [
+   {
+    "pct": 25,
+    "samples": 7188866,
+    "footprint_bytes": 2104192,
+    "footprint_bytes_user": 1842688,
+    "footprint_bytes_kernel": 261504,
+    "unique_taken_branches": 109929,
+    "unique_taken_branches_user": 104722,
+    "unique_taken_branches_kernel": 5207,
+    "wavg_targets_all": 1380.033392
+   },
+   {
+    "pct": 50,
+    "samples": 14377731,
+    "footprint_bytes": 2127168,
+    "footprint_bytes_user": 1852608,
+    "footprint_bytes_kernel": 274560,
+    "unique_taken_branches": 110501,
+    "unique_taken_branches_user": 104959,
+    "unique_taken_branches_kernel": 5542,
+    "wavg_targets_all": 1380.759547
+   },
+   {
+    "pct": 75,
+    "samples": 21566597,
+    "footprint_bytes": 2134784,
+    "footprint_bytes_user": 1854144,
+    "footprint_bytes_kernel": 280640,
+    "unique_taken_branches": 110715,
+    "unique_taken_branches_user": 105001,
+    "unique_taken_branches_kernel": 5714,
+    "wavg_targets_all": 1381.55664
+   },
+   {
+    "pct": 100,
+    "samples": 28755462,
+    "footprint_bytes": 2137088,
+    "footprint_bytes_user": 1855488,
+    "footprint_bytes_kernel": 281600,
+    "unique_taken_branches": 110807,
+    "unique_taken_branches_user": 105040,
+    "unique_taken_branches_kernel": 5767,
+    "wavg_targets_all": 1381.687475
+   }
+  ],
+  "last_quarter_growth_pct": {
+   "footprint": 0.107810254,
+   "unique_taken_branches": 0.08302724557,
+   "footprint_user": 0.07243377483,
+   "unique_taken_branches_user": 0.03712871287
+  },
+  "note": "share of the final unique count first seen in the last 25 % of the run; well above 0 means the unique counts are still rising, i.e. sampling-limited lower bounds",
+  "unit": "samples",
+  "snapshot_every": 1000,
+  "curve_columns": [
+   "units",
+   "footprint_lines",
+   "footprint_lines_user",
+   "unique_taken_branches",
+   "unique_taken_branches_user",
+   "wavg_targets_all"
+  ],
+  "curve": [
+   [
+    1000,
+    816,
+    573,
+    768,
+    526,
+    1.190674126
+   ],
+   [
+    289000,
+    29685,
+    27398,
+    77323,
+    74644,
+    994.6095091
+   ],
+   [
+    577000,
+    30428,
+    27723,
+    98373,
+    95153,
+    1269.498279
+   ],
+   [
+    865000,
+    30984,
+    27975,
+    104776,
+    101200,
+    1347.197088
+   ],
+   [
+    1153000,
+    31310,
+    28095,
+    106917,
+    103063,
+    1370.254087
+   ],
+   [
+    1441000,
+    31569,
+    28199,
+    107678,
+    103601,
+    1375.439117
+   ],
+   [
+    1729000,
+    31794,
+    28333,
+    108100,
+    103894,
+    1378.18521
+   ],
+   [
+    2017000,
+    31934,
+    28402,
+    108364,
+    104045,
+    1379.06497
+   ],
+   [
+    2305000,
+    32070,
+    28469,
+    108552,
+    104142,
+    1379.024539
+   ],
+   [
+    2593000,
+    32214,
+    28540,
+    108798,
+    104267,
+    1378.720048
+   ],
+   [
+    2881000,
+    32278,
+    28578,
+    108917,
+    104327,
+    1378.967835
+   ],
+   [
+    3169000,
+    32335,
+    28608,
+    109014,
+    104384,
+    1378.92936
+   ],
+   [
+    3457000,
+    32411,
+    28636,
+    109153,
+    104445,
+    1378.989687
+   ],
+   [
+    3745000,
+    32481,
+    28647,
+    109280,
+    104464,
+    1379.146923
+   ],
+   [
+    4033000,
+    32540,
+    28676,
+    109372,
+    104515,
+    1379.2148
+   ],
+   [
+    4321000,
+    32579,
+    28685,
+    109438,
+    104533,
+    1379.210448
+   ],
+   [
+    4609000,
+    32631,
+    28696,
+    109504,
+    104546,
+    1379.280699
+   ],
+   [
+    4897000,
+    32648,
+    28708,
+    109547,
+    104571,
+    1379.357533
+   ],
+   [
+    5185000,
+    32682,
+    28731,
+    109610,
+    104602,
+    1379.274551
+   ],
+   [
+    5473000,
+    32749,
+    28750,
+    109710,
+    104640,
+    1379.208192
+   ],
+   [
+    5761000,
+    32796,
+    28769,
+    109791,
+    104673,
+    1379.259475
+   ],
+   [
+    6049000,
+    32801,
+    28774,
+    109806,
+    104682,
+    1379.211033
+   ],
+   [
+    6337000,
+    32812,
+    28778,
+    109827,
+    104688,
+    1379.10081
+   ],
+   [
+    6625000,
+    32819,
+    28782,
+    109856,
+    104707,
+    1379.335255
+   ],
+   [
+    6913000,
+    32831,
+    28782,
+    109870,
+    104707,
+    1379.42868
+   ],
+   [
+    7201000,
+    32878,
+    28792,
+    109929,
+    104722,
+    1379.436825
+   ],
+   [
+    7489000,
+    32902,
+    28814,
+    109968,
+    104753,
+    1379.74745
+   ],
+   [
+    7777000,
+    32919,
+    28818,
+    109996,
+    104766,
+    1379.844504
+   ],
+   [
+    8065000,
+    32941,
+    28820,
+    110026,
+    104772,
+    1379.655815
+   ],
+   [
+    8353000,
+    32967,
+    28845,
+    110068,
+    104807,
+    1379.504707
+   ],
+   [
+    8641000,
+    32970,
+    28845,
+    110080,
+    104810,
+    1379.674268
+   ],
+   [
+    8929000,
+    32987,
+    28852,
+    110116,
+    104824,
+    1379.660551
+   ],
+   [
+    9217000,
+    33000,
+    28859,
+    110145,
+    104839,
+    1379.749279
+   ],
+   [
+    9505000,
+    33008,
+    28859,
+    110157,
+    104839,
+    1379.681199
+   ],
+   [
+    9793000,
+    33015,
+    28863,
+    110176,
+    104846,
+    1379.589301
+   ],
+   [
+    10081000,
+    33029,
+    28871,
+    110215,
+    104870,
+    1379.795804
+   ],
+   [
+    10369000,
+    33042,
+    28871,
+    110238,
+    104872,
+    1379.772358
+   ],
+   [
+    10657000,
+    33046,
+    28874,
+    110251,
+    104879,
+    1379.630113
+   ],
+   [
+    10945000,
+    33098,
+    28878,
+    110314,
+    104886,
+    1379.83691
+   ],
+   [
+    11233000,
+    33142,
+    28919,
+    110353,
+    104922,
+    1379.767729
+   ],
+   [
+    11521000,
+    33143,
+    28919,
+    110361,
+    104925,
+    1379.805909
+   ],
+   [
+    11809000,
+    33158,
+    28933,
+    110371,
+    104931,
+    1379.815354
+   ],
+   [
+    12097000,
+    33165,
+    28939,
+    110384,
+    104939,
+    1379.851089
+   ],
+   [
+    12385000,
+    33200,
+    28941,
+    110434,
+    104947,
+    1379.862392
+   ],
+   [
+    12673000,
+    33202,
+    28943,
+    110440,
+    104949,
+    1379.853022
+   ],
+   [
+    12961000,
+    33228,
+    28943,
+    110472,
+    104949,
+    1379.796413
+   ],
+   [
+    13249000,
+    33229,
+    28944,
+    110477,
+    104951,
+    1379.875987
+   ],
+   [
+    13537000,
+    33231,
+    28946,
+    110484,
+    104957,
+    1379.798419
+   ],
+   [
+    13825000,
+    33232,
+    28947,
+    110486,
+    104959,
+    1379.747016
+   ],
+   [
+    14113000,
+    33237,
+    28947,
+    110496,
+    104959,
+    1380.759673
+   ],
+   [
+    14401000,
+    33239,
+    28947,
+    110503,
+    104959,
+    1380.600152
+   ],
+   [
+    14689000,
+    33247,
+    28949,
+    110510,
+    104962,
+    1380.75057
+   ],
+   [
+    14977000,
+    33253,
+    28951,
+    110526,
+    104964,
+    1380.681607
+   ],
+   [
+    15265000,
+    33255,
+    28952,
+    110530,
+    104966,
+    1380.671232
+   ],
+   [
+    15553000,
+    33257,
+    28952,
+    110542,
+    104970,
+    1380.69091
+   ],
+   [
+    15841000,
+    33257,
+    28952,
+    110543,
+    104971,
+    1380.721503
+   ],
+   [
+    16129000,
+    33281,
+    28952,
+    110565,
+    104971,
+    1380.780328
+   ],
+   [
+    16417000,
+    33297,
+    28952,
+    110580,
+    104972,
+    1380.869134
+   ],
+   [
+    16705000,
+    33307,
+    28953,
+    110600,
+    104975,
+    1380.789565
+   ],
+   [
+    16993000,
+    33324,
+    28953,
+    110622,
+    104975,
+    1380.740778
+   ],
+   [
+    17281000,
+    33326,
+    28953,
+    110628,
+    104976,
+    1380.707329
+   ],
+   [
+    17569000,
+    33335,
+    28961,
+    110644,
+    104986,
+    1380.706652
+   ],
+   [
+    17857000,
+    33338,
+    28961,
+    110654,
+    104986,
+    1380.698141
+   ],
+   [
+    18145000,
+    33338,
+    28961,
+    110659,
+    104987,
+    1380.643747
+   ],
+   [
+    18433000,
+    33338,
+    28961,
+    110660,
+    104988,
+    1380.645186
+   ],
+   [
+    18721000,
+    33338,
+    28961,
+    110667,
+    104988,
+    1380.628915
+   ],
+   [
+    19009000,
+    33338,
+    28961,
+    110667,
+    104988,
+    1380.676615
+   ],
+   [
+    19297000,
+    33342,
+    28961,
+    110675,
+    104988,
+    1380.653941
+   ],
+   [
+    19585000,
+    33343,
+    28961,
+    110683,
+    104988,
+    1380.657229
+   ],
+   [
+    19873000,
+    33343,
+    28961,
+    110683,
+    104988,
+    1380.589201
+   ],
+   [
+    20161000,
+    33351,
+    28969,
+    110691,
+    104994,
+    1380.611791
+   ],
+   [
+    20449000,
+    33353,
+    28970,
+    110697,
+    104995,
+    1380.611858
+   ],
+   [
+    20737000,
+    33354,
+    28971,
+    110701,
+    104999,
+    1380.598341
+   ],
+   [
+    21025000,
+    33355,
+    28971,
+    110708,
+    105001,
+    1380.56138
+   ],
+   [
+    21313000,
+    33355,
+    28971,
+    110709,
+    105001,
+    1380.586327
+   ],
+   [
+    21601000,
+    33356,
+    28971,
+    110715,
+    105001,
+    1380.555289
+   ],
+   [
+    21889000,
+    33360,
+    28975,
+    110720,
+    105005,
+    1380.529747
+   ],
+   [
+    22177000,
+    33360,
+    28975,
+    110720,
+    105005,
+    1380.490926
+   ],
+   [
+    22465000,
+    33360,
+    28975,
+    110726,
+    105007,
+    1380.425333
+   ],
+   [
+    22753000,
+    33360,
+    28975,
+    110730,
+    105010,
+    1380.375434
+   ],
+   [
+    23041000,
+    33363,
+    28975,
+    110735,
+    105010,
+    1380.487789
+   ],
+   [
+    23329000,
+    33363,
+    28975,
+    110735,
+    105010,
+    1380.621627
+   ],
+   [
+    23617000,
+    33364,
+    28976,
+    110743,
+    105016,
+    1380.639142
+   ],
+   [
+    23905000,
+    33364,
+    28976,
+    110744,
+    105017,
+    1380.463971
+   ],
+   [
+    24193000,
+    33364,
+    28976,
+    110746,
+    105017,
+    1380.702555
+   ],
+   [
+    24481000,
+    33364,
+    28976,
+    110747,
+    105017,
+    1380.746846
+   ],
+   [
+    24769000,
+    33364,
+    28976,
+    110747,
+    105017,
+    1380.758738
+   ],
+   [
+    25057000,
+    33364,
+    28976,
+    110749,
+    105019,
+    1380.773033
+   ],
+   [
+    25345000,
+    33379,
+    28987,
+    110766,
+    105029,
+    1380.963032
+   ],
+   [
+    25633000,
+    33379,
+    28987,
+    110766,
+    105029,
+    1381.041583
+   ],
+   [
+    25921000,
+    33379,
+    28987,
+    110766,
+    105029,
+    1381.020062
+   ],
+   [
+    26209000,
+    33382,
+    28987,
+    110777,
+    105029,
+    1381.033744
+   ],
+   [
+    26497000,
+    33384,
+    28989,
+    110780,
+    105032,
+    1381.038743
+   ],
+   [
+    26785000,
+    33384,
+    28989,
+    110782,
+    105032,
+    1381.147379
+   ],
+   [
+    27073000,
+    33385,
+    28990,
+    110782,
+    105032,
+    1381.418328
+   ],
+   [
+    27361000,
+    33386,
+    28991,
+    110784,
+    105034,
+    1381.404035
+   ],
+   [
+    27649000,
+    33390,
+    28991,
+    110790,
+    105034,
+    1381.43661
+   ],
+   [
+    27937000,
+    33391,
+    28991,
+    110795,
+    105035,
+    1381.425042
+   ],
+   [
+    28225000,
+    33391,
+    28991,
+    110796,
+    105036,
+    1381.419749
+   ],
+   [
+    28513000,
+    33392,
+    28992,
+    110804,
+    105039,
+    1381.401836
+   ],
+   [
+    28755462,
+    33392,
+    28992,
+    110807,
+    105040,
+    1381.687475
+   ]
+  ]
+ },
+ "processes_with_samples": 1,
+ "top_processes": [
+  {
+   "pid": 2758956,
+   "comm": "LeafNodeRank",
+   "samples": 28755462,
+   "share": 1
+  }
+ ],
+ "top_objects_by_footprint": [
+  {
+   "obj_id": 603,
+   "kind": "file",
+   "path": "/home/thu/dcperf-infra/DCPerf/benchmarks/feedsim/src/build/workloads/ranking/LeafNodeRank",
+   "footprint_bytes": 1725504,
+   "footprint_share": 0.8074089602,
+   "entries": 632081874,
+   "entries_share": 0.6869193125,
+   "unique_taken_branches": 102453
+  },
+  {
+   "obj_id": 1,
+   "kind": "kernel",
+   "path": "[kernel]",
+   "footprint_bytes": 281600,
+   "footprint_share": 0.1317680882,
+   "entries": 16962694,
+   "entries_share": 0.01843432406,
+   "unique_taken_branches": 5767
+  },
+  {
+   "obj_id": 7,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.5",
+   "footprint_bytes": 52672,
+   "footprint_share": 0.02464662195,
+   "entries": 137459387,
+   "entries_share": 0.1493849318,
+   "unique_taken_branches": 807
+  },
+  {
+   "obj_id": 606,
+   "kind": "file",
+   "path": "/usr/local/lib/libjemalloc.so.2",
+   "footprint_bytes": 46592,
+   "footprint_share": 0.02180162913,
+   "entries": 103108419,
+   "entries_share": 0.1120537816,
+   "unique_taken_branches": 1137
+  },
+  {
+   "obj_id": 608,
+   "kind": "file",
+   "path": "/usr/local/lib/libevent-2.1.so.7.0.0",
+   "footprint_bytes": 20032,
+   "footprint_share": 0.009373502635,
+   "entries": 9668,
+   "entries_share": 1.050676532e-05,
+   "unique_taken_branches": 441
+  },
+  {
+   "obj_id": 10,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+   "footprint_bytes": 4416,
+   "footprint_share": 0.002066363201,
+   "entries": 15426950,
+   "entries_share": 0.01676534374,
+   "unique_taken_branches": 104
+  },
+  {
+   "obj_id": 97,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33",
+   "footprint_bytes": 3264,
+   "footprint_share": 0.001527311931,
+   "entries": 15055761,
+   "entries_share": 0.01636195154,
+   "unique_taken_branches": 67
+  },
+  {
+   "obj_id": 17,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+   "footprint_bytes": 1728,
+   "footprint_share": 0.0008085769046,
+   "entries": 290,
+   "entries_share": 3.151594893e-07,
+   "unique_taken_branches": 11
+  },
+  {
+   "obj_id": 27,
+   "kind": "special",
+   "path": "[vdso]",
+   "footprint_bytes": 1024,
+   "footprint_share": 0.0004791566842,
+   "entries": 61903,
+   "entries_share": 6.727350989e-05,
+   "unique_taken_branches": 13
+  },
+  {
+   "obj_id": 607,
+   "kind": "file",
+   "path": "/usr/local/lib/libevent_pthreads-2.1.so.7.0.0",
+   "footprint_bytes": 256,
+   "footprint_share": 0.0001197891711,
+   "entries": 2079,
+   "entries_share": 2.259367511e-06,
+   "unique_taken_branches": 7
+  }
+ ],
+ "top_objects_by_entries": [
+  {
+   "obj_id": 603,
+   "kind": "file",
+   "path": "/home/thu/dcperf-infra/DCPerf/benchmarks/feedsim/src/build/workloads/ranking/LeafNodeRank",
+   "footprint_bytes": 1725504,
+   "footprint_share": 0.8074089602,
+   "entries": 632081874,
+   "entries_share": 0.6869193125,
+   "unique_taken_branches": 102453
+  },
+  {
+   "obj_id": 7,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.5",
+   "footprint_bytes": 52672,
+   "footprint_share": 0.02464662195,
+   "entries": 137459387,
+   "entries_share": 0.1493849318,
+   "unique_taken_branches": 807
+  },
+  {
+   "obj_id": 606,
+   "kind": "file",
+   "path": "/usr/local/lib/libjemalloc.so.2",
+   "footprint_bytes": 46592,
+   "footprint_share": 0.02180162913,
+   "entries": 103108419,
+   "entries_share": 0.1120537816,
+   "unique_taken_branches": 1137
+  },
+  {
+   "obj_id": 1,
+   "kind": "kernel",
+   "path": "[kernel]",
+   "footprint_bytes": 281600,
+   "footprint_share": 0.1317680882,
+   "entries": 16962694,
+   "entries_share": 0.01843432406,
+   "unique_taken_branches": 5767
+  },
+  {
+   "obj_id": 10,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+   "footprint_bytes": 4416,
+   "footprint_share": 0.002066363201,
+   "entries": 15426950,
+   "entries_share": 0.01676534374,
+   "unique_taken_branches": 104
+  },
+  {
+   "obj_id": 97,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33",
+   "footprint_bytes": 3264,
+   "footprint_share": 0.001527311931,
+   "entries": 15055761,
+   "entries_share": 0.01636195154,
+   "unique_taken_branches": 67
+  },
+  {
+   "obj_id": 27,
+   "kind": "special",
+   "path": "[vdso]",
+   "footprint_bytes": 1024,
+   "footprint_share": 0.0004791566842,
+   "entries": 61903,
+   "entries_share": 6.727350989e-05,
+   "unique_taken_branches": 13
+  },
+  {
+   "obj_id": 608,
+   "kind": "file",
+   "path": "/usr/local/lib/libevent-2.1.so.7.0.0",
+   "footprint_bytes": 20032,
+   "footprint_share": 0.009373502635,
+   "entries": 9668,
+   "entries_share": 1.050676532e-05,
+   "unique_taken_branches": 441
+  },
+  {
+   "obj_id": 607,
+   "kind": "file",
+   "path": "/usr/local/lib/libevent_pthreads-2.1.so.7.0.0",
+   "footprint_bytes": 256,
+   "footprint_share": 0.0001197891711,
+   "entries": 2079,
+   "entries_share": 2.259367511e-06,
+   "unique_taken_branches": 7
+  },
+  {
+   "obj_id": 17,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+   "footprint_bytes": 1728,
+   "footprint_share": 0.0008085769046,
+   "entries": 290,
+   "entries_share": 3.151594893e-07,
+   "unique_taken_branches": 11
+  }
+ ],
+ "diagnostics": {
+  "samples": 28755462,
+  "samples_empty": 0,
+  "entries": 920169025,
+  "near_entries": 920103041,
+  "far_entries": 65984,
+  "zero_address_entries": 0,
+  "unmapped_entries": 0,
+  "kernel_unmapped_entries": 0,
+  "candidate_ranges": 891413563,
+  "discontinuities": 120,
+  "discontinuity_rate": 1.346176511e-07,
+  "discontinuities_by_reason": {
+   "cross_mapping": 0,
+   "negative": 120,
+   "over_4096": 0,
+   "unmapped_end": 0
+  },
+  "range_lines_added": 1315000770,
+  "lost_samples": 0,
+  "lost_from_PERF_RECORD_LOST": 0,
+  "lost_from_PERF_RECORD_LOST_SAMPLES": 0,
+  "lost_records": 0,
+  "lost_records_unparsed": 0,
+  "unparsed_lines": 0,
+  "unparsed_examples": [],
+  "type_conflicts": 0,
+  "offset_overflow": 0,
+  "mmap_events": 70342,
+  "mmap_kernel": 338,
+  "mmap_nonexec_ignored": 0,
+  "comm_exec_events": 15381,
+  "fork_process_events": 21696,
+  "fork_thread_events": 686,
+  "exit_events": 21518,
+  "other_events": 0,
+  "pids_tracked": 21713,
+  "objects_total": 713,
+  "unique_edges": 212620,
+  "unique_far_edges": 2627,
+  "input_bytes": 42887171465,
+  "input_lines": 28886208,
+  "elapsed_s": 275.6321927,
+  "samples_per_s": 104325.4843,
+  "input_MB_per_s": 155.5956546
+ },
+ "workload": "feedsim",
+ "capture": {
+  "suite": "dcperf",
+  "bench": "feedsim",
+  "workload": "feedsim",
+  "server_cg": "measured.slice/dcperf-feedsim-r1.scope",
+  "capture_s": 300,
+  "load": {
+   "qps": 16,
+   "warmup_s": 120,
+   "exp_s": 360,
+   "threads": "-t 8 -c 6 -s 4"
+  },
+  "cpus_measured": "4-11",
+  "repo_rev": "2e750a7f7",
+  "kernel": "6.17.0-1030-oem",
+  "frontend_footprint": {
+   "contract": "docs/handoff/execution/frontend_footprint_method.md v1.1",
+   "event": "br_inst_retired.near_taken:pp",
+   "period": 20011,
+   "branch_filter": "any,save_type",
+   "scope": "perf record -a -C <measured> --cgroup=<server fence>",
+   "server_cg": "measured.slice/dcperf-feedsim-r1.scope",
+   "stat_events": "cycles,instructions,br_inst_retired.near_taken",
+   "window": "steady state: both perf instances enabled (acked) after bench_start's liveness check, disabled CAPTURE_S later; perf stat's window nested inside perf record's",
+   "capture_s": 300,
+   "ts_start": 1793718881.626599,
+   "ts_end": 1793719181.635685,
+   "window_s": 300.009085893631,
+   "server_alive_through_window": true,
+   "perf_version": "perf version 6.8.12",
+   "perf_record_cmd": "sudo /usr/lib/linux-tools-6.8.0-147/perf record -z -m 512M  -e br_inst_retired.near_taken:pp -c 20011 -j any,save_type -a -C 4-11 --cgroup=measured.slice/dcperf-feedsim-r1.scope -D -1 --control=fifo:rec.ctl,rec.ack -o lbr.data",
+   "perf_stat_cmd": "/usr/lib/linux-tools-6.8.0-147/perf stat -x, -a -C 4-11 -e cycles,instructions,br_inst_retired.near_taken --for-each-cgroup=measured.slice/dcperf-feedsim-r1.scope -D -1 --control=fifo:stat.ctl,stat.ack -o exact_counts.csv",
+   "perf_record_rc": "130",
+   "perf_stat_rc": "130",
+   "perf_event_max_sample_rate": [
+    100000,
+    100000
+   ],
+   "perf_cpu_time_max_percent": [
+    0,
+    0
+   ],
+   "java_on_path": "openjdk version \"21.0.12.1\" 2026-08-18",
+   "iso_proof": "[glm 16:10:45] ISO-PROOF   ISO-PROOF quiet-check: max busy 0.0% on measured cores (silent) [glm 16:10:45] ISOLATION: PROVEN quiet (slices pinned, knobs set, partition silent)"
+  },
+  "mean_cores": 3.449
+ },
+ "exact_counts": {
+  "cycles": 3227448423384.0,
+  "_cgroup": "measured.slice/dcperf-feedsim-r1.scope",
+  "instructions": 5789720800541.0,
+  "br_inst_retired.near_taken": 575517674794.0
+ },
+ "gates_v4": {
+  "analyzer_ok": true,
+  "lost_pct": 0.0,
+  "lost_ok": true,
+  "sample_coverage": 0.9998399272237243,
+  "coverage_ok": true,
+  "perf_record_stats": {
+   "TOTAL": 28914571,
+   "MMAP": 176,
+   "COMM": 16504,
+   "EXIT": 21518,
+   "FORK": 22382,
+   "SAMPLE": 28755462,
+   "MMAP2": 70166,
+   "KSYMBOL": 21,
+   "BPF_EVENT": 21,
+   "FINISHED_ROUND": 244,
+   "ID_INDEX": 1,
+   "THREAD_MAP": 1,
+   "CPU_MAP": 1,
+   "EVENT_UPDATE": 1,
+   "TIME_CONV": 1,
+   "COMPRESSED": 28071,
+   "FINISHED_INIT": 1
+  },
+  "throttle_events": 0,
+  "throttle_ok": true,
+  "alive_ok": true,
+  "unmapped_pct": 0.0,
+  "discontinuity_rate": 1.346176511e-07,
+  "mapped_ok": true,
+  "d4": {
+   "first_fifth_cores": 3.453,
+   "last_fifth_cores": 3.45,
+   "drift_pct": 0.08,
+   "mean_cores": 3.449
+  },
+  "d4_ok": true,
+  "d5": {
+   "partition_core_s": 1032.3,
+   "fence_core_s": 1034.4,
+   "span_s": 299.9,
+   "residual_pct": 0.0
+  },
+  "d5_ok": true,
+  "witness": {
+   "witness_rows": 148,
+   "rows_with_foreign_task": 0,
+   "mean_foreign_cpu_pct": 5.1,
+   "worst_row": "root:plymouthd[440]=3% thu:claude[478160]=3% jeferson:claude[2078287]=1% root:kworker/14:1H-kblockd[300]=1% root:migration/9[71]=1%",
+   "clean": true
+  },
+  "witness_ok": true,
+  "receipt": {
+   "metric": "achieved QPS, fixed-QPS experiment row",
+   "unit": "queries/s",
+   "new": 15.96,
+   "banked_median": 15.96,
+   "banked_n": 1,
+   "ratio": 1.0,
+   "comparable": true,
+   "reason": null,
+   "rule": "comparable = true iff every GATE metric of the new pass lies within +/-15 % of the banked median OR inside [banked min x 0.95, banked max x 1.05]; feedsim additionally needs the new pass's fixed-QPS p95 <= 500 ms. null (with reason) when the new receipt is missing or unparsable, when no banked run has one, or when new and banked are different workloads. Fence cores use the same band but never gate.",
+   "sla": {
+    "metric": "p95 latency, fixed-QPS row",
+    "limit_ms": 500.0,
+    "p95_ms": 480.118,
+    "ok": true
+   },
+   "fence_cores_new": 3.4494,
+   "fence_cores_banked_median": 3.3244,
+   "fence_cores_in_band": true,
+   "basis": "workload receipt",
+   "notes": [
+    "no banked pass carries a fixed-QPS row (sweep passes were torn down before the experiment wrote it; their only row is the unpaced warm-up) -> fixed-QPS reference = confirm/dcperf_feedsim/run_1"
+   ]
+  },
+  "receipt_ok": true,
+  "contract": {
+   "event": "br_inst_retired.near_taken:pp",
+   "period": 20011,
+   "branch_filter": "any,save_type"
+  },
+  "contract_ok": true,
+  "iso_proof": "[glm 16:10:45] ISO-PROOF   ISO-PROOF quiet-check: max busy 0.0% on measured cores (silent) [glm 16:10:45] ISOLATION: PROVEN quiet (slices pinned, knobs set, partition silent)",
+  "perf_event_max_sample_rate": [
+   100000,
+   100000
+  ],
+  "thresholds": {
+   "lost_pct_lt": 1.0,
+   "coverage_tol": 0.005,
+   "throttle_eq": 0,
+   "unmapped_pct_lt": 1.0,
+   "d4_max_drift_pct": 25.0,
+   "d4_min_cores": 0.1,
+   "d5_max_residual_pct": 20.0,
+   "witness": "<= 5 % of rows with a non-kernel-thread task > 10 %, mean foreign <= 25 %",
+   "receipt": "receipt_compare.py verdict_rule (copied in receipt.rule)"
+  },
+  "all_ok": true
+ }
+}

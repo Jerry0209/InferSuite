@@ -33,6 +33,7 @@ signal here.
 | Session logs (one per chat) | `docs/handoff/sessions/` | yes |
 | **ARM / AWS Graviton bring-up handoff** | `docs/handoff/arm_aws_bringup.md` | yes |
 | **Execution docs: SPEC + Server on x86 (footprint) and ARM (profiling), 2026-11** | `docs/handoff/execution/` (branches `spec-x86`, `dcperf`, `spec-arm`, `dcperf-arm`) | yes |
+| **Server front-end footprint (Rahul's metrics), results + kit** (report 24) | `local_agents/frontend_footprint_x86/` (summaries, long CSV, gates, MANIFEST, plots); kit `local_agents/kit/dcperf/{frontend_footprint_server.sh,lbr_pass.sh,lbr_pass_gates.py,receipt_compare.py}` + `local_agents/kit/frontend_footprint/{aggregate_server.py,sample_matched.py}`; raw passes in `local_agents/{DCPerf,JVMbench,RealData}/data/frontend_footprint/` | results and kit yes; raw passes no (git-ignored `data/`) |
 | Knowledge wiki (cross-cutting) | `docs/wiki/` | yes |
 | Curated figure view | `plots/` (synced, never edited by hand) | yes |
 

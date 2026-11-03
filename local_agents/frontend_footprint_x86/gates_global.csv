@@ -1,0 +1,13 @@
+gate,name,metric,value,threshold,verdict,source
+analyzer,server,analyzer_sha,31c492b25f13b5178b1dfd91aeb2dbe4cbe1fd86,one SHA across every pass with a summary,OK,summary.json of each pass
+analyzer,server,analyzer_src_sha256,298e417a3dc3dbd0591380ccc36f6986b6c3aeb2e83c4d5a582759bcbd2dce22,= 298e417a3dc3dbd0591380ccc36f6986b6c3aeb2e83c4d5a582759bcbd2dce22,OK,summary.json of each pass
+analyzer,spec26,analyzer_sha,31c492b25f13b5178b1dfd91aeb2dbe4cbe1fd86,= server analyzer_sha,same,origin/spec-x86@86b22c734862:spec26/frontend_footprint_x86/gates_global.csv
+analyzer,spec26,analyzer_src_sha256,298e417a3dc3dbd0591380ccc36f6986b6c3aeb2e83c4d5a582759bcbd2dce22,= 298e417a3dc3dbd0591380ccc36f6986b6c3aeb2e83c4d5a582759bcbd2dce22,same,origin/spec-x86@86b22c734862:spec26/frontend_footprint_x86/gates_global.csv
+contract,server,event,br_inst_retired.near_taken:pp,br_inst_retired.near_taken:pp,OK,capture.frontend_footprint of each pass
+contract,server,period,20011,20011,OK,capture.frontend_footprint of each pass
+contract,server,branch_filter,"any,save_type","any,save_type",OK,capture.frontend_footprint of each pass
+V1,spec26,synthetic truth (analyzer),,,NOT_RERUN,origin/spec-x86@86b22c734862:spec26/frontend_footprint_x86/gates_global.csv (6 V1 rows there); docs/reports/23_spec26_frontend_footprint_x86.md
+V2,spec26,exact Intel PT cross-check (analyzer),,,NOT_RERUN,origin/spec-x86@86b22c734862:spec26/frontend_footprint_x86/gates_global.csv (96 V2 rows there); docs/reports/23_spec26_frontend_footprint_x86.md
+V3,spec26,period sensitivity 5003 vs 20011 (period),,,NOT_RERUN,origin/spec-x86@86b22c734862:spec26/frontend_footprint_x86/gates_global.csv (45 V3 rows there); docs/reports/23_spec26_frontend_footprint_x86.md
+reference,spec26_rows_long.csv,source_commit,86b22c734862d71e76c953803a816e8da6231dd9,,COPIED,git show origin/spec-x86:spec26/frontend_footprint_x86/frontend_footprint_rows_long.csv
+reference,spec26_rows_long.csv,sha256,d3ca506dc31bb61efd57cc3480407846e07689122956e5ab0663b5503b4b3cec,,COPIED,
