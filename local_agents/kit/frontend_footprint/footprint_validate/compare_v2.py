@@ -173,6 +173,20 @@ def main():
         for cls, kw in (("all", {}), ("noret", {"exclude": {"RET"}}), ("indirect", {"types": INDIRECT})):
             wp, wl = wavg(pb, P_br, per=per_pt, **kw), wavg(lb, L_br, per=per_lbr, **kw)
             W[prefix + cls] = {"pt": wp, "lbr": wl, "rel_err": (wl - wp) / wp if (wp and wl is not None) else None}
+    # Where the literal metric's error comes from: LBR's sampled C_b with PT's exact T_b, over the
+    # LBR branches PT also saw. Close to PT means C_b is estimated well and the gap is T_b, a
+    # rare-event unique count (v2_python: +0.5 % here vs -61 % for the literal metric).
+    for cls, kw in (("all", {}), ("noret", {"exclude": {"RET"}}), ("indirect", {"types": INDIRECT})):
+        c = ct = 0
+        for k in L_br & P_br:
+            t = lb[k][2]
+            if ("types" in kw and t not in kw["types"]) or ("exclude" in kw and t in kw["exclude"]):
+                continue
+            c += lb[k][0]
+            ct += lb[k][0] * len(pb[k][1])
+        h, wp = (ct / c if c else None), W["wavg_targets_" + cls]["pt"]
+        W["wavg_targets_" + cls]["hybrid_lbr_C_pt_T"] = {
+            "value": h, "rel_err": (h - wp) / wp if (h is not None and wp) else None}
 
     # recall vs LBR sampling depth, from first_seen
     n_lbr = (ls.get("diagnostics") or {}).get("samples") or max([v for v in ll.values()] + [1])
