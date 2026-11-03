@@ -35,6 +35,7 @@ Full index and reading order: **[reports/README.md](reports/README.md)**.
 | own deck | [20 — TMA profile & bad speculation](reports/20_tma_profile_bad_speculation_radar.md) | TMA radar incl. bad speculation (15.4 % vs 10.0 %); prices the retired SMT caveat — IPC +18.8 %, TMA shape unchanged |
 | own deck | [21 — the agent's position in the SPEC distribution](reports/21_agent_position_in_spec_distribution.md) | Ranks not ratios: L1I p77, MITE p65, DSB p27 — the agent is in SPEC's tail; only kernel time leaves the suite (p96) |
 | — (feeds the P7 selection) | [22 — type identification over SWE-bench Multilingual](reports/22_multiling_typeid_sweep.md) | 285 classification-only live episodes, zero failures: behaviour collapses to search-led (E/B lead 0), PHP/Ruby carry the only co-dominant structure, magnitude nests by mechanism — the measured frame for the ≤30 P7 representatives |
+| — (feeds Jef's ARM figures) | [23 — SPEC CPU 2026 on Graviton5 (ARM)](reports/23_arm_spec26_graviton5_profile.md) | 26 benchmarks × 14 no-mux passes on one pinned Neoverse-V3 core, 364/364 valid: backend-bound (BE leads 20/26), int/FP split on speculation; slot Frontend-bound ≠ cycle Frontend-stall; vs x86 shape transfers, IPC ratio is not speed |
 
 Companion material elsewhere in the repo:
 
