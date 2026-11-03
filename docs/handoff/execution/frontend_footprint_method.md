@@ -1,6 +1,6 @@
 # Front-end footprint metrics — method contract (Rahul, 2026-11)
 
-**Owner:** Tianrui (Jerry) · **Written:** 2026-11-02 · **Status:** contract v1, not yet executed
+**Owner:** Tianrui (Jerry) · **Written:** 2026-11-02 · **Status:** contract **v1.1** (2026-11-03: sampling event is PEBS `:pp`, see §3 and §5 V1)
 **Used by:** [`x86_spec_footprint.md`](x86_spec_footprint.md) (SPEC CPU 2026),
 [`x86_server_footprint.md`](x86_server_footprint.md) (Server set), and Jef's agentic capture.
 **Share this file with Jef before anyone captures.** The three families are only comparable if
@@ -33,8 +33,13 @@ Split of work: Jerry = SPEC26 + Server; Jef = agentic.
 | **LBR sampling (chosen)** | `perf record -j` on Sapphire Rapids Arch-LBR (32 entries). Works identically for SPEC, JVM servers and containerised agentic processes, because it needs addresses only (no code bytes), so JIT code and short-lived processes are fine. Overhead a few %. Probed on P7 2026-11-02: works with `-j any,save_type`. |
 
 **Consequence that must be stated with every number:** unique counts (metrics 1 and 2) are
-**sampled lower bounds**. Code executed only a handful of times is rarely captured. Metric 3 is
-execution-weighted, so it is dominated by hot branches and robust to sampling. Using the
+**sampled lower bounds**. Code executed only a handful of times is rarely captured. Metric 3
+in Rahul's literal form is **also a lower bound**: its T_b ("distinct targets ever") is a
+rare-event unique count. v1 claimed it was "execution-weighted, so robust to sampling"; gate V2
+refuted that on 2026-11-03. On a 1 s CPython run it read 61 % low (all), 43 % (noret) and 55 %
+(indirect), while LBR's sampled C_b combined with the exact T_b was within 0.5 %. Two
+frequency-aware companions are therefore reported beside it (§4.5) and measured within 0.3 % of
+PT. Which one Rahul plots is his call. Using the
 **same period for every family** gives every taken-branch execution the same detection
 probability (32 / 20011 ≈ 0.16 %), so the bias is comparable across families. Undercounting
 falls hardest on flat, tail-heavy profiles (agentic), which makes an "agentic footprint is
@@ -45,7 +50,7 @@ larger" finding conservative.
 | Parameter | Value |
 |---|---|
 | Machine | P7, Xeon w5-3425 (Sapphire Rapids), measured cores 4–11 SMT-free, 3.2 GHz, turbo off |
-| Sampling event | `br_inst_retired.near_taken` (no `:u`/`:k` modifier: user + kernel) |
+| Sampling event | `br_inst_retired.near_taken:pp` (PEBS; no `:u`/`:k` modifier: user + kernel). **v1.1 change (2026-11-03):** v1 used the bare event, where the LBR is frozen at the PMI, after interrupt skid. That skid is in instructions, so it spans more branches in branch-dense code and makes some 32-branch windows systematically more likely than others. On gate V1 this read the weighted averages 1.8 % (all), 2.0 % (noret) and 3.7 % (indirect) low, with per-branch entry shares off by up to −20 %/+12 %. With `:pp`, adaptive PEBS writes the LBR at the overflowing branch, and V1 passes at ≤ 0.26 %. Unique counts were exact in both |
 | Period | `-c 20011` (prime; avoids aliasing with loop trip counts). Change it only with Jef, for all three families at once |
 | Branch filter | `-j any,save_type` (all taken branches, with type) |
 | Scope | the workload's fence cgroup: `perf record -a -C <measured cpus> --cgroup=<fence>` |
@@ -82,7 +87,12 @@ Input: `perf script -F pid,brstack --show-mmap-events` text. Each sample has up 
    * `unique_taken_branches`, plus a split by type;
    * `wavg_targets_all` (Rahul's literal metric), `wavg_targets_noret` (returns excluded:
      returns are predicted by the return stack, not the BTB) and `wavg_targets_indirect`
-     (indirect jumps and calls only);
+     (indirect jumps and calls only). All three are sampled lower bounds (§2);
+   * v1.1 companions, robust to sampling (V2): `weff_targets_{all,noret,indirect}` =
+     Σ C_b·E_b / Σ C_b, where E_b = 1/Σ_t p_{b,t}² is the inverse-Simpson effective number of targets
+     (unbiased Σ n_t(n_t−1)/(n(n−1)) estimator on LBR data; capped at the observed T_b), and
+     `wavg_targets_ge1pct_{all,noret,indirect}` = Σ C_b·max(1, #targets with ≥ 1 % of b's
+     executions) / Σ C_b. Each also has `_user`/`_kernel` splits;
    * diagnostics: samples, entries, lost records, discontinuity rate, exact instruction and
      taken-branch totals from `perf stat`, and **convergence**: each unique count recomputed
      at 25 / 50 / 75 / 100 % of samples in time order (a curve still rising at 100 % means
