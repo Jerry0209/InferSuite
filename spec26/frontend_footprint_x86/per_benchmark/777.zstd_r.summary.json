@@ -1,0 +1,1147 @@
+{
+ "analyzer": "lbr_footprint",
+ "analyzer_version": "1.0",
+ "analyzer_sha": "31c492b25f13b5178b1dfd91aeb2dbe4cbe1fd86",
+ "analyzer_src_sha256": "298e417a3dc3dbd0591380ccc36f6986b6c3aeb2e83c4d5a582759bcbd2dce22",
+ "mode": "lbr",
+ "meta": {
+  "workload": "777.zstd_r",
+  "period": "20011"
+ },
+ "footprint_bytes": 247552,
+ "footprint_bytes_user": 86592,
+ "footprint_bytes_kernel": 160960,
+ "footprint_lines": 3868,
+ "unique_taken_branches": 4183,
+ "unique_taken_branches_user": 1346,
+ "unique_taken_branches_kernel": 2837,
+ "wavg_targets_all": 1.03920441,
+ "wavg_targets_all_user": 1.028689175,
+ "wavg_targets_all_kernel": 2.798849924,
+ "wavg_targets_noret": 1.000040879,
+ "wavg_targets_noret_user": 1.00003828,
+ "wavg_targets_noret_kernel": 1.000602742,
+ "wavg_targets_indirect": 1.365752716,
+ "wavg_targets_indirect_user": 1.478576616,
+ "wavg_targets_indirect_kernel": 1.086330935,
+ "weff_targets_all": 1.003391265,
+ "weff_targets_all_user": 1.000275596,
+ "weff_targets_all_kernel": 1.52477494,
+ "weff_targets_noret": 1.000014578,
+ "weff_targets_noret_user": 1.000012635,
+ "weff_targets_noret_kernel": 1.000434556,
+ "weff_targets_indirect": 1.130434305,
+ "weff_targets_indirect_user": 1.157968941,
+ "weff_targets_indirect_kernel": 1.062241511,
+ "wavg_targets_ge1pct_all": 1.004788518,
+ "wavg_targets_ge1pct_all_user": 1.000353053,
+ "wavg_targets_ge1pct_all_kernel": 1.747030385,
+ "wavg_targets_ge1pct_noret": 1.000040879,
+ "wavg_targets_ge1pct_noret_user": 1.00003828,
+ "wavg_targets_ge1pct_noret_kernel": 1.000602742,
+ "wavg_targets_ge1pct_indirect": 1.365752716,
+ "wavg_targets_ge1pct_indirect_user": 1.478576616,
+ "wavg_targets_ge1pct_indirect_kernel": 1.086330935,
+ "unique_taken_branches_by_type": {
+  "all": {
+   "COND": 1952,
+   "UNCOND": 610,
+   "CALL": 926,
+   "IND_CALL": 32,
+   "IND": 20,
+   "RET": 643
+  },
+  "user": {
+   "COND": 850,
+   "UNCOND": 264,
+   "CALL": 122,
+   "IND_CALL": 4,
+   "IND": 19,
+   "RET": 87
+  },
+  "kernel": {
+   "COND": 1102,
+   "UNCOND": 346,
+   "CALL": 804,
+   "IND_CALL": 28,
+   "IND": 1,
+   "RET": 556
+  }
+ },
+ "taken_entries_by_type": {
+  "COND": 12157578,
+  "UNCOND": 4617276,
+  "CALL": 518117,
+  "IND_CALL": 680,
+  "IND": 1253,
+  "RET": 533575
+ },
+ "far_transfers": {
+  "entries": 315,
+  "unique_from": 37,
+  "entries_by_type": {
+   "ERET": 192,
+   "IRQ": 123
+  }
+ },
+ "convergence": {
+  "points": [
+   {
+    "pct": 25,
+    "samples": 139288,
+    "footprint_bytes": 203072,
+    "footprint_bytes_user": 74880,
+    "footprint_bytes_kernel": 128192,
+    "unique_taken_branches": 3341,
+    "unique_taken_branches_user": 1118,
+    "unique_taken_branches_kernel": 2223,
+    "wavg_targets_all": 1.050041224
+   },
+   {
+    "pct": 50,
+    "samples": 278576,
+    "footprint_bytes": 214272,
+    "footprint_bytes_user": 79680,
+    "footprint_bytes_kernel": 134592,
+    "unique_taken_branches": 3610,
+    "unique_taken_branches_user": 1237,
+    "unique_taken_branches_kernel": 2373,
+    "wavg_targets_all": 1.040199881
+   },
+   {
+    "pct": 75,
+    "samples": 417864,
+    "footprint_bytes": 223232,
+    "footprint_bytes_user": 83264,
+    "footprint_bytes_kernel": 139968,
+    "unique_taken_branches": 3765,
+    "unique_taken_branches_user": 1291,
+    "unique_taken_branches_kernel": 2474,
+    "wavg_targets_all": 1.037173559
+   },
+   {
+    "pct": 100,
+    "samples": 557152,
+    "footprint_bytes": 247552,
+    "footprint_bytes_user": 86592,
+    "footprint_bytes_kernel": 160960,
+    "unique_taken_branches": 4183,
+    "unique_taken_branches_user": 1346,
+    "unique_taken_branches_kernel": 2837,
+    "wavg_targets_all": 1.03920441
+   }
+  ],
+  "last_quarter_growth_pct": {
+   "footprint": 9.824198552,
+   "unique_taken_branches": 9.992828114,
+   "footprint_user": 3.84331116,
+   "unique_taken_branches_user": 4.086181278
+  },
+  "note": "share of the final unique count first seen in the last 25 % of the run; well above 0 means the unique counts are still rising, i.e. sampling-limited lower bounds",
+  "unit": "samples",
+  "snapshot_every": 1000,
+  "curve_columns": [
+   "units",
+   "footprint_lines",
+   "footprint_lines_user",
+   "unique_taken_branches",
+   "unique_taken_branches_user",
+   "wavg_targets_all"
+  ],
+  "curve": [
+   [
+    1000,
+    1620,
+    123,
+    1713,
+    117,
+    1.981970965
+   ],
+   [
+    7000,
+    1825,
+    123,
+    1953,
+    130,
+    1.268216507
+   ],
+   [
+    13000,
+    2306,
+    479,
+    2412,
+    449,
+    1.158967872
+   ],
+   [
+    19000,
+    2629,
+    728,
+    2718,
+    643,
+    1.176267996
+   ],
+   [
+    25000,
+    2832,
+    887,
+    2912,
+    780,
+    1.14345093
+   ],
+   [
+    31000,
+    2868,
+    909,
+    2966,
+    814,
+    1.116025197
+   ],
+   [
+    37000,
+    2881,
+    921,
+    2987,
+    833,
+    1.098716152
+   ],
+   [
+    43000,
+    2936,
+    976,
+    3042,
+    888,
+    1.092465977
+   ],
+   [
+    49000,
+    3018,
+    1058,
+    3106,
+    952,
+    1.090311576
+   ],
+   [
+    55000,
+    3049,
+    1071,
+    3154,
+    974,
+    1.082133131
+   ],
+   [
+    61000,
+    3065,
+    1080,
+    3175,
+    989,
+    1.074258263
+   ],
+   [
+    67000,
+    3082,
+    1082,
+    3205,
+    995,
+    1.069274088
+   ],
+   [
+    73000,
+    3093,
+    1093,
+    3221,
+    1011,
+    1.070456762
+   ],
+   [
+    79000,
+    3100,
+    1100,
+    3234,
+    1024,
+    1.067350134
+   ],
+   [
+    85000,
+    3102,
+    1100,
+    3240,
+    1026,
+    1.062701401
+   ],
+   [
+    91000,
+    3103,
+    1101,
+    3249,
+    1035,
+    1.058673971
+   ],
+   [
+    97000,
+    3104,
+    1102,
+    3261,
+    1045,
+    1.058882321
+   ],
+   [
+    103000,
+    3118,
+    1116,
+    3286,
+    1069,
+    1.059397433
+   ],
+   [
+    109000,
+    3118,
+    1116,
+    3293,
+    1073,
+    1.056342353
+   ],
+   [
+    115000,
+    3118,
+    1116,
+    3297,
+    1076,
+    1.053485683
+   ],
+   [
+    121000,
+    3120,
+    1118,
+    3300,
+    1079,
+    1.052087264
+   ],
+   [
+    127000,
+    3167,
+    1165,
+    3327,
+    1106,
+    1.053600233
+   ],
+   [
+    133000,
+    3167,
+    1165,
+    3329,
+    1108,
+    1.052214763
+   ],
+   [
+    139000,
+    3173,
+    1170,
+    3339,
+    1116,
+    1.050041224
+   ],
+   [
+    145000,
+    3190,
+    1175,
+    3370,
+    1124,
+    1.048988607
+   ],
+   [
+    151000,
+    3194,
+    1179,
+    3379,
+    1133,
+    1.049823364
+   ],
+   [
+    157000,
+    3241,
+    1226,
+    3429,
+    1179,
+    1.050216504
+   ],
+   [
+    163000,
+    3241,
+    1226,
+    3431,
+    1181,
+    1.048422585
+   ],
+   [
+    169000,
+    3247,
+    1226,
+    3446,
+    1182,
+    1.046752899
+   ],
+   [
+    175000,
+    3249,
+    1226,
+    3454,
+    1182,
+    1.0462467
+   ],
+   [
+    181000,
+    3253,
+    1227,
+    3464,
+    1184,
+    1.047494641
+   ],
+   [
+    187000,
+    3253,
+    1227,
+    3470,
+    1188,
+    1.046465697
+   ],
+   [
+    193000,
+    3253,
+    1227,
+    3473,
+    1191,
+    1.045084413
+   ],
+   [
+    199000,
+    3254,
+    1227,
+    3477,
+    1192,
+    1.043771037
+   ],
+   [
+    205000,
+    3264,
+    1229,
+    3498,
+    1200,
+    1.045005092
+   ],
+   [
+    211000,
+    3287,
+    1229,
+    3531,
+    1204,
+    1.045221782
+   ],
+   [
+    217000,
+    3290,
+    1229,
+    3538,
+    1206,
+    1.044029103
+   ],
+   [
+    223000,
+    3290,
+    1229,
+    3538,
+    1206,
+    1.042900472
+   ],
+   [
+    229000,
+    3290,
+    1229,
+    3538,
+    1206,
+    1.042785444
+   ],
+   [
+    235000,
+    3310,
+    1242,
+    3558,
+    1219,
+    1.043831392
+   ],
+   [
+    241000,
+    3345,
+    1242,
+    3590,
+    1220,
+    1.042952525
+   ],
+   [
+    247000,
+    3345,
+    1242,
+    3591,
+    1221,
+    1.041949589
+   ],
+   [
+    253000,
+    3345,
+    1242,
+    3593,
+    1223,
+    1.040991265
+   ],
+   [
+    259000,
+    3346,
+    1243,
+    3597,
+    1227,
+    1.042011903
+   ],
+   [
+    265000,
+    3346,
+    1243,
+    3600,
+    1230,
+    1.042064702
+   ],
+   [
+    271000,
+    3346,
+    1243,
+    3602,
+    1231,
+    1.041166561
+   ],
+   [
+    277000,
+    3348,
+    1245,
+    3609,
+    1236,
+    1.040342982
+   ],
+   [
+    283000,
+    3348,
+    1245,
+    3610,
+    1237,
+    1.040453316
+   ],
+   [
+    289000,
+    3348,
+    1245,
+    3614,
+    1241,
+    1.041364577
+   ],
+   [
+    295000,
+    3365,
+    1245,
+    3638,
+    1241,
+    1.040566672
+   ],
+   [
+    301000,
+    3365,
+    1245,
+    3638,
+    1241,
+    1.039806804
+   ],
+   [
+    307000,
+    3369,
+    1246,
+    3648,
+    1244,
+    1.03922058
+   ],
+   [
+    313000,
+    3373,
+    1246,
+    3659,
+    1250,
+    1.040109752
+   ],
+   [
+    319000,
+    3373,
+    1246,
+    3661,
+    1252,
+    1.040080747
+   ],
+   [
+    325000,
+    3373,
+    1246,
+    3662,
+    1253,
+    1.039364137
+   ],
+   [
+    331000,
+    3373,
+    1246,
+    3662,
+    1253,
+    1.038677666
+   ],
+   [
+    337000,
+    3375,
+    1248,
+    3666,
+    1257,
+    1.038913475
+   ],
+   [
+    343000,
+    3375,
+    1248,
+    3669,
+    1258,
+    1.039593399
+   ],
+   [
+    349000,
+    3375,
+    1248,
+    3669,
+    1258,
+    1.038934001
+   ],
+   [
+    355000,
+    3375,
+    1248,
+    3671,
+    1260,
+    1.038304647
+   ],
+   [
+    361000,
+    3375,
+    1248,
+    3672,
+    1260,
+    1.037930117
+   ],
+   [
+    367000,
+    3376,
+    1249,
+    3674,
+    1262,
+    1.038684775
+   ],
+   [
+    373000,
+    3437,
+    1283,
+    3715,
+    1274,
+    1.038552784
+   ],
+   [
+    379000,
+    3437,
+    1283,
+    3715,
+    1274,
+    1.037959016
+   ],
+   [
+    385000,
+    3437,
+    1283,
+    3717,
+    1276,
+    1.037396327
+   ],
+   [
+    391000,
+    3438,
+    1284,
+    3720,
+    1279,
+    1.037741444
+   ],
+   [
+    397000,
+    3454,
+    1300,
+    3729,
+    1288,
+    1.038234033
+   ],
+   [
+    403000,
+    3467,
+    1301,
+    3746,
+    1289,
+    1.037686492
+   ],
+   [
+    409000,
+    3488,
+    1301,
+    3763,
+    1289,
+    1.037158152
+   ],
+   [
+    415000,
+    3488,
+    1301,
+    3765,
+    1291,
+    1.036962116
+   ],
+   [
+    421000,
+    3492,
+    1301,
+    3772,
+    1291,
+    1.03763555
+   ],
+   [
+    427000,
+    3500,
+    1301,
+    3780,
+    1291,
+    1.037716935
+   ],
+   [
+    433000,
+    3508,
+    1301,
+    3790,
+    1291,
+    1.037221639
+   ],
+   [
+    439000,
+    3508,
+    1301,
+    3791,
+    1292,
+    1.036749993
+   ],
+   [
+    445000,
+    3508,
+    1301,
+    3795,
+    1292,
+    1.037162927
+   ],
+   [
+    451000,
+    3555,
+    1340,
+    3834,
+    1321,
+    1.037528354
+   ],
+   [
+    457000,
+    3555,
+    1340,
+    3836,
+    1321,
+    1.037052935
+   ],
+   [
+    463000,
+    3566,
+    1340,
+    3851,
+    1321,
+    1.036613661
+   ],
+   [
+    469000,
+    3568,
+    1342,
+    3855,
+    1325,
+    1.036537516
+   ],
+   [
+    475000,
+    3568,
+    1342,
+    3858,
+    1328,
+    1.037131993
+   ],
+   [
+    481000,
+    3589,
+    1343,
+    3882,
+    1329,
+    1.036906464
+   ],
+   [
+    487000,
+    3589,
+    1343,
+    3882,
+    1329,
+    1.036479669
+   ],
+   [
+    493000,
+    3589,
+    1343,
+    3882,
+    1329,
+    1.036057937
+   ],
+   [
+    499000,
+    3589,
+    1343,
+    3886,
+    1332,
+    1.036521557
+   ],
+   [
+    505000,
+    3589,
+    1343,
+    3886,
+    1332,
+    1.036739437
+   ],
+   [
+    511000,
+    3601,
+    1343,
+    3901,
+    1334,
+    1.036323272
+   ],
+   [
+    517000,
+    3601,
+    1343,
+    3903,
+    1336,
+    1.035917616
+   ],
+   [
+    523000,
+    3601,
+    1343,
+    3904,
+    1337,
+    1.035931745
+   ],
+   [
+    529000,
+    3603,
+    1343,
+    3909,
+    1339,
+    1.03647412
+   ],
+   [
+    535000,
+    3606,
+    1346,
+    3910,
+    1340,
+    1.036187488
+   ],
+   [
+    541000,
+    3606,
+    1346,
+    3910,
+    1340,
+    1.035811384
+   ],
+   [
+    547000,
+    3626,
+    1346,
+    3943,
+    1341,
+    1.035434393
+   ],
+   [
+    553000,
+    3630,
+    1350,
+    3946,
+    1344,
+    1.035944781
+   ],
+   [
+    557152,
+    3868,
+    1353,
+    4183,
+    1346,
+    1.03920441
+   ]
+  ]
+ },
+ "processes_with_samples": 2,
+ "top_processes": [
+  {
+   "pid": 2634596,
+   "comm": "zstd_base.uarch",
+   "samples": 557125,
+   "share": 0.9999515393
+  },
+  {
+   "pid": 2634595,
+   "comm": "runuser",
+   "samples": 8,
+   "share": 1.435873873e-05
+  }
+ ],
+ "top_objects_by_footprint": [
+  {
+   "obj_id": 1,
+   "kind": "kernel",
+   "path": "[kernel]",
+   "footprint_bytes": 160960,
+   "footprint_share": 0.6502068252,
+   "entries": 106098,
+   "entries_share": 0.005950935324,
+   "unique_taken_branches": 2837
+  },
+  {
+   "obj_id": 179,
+   "kind": "file",
+   "path": "/home/thu/spec26-infra/cpu2026/benchspec/CPU/777.zstd_r/run/run_base_refrate_uarch.0000/zstd_base.uarch",
+   "footprint_bytes": 73600,
+   "footprint_share": 0.297311272,
+   "entries": 17719041,
+   "entries_share": 0.9938440592,
+   "unique_taken_branches": 1155
+  },
+  {
+   "obj_id": 25,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+   "footprint_bytes": 8960,
+   "footprint_share": 0.03619441572,
+   "entries": 3503,
+   "entries_share": 0.0001964799189,
+   "unique_taken_branches": 127
+  },
+  {
+   "obj_id": 123,
+   "kind": "file",
+   "path": "/usr/bin/bash",
+   "footprint_bytes": 4032,
+   "footprint_share": 0.01628748707,
+   "entries": 152,
+   "entries_share": 8.525534593e-06,
+   "unique_taken_branches": 64
+  }
+ ],
+ "top_objects_by_entries": [
+  {
+   "obj_id": 179,
+   "kind": "file",
+   "path": "/home/thu/spec26-infra/cpu2026/benchspec/CPU/777.zstd_r/run/run_base_refrate_uarch.0000/zstd_base.uarch",
+   "footprint_bytes": 73600,
+   "footprint_share": 0.297311272,
+   "entries": 17719041,
+   "entries_share": 0.9938440592,
+   "unique_taken_branches": 1155
+  },
+  {
+   "obj_id": 1,
+   "kind": "kernel",
+   "path": "[kernel]",
+   "footprint_bytes": 160960,
+   "footprint_share": 0.6502068252,
+   "entries": 106098,
+   "entries_share": 0.005950935324,
+   "unique_taken_branches": 2837
+  },
+  {
+   "obj_id": 25,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+   "footprint_bytes": 8960,
+   "footprint_share": 0.03619441572,
+   "entries": 3503,
+   "entries_share": 0.0001964799189,
+   "unique_taken_branches": 127
+  },
+  {
+   "obj_id": 123,
+   "kind": "file",
+   "path": "/usr/bin/bash",
+   "footprint_bytes": 4032,
+   "footprint_share": 0.01628748707,
+   "entries": 152,
+   "entries_share": 8.525534593e-06,
+   "unique_taken_branches": 64
+  }
+ ],
+ "diagnostics": {
+  "samples": 557152,
+  "samples_empty": 0,
+  "entries": 17828794,
+  "near_entries": 17828479,
+  "far_entries": 315,
+  "zero_address_entries": 0,
+  "unmapped_entries": 0,
+  "kernel_unmapped_entries": 0,
+  "candidate_ranges": 17271642,
+  "discontinuities": 52,
+  "discontinuity_rate": 3.010715484e-06,
+  "discontinuities_by_reason": {
+   "cross_mapping": 0,
+   "negative": 52,
+   "over_4096": 0,
+   "unmapped_end": 0
+  },
+  "range_lines_added": 33865351,
+  "lost_samples": 0,
+  "lost_from_PERF_RECORD_LOST": 0,
+  "lost_from_PERF_RECORD_LOST_SAMPLES": 0,
+  "lost_records": 0,
+  "lost_records_unparsed": 0,
+  "unparsed_lines": 0,
+  "unparsed_examples": [],
+  "type_conflicts": 0,
+  "offset_overflow": 0,
+  "mmap_events": 7298,
+  "mmap_kernel": 207,
+  "mmap_nonexec_ignored": 0,
+  "comm_exec_events": 1280,
+  "fork_process_events": 2155,
+  "fork_thread_events": 94,
+  "exit_events": 1726,
+  "other_events": 0,
+  "pids_tracked": 2155,
+  "objects_total": 179,
+  "unique_edges": 4550,
+  "unique_far_edges": 79,
+  "input_bytes": 839222553,
+  "input_lines": 570252,
+  "elapsed_s": 4.972813893,
+  "samples_per_s": 112039.584,
+  "input_MB_per_s": 168.7621075
+ },
+ "workload": "777.zstd_r",
+ "capture": {
+  "benchmark": "777.zstd_r",
+  "cmd_index": 0,
+  "command": "../run_base_refrate_uarch.0000/zstd_base.uarch -b3 -e3 --verbose -i40 cld.tar > zstd.b3_e3_verbose_i40_cld.tar.out 2>> zstd.b3_e3_verbose_i40_cld.tar.err",
+  "wall_s": 21.421231985092163,
+  "ts_start": 1793703688.34714,
+  "ts_end": 1793703709.768372,
+  "bench_exit_status": 0,
+  "output_check": {
+   "status": "pass",
+   "cmd_index": 0,
+   "n_checked": 1,
+   "checked": [
+    "zstd.b3_e3_verbose_i40_cld.tar.out"
+   ],
+   "failed": [],
+   "errors": [],
+   "not_produced": 7,
+   "stale_ignored": 0,
+   "specinvoke_rc": 0,
+   "stderr": ""
+  },
+  "binary_sha256_16": "d7fe76d1188bffc7",
+  "kit_rev": "e8a77d5bdda9",
+  "cpus_measured": "4-11",
+  "governor": "performance",
+  "no_turbo": "1",
+  "smt": "off",
+  "iso_proof": "ISO-PROOF quiet-check: max busy 0.0% on measured cores (silent)",
+  "foreign_witness": {
+   "witness_rows": 12,
+   "rows_with_foreign_task": 0,
+   "mean_foreign_cpu_pct": 5.9,
+   "worst_row": "root:plymouthd[440]=3% thu:claude[478160]=3% thu:claude[2324339]=3%"
+  },
+  "frontend_footprint": {
+   "contract": "docs/handoff/execution/frontend_footprint_method.md v1.1",
+   "event": "br_inst_retired.near_taken:pp",
+   "period": 20011,
+   "branch_filter": "any,save_type",
+   "scope": "perf record -a -C <measured> --cgroup=<fence>",
+   "stat_events": "cycles,instructions,br_inst_retired.near_taken",
+   "window": "benchmark released from a FIFO gate after both perf instances acknowledged enable, to scope exit",
+   "perf_version": "perf version 6.8.12",
+   "perf_record_cmd": "/usr/lib/linux-tools-6.8.0-147/perf record -z -m 512M -e br_inst_retired.near_taken:pp -c 20011 -j any,save_type -a -C 4-11 --cgroup=measured.slice/spec-zstd.scope -D -1 --control=fifo:rec.ctl,rec.ack -o lbr.data",
+   "perf_stat_cmd": "/usr/lib/linux-tools-6.8.0-147/perf stat -x, -a -C 4-11 -e cycles,instructions,br_inst_retired.near_taken --for-each-cgroup=measured.slice/spec-zstd.scope -D -1 --control=fifo:stat.ctl,stat.ack -o exact_counts.csv",
+   "perf_record_rc": "130",
+   "perf_stat_rc": "130",
+   "perf_event_max_sample_rate": 3000
+  }
+ },
+ "exact_counts": {
+  "cycles": 66383433677.0,
+  "instructions": 179742800438.0,
+  "br_inst_retired.near_taken": 11150891125.0
+ },
+ "gates_v4": {
+  "analyzer_ok": true,
+  "exit_status_0": true,
+  "output_check": "pass",
+  "output_ok": true,
+  "lost_pct": 0.0,
+  "lost_ok": true,
+  "sample_coverage": 0.9998455322556116,
+  "coverage_ok": true,
+  "mean_cores": 0.995,
+  "occupancy_ok": true,
+  "perf_record_stats": {
+   "TOTAL": 570847,
+   "MMAP": 176,
+   "COMM": 1827,
+   "EXIT": 1726,
+   "FORK": 2249,
+   "SAMPLE": 557152,
+   "MMAP2": 7122,
+   "FINISHED_ROUND": 5,
+   "ID_INDEX": 1,
+   "THREAD_MAP": 1,
+   "CPU_MAP": 1,
+   "EVENT_UPDATE": 1,
+   "TIME_CONV": 1,
+   "COMPRESSED": 584,
+   "FINISHED_INIT": 1
+  },
+  "throttle_events": 0,
+  "throttle_ok": true,
+  "witness": {
+   "witness_rows": 12,
+   "rows_with_foreign_task": 0,
+   "mean_foreign_cpu_pct": 5.9,
+   "worst_row": "root:plymouthd[440]=3% thu:claude[478160]=3% thu:claude[2324339]=3%"
+  },
+  "iso_proof": "ISO-PROOF quiet-check: max busy 0.0% on measured cores (silent)",
+  "all_ok": true
+ }
+}

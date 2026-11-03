@@ -1,0 +1,1277 @@
+{
+ "analyzer": "lbr_footprint",
+ "analyzer_version": "1.0",
+ "analyzer_sha": "31c492b25f13b5178b1dfd91aeb2dbe4cbe1fd86",
+ "analyzer_src_sha256": "298e417a3dc3dbd0591380ccc36f6986b6c3aeb2e83c4d5a582759bcbd2dce22",
+ "mode": "lbr",
+ "meta": {
+  "workload": "766.femflow_r",
+  "period": "20011"
+ },
+ "footprint_bytes": 955840,
+ "footprint_bytes_user": 741696,
+ "footprint_bytes_kernel": 214144,
+ "footprint_lines": 14935,
+ "unique_taken_branches": 12953,
+ "unique_taken_branches_user": 9104,
+ "unique_taken_branches_kernel": 3849,
+ "wavg_targets_all": 1.22140837,
+ "wavg_targets_all_user": 1.194217171,
+ "wavg_targets_all_kernel": 3.457592734,
+ "wavg_targets_noret": 1.001361754,
+ "wavg_targets_noret_user": 1.001370358,
+ "wavg_targets_noret_kernel": 1.000469845,
+ "wavg_targets_indirect": 1.380622568,
+ "wavg_targets_indirect_user": 1.386217521,
+ "wavg_targets_indirect_kernel": 1.070751445,
+ "weff_targets_all": 1.074164396,
+ "weff_targets_all_user": 1.06886637,
+ "weff_targets_all_kernel": 1.509870198,
+ "weff_targets_noret": 1.00074903,
+ "weff_targets_noret_user": 1.000753801,
+ "weff_targets_noret_kernel": 1.000254411,
+ "weff_targets_indirect": 1.209360611,
+ "weff_targets_indirect_user": 1.21244905,
+ "weff_targets_indirect_kernel": 1.038310403,
+ "wavg_targets_ge1pct_all": 1.09576595,
+ "wavg_targets_ge1pct_all_user": 1.088474142,
+ "wavg_targets_ge1pct_all_kernel": 1.695438934,
+ "wavg_targets_ge1pct_noret": 1.001146295,
+ "wavg_targets_ge1pct_noret_user": 1.00115282,
+ "wavg_targets_ge1pct_noret_kernel": 1.000469845,
+ "wavg_targets_ge1pct_indirect": 1.320399736,
+ "wavg_targets_ge1pct_indirect_user": 1.324907321,
+ "wavg_targets_ge1pct_indirect_kernel": 1.070751445,
+ "unique_taken_branches_by_type": {
+  "all": {
+   "COND": 5980,
+   "UNCOND": 1992,
+   "CALL": 3058,
+   "IND_CALL": 268,
+   "IND": 128,
+   "RET": 1527
+  },
+  "user": {
+   "COND": 4452,
+   "UNCOND": 1482,
+   "CALL": 1982,
+   "IND_CALL": 233,
+   "IND": 127,
+   "RET": 828
+  },
+  "kernel": {
+   "COND": 1528,
+   "UNCOND": 510,
+   "CALL": 1076,
+   "IND_CALL": 35,
+   "IND": 1,
+   "RET": 699
+  }
+ },
+ "taken_entries_by_type": {
+  "COND": 60637540,
+  "UNCOND": 3089301,
+  "CALL": 4190656,
+  "IND_CALL": 74533,
+  "IND": 169328,
+  "RET": 4258140
+ },
+ "far_transfers": {
+  "entries": 3010,
+  "unique_from": 276,
+  "entries_by_type": {
+   "IRQ": 1479,
+   "ERET": 1527,
+   "SYSCALL": 3,
+   "SYSRET": 1
+  }
+ },
+ "convergence": {
+  "points": [
+   {
+    "pct": 25,
+    "samples": 565802,
+    "footprint_bytes": 840000,
+    "footprint_bytes_user": 656960,
+    "footprint_bytes_kernel": 183040,
+    "unique_taken_branches": 10673,
+    "unique_taken_branches_user": 7431,
+    "unique_taken_branches_kernel": 3242,
+    "wavg_targets_all": 1.2325751
+   },
+   {
+    "pct": 50,
+    "samples": 1131603,
+    "footprint_bytes": 888192,
+    "footprint_bytes_user": 692160,
+    "footprint_bytes_kernel": 196032,
+    "unique_taken_branches": 11664,
+    "unique_taken_branches_user": 8150,
+    "unique_taken_branches_kernel": 3514,
+    "wavg_targets_all": 1.209692402
+   },
+   {
+    "pct": 75,
+    "samples": 1697405,
+    "footprint_bytes": 919936,
+    "footprint_bytes_user": 715456,
+    "footprint_bytes_kernel": 204480,
+    "unique_taken_branches": 12287,
+    "unique_taken_branches_user": 8618,
+    "unique_taken_branches_kernel": 3669,
+    "wavg_targets_all": 1.208357542
+   },
+   {
+    "pct": 100,
+    "samples": 2263206,
+    "footprint_bytes": 955840,
+    "footprint_bytes_user": 741696,
+    "footprint_bytes_kernel": 214144,
+    "unique_taken_branches": 12953,
+    "unique_taken_branches_user": 9104,
+    "unique_taken_branches_kernel": 3849,
+    "wavg_targets_all": 1.22140837
+   }
+  ],
+  "last_quarter_growth_pct": {
+   "footprint": 3.756277201,
+   "unique_taken_branches": 5.141666023,
+   "footprint_user": 3.537837605,
+   "unique_taken_branches_user": 5.33831283
+  },
+  "note": "share of the final unique count first seen in the last 25 % of the run; well above 0 means the unique counts are still rising, i.e. sampling-limited lower bounds",
+  "unit": "samples",
+  "snapshot_every": 1000,
+  "curve_columns": [
+   "units",
+   "footprint_lines",
+   "footprint_lines_user",
+   "unique_taken_branches",
+   "unique_taken_branches_user",
+   "wavg_targets_all"
+  ],
+  "curve": [
+   [
+    1000,
+    2176,
+    1207,
+    2197,
+    1171,
+    1.280897119
+   ],
+   [
+    24000,
+    6178,
+    4427,
+    5372,
+    3536,
+    1.408500613
+   ],
+   [
+    47000,
+    7336,
+    5408,
+    6284,
+    4240,
+    1.265508111
+   ],
+   [
+    70000,
+    10970,
+    8814,
+    8102,
+    5803,
+    1.277755677
+   ],
+   [
+    93000,
+    11320,
+    9025,
+    8476,
+    6009,
+    1.272389709
+   ],
+   [
+    116000,
+    11496,
+    9146,
+    8650,
+    6109,
+    1.253552787
+   ],
+   [
+    139000,
+    11698,
+    9263,
+    8907,
+    6242,
+    1.258478374
+   ],
+   [
+    162000,
+    11742,
+    9278,
+    8964,
+    6263,
+    1.246978942
+   ],
+   [
+    185000,
+    11922,
+    9404,
+    9174,
+    6411,
+    1.245984884
+   ],
+   [
+    208000,
+    11972,
+    9442,
+    9245,
+    6459,
+    1.238836088
+   ],
+   [
+    231000,
+    12074,
+    9482,
+    9369,
+    6502,
+    1.238322577
+   ],
+   [
+    254000,
+    12190,
+    9548,
+    9525,
+    6590,
+    1.237616139
+   ],
+   [
+    277000,
+    12261,
+    9574,
+    9618,
+    6634,
+    1.235698571
+   ],
+   [
+    300000,
+    12323,
+    9619,
+    9699,
+    6685,
+    1.237477413
+   ],
+   [
+    323000,
+    12354,
+    9650,
+    9737,
+    6720,
+    1.232497723
+   ],
+   [
+    346000,
+    12428,
+    9683,
+    9830,
+    6759,
+    1.234674733
+   ],
+   [
+    369000,
+    12616,
+    9863,
+    10034,
+    6946,
+    1.235051473
+   ],
+   [
+    392000,
+    12883,
+    10106,
+    10362,
+    7239,
+    1.267079195
+   ],
+   [
+    415000,
+    12920,
+    10140,
+    10429,
+    7300,
+    1.261486712
+   ],
+   [
+    438000,
+    12949,
+    10147,
+    10467,
+    7314,
+    1.255094321
+   ],
+   [
+    461000,
+    13010,
+    10179,
+    10532,
+    7354,
+    1.25051854
+   ],
+   [
+    484000,
+    13010,
+    10179,
+    10537,
+    7356,
+    1.244876332
+   ],
+   [
+    507000,
+    13074,
+    10232,
+    10596,
+    7398,
+    1.239554212
+   ],
+   [
+    530000,
+    13091,
+    10244,
+    10624,
+    7414,
+    1.235824832
+   ],
+   [
+    553000,
+    13101,
+    10254,
+    10634,
+    7424,
+    1.234214305
+   ],
+   [
+    576000,
+    13128,
+    10268,
+    10677,
+    7435,
+    1.230664385
+   ],
+   [
+    599000,
+    13176,
+    10286,
+    10732,
+    7460,
+    1.22717388
+   ],
+   [
+    622000,
+    13210,
+    10313,
+    10771,
+    7490,
+    1.226092056
+   ],
+   [
+    645000,
+    13243,
+    10346,
+    10811,
+    7530,
+    1.223651471
+   ],
+   [
+    668000,
+    13296,
+    10386,
+    10870,
+    7573,
+    1.221065446
+   ],
+   [
+    691000,
+    13337,
+    10416,
+    10929,
+    7609,
+    1.222046987
+   ],
+   [
+    714000,
+    13340,
+    10419,
+    10934,
+    7614,
+    1.219392099
+   ],
+   [
+    737000,
+    13357,
+    10433,
+    10966,
+    7638,
+    1.216342296
+   ],
+   [
+    760000,
+    13388,
+    10452,
+    11013,
+    7667,
+    1.215058721
+   ],
+   [
+    783000,
+    13388,
+    10452,
+    11013,
+    7667,
+    1.213136549
+   ],
+   [
+    806000,
+    13420,
+    10463,
+    11054,
+    7683,
+    1.211052447
+   ],
+   [
+    829000,
+    13443,
+    10486,
+    11091,
+    7720,
+    1.209499924
+   ],
+   [
+    852000,
+    13518,
+    10559,
+    11172,
+    7799,
+    1.209244894
+   ],
+   [
+    875000,
+    13709,
+    10732,
+    11417,
+    8020,
+    1.228412853
+   ],
+   [
+    898000,
+    13733,
+    10740,
+    11457,
+    8037,
+    1.226226724
+   ],
+   [
+    921000,
+    13760,
+    10764,
+    11510,
+    8083,
+    1.224063791
+   ],
+   [
+    944000,
+    13776,
+    10780,
+    11531,
+    8104,
+    1.22244427
+   ],
+   [
+    967000,
+    13777,
+    10781,
+    11533,
+    8106,
+    1.220178116
+   ],
+   [
+    990000,
+    13785,
+    10789,
+    11550,
+    8121,
+    1.21831901
+   ],
+   [
+    1013000,
+    13790,
+    10794,
+    11554,
+    8125,
+    1.217283864
+   ],
+   [
+    1036000,
+    13860,
+    10806,
+    11626,
+    8131,
+    1.215633996
+   ],
+   [
+    1059000,
+    13862,
+    10808,
+    11629,
+    8134,
+    1.213634041
+   ],
+   [
+    1082000,
+    13867,
+    10810,
+    11635,
+    8137,
+    1.212600478
+   ],
+   [
+    1105000,
+    13875,
+    10812,
+    11650,
+    8138,
+    1.210878742
+   ],
+   [
+    1128000,
+    13875,
+    10812,
+    11658,
+    8144,
+    1.209528229
+   ],
+   [
+    1151000,
+    13888,
+    10817,
+    11682,
+    8156,
+    1.209636942
+   ],
+   [
+    1174000,
+    13906,
+    10829,
+    11699,
+    8169,
+    1.208045055
+   ],
+   [
+    1197000,
+    13909,
+    10830,
+    11710,
+    8174,
+    1.206384818
+   ],
+   [
+    1220000,
+    13927,
+    10848,
+    11726,
+    8190,
+    1.206057441
+   ],
+   [
+    1243000,
+    13931,
+    10852,
+    11743,
+    8207,
+    1.204952488
+   ],
+   [
+    1266000,
+    13942,
+    10863,
+    11760,
+    8224,
+    1.204160031
+   ],
+   [
+    1289000,
+    14003,
+    10924,
+    11838,
+    8302,
+    1.207660116
+   ],
+   [
+    1312000,
+    14156,
+    11077,
+    12012,
+    8476,
+    1.22001833
+   ],
+   [
+    1335000,
+    14163,
+    11084,
+    12027,
+    8491,
+    1.219769169
+   ],
+   [
+    1358000,
+    14177,
+    11087,
+    12047,
+    8495,
+    1.218502335
+   ],
+   [
+    1381000,
+    14198,
+    11104,
+    12066,
+    8511,
+    1.218477255
+   ],
+   [
+    1404000,
+    14211,
+    11106,
+    12080,
+    8513,
+    1.217420061
+   ],
+   [
+    1427000,
+    14211,
+    11106,
+    12085,
+    8517,
+    1.215865686
+   ],
+   [
+    1450000,
+    14236,
+    11108,
+    12119,
+    8526,
+    1.215214041
+   ],
+   [
+    1473000,
+    14239,
+    11111,
+    12122,
+    8529,
+    1.214510337
+   ],
+   [
+    1496000,
+    14245,
+    11111,
+    12129,
+    8529,
+    1.213129819
+   ],
+   [
+    1519000,
+    14267,
+    11113,
+    12153,
+    8533,
+    1.211692637
+   ],
+   [
+    1542000,
+    14290,
+    11130,
+    12179,
+    8553,
+    1.212073321
+   ],
+   [
+    1565000,
+    14324,
+    11133,
+    12214,
+    8558,
+    1.211664251
+   ],
+   [
+    1588000,
+    14328,
+    11133,
+    12225,
+    8558,
+    1.210292855
+   ],
+   [
+    1611000,
+    14342,
+    11147,
+    12240,
+    8573,
+    1.210069304
+   ],
+   [
+    1634000,
+    14348,
+    11153,
+    12251,
+    8584,
+    1.209401601
+   ],
+   [
+    1657000,
+    14348,
+    11153,
+    12254,
+    8586,
+    1.208650783
+   ],
+   [
+    1680000,
+    14374,
+    11179,
+    12287,
+    8618,
+    1.208597716
+   ],
+   [
+    1703000,
+    14374,
+    11179,
+    12287,
+    8618,
+    1.208204101
+   ],
+   [
+    1726000,
+    14379,
+    11183,
+    12298,
+    8626,
+    1.207437627
+   ],
+   [
+    1749000,
+    14381,
+    11185,
+    12300,
+    8628,
+    1.206271074
+   ],
+   [
+    1772000,
+    14394,
+    11198,
+    12316,
+    8644,
+    1.206536798
+   ],
+   [
+    1795000,
+    14539,
+    11343,
+    12500,
+    8828,
+    1.217818728
+   ],
+   [
+    1818000,
+    14554,
+    11358,
+    12528,
+    8853,
+    1.218718364
+   ],
+   [
+    1841000,
+    14555,
+    11359,
+    12534,
+    8859,
+    1.217473119
+   ],
+   [
+    1864000,
+    14561,
+    11365,
+    12544,
+    8868,
+    1.216529861
+   ],
+   [
+    1887000,
+    14567,
+    11371,
+    12552,
+    8876,
+    1.216352068
+   ],
+   [
+    1910000,
+    14572,
+    11376,
+    12561,
+    8884,
+    1.215211178
+   ],
+   [
+    1933000,
+    14618,
+    11418,
+    12590,
+    8908,
+    1.215089532
+   ],
+   [
+    1956000,
+    14621,
+    11421,
+    12593,
+    8911,
+    1.21508013
+   ],
+   [
+    1979000,
+    14648,
+    11421,
+    12615,
+    8911,
+    1.213985083
+   ],
+   [
+    2002000,
+    14674,
+    11422,
+    12637,
+    8915,
+    1.212977513
+   ],
+   [
+    2025000,
+    14676,
+    11424,
+    12643,
+    8921,
+    1.213010024
+   ],
+   [
+    2048000,
+    14679,
+    11427,
+    12651,
+    8929,
+    1.212189211
+   ],
+   [
+    2071000,
+    14683,
+    11431,
+    12659,
+    8936,
+    1.211222548
+   ],
+   [
+    2094000,
+    14687,
+    11435,
+    12666,
+    8943,
+    1.211170677
+   ],
+   [
+    2117000,
+    14687,
+    11435,
+    12668,
+    8944,
+    1.210138966
+   ],
+   [
+    2140000,
+    14692,
+    11440,
+    12674,
+    8950,
+    1.209250826
+   ],
+   [
+    2163000,
+    14692,
+    11440,
+    12675,
+    8951,
+    1.209007233
+   ],
+   [
+    2186000,
+    14697,
+    11443,
+    12687,
+    8957,
+    1.208809448
+   ],
+   [
+    2209000,
+    14708,
+    11453,
+    12704,
+    8971,
+    1.208033487
+   ],
+   [
+    2232000,
+    14746,
+    11491,
+    12743,
+    9010,
+    1.211902403
+   ],
+   [
+    2255000,
+    14835,
+    11580,
+    12814,
+    9080,
+    1.21730976
+   ],
+   [
+    2263206,
+    14935,
+    11589,
+    12953,
+    9104,
+    1.22140837
+   ]
+  ]
+ },
+ "processes_with_samples": 2,
+ "top_processes": [
+  {
+   "pid": 2612065,
+   "comm": "femflow_r_base.",
+   "samples": 2263198,
+   "share": 0.9999964652
+  },
+  {
+   "pid": 2612064,
+   "comm": "runuser",
+   "samples": 8,
+   "share": 3.534808586e-06
+  }
+ ],
+ "top_objects_by_footprint": [
+  {
+   "obj_id": 179,
+   "kind": "file",
+   "path": "/home/thu/spec26-infra/cpu2026/benchspec/CPU/766.femflow_r/run/run_base_refrate_uarch.0000/femflow_r_base.uarch",
+   "footprint_bytes": 686464,
+   "footprint_share": 0.7181787747,
+   "entries": 70932776,
+   "entries_share": 0.979429986,
+   "unique_taken_branches": 8109
+  },
+  {
+   "obj_id": 1,
+   "kind": "kernel",
+   "path": "[kernel]",
+   "footprint_bytes": 214144,
+   "footprint_share": 0.2240374958,
+   "entries": 871544,
+   "entries_share": 0.01203415933,
+   "unique_taken_branches": 3849
+  },
+  {
+   "obj_id": 25,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+   "footprint_bytes": 23296,
+   "footprint_share": 0.02437227988,
+   "entries": 533011,
+   "entries_share": 0.007359742361,
+   "unique_taken_branches": 494
+  },
+  {
+   "obj_id": 145,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33",
+   "footprint_bytes": 15872,
+   "footprint_share": 0.01660528959,
+   "entries": 81136,
+   "entries_share": 0.001120314696,
+   "unique_taken_branches": 312
+  },
+  {
+   "obj_id": 123,
+   "kind": "file",
+   "path": "/usr/bin/bash",
+   "footprint_bytes": 6336,
+   "footprint_share": 0.006628724473,
+   "entries": 161,
+   "entries_share": 2.223065791e-06,
+   "unique_taken_branches": 91
+  },
+  {
+   "obj_id": 20,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+   "footprint_bytes": 5184,
+   "footprint_share": 0.005423501841,
+   "entries": 3139,
+   "entries_share": 4.334287898e-05,
+   "unique_taken_branches": 43
+  },
+  {
+   "obj_id": 37,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+   "footprint_bytes": 4160,
+   "footprint_share": 0.004352192836,
+   "entries": 470,
+   "entries_share": 6.489695165e-06,
+   "unique_taken_branches": 52
+  },
+  {
+   "obj_id": 36,
+   "kind": "special",
+   "path": "[vdso]",
+   "footprint_bytes": 384,
+   "footprint_share": 0.0004017408771,
+   "entries": 271,
+   "entries_share": 3.741930616e-06,
+   "unique_taken_branches": 3
+  }
+ ],
+ "top_objects_by_entries": [
+  {
+   "obj_id": 179,
+   "kind": "file",
+   "path": "/home/thu/spec26-infra/cpu2026/benchspec/CPU/766.femflow_r/run/run_base_refrate_uarch.0000/femflow_r_base.uarch",
+   "footprint_bytes": 686464,
+   "footprint_share": 0.7181787747,
+   "entries": 70932776,
+   "entries_share": 0.979429986,
+   "unique_taken_branches": 8109
+  },
+  {
+   "obj_id": 1,
+   "kind": "kernel",
+   "path": "[kernel]",
+   "footprint_bytes": 214144,
+   "footprint_share": 0.2240374958,
+   "entries": 871544,
+   "entries_share": 0.01203415933,
+   "unique_taken_branches": 3849
+  },
+  {
+   "obj_id": 25,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+   "footprint_bytes": 23296,
+   "footprint_share": 0.02437227988,
+   "entries": 533011,
+   "entries_share": 0.007359742361,
+   "unique_taken_branches": 494
+  },
+  {
+   "obj_id": 145,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33",
+   "footprint_bytes": 15872,
+   "footprint_share": 0.01660528959,
+   "entries": 81136,
+   "entries_share": 0.001120314696,
+   "unique_taken_branches": 312
+  },
+  {
+   "obj_id": 20,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+   "footprint_bytes": 5184,
+   "footprint_share": 0.005423501841,
+   "entries": 3139,
+   "entries_share": 4.334287898e-05,
+   "unique_taken_branches": 43
+  },
+  {
+   "obj_id": 37,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+   "footprint_bytes": 4160,
+   "footprint_share": 0.004352192836,
+   "entries": 470,
+   "entries_share": 6.489695165e-06,
+   "unique_taken_branches": 52
+  },
+  {
+   "obj_id": 36,
+   "kind": "special",
+   "path": "[vdso]",
+   "footprint_bytes": 384,
+   "footprint_share": 0.0004017408771,
+   "entries": 271,
+   "entries_share": 3.741930616e-06,
+   "unique_taken_branches": 3
+  },
+  {
+   "obj_id": 123,
+   "kind": "file",
+   "path": "/usr/bin/bash",
+   "footprint_bytes": 6336,
+   "footprint_share": 0.006628724473,
+   "entries": 161,
+   "entries_share": 2.223065791e-06,
+   "unique_taken_branches": 91
+  }
+ ],
+ "diagnostics": {
+  "samples": 2263206,
+  "samples_empty": 0,
+  "entries": 72422508,
+  "near_entries": 72419498,
+  "far_entries": 3010,
+  "zero_address_entries": 0,
+  "unmapped_entries": 0,
+  "kernel_unmapped_entries": 0,
+  "candidate_ranges": 70159302,
+  "discontinuities": 12018,
+  "discontinuity_rate": 0.0001712958889,
+  "discontinuities_by_reason": {
+   "cross_mapping": 1,
+   "negative": 1,
+   "over_4096": 12016,
+   "unmapped_end": 0
+  },
+  "range_lines_added": 270326314,
+  "lost_samples": 0,
+  "lost_from_PERF_RECORD_LOST": 0,
+  "lost_from_PERF_RECORD_LOST_SAMPLES": 0,
+  "lost_records": 0,
+  "lost_records_unparsed": 0,
+  "unparsed_lines": 0,
+  "unparsed_examples": [],
+  "type_conflicts": 0,
+  "offset_overflow": 0,
+  "mmap_events": 54162,
+  "mmap_kernel": 207,
+  "mmap_nonexec_ignored": 0,
+  "comm_exec_events": 10342,
+  "fork_process_events": 14228,
+  "fork_thread_events": 209,
+  "exit_events": 13923,
+  "other_events": 0,
+  "pids_tracked": 14228,
+  "objects_total": 196,
+  "unique_edges": 15029,
+  "unique_far_edges": 563,
+  "input_bytes": 3390856568,
+  "input_lines": 2356726,
+  "elapsed_s": 19.92592109,
+  "samples_per_s": 113580.9978,
+  "input_MB_per_s": 170.1731404
+ },
+ "workload": "766.femflow_r",
+ "capture": {
+  "benchmark": "766.femflow_r",
+  "cmd_index": 0,
+  "command": "../run_base_refrate_uarch.0000/femflow_r_base.uarch refrate.prm > femflow.out 2>> femflow.err",
+  "wall_s": 175.89600896835327,
+  "ts_start": 1793703158.726406,
+  "ts_end": 1793703334.622415,
+  "bench_exit_status": 0,
+  "output_check": {
+   "status": "pass",
+   "cmd_index": 0,
+   "n_checked": 1,
+   "checked": [
+    "femflow.out"
+   ],
+   "failed": [],
+   "errors": [],
+   "not_produced": 0,
+   "stale_ignored": 0,
+   "specinvoke_rc": 0,
+   "stderr": ""
+  },
+  "binary_sha256_16": "cad9d4363be7bc9b",
+  "kit_rev": "e8a77d5bdda9",
+  "cpus_measured": "4-11",
+  "governor": "performance",
+  "no_turbo": "1",
+  "smt": "off",
+  "iso_proof": "ISO-PROOF quiet-check: max busy 0.0% on measured cores (silent)",
+  "foreign_witness": {
+   "witness_rows": 89,
+   "rows_with_foreign_task": 2,
+   "mean_foreign_cpu_pct": 6.6,
+   "worst_row": "root:kswapd0[194]=20% root:kcompactd0[170]=5% root:plymouthd[440]=4% thu:claude[2324339]=3% thu:claude[478160]=1%"
+  },
+  "frontend_footprint": {
+   "contract": "docs/handoff/execution/frontend_footprint_method.md v1.1",
+   "event": "br_inst_retired.near_taken:pp",
+   "period": 20011,
+   "branch_filter": "any,save_type",
+   "scope": "perf record -a -C <measured> --cgroup=<fence>",
+   "stat_events": "cycles,instructions,br_inst_retired.near_taken",
+   "window": "benchmark released from a FIFO gate after both perf instances acknowledged enable, to scope exit",
+   "perf_version": "perf version 6.8.12",
+   "perf_record_cmd": "/usr/lib/linux-tools-6.8.0-147/perf record -z -m 512M -e br_inst_retired.near_taken:pp -c 20011 -j any,save_type -a -C 4-11 --cgroup=measured.slice/spec-femflow.scope -D -1 --control=fifo:rec.ctl,rec.ack -o lbr.data",
+   "perf_stat_cmd": "/usr/lib/linux-tools-6.8.0-147/perf stat -x, -a -C 4-11 -e cycles,instructions,br_inst_retired.near_taken --for-each-cgroup=measured.slice/spec-femflow.scope -D -1 --control=fifo:stat.ctl,stat.ack -o exact_counts.csv",
+   "perf_record_rc": "130",
+   "perf_stat_rc": "130",
+   "perf_event_max_sample_rate": 3000
+  }
+ },
+ "exact_counts": {
+  "cycles": 553565575795.0,
+  "instructions": 1590609270981.0,
+  "br_inst_retired.near_taken": 45296454643.0
+ },
+ "gates_v4": {
+  "analyzer_ok": true,
+  "exit_status_0": true,
+  "output_check": "pass",
+  "output_ok": true,
+  "lost_pct": 0.0,
+  "lost_ok": true,
+  "sample_coverage": 0.9998357624882868,
+  "coverage_ok": true,
+  "mean_cores": 0.999,
+  "occupancy_ok": true,
+  "perf_record_stats": {
+   "TOTAL": 2358282,
+   "MMAP": 176,
+   "COMM": 10998,
+   "EXIT": 13923,
+   "FORK": 14437,
+   "SAMPLE": 2263206,
+   "MMAP2": 53986,
+   "FINISHED_ROUND": 14,
+   "ID_INDEX": 1,
+   "THREAD_MAP": 1,
+   "CPU_MAP": 1,
+   "EVENT_UPDATE": 1,
+   "TIME_CONV": 1,
+   "COMPRESSED": 1536,
+   "FINISHED_INIT": 1
+  },
+  "throttle_events": 0,
+  "throttle_ok": true,
+  "witness": {
+   "witness_rows": 89,
+   "rows_with_foreign_task": 2,
+   "mean_foreign_cpu_pct": 6.6,
+   "worst_row": "root:kswapd0[194]=20% root:kcompactd0[170]=5% root:plymouthd[440]=4% thu:claude[2324339]=3% thu:claude[478160]=1%"
+  },
+  "iso_proof": "ISO-PROOF quiet-check: max busy 0.0% on measured cores (silent)",
+  "all_ok": true
+ }
+}

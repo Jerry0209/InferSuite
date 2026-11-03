@@ -1,0 +1,169 @@
+gate,name,metric,value,threshold,verdict,source
+V1,v1,footprint_lines,368,368 +- 2 lines,PASS,check_v1.json
+V1,v1,unique_taken_branches,541,541 exact,PASS,check_v1.json
+V1,v1,wavg_targets_all_rel_err,1.616837797e-05,< 0.01,PASS,check_v1.json
+V1,v1,wavg_targets_noret_rel_err,4.677802877e-05,< 0.01,PASS,check_v1.json
+V1,v1,wavg_targets_indirect_rel_err,0.0005208005512,< 0.01,PASS,check_v1.json
+V1,v1,pass,1,all checks,PASS,check_v1.json
+V1_defect,v1_contract_v1_bare_event,footprint_lines,368,368 +- 2 lines,unaffected,"check_v1.json (contract v1, bare event)"
+V1_defect,v1_contract_v1_bare_event,unique_taken_branches,541,541 exact,unaffected,"check_v1.json (contract v1, bare event)"
+V1_defect,v1_contract_v1_bare_event,wavg_targets_all_rel_err,0.01796448505,< 0.01,DEFECT_FIXED_IN_v1.1,"check_v1.json (contract v1, bare event)"
+V1_defect,v1_contract_v1_bare_event,wavg_targets_noret_rel_err,0.01975642369,< 0.01,DEFECT_FIXED_IN_v1.1,"check_v1.json (contract v1, bare event)"
+V1_defect,v1_contract_v1_bare_event,wavg_targets_indirect_rel_err,0.03677684031,< 0.01,DEFECT_FIXED_IN_v1.1,"check_v1.json (contract v1, bare event)"
+V1_defect,v1_contract_v1_bare_event,pass,0,all checks,DEFECT_FIXED_IN_v1.1,"check_v1.json (contract v1, bare event)"
+analyzer,production,analyzer_sha,31c492b25f13b5178b1dfd91aeb2dbe4cbe1fd86,one SHA,OK,summary.json of every aggregated episode (main + V3)
+analyzer,production,analyzer_src_sha256,298e417a3dc3dbd0591380ccc36f6986b6c3aeb2e83c4d5a582759bcbd2dce22,one value,OK,summary.json
+analyzer,V1,analyzer_src_sha256,298e417a3dc3dbd0591380ccc36f6986b6c3aeb2e83c4d5a582759bcbd2dce22,= production,same,v1/summary.json
+V2,v2_python,footprint_recall,0.2568409806,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,footprint_precision,0.9997689464,>= 0.99,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,footprint_pt,16847,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,footprint_lbr,4328,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,unique_branches_recall,0.1697158697,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,unique_branches_precision,0.9991840065,>= 0.99,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,unique_branches_pt,28860,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,unique_branches_lbr,4902,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,edges_recall,0.1446788338,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,edges_precision,0.9991815354,>= 0.99,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,edges_pt,42190,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,edges_lbr,6109,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,wavg_targets_all_rel_err,-0.6107241974,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,wavg_targets_noret_rel_err,-0.4260864703,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,wavg_targets_indirect_rel_err,-0.5510669793,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,weff_targets_all_rel_err,-0.001256018831,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,weff_targets_noret_rel_err,-0.001119697033,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,weff_targets_indirect_rel_err,-0.003297441422,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,wavg_targets_ge1pct_all_rel_err,-0.0003488626442,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,wavg_targets_ge1pct_noret_rel_err,0.00192627627,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,wavg_targets_ge1pct_indirect_rel_err,0.003265698091,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,wavg_targets_all_rel_err_lbr_C_pt_T,0.004809274695,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,wavg_targets_noret_rel_err_lbr_C_pt_T,0.006921040274,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,wavg_targets_indirect_rel_err_lbr_C_pt_T,0.008164365649,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,footprint_recall_at_25pct,0.2333946697,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,branch_recall_at_25pct,0.1488565489,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,footprint_recall_at_50pct,0.2414079658,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,branch_recall_at_50pct,0.1553361053,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,footprint_recall_at_75pct,0.2519736452,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,branch_recall_at_75pct,0.1628551629,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,pt_attribution_ok,1,true,REPORTED,compare.json (user-space file/special objects)
+V2,v2_python,identical_stdout,,true,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,footprint_recall,0.4900869848,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,footprint_precision,0.9989765435,>= 0.99,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,footprint_pt,73691,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,footprint_lbr,36152,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,unique_branches_recall,0.423982987,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,unique_branches_precision,0.9994265631,>= 0.99,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,unique_branches_pt,127432,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,unique_branches_lbr,54060,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,edges_recall,0.3909711917,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,edges_precision,0.9994833415,>= 0.99,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,edges_pt,173179,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,edges_lbr,67743,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,wavg_targets_all_rel_err,-0.4838242893,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,wavg_targets_noret_rel_err,-0.05437613598,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,wavg_targets_indirect_rel_err,-0.2722616149,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,weff_targets_all_rel_err,0.001255752321,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,weff_targets_noret_rel_err,-0.0002816796979,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,weff_targets_indirect_rel_err,-0.001141567492,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,wavg_targets_ge1pct_all_rel_err,-0.01258192438,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,wavg_targets_ge1pct_noret_rel_err,-0.002977472589,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,wavg_targets_ge1pct_indirect_rel_err,-0.01929022583,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,wavg_targets_all_rel_err_lbr_C_pt_T,-0.001219276889,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,wavg_targets_noret_rel_err_lbr_C_pt_T,-0.001357988104,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,wavg_targets_indirect_rel_err_lbr_C_pt_T,-0.003533486904,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,footprint_recall_at_25pct,0.3964663256,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,branch_recall_at_25pct,0.3205395819,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,footprint_recall_at_50pct,0.4511405735,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,branch_recall_at_50pct,0.3793474167,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,footprint_recall_at_75pct,0.4767474997,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,branch_recall_at_75pct,0.4075506937,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,pt_attribution_ok,1,true,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gcc_train,identical_stdout,1,true,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,footprint_recall,0.5340313617,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,footprint_precision,0.9999814513,>= 0.99,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,footprint_pt,100951,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,footprint_lbr,53912,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,unique_branches_recall,0.3871224962,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,unique_branches_precision,0.9999646909,>= 0.99,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,unique_branches_pt,219468,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,unique_branches_lbr,84964,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,edges_recall,0.355057811,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,edges_precision,0.9999726205,>= 0.99,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,edges_pt,308592,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,edges_lbr,109571,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,wavg_targets_all_rel_err,-0.4788355203,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,wavg_targets_noret_rel_err,-0.09597411037,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,wavg_targets_indirect_rel_err,-0.2871411641,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,weff_targets_all_rel_err,-0.001288581919,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,weff_targets_noret_rel_err,0.0004713580971,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,weff_targets_indirect_rel_err,-0.001057171259,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,wavg_targets_ge1pct_all_rel_err,-0.002123930231,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,wavg_targets_ge1pct_noret_rel_err,-0.008202994026,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,wavg_targets_ge1pct_indirect_rel_err,-0.04388573226,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,wavg_targets_all_rel_err_lbr_C_pt_T,-0.005311055972,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,wavg_targets_noret_rel_err_lbr_C_pt_T,0.0008708108511,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,wavg_targets_indirect_rel_err_lbr_C_pt_T,-0.003917212115,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,footprint_recall_at_25pct,0.2430981367,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,branch_recall_at_25pct,0.1622058797,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,footprint_recall_at_50pct,0.4578359798,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,branch_recall_at_50pct,0.3148340533,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,footprint_recall_at_75pct,0.4998464602,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,branch_recall_at_75pct,0.3569905408,,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,pt_attribution_ok,1,true,REPORTED,compare.json (user-space file/special objects)
+V2,v2_gxx,identical_stdout,1,true,REPORTED,compare.json (user-space file/special objects)
+analyzer,v2_python,analyzer_src_sha256,2fbd49d30837f6e6d7856eba51b0e1d9801d8d0b9117ec543073c5cc6e56efa1,= production,DIFFERENT,v2/v2_python/lbr/summary.json
+analyzer,v2_gcc_train,analyzer_src_sha256,298e417a3dc3dbd0591380ccc36f6986b6c3aeb2e83c4d5a582759bcbd2dce22,= production,same,v2/v2_gcc_train/lbr/summary.json
+analyzer,v2_gxx,analyzer_src_sha256,298e417a3dc3dbd0591380ccc36f6986b6c3aeb2e83c4d5a582759bcbd2dce22,= production,same,v2/v2_gxx/lbr/summary.json
+V3,736.ocio_r,ratio_footprint_bytes,1.518702513,,REPORTED,period 5003 / 20011
+V3,736.ocio_r,ratio_footprint_bytes_user,1.721804511,,REPORTED,period 5003 / 20011
+V3,736.ocio_r,ratio_footprint_bytes_kernel,1.38957935,,REPORTED,period 5003 / 20011
+V3,736.ocio_r,ratio_unique_taken_branches,1.592815941,,REPORTED,period 5003 / 20011
+V3,736.ocio_r,ratio_unique_taken_branches_user,1.802047782,,REPORTED,period 5003 / 20011
+V3,736.ocio_r,ratio_unique_taken_branches_kernel,1.462324393,,REPORTED,period 5003 / 20011
+V3,736.ocio_r,ratio_wavg_targets_all,1.050614597,,REPORTED,period 5003 / 20011
+V3,736.ocio_r,ratio_wavg_targets_noret,1.000003073,,REPORTED,period 5003 / 20011
+V3,736.ocio_r,ratio_wavg_targets_indirect,1.000183674,,REPORTED,period 5003 / 20011
+V3,736.ocio_r,ratio_weff_targets_all,1.000342577,,REPORTED,period 5003 / 20011
+V3,736.ocio_r,ratio_weff_targets_noret,0.9999978672,,REPORTED,period 5003 / 20011
+V3,736.ocio_r,ratio_weff_targets_indirect,0.9993413141,,REPORTED,period 5003 / 20011
+V3,736.ocio_r,ratio_wavg_targets_ge1pct_all,1.000619617,,REPORTED,period 5003 / 20011
+V3,736.ocio_r,ratio_wavg_targets_ge1pct_noret,1.000003073,,REPORTED,period 5003 / 20011
+V3,736.ocio_r,ratio_wavg_targets_ge1pct_indirect,1.000183674,,REPORTED,period 5003 / 20011
+V3,721.gcc_r,ratio_footprint_bytes,1.136439751,,REPORTED,period 5003 / 20011
+V3,721.gcc_r,ratio_footprint_bytes_user,1.130805595,,REPORTED,period 5003 / 20011
+V3,721.gcc_r,ratio_footprint_bytes_kernel,1.252929408,,REPORTED,period 5003 / 20011
+V3,721.gcc_r,ratio_unique_taken_branches,1.171374352,,REPORTED,period 5003 / 20011
+V3,721.gcc_r,ratio_unique_taken_branches_user,1.168283477,,REPORTED,period 5003 / 20011
+V3,721.gcc_r,ratio_unique_taken_branches_kernel,1.269727047,,REPORTED,period 5003 / 20011
+V3,721.gcc_r,ratio_wavg_targets_all,1.134067086,,REPORTED,period 5003 / 20011
+V3,721.gcc_r,ratio_wavg_targets_noret,1.013204285,,REPORTED,period 5003 / 20011
+V3,721.gcc_r,ratio_wavg_targets_indirect,1.066655914,,REPORTED,period 5003 / 20011
+V3,721.gcc_r,ratio_weff_targets_all,1.00051615,,REPORTED,period 5003 / 20011
+V3,721.gcc_r,ratio_weff_targets_noret,1.00021606,,REPORTED,period 5003 / 20011
+V3,721.gcc_r,ratio_weff_targets_indirect,1.002302688,,REPORTED,period 5003 / 20011
+V3,721.gcc_r,ratio_wavg_targets_ge1pct_all,1.003608134,,REPORTED,period 5003 / 20011
+V3,721.gcc_r,ratio_wavg_targets_ge1pct_noret,1.000313702,,REPORTED,period 5003 / 20011
+V3,721.gcc_r,ratio_wavg_targets_ge1pct_indirect,1.001780822,,REPORTED,period 5003 / 20011
+V3,749.fotonik3d_r,ratio_footprint_bytes,1.251957295,,REPORTED,period 5003 / 20011
+V3,749.fotonik3d_r,ratio_footprint_bytes_user,1.190243902,,REPORTED,period 5003 / 20011
+V3,749.fotonik3d_r,ratio_footprint_bytes_kernel,1.316363636,,REPORTED,period 5003 / 20011
+V3,749.fotonik3d_r,ratio_unique_taken_branches,1.283326701,,REPORTED,period 5003 / 20011
+V3,749.fotonik3d_r,ratio_unique_taken_branches_user,1.228004292,,REPORTED,period 5003 / 20011
+V3,749.fotonik3d_r,ratio_unique_taken_branches_kernel,1.315939279,,REPORTED,period 5003 / 20011
+V3,749.fotonik3d_r,ratio_wavg_targets_all,1.008527328,,REPORTED,period 5003 / 20011
+V3,749.fotonik3d_r,ratio_wavg_targets_noret,1.000017588,,REPORTED,period 5003 / 20011
+V3,749.fotonik3d_r,ratio_wavg_targets_indirect,1.013042911,,REPORTED,period 5003 / 20011
+V3,749.fotonik3d_r,ratio_weff_targets_all,1.000024345,,REPORTED,period 5003 / 20011
+V3,749.fotonik3d_r,ratio_weff_targets_noret,0.999998957,,REPORTED,period 5003 / 20011
+V3,749.fotonik3d_r,ratio_weff_targets_indirect,0.9992294335,,REPORTED,period 5003 / 20011
+V3,749.fotonik3d_r,ratio_wavg_targets_ge1pct_all,0.9997168573,,REPORTED,period 5003 / 20011
+V3,749.fotonik3d_r,ratio_wavg_targets_ge1pct_noret,0.9999954972,,REPORTED,period 5003 / 20011
+V3,749.fotonik3d_r,ratio_wavg_targets_ge1pct_indirect,0.996684403,,REPORTED,period 5003 / 20011
+August,734.vpr_r,instructions_within_1pct,,1 %,NO_PROOF,August has no whole-run instruction total
+August,734.vpr_r,substitute_a_instr_ratio_extrap,1.083153523,,REPORTED,instructions / (August raw instructions x wall_s / seconds)
+August,734.vpr_r,substitute_b_ipc_ratio,0.9942905021,,REPORTED,(instructions / cycles) / August IPC
+August,735.gem5_r,instructions_within_1pct,,1 %,NO_PROOF,August has no whole-run instruction total
+August,735.gem5_r,substitute_a_instr_ratio_extrap,1.075134156,,REPORTED,instructions / (August raw instructions x wall_s / seconds)
+August,735.gem5_r,substitute_b_ipc_ratio,0.9857972175,,REPORTED,(instructions / cycles) / August IPC
+August,772.marian_r,instructions_within_1pct,,1 %,NO_PROOF,August has no whole-run instruction total
+August,772.marian_r,substitute_a_instr_ratio_extrap,1.089439172,,REPORTED,instructions / (August raw instructions x wall_s / seconds)
+August,772.marian_r,substitute_b_ipc_ratio,0.9801167666,,REPORTED,(instructions / cycles) / August IPC

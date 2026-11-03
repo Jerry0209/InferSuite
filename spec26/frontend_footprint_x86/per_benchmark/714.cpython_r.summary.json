@@ -1,0 +1,1247 @@
+{
+ "analyzer": "lbr_footprint",
+ "analyzer_version": "1.0",
+ "analyzer_sha": "31c492b25f13b5178b1dfd91aeb2dbe4cbe1fd86",
+ "analyzer_src_sha256": "298e417a3dc3dbd0591380ccc36f6986b6c3aeb2e83c4d5a582759bcbd2dce22",
+ "mode": "lbr",
+ "meta": {
+  "workload": "714.cpython_r",
+  "period": "20011"
+ },
+ "footprint_bytes": 648320,
+ "footprint_bytes_user": 424192,
+ "footprint_bytes_kernel": 224128,
+ "footprint_lines": 10130,
+ "unique_taken_branches": 13774,
+ "unique_taken_branches_user": 9805,
+ "unique_taken_branches_kernel": 3969,
+ "wavg_targets_all": 10.33254691,
+ "wavg_targets_all_user": 10.35292288,
+ "wavg_targets_all_kernel": 3.601535789,
+ "wavg_targets_noret": 8.711806495,
+ "wavg_targets_noret_user": 8.733091,
+ "wavg_targets_noret_kernel": 1.000094183,
+ "wavg_targets_indirect": 53.22642516,
+ "wavg_targets_indirect_user": 53.23194288,
+ "wavg_targets_indirect_kernel": 1.016613419,
+ "weff_targets_all": 2.545455329,
+ "weff_targets_all_user": 2.548644415,
+ "weff_targets_all_kernel": 1.491970656,
+ "weff_targets_noret": 2.511658436,
+ "weff_targets_noret_user": 2.515830413,
+ "weff_targets_noret_kernel": 1.000085266,
+ "weff_targets_indirect": 11.23735699,
+ "weff_targets_indirect_user": 11.23843733,
+ "weff_targets_indirect_kernel": 1.015040551,
+ "wavg_targets_ge1pct_all": 3.203075315,
+ "wavg_targets_ge1pct_all_user": 3.207902338,
+ "wavg_targets_ge1pct_all_kernel": 1.608513413,
+ "wavg_targets_ge1pct_noret": 3.232284169,
+ "wavg_targets_ge1pct_noret_user": 3.238445065,
+ "wavg_targets_ge1pct_noret_kernel": 1.000094183,
+ "wavg_targets_ge1pct_indirect": 16.11762804,
+ "wavg_targets_ge1pct_indirect_user": 16.11922397,
+ "wavg_targets_ge1pct_indirect_kernel": 1.016613419,
+ "unique_taken_branches_by_type": {
+  "all": {
+   "COND": 6046,
+   "UNCOND": 1977,
+   "CALL": 3706,
+   "IND_CALL": 225,
+   "IND": 118,
+   "RET": 1702
+  },
+  "user": {
+   "COND": 4522,
+   "UNCOND": 1462,
+   "CALL": 2594,
+   "IND_CALL": 183,
+   "IND": 117,
+   "RET": 927
+  },
+  "kernel": {
+   "COND": 1524,
+   "UNCOND": 515,
+   "CALL": 1112,
+   "IND_CALL": 42,
+   "IND": 1,
+   "RET": 775
+  }
+ },
+ "taken_entries_by_type": {
+  "COND": 49641513,
+  "UNCOND": 18311517,
+  "CALL": 17533668,
+  "IND_CALL": 2857947,
+  "IND": 11951949,
+  "RET": 20650696
+ },
+ "far_transfers": {
+  "entries": 1274,
+  "unique_from": 111,
+  "entries_by_type": {
+   "ERET": 642,
+   "IRQ": 624,
+   "SYSRET": 6,
+   "SYSCALL": 2
+  }
+ },
+ "convergence": {
+  "points": [
+   {
+    "pct": 25,
+    "samples": 944911,
+    "footprint_bytes": 589696,
+    "footprint_bytes_user": 400064,
+    "footprint_bytes_kernel": 189632,
+    "unique_taken_branches": 12452,
+    "unique_taken_branches_user": 9168,
+    "unique_taken_branches_kernel": 3284,
+    "wavg_targets_all": 9.142342979
+   },
+   {
+    "pct": 50,
+    "samples": 1889822,
+    "footprint_bytes": 619584,
+    "footprint_bytes_user": 411328,
+    "footprint_bytes_kernel": 208256,
+    "unique_taken_branches": 13102,
+    "unique_taken_branches_user": 9453,
+    "unique_taken_branches_kernel": 3649,
+    "wavg_targets_all": 9.83674699
+   },
+   {
+    "pct": 75,
+    "samples": 2834733,
+    "footprint_bytes": 631040,
+    "footprint_bytes_user": 412480,
+    "footprint_bytes_kernel": 218560,
+    "unique_taken_branches": 13344,
+    "unique_taken_branches_user": 9489,
+    "unique_taken_branches_kernel": 3855,
+    "wavg_targets_all": 9.818237682
+   },
+   {
+    "pct": 100,
+    "samples": 3779644,
+    "footprint_bytes": 648320,
+    "footprint_bytes_user": 424192,
+    "footprint_bytes_kernel": 224128,
+    "unique_taken_branches": 13774,
+    "unique_taken_branches_user": 9805,
+    "unique_taken_branches_kernel": 3969,
+    "wavg_targets_all": 10.33254691
+   }
+  ],
+  "last_quarter_growth_pct": {
+   "footprint": 2.665350444,
+   "unique_taken_branches": 3.121823726,
+   "footprint_user": 2.761013881,
+   "unique_taken_branches_user": 3.222845487
+  },
+  "note": "share of the final unique count first seen in the last 25 % of the run; well above 0 means the unique counts are still rising, i.e. sampling-limited lower bounds",
+  "unit": "samples",
+  "snapshot_every": 1000,
+  "curve_columns": [
+   "units",
+   "footprint_lines",
+   "footprint_lines_user",
+   "unique_taken_branches",
+   "unique_taken_branches_user",
+   "wavg_targets_all"
+  ],
+  "curve": [
+   [
+    1000,
+    3647,
+    2666,
+    4412,
+    3403,
+    3.607689903
+   ],
+   [
+    39000,
+    8529,
+    6200,
+    11589,
+    9079,
+    8.616379538
+   ],
+   [
+    77000,
+    8626,
+    6202,
+    11715,
+    9086,
+    8.827439731
+   ],
+   [
+    115000,
+    8708,
+    6210,
+    11818,
+    9109,
+    8.948627086
+   ],
+   [
+    153000,
+    8772,
+    6211,
+    11903,
+    9112,
+    8.999085343
+   ],
+   [
+    191000,
+    8822,
+    6211,
+    11968,
+    9112,
+    9.047354579
+   ],
+   [
+    229000,
+    8845,
+    6212,
+    11995,
+    9113,
+    9.035679243
+   ],
+   [
+    267000,
+    8845,
+    6212,
+    11996,
+    9113,
+    9.039640468
+   ],
+   [
+    305000,
+    8877,
+    6220,
+    12028,
+    9120,
+    9.066276096
+   ],
+   [
+    343000,
+    8884,
+    6220,
+    12036,
+    9121,
+    9.084625738
+   ],
+   [
+    381000,
+    8903,
+    6220,
+    12057,
+    9123,
+    9.068405931
+   ],
+   [
+    419000,
+    8913,
+    6221,
+    12074,
+    9127,
+    9.079677609
+   ],
+   [
+    457000,
+    8973,
+    6245,
+    12149,
+    9150,
+    9.092660946
+   ],
+   [
+    495000,
+    8976,
+    6248,
+    12154,
+    9155,
+    9.10069941
+   ],
+   [
+    533000,
+    9017,
+    6248,
+    12199,
+    9155,
+    9.10793736
+   ],
+   [
+    571000,
+    9064,
+    6249,
+    12264,
+    9156,
+    9.110119062
+   ],
+   [
+    609000,
+    9127,
+    6249,
+    12329,
+    9157,
+    9.116224438
+   ],
+   [
+    647000,
+    9135,
+    6249,
+    12345,
+    9158,
+    9.119108452
+   ],
+   [
+    685000,
+    9151,
+    6249,
+    12360,
+    9160,
+    9.124860889
+   ],
+   [
+    723000,
+    9159,
+    6249,
+    12374,
+    9160,
+    9.130020043
+   ],
+   [
+    761000,
+    9159,
+    6249,
+    12375,
+    9160,
+    9.133849581
+   ],
+   [
+    799000,
+    9174,
+    6249,
+    12396,
+    9160,
+    9.137046512
+   ],
+   [
+    837000,
+    9176,
+    6251,
+    12408,
+    9168,
+    9.147153518
+   ],
+   [
+    875000,
+    9176,
+    6251,
+    12409,
+    9168,
+    9.14921636
+   ],
+   [
+    913000,
+    9183,
+    6251,
+    12422,
+    9168,
+    9.141254571
+   ],
+   [
+    951000,
+    9214,
+    6251,
+    12452,
+    9168,
+    9.143207373
+   ],
+   [
+    989000,
+    9217,
+    6251,
+    12454,
+    9168,
+    9.146876226
+   ],
+   [
+    1027000,
+    9295,
+    6251,
+    12552,
+    9168,
+    9.150400917
+   ],
+   [
+    1065000,
+    9307,
+    6252,
+    12573,
+    9171,
+    9.15242217
+   ],
+   [
+    1103000,
+    9322,
+    6252,
+    12588,
+    9171,
+    9.151173305
+   ],
+   [
+    1141000,
+    9322,
+    6252,
+    12591,
+    9173,
+    9.151023092
+   ],
+   [
+    1179000,
+    9325,
+    6252,
+    12596,
+    9173,
+    9.153795264
+   ],
+   [
+    1217000,
+    9327,
+    6252,
+    12600,
+    9173,
+    9.152687955
+   ],
+   [
+    1255000,
+    9358,
+    6252,
+    12631,
+    9173,
+    9.155103624
+   ],
+   [
+    1293000,
+    9368,
+    6252,
+    12649,
+    9173,
+    9.154566148
+   ],
+   [
+    1331000,
+    9399,
+    6252,
+    12684,
+    9173,
+    9.155153722
+   ],
+   [
+    1369000,
+    9406,
+    6252,
+    12695,
+    9173,
+    9.157810343
+   ],
+   [
+    1407000,
+    9411,
+    6252,
+    12699,
+    9173,
+    9.163052477
+   ],
+   [
+    1445000,
+    9412,
+    6253,
+    12703,
+    9174,
+    9.164973913
+   ],
+   [
+    1483000,
+    9412,
+    6253,
+    12703,
+    9174,
+    9.163348141
+   ],
+   [
+    1521000,
+    9412,
+    6253,
+    12703,
+    9174,
+    9.163992186
+   ],
+   [
+    1559000,
+    9412,
+    6253,
+    12703,
+    9174,
+    9.163350256
+   ],
+   [
+    1597000,
+    9418,
+    6256,
+    12720,
+    9179,
+    9.151896388
+   ],
+   [
+    1635000,
+    9442,
+    6256,
+    12736,
+    9179,
+    9.155179325
+   ],
+   [
+    1673000,
+    9531,
+    6310,
+    12881,
+    9276,
+    9.194289176
+   ],
+   [
+    1711000,
+    9636,
+    6412,
+    13049,
+    9432,
+    9.489778994
+   ],
+   [
+    1749000,
+    9648,
+    6422,
+    13069,
+    9449,
+    9.567979341
+   ],
+   [
+    1787000,
+    9658,
+    6427,
+    13081,
+    9453,
+    9.644963376
+   ],
+   [
+    1825000,
+    9681,
+    6427,
+    13102,
+    9453,
+    9.718201344
+   ],
+   [
+    1863000,
+    9681,
+    6427,
+    13102,
+    9453,
+    9.789497134
+   ],
+   [
+    1901000,
+    9696,
+    6427,
+    13129,
+    9453,
+    9.858005991
+   ],
+   [
+    1939000,
+    9696,
+    6427,
+    13129,
+    9453,
+    9.922645252
+   ],
+   [
+    1977000,
+    9774,
+    6435,
+    13217,
+    9467,
+    9.971631883
+   ],
+   [
+    2015000,
+    9792,
+    6436,
+    13241,
+    9473,
+    9.966665066
+   ],
+   [
+    2053000,
+    9793,
+    6437,
+    13245,
+    9477,
+    9.957325104
+   ],
+   [
+    2091000,
+    9797,
+    6441,
+    13249,
+    9481,
+    9.952115251
+   ],
+   [
+    2129000,
+    9835,
+    6441,
+    13292,
+    9481,
+    9.942388163
+   ],
+   [
+    2167000,
+    9841,
+    6441,
+    13302,
+    9481,
+    9.933454048
+   ],
+   [
+    2205000,
+    9841,
+    6441,
+    13302,
+    9481,
+    9.925063545
+   ],
+   [
+    2243000,
+    9841,
+    6441,
+    13305,
+    9482,
+    9.916751522
+   ],
+   [
+    2281000,
+    9841,
+    6441,
+    13307,
+    9484,
+    9.908161381
+   ],
+   [
+    2319000,
+    9841,
+    6441,
+    13307,
+    9484,
+    9.900123151
+   ],
+   [
+    2357000,
+    9843,
+    6441,
+    13314,
+    9487,
+    9.896054231
+   ],
+   [
+    2395000,
+    9843,
+    6441,
+    13314,
+    9487,
+    9.8886784
+   ],
+   [
+    2433000,
+    9843,
+    6441,
+    13314,
+    9487,
+    9.881444818
+   ],
+   [
+    2471000,
+    9844,
+    6441,
+    13320,
+    9487,
+    9.880383796
+   ],
+   [
+    2509000,
+    9844,
+    6441,
+    13320,
+    9487,
+    9.870244865
+   ],
+   [
+    2547000,
+    9844,
+    6441,
+    13320,
+    9487,
+    9.860826348
+   ],
+   [
+    2585000,
+    9844,
+    6441,
+    13320,
+    9487,
+    9.85887439
+   ],
+   [
+    2623000,
+    9848,
+    6445,
+    13322,
+    9489,
+    9.859822616
+   ],
+   [
+    2661000,
+    9852,
+    6445,
+    13325,
+    9489,
+    9.847096209
+   ],
+   [
+    2699000,
+    9852,
+    6445,
+    13325,
+    9489,
+    9.840008572
+   ],
+   [
+    2737000,
+    9852,
+    6445,
+    13325,
+    9489,
+    9.836704614
+   ],
+   [
+    2775000,
+    9852,
+    6445,
+    13325,
+    9489,
+    9.82702103
+   ],
+   [
+    2813000,
+    9856,
+    6445,
+    13335,
+    9489,
+    9.818969604
+   ],
+   [
+    2851000,
+    9866,
+    6445,
+    13353,
+    9491,
+    9.809137597
+   ],
+   [
+    2889000,
+    9866,
+    6445,
+    13353,
+    9491,
+    9.806278339
+   ],
+   [
+    2927000,
+    9866,
+    6445,
+    13353,
+    9491,
+    9.801245507
+   ],
+   [
+    2965000,
+    9866,
+    6445,
+    13353,
+    9491,
+    9.794853619
+   ],
+   [
+    3003000,
+    9866,
+    6445,
+    13353,
+    9491,
+    9.78767973
+   ],
+   [
+    3041000,
+    9867,
+    6445,
+    13355,
+    9491,
+    9.789351735
+   ],
+   [
+    3079000,
+    9867,
+    6445,
+    13355,
+    9491,
+    9.787902118
+   ],
+   [
+    3117000,
+    9867,
+    6445,
+    13355,
+    9491,
+    9.786322544
+   ],
+   [
+    3155000,
+    9867,
+    6445,
+    13355,
+    9491,
+    9.787309693
+   ],
+   [
+    3193000,
+    9867,
+    6445,
+    13355,
+    9491,
+    9.787838565
+   ],
+   [
+    3231000,
+    9867,
+    6445,
+    13356,
+    9492,
+    9.787949906
+   ],
+   [
+    3269000,
+    9867,
+    6445,
+    13356,
+    9492,
+    9.786573168
+   ],
+   [
+    3307000,
+    9869,
+    6447,
+    13360,
+    9496,
+    9.783913589
+   ],
+   [
+    3345000,
+    9869,
+    6447,
+    13360,
+    9496,
+    9.78219395
+   ],
+   [
+    3383000,
+    9869,
+    6447,
+    13361,
+    9496,
+    9.780681493
+   ],
+   [
+    3421000,
+    9869,
+    6447,
+    13361,
+    9496,
+    9.775931371
+   ],
+   [
+    3459000,
+    9869,
+    6447,
+    13361,
+    9496,
+    9.772442456
+   ],
+   [
+    3497000,
+    9897,
+    6475,
+    13405,
+    9540,
+    9.819713407
+   ],
+   [
+    3535000,
+    9908,
+    6486,
+    13430,
+    9565,
+    9.864606957
+   ],
+   [
+    3573000,
+    9908,
+    6486,
+    13430,
+    9565,
+    9.902936372
+   ],
+   [
+    3611000,
+    9908,
+    6486,
+    13430,
+    9565,
+    9.940400381
+   ],
+   [
+    3649000,
+    9913,
+    6491,
+    13432,
+    9567,
+    9.97618033
+   ],
+   [
+    3687000,
+    9917,
+    6491,
+    13443,
+    9567,
+    10.01103381
+   ],
+   [
+    3725000,
+    9919,
+    6492,
+    13448,
+    9569,
+    10.05095597
+   ],
+   [
+    3763000,
+    9919,
+    6492,
+    13448,
+    9569,
+    10.08476071
+   ],
+   [
+    3779644,
+    10130,
+    6628,
+    13774,
+    9805,
+    10.33254691
+   ]
+  ]
+ },
+ "processes_with_samples": 2,
+ "top_processes": [
+  {
+   "pid": 2479880,
+   "comm": "cpython_r_base.",
+   "samples": 3779636,
+   "share": 0.9999978834
+  },
+  {
+   "pid": 2479879,
+   "comm": "runuser",
+   "samples": 8,
+   "share": 2.116601458e-06
+  }
+ ],
+ "top_objects_by_footprint": [
+  {
+   "obj_id": 179,
+   "kind": "file",
+   "path": "/home/thu/spec26-infra/cpu2026/benchspec/CPU/714.cpython_r/run/run_base_refrate_uarch.0000/cpython_r_base.uarch",
+   "footprint_bytes": 404736,
+   "footprint_share": 0.624284304,
+   "entries": 117774566,
+   "entries_share": 0.9737574561,
+   "unique_taken_branches": 9433
+  },
+  {
+   "obj_id": 1,
+   "kind": "kernel",
+   "path": "[kernel]",
+   "footprint_bytes": 224128,
+   "footprint_share": 0.3457058243,
+   "entries": 365672,
+   "entries_share": 0.003023367851,
+   "unique_taken_branches": 3969
+  },
+  {
+   "obj_id": 25,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+   "footprint_bytes": 15040,
+   "footprint_share": 0.02319842053,
+   "entries": 2808061,
+   "entries_share": 0.02321698503,
+   "unique_taken_branches": 303
+  },
+  {
+   "obj_id": 123,
+   "kind": "file",
+   "path": "/usr/bin/bash",
+   "footprint_bytes": 3328,
+   "footprint_share": 0.005133267522,
+   "entries": 199,
+   "entries_share": 1.645327513e-06,
+   "unique_taken_branches": 52
+  },
+  {
+   "obj_id": 180,
+   "kind": "anon",
+   "path": "//anon",
+   "pid": 2479879,
+   "footprint_bytes": 768,
+   "footprint_share": 0.001184600197,
+   "entries": 11,
+   "entries_share": 9.094775197e-08,
+   "unique_taken_branches": 11
+  },
+  {
+   "obj_id": 37,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+   "footprint_bytes": 320,
+   "footprint_share": 0.0004935834156,
+   "entries": 55,
+   "entries_share": 4.547387599e-07,
+   "unique_taken_branches": 6
+  }
+ ],
+ "top_objects_by_entries": [
+  {
+   "obj_id": 179,
+   "kind": "file",
+   "path": "/home/thu/spec26-infra/cpu2026/benchspec/CPU/714.cpython_r/run/run_base_refrate_uarch.0000/cpython_r_base.uarch",
+   "footprint_bytes": 404736,
+   "footprint_share": 0.624284304,
+   "entries": 117774566,
+   "entries_share": 0.9737574561,
+   "unique_taken_branches": 9433
+  },
+  {
+   "obj_id": 25,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+   "footprint_bytes": 15040,
+   "footprint_share": 0.02319842053,
+   "entries": 2808061,
+   "entries_share": 0.02321698503,
+   "unique_taken_branches": 303
+  },
+  {
+   "obj_id": 1,
+   "kind": "kernel",
+   "path": "[kernel]",
+   "footprint_bytes": 224128,
+   "footprint_share": 0.3457058243,
+   "entries": 365672,
+   "entries_share": 0.003023367851,
+   "unique_taken_branches": 3969
+  },
+  {
+   "obj_id": 123,
+   "kind": "file",
+   "path": "/usr/bin/bash",
+   "footprint_bytes": 3328,
+   "footprint_share": 0.005133267522,
+   "entries": 199,
+   "entries_share": 1.645327513e-06,
+   "unique_taken_branches": 52
+  },
+  {
+   "obj_id": 37,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+   "footprint_bytes": 320,
+   "footprint_share": 0.0004935834156,
+   "entries": 55,
+   "entries_share": 4.547387599e-07,
+   "unique_taken_branches": 6
+  },
+  {
+   "obj_id": 180,
+   "kind": "anon",
+   "path": "//anon",
+   "pid": 2479879,
+   "footprint_bytes": 768,
+   "footprint_share": 0.001184600197,
+   "entries": 11,
+   "entries_share": 9.094775197e-08,
+   "unique_taken_branches": 11
+  }
+ ],
+ "diagnostics": {
+  "samples": 3779644,
+  "samples_empty": 0,
+  "entries": 120948564,
+  "near_entries": 120947290,
+  "far_entries": 1274,
+  "zero_address_entries": 0,
+  "unmapped_entries": 12,
+  "kernel_unmapped_entries": 0,
+  "candidate_ranges": 117168920,
+  "discontinuities": 44,
+  "discontinuity_rate": 3.755262061e-07,
+  "discontinuities_by_reason": {
+   "cross_mapping": 0,
+   "negative": 32,
+   "over_4096": 0,
+   "unmapped_end": 12
+  },
+  "range_lines_added": 162855922,
+  "lost_samples": 0,
+  "lost_from_PERF_RECORD_LOST": 0,
+  "lost_from_PERF_RECORD_LOST_SAMPLES": 0,
+  "lost_records": 0,
+  "lost_records_unparsed": 0,
+  "unparsed_lines": 0,
+  "unparsed_examples": [],
+  "type_conflicts": 0,
+  "offset_overflow": 0,
+  "mmap_events": 19293,
+  "mmap_kernel": 207,
+  "mmap_nonexec_ignored": 0,
+  "comm_exec_events": 3600,
+  "fork_process_events": 5242,
+  "fork_thread_events": 108,
+  "exit_events": 4840,
+  "other_events": 0,
+  "pids_tracked": 5242,
+  "objects_total": 180,
+  "unique_edges": 17047,
+  "unique_far_edges": 215,
+  "input_bytes": 5620982578,
+  "input_lines": 3813282,
+  "elapsed_s": 31.73583184,
+  "samples_per_s": 119097.0515,
+  "input_MB_per_s": 177.1178587
+ },
+ "workload": "714.cpython_r",
+ "capture": {
+  "benchmark": "714.cpython_r",
+  "cmd_index": 0,
+  "command": "../run_base_refrate_uarch.0000/cpython_r_base.uarch -I -B coreml_pb.py -i 2 -a -m Resnet50Headless.mlmodel -d 10 > cpython_r_0.out 2>> cpython_r_0.err",
+  "wall_s": 60.81351685523987,
+  "ts_start": 1793700162.416665,
+  "ts_end": 1793700223.230182,
+  "bench_exit_status": 0,
+  "output_check": {
+   "status": "pass",
+   "cmd_index": 0,
+   "n_checked": 1,
+   "checked": [
+    "cpython_r_0.out"
+   ],
+   "failed": [],
+   "errors": [],
+   "not_produced": 2,
+   "stale_ignored": 0,
+   "specinvoke_rc": 0,
+   "stderr": ""
+  },
+  "binary_sha256_16": "23df03a5c8083311",
+  "kit_rev": "e8a77d5bdda9",
+  "cpus_measured": "4-11",
+  "governor": "performance",
+  "no_turbo": "1",
+  "smt": "off",
+  "iso_proof": "ISO-PROOF quiet-check: max busy 0.0% on measured cores (silent)",
+  "foreign_witness": {
+   "witness_rows": 31,
+   "rows_with_foreign_task": 0,
+   "mean_foreign_cpu_pct": 5.5,
+   "worst_row": "root:plymouthd[440]=4% thu:claude[478160]=3% thu:claude[2324339]=3%"
+  },
+  "frontend_footprint": {
+   "contract": "docs/handoff/execution/frontend_footprint_method.md v1.1",
+   "event": "br_inst_retired.near_taken:pp",
+   "period": 20011,
+   "branch_filter": "any,save_type",
+   "scope": "perf record -a -C <measured> --cgroup=<fence>",
+   "stat_events": "cycles,instructions,br_inst_retired.near_taken",
+   "window": "benchmark released from a FIFO gate after both perf instances acknowledged enable, to scope exit",
+   "perf_version": "perf version 6.8.12",
+   "perf_record_cmd": "/usr/lib/linux-tools-6.8.0-147/perf record -z -m 512M -e br_inst_retired.near_taken:pp -c 20011 -j any,save_type -a -C 4-11 --cgroup=measured.slice/spec-cpython.scope -D -1 --control=fifo:rec.ctl,rec.ack -o lbr.data",
+   "perf_stat_cmd": "/usr/lib/linux-tools-6.8.0-147/perf stat -x, -a -C 4-11 -e cycles,instructions,br_inst_retired.near_taken --for-each-cgroup=measured.slice/spec-cpython.scope -D -1 --control=fifo:stat.ctl,stat.ack -o exact_counts.csv",
+   "perf_record_rc": "130",
+   "perf_stat_rc": "130",
+   "perf_event_max_sample_rate": 3000
+  }
+ },
+ "exact_counts": {
+  "cycles": 183671438956.0,
+  "instructions": 685806190895.0,
+  "br_inst_retired.near_taken": 75651775361.0
+ },
+ "gates_v4": {
+  "analyzer_ok": true,
+  "exit_status_0": true,
+  "output_check": "pass",
+  "output_ok": true,
+  "lost_pct": 0.0,
+  "lost_ok": true,
+  "sample_coverage": 0.9997710658220861,
+  "coverage_ok": true,
+  "mean_cores": 0.998,
+  "occupancy_ok": true,
+  "perf_record_stats": {
+   "TOTAL": 3815070,
+   "MMAP": 176,
+   "COMM": 4155,
+   "EXIT": 4840,
+   "FORK": 5350,
+   "SAMPLE": 3779644,
+   "MMAP2": 19117,
+   "FINISHED_ROUND": 37,
+   "ID_INDEX": 1,
+   "THREAD_MAP": 1,
+   "CPU_MAP": 1,
+   "EVENT_UPDATE": 1,
+   "TIME_CONV": 1,
+   "COMPRESSED": 1745,
+   "FINISHED_INIT": 1
+  },
+  "throttle_events": 0,
+  "throttle_ok": true,
+  "witness": {
+   "witness_rows": 31,
+   "rows_with_foreign_task": 0,
+   "mean_foreign_cpu_pct": 5.5,
+   "worst_row": "root:plymouthd[440]=4% thu:claude[478160]=3% thu:claude[2324339]=3%"
+  },
+  "iso_proof": "ISO-PROOF quiet-check: max busy 0.0% on measured cores (silent)",
+  "all_ok": true
+ }
+}

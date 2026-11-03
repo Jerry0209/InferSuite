@@ -1,0 +1,1175 @@
+{
+ "analyzer": "lbr_footprint",
+ "analyzer_version": "1.0",
+ "analyzer_sha": "31c492b25f13b5178b1dfd91aeb2dbe4cbe1fd86",
+ "analyzer_src_sha256": "298e417a3dc3dbd0591380ccc36f6986b6c3aeb2e83c4d5a582759bcbd2dce22",
+ "mode": "lbr",
+ "meta": {
+  "workload": "709.cactus_r",
+  "period": "20011"
+ },
+ "footprint_bytes": 388736,
+ "footprint_bytes_user": 208832,
+ "footprint_bytes_kernel": 179904,
+ "footprint_lines": 6074,
+ "unique_taken_branches": 5928,
+ "unique_taken_branches_user": 2594,
+ "unique_taken_branches_kernel": 3334,
+ "wavg_targets_all": 4.583641567,
+ "wavg_targets_all_user": 4.760539847,
+ "wavg_targets_all_kernel": 3.02603014,
+ "wavg_targets_noret": 1.000077081,
+ "wavg_targets_noret_user": 1.000041145,
+ "wavg_targets_noret_kernel": 1.000418954,
+ "wavg_targets_indirect": 1.000386424,
+ "wavg_targets_indirect_user": 1.000187156,
+ "wavg_targets_indirect_kernel": 1.07360673,
+ "weff_targets_all": 1.8517775,
+ "weff_targets_all_user": 1.891937294,
+ "weff_targets_all_kernel": 1.498165498,
+ "weff_targets_noret": 1.000041032,
+ "weff_targets_noret_user": 1.000029391,
+ "weff_targets_noret_kernel": 1.000151771,
+ "weff_targets_indirect": 1.000205702,
+ "weff_targets_indirect_user": 1.000133694,
+ "weff_targets_indirect_kernel": 1.02666484,
+ "wavg_targets_ge1pct_all": 1.776538275,
+ "wavg_targets_ge1pct_all_user": 1.791737107,
+ "wavg_targets_ge1pct_all_kernel": 1.642710667,
+ "wavg_targets_ge1pct_noret": 1.000077081,
+ "wavg_targets_ge1pct_noret_user": 1.000041145,
+ "wavg_targets_ge1pct_noret_kernel": 1.000418954,
+ "wavg_targets_ge1pct_indirect": 1.000386424,
+ "wavg_targets_ge1pct_indirect_user": 1.000187156,
+ "wavg_targets_ge1pct_indirect_kernel": 1.07360673,
+ "unique_taken_branches_by_type": {
+  "all": {
+   "COND": 2151,
+   "UNCOND": 693,
+   "CALL": 2073,
+   "IND_CALL": 61,
+   "IND": 76,
+   "RET": 874
+  },
+  "user": {
+   "COND": 857,
+   "UNCOND": 260,
+   "CALL": 1151,
+   "IND_CALL": 27,
+   "IND": 75,
+   "RET": 224
+  },
+  "kernel": {
+   "COND": 1294,
+   "UNCOND": 433,
+   "CALL": 922,
+   "IND_CALL": 34,
+   "IND": 1,
+   "RET": 650
+  }
+ },
+ "taken_entries_by_type": {
+  "COND": 4748220,
+  "UNCOND": 278813,
+  "CALL": 2003999,
+  "IND_CALL": 5577,
+  "IND": 1746383,
+  "RET": 2075664
+ },
+ "far_transfers": {
+  "entries": 3719,
+  "unique_from": 360,
+  "entries_by_type": {
+   "ERET": 1828,
+   "IRQ": 1888,
+   "SYSRET": 2,
+   "SYSCALL": 1
+  }
+ },
+ "convergence": {
+  "points": [
+   {
+    "pct": 25,
+    "samples": 84863,
+    "footprint_bytes": 252032,
+    "footprint_bytes_user": 126400,
+    "footprint_bytes_kernel": 125632,
+    "unique_taken_branches": 4117,
+    "unique_taken_branches_user": 1829,
+    "unique_taken_branches_kernel": 2288,
+    "wavg_targets_all": 4.384095066
+   },
+   {
+    "pct": 50,
+    "samples": 169726,
+    "footprint_bytes": 308288,
+    "footprint_bytes_user": 164864,
+    "footprint_bytes_kernel": 143424,
+    "unique_taken_branches": 4753,
+    "unique_taken_branches_user": 2104,
+    "unique_taken_branches_kernel": 2649,
+    "wavg_targets_all": 4.562762097
+   },
+   {
+    "pct": 75,
+    "samples": 254589,
+    "footprint_bytes": 342848,
+    "footprint_bytes_user": 187264,
+    "footprint_bytes_kernel": 155584,
+    "unique_taken_branches": 5170,
+    "unique_taken_branches_user": 2309,
+    "unique_taken_branches_kernel": 2861,
+    "wavg_targets_all": 4.574936259
+   },
+   {
+    "pct": 100,
+    "samples": 339451,
+    "footprint_bytes": 388736,
+    "footprint_bytes_user": 208832,
+    "footprint_bytes_kernel": 179904,
+    "unique_taken_branches": 5928,
+    "unique_taken_branches_user": 2594,
+    "unique_taken_branches_kernel": 3334,
+    "wavg_targets_all": 4.583641567
+   }
+  ],
+  "last_quarter_growth_pct": {
+   "footprint": 11.80441225,
+   "unique_taken_branches": 12.78677463,
+   "footprint_user": 10.32791909,
+   "unique_taken_branches_user": 10.98689283
+  },
+  "note": "share of the final unique count first seen in the last 25 % of the run; well above 0 means the unique counts are still rising, i.e. sampling-limited lower bounds",
+  "unit": "samples",
+  "snapshot_every": 1000,
+  "curve_columns": [
+   "units",
+   "footprint_lines",
+   "footprint_lines_user",
+   "unique_taken_branches",
+   "unique_taken_branches_user",
+   "wavg_targets_all"
+  ],
+  "curve": [
+   [
+    1000,
+    1978,
+    1139,
+    2189,
+    1311,
+    2.334063047
+   ],
+   [
+    5000,
+    2052,
+    1158,
+    2252,
+    1312,
+    3.448127747
+   ],
+   [
+    9000,
+    2152,
+    1158,
+    2346,
+    1312,
+    3.569270633
+   ],
+   [
+    13000,
+    2283,
+    1158,
+    2489,
+    1312,
+    3.620108736
+   ],
+   [
+    17000,
+    2515,
+    1239,
+    2713,
+    1354,
+    3.905985846
+   ],
+   [
+    21000,
+    2845,
+    1461,
+    3023,
+    1510,
+    4.125948969
+   ],
+   [
+    25000,
+    2990,
+    1520,
+    3187,
+    1529,
+    4.490020719
+   ],
+   [
+    29000,
+    3038,
+    1557,
+    3228,
+    1550,
+    4.33683309
+   ],
+   [
+    33000,
+    3170,
+    1581,
+    3367,
+    1564,
+    4.329265796
+   ],
+   [
+    37000,
+    3280,
+    1626,
+    3473,
+    1598,
+    4.387674563
+   ],
+   [
+    41000,
+    3322,
+    1648,
+    3520,
+    1612,
+    4.401064306
+   ],
+   [
+    45000,
+    3499,
+    1694,
+    3707,
+    1657,
+    4.376403182
+   ],
+   [
+    49000,
+    3539,
+    1725,
+    3758,
+    1683,
+    4.352431585
+   ],
+   [
+    53000,
+    3584,
+    1746,
+    3801,
+    1698,
+    4.352230856
+   ],
+   [
+    57000,
+    3604,
+    1764,
+    3826,
+    1716,
+    4.348015354
+   ],
+   [
+    61000,
+    3647,
+    1785,
+    3870,
+    1729,
+    4.342916964
+   ],
+   [
+    65000,
+    3680,
+    1816,
+    3897,
+    1750,
+    4.342333266
+   ],
+   [
+    69000,
+    3835,
+    1911,
+    4006,
+    1780,
+    4.367752055
+   ],
+   [
+    73000,
+    3846,
+    1920,
+    4017,
+    1787,
+    4.328694581
+   ],
+   [
+    77000,
+    3859,
+    1933,
+    4025,
+    1795,
+    4.329872737
+   ],
+   [
+    81000,
+    3891,
+    1948,
+    4067,
+    1811,
+    4.328521304
+   ],
+   [
+    85000,
+    3938,
+    1975,
+    4117,
+    1829,
+    4.352442435
+   ],
+   [
+    89000,
+    3985,
+    2011,
+    4161,
+    1855,
+    4.352019837
+   ],
+   [
+    93000,
+    4036,
+    2062,
+    4174,
+    1868,
+    4.322181928
+   ],
+   [
+    97000,
+    4090,
+    2096,
+    4209,
+    1876,
+    4.320499761
+   ],
+   [
+    101000,
+    4109,
+    2112,
+    4225,
+    1886,
+    4.344617692
+   ],
+   [
+    105000,
+    4148,
+    2131,
+    4268,
+    1904,
+    4.37182113
+   ],
+   [
+    109000,
+    4182,
+    2145,
+    4304,
+    1916,
+    4.34004554
+   ],
+   [
+    113000,
+    4209,
+    2154,
+    4335,
+    1920,
+    4.319906742
+   ],
+   [
+    117000,
+    4219,
+    2164,
+    4341,
+    1926,
+    4.342412552
+   ],
+   [
+    121000,
+    4235,
+    2176,
+    4359,
+    1937,
+    4.36373298
+   ],
+   [
+    125000,
+    4271,
+    2194,
+    4383,
+    1943,
+    4.362383412
+   ],
+   [
+    129000,
+    4394,
+    2262,
+    4478,
+    1967,
+    4.352674149
+   ],
+   [
+    133000,
+    4447,
+    2288,
+    4537,
+    1989,
+    4.336951818
+   ],
+   [
+    137000,
+    4472,
+    2313,
+    4550,
+    2001,
+    4.564463194
+   ],
+   [
+    141000,
+    4511,
+    2333,
+    4591,
+    2021,
+    4.56374368
+   ],
+   [
+    145000,
+    4531,
+    2353,
+    4613,
+    2043,
+    4.563948005
+   ],
+   [
+    149000,
+    4562,
+    2381,
+    4625,
+    2048,
+    4.566224002
+   ],
+   [
+    153000,
+    4708,
+    2474,
+    4700,
+    2070,
+    4.56920467
+   ],
+   [
+    157000,
+    4722,
+    2483,
+    4718,
+    2080,
+    4.563688729
+   ],
+   [
+    161000,
+    4753,
+    2513,
+    4730,
+    2088,
+    4.563407615
+   ],
+   [
+    165000,
+    4801,
+    2561,
+    4737,
+    2092,
+    4.562738635
+   ],
+   [
+    169000,
+    4817,
+    2576,
+    4753,
+    2104,
+    4.562762097
+   ],
+   [
+    173000,
+    4832,
+    2584,
+    4773,
+    2111,
+    4.572104124
+   ],
+   [
+    177000,
+    4841,
+    2593,
+    4783,
+    2121,
+    4.555697684
+   ],
+   [
+    181000,
+    4852,
+    2602,
+    4792,
+    2128,
+    4.556712719
+   ],
+   [
+    185000,
+    4877,
+    2625,
+    4819,
+    2149,
+    4.556964795
+   ],
+   [
+    189000,
+    4886,
+    2632,
+    4829,
+    2158,
+    4.565018804
+   ],
+   [
+    193000,
+    4897,
+    2642,
+    4843,
+    2166,
+    4.565490331
+   ],
+   [
+    197000,
+    4932,
+    2649,
+    4879,
+    2170,
+    4.552550281
+   ],
+   [
+    201000,
+    4985,
+    2702,
+    4890,
+    2180,
+    4.552409916
+   ],
+   [
+    205000,
+    4994,
+    2710,
+    4899,
+    2188,
+    4.56323014
+   ],
+   [
+    209000,
+    5005,
+    2721,
+    4906,
+    2195,
+    4.578272164
+   ],
+   [
+    213000,
+    5070,
+    2740,
+    4971,
+    2215,
+    4.568198937
+   ],
+   [
+    217000,
+    5085,
+    2755,
+    4978,
+    2222,
+    4.556497237
+   ],
+   [
+    221000,
+    5094,
+    2764,
+    4982,
+    2226,
+    4.569709049
+   ],
+   [
+    225000,
+    5115,
+    2778,
+    5001,
+    2236,
+    4.582210447
+   ],
+   [
+    229000,
+    5133,
+    2787,
+    5018,
+    2244,
+    4.581086381
+   ],
+   [
+    233000,
+    5197,
+    2846,
+    5035,
+    2253,
+    4.574984108
+   ],
+   [
+    237000,
+    5234,
+    2862,
+    5069,
+    2264,
+    4.566177926
+   ],
+   [
+    241000,
+    5282,
+    2874,
+    5114,
+    2279,
+    4.578423213
+   ],
+   [
+    245000,
+    5291,
+    2883,
+    5123,
+    2284,
+    4.577857335
+   ],
+   [
+    249000,
+    5314,
+    2906,
+    5129,
+    2290,
+    4.577662666
+   ],
+   [
+    253000,
+    5327,
+    2913,
+    5141,
+    2295,
+    4.577324306
+   ],
+   [
+    257000,
+    5387,
+    2932,
+    5198,
+    2311,
+    4.576886791
+   ],
+   [
+    261000,
+    5395,
+    2940,
+    5208,
+    2321,
+    4.574721219
+   ],
+   [
+    265000,
+    5410,
+    2955,
+    5216,
+    2329,
+    4.574857017
+   ],
+   [
+    269000,
+    5420,
+    2964,
+    5223,
+    2333,
+    4.574710044
+   ],
+   [
+    273000,
+    5454,
+    2998,
+    5232,
+    2342,
+    4.574604862
+   ],
+   [
+    277000,
+    5519,
+    3006,
+    5301,
+    2348,
+    4.580154498
+   ],
+   [
+    281000,
+    5528,
+    3015,
+    5313,
+    2358,
+    4.570463995
+   ],
+   [
+    285000,
+    5542,
+    3029,
+    5326,
+    2371,
+    4.571144414
+   ],
+   [
+    289000,
+    5556,
+    3043,
+    5339,
+    2384,
+    4.571398268
+   ],
+   [
+    293000,
+    5598,
+    3056,
+    5378,
+    2395,
+    4.578499452
+   ],
+   [
+    297000,
+    5634,
+    3077,
+    5407,
+    2404,
+    4.579586461
+   ],
+   [
+    301000,
+    5644,
+    3087,
+    5422,
+    2419,
+    4.572620036
+   ],
+   [
+    305000,
+    5662,
+    3105,
+    5446,
+    2440,
+    4.57307602
+   ],
+   [
+    309000,
+    5678,
+    3119,
+    5455,
+    2446,
+    4.579967636
+   ],
+   [
+    313000,
+    5687,
+    3128,
+    5464,
+    2455,
+    4.590311898
+   ],
+   [
+    317000,
+    5699,
+    3133,
+    5491,
+    2464,
+    4.578403429
+   ],
+   [
+    321000,
+    5739,
+    3139,
+    5527,
+    2469,
+    4.570305026
+   ],
+   [
+    325000,
+    5746,
+    3146,
+    5533,
+    2475,
+    4.578952882
+   ],
+   [
+    329000,
+    5784,
+    3154,
+    5580,
+    2485,
+    4.594805059
+   ],
+   [
+    333000,
+    5794,
+    3164,
+    5588,
+    2493,
+    4.594161131
+   ],
+   [
+    337000,
+    5813,
+    3183,
+    5601,
+    2506,
+    4.590391704
+   ],
+   [
+    339451,
+    6074,
+    3263,
+    5928,
+    2594,
+    4.583641567
+   ]
+  ]
+ },
+ "processes_with_samples": 2,
+ "top_processes": [
+  {
+   "pid": 2459851,
+   "comm": "cactus_base.uar",
+   "samples": 339443,
+   "share": 0.9999764325
+  },
+  {
+   "pid": 2459850,
+   "comm": "runuser",
+   "samples": 8,
+   "share": 2.356746629e-05
+  }
+ ],
+ "top_objects_by_footprint": [
+  {
+   "obj_id": 1,
+   "kind": "kernel",
+   "path": "[kernel]",
+   "footprint_bytes": 179904,
+   "footprint_share": 0.4627922292,
+   "entries": 1109277,
+   "entries_share": 0.1021210371,
+   "unique_taken_branches": 3334
+  },
+  {
+   "obj_id": 179,
+   "kind": "file",
+   "path": "/home/thu/spec26-infra/cpu2026/benchspec/CPU/709.cactus_r/run/run_base_refrate_uarch.0000/cactus_base.uarch",
+   "footprint_bytes": 171008,
+   "footprint_share": 0.4399078038,
+   "entries": 4233098,
+   "entries_share": 0.3897028044,
+   "unique_taken_branches": 1988
+  },
+  {
+   "obj_id": 25,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+   "footprint_bytes": 22208,
+   "footprint_share": 0.05712874547,
+   "entries": 358592,
+   "entries_share": 0.03301230164,
+   "unique_taken_branches": 387
+  },
+  {
+   "obj_id": 37,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+   "footprint_bytes": 4160,
+   "footprint_share": 0.01070135002,
+   "entries": 287,
+   "entries_share": 2.642147781e-05,
+   "unique_taken_branches": 50
+  },
+  {
+   "obj_id": 20,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+   "footprint_bytes": 3392,
+   "footprint_share": 0.008725716167,
+   "entries": 5159647,
+   "entries_share": 0.4750017376,
+   "unique_taken_branches": 31
+  },
+  {
+   "obj_id": 145,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33",
+   "footprint_bytes": 3200,
+   "footprint_share": 0.008231807705,
+   "entries": 1226,
+   "entries_share": 0.0001128666613,
+   "unique_taken_branches": 57
+  },
+  {
+   "obj_id": 123,
+   "kind": "file",
+   "path": "/usr/bin/bash",
+   "footprint_bytes": 2688,
+   "footprint_share": 0.006914718472,
+   "entries": 184,
+   "entries_share": 1.693920528e-05,
+   "unique_taken_branches": 42
+  },
+  {
+   "obj_id": 180,
+   "kind": "anon",
+   "path": "//anon",
+   "pid": 2459850,
+   "footprint_bytes": 2176,
+   "footprint_share": 0.005597629239,
+   "entries": 64,
+   "entries_share": 5.89189749e-06,
+   "unique_taken_branches": 39
+  }
+ ],
+ "top_objects_by_entries": [
+  {
+   "obj_id": 20,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+   "footprint_bytes": 3392,
+   "footprint_share": 0.008725716167,
+   "entries": 5159647,
+   "entries_share": 0.4750017376,
+   "unique_taken_branches": 31
+  },
+  {
+   "obj_id": 179,
+   "kind": "file",
+   "path": "/home/thu/spec26-infra/cpu2026/benchspec/CPU/709.cactus_r/run/run_base_refrate_uarch.0000/cactus_base.uarch",
+   "footprint_bytes": 171008,
+   "footprint_share": 0.4399078038,
+   "entries": 4233098,
+   "entries_share": 0.3897028044,
+   "unique_taken_branches": 1988
+  },
+  {
+   "obj_id": 1,
+   "kind": "kernel",
+   "path": "[kernel]",
+   "footprint_bytes": 179904,
+   "footprint_share": 0.4627922292,
+   "entries": 1109277,
+   "entries_share": 0.1021210371,
+   "unique_taken_branches": 3334
+  },
+  {
+   "obj_id": 25,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+   "footprint_bytes": 22208,
+   "footprint_share": 0.05712874547,
+   "entries": 358592,
+   "entries_share": 0.03301230164,
+   "unique_taken_branches": 387
+  },
+  {
+   "obj_id": 145,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33",
+   "footprint_bytes": 3200,
+   "footprint_share": 0.008231807705,
+   "entries": 1226,
+   "entries_share": 0.0001128666613,
+   "unique_taken_branches": 57
+  },
+  {
+   "obj_id": 37,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+   "footprint_bytes": 4160,
+   "footprint_share": 0.01070135002,
+   "entries": 287,
+   "entries_share": 2.642147781e-05,
+   "unique_taken_branches": 50
+  },
+  {
+   "obj_id": 123,
+   "kind": "file",
+   "path": "/usr/bin/bash",
+   "footprint_bytes": 2688,
+   "footprint_share": 0.006914718472,
+   "entries": 184,
+   "entries_share": 1.693920528e-05,
+   "unique_taken_branches": 42
+  },
+  {
+   "obj_id": 180,
+   "kind": "anon",
+   "path": "//anon",
+   "pid": 2459850,
+   "footprint_bytes": 2176,
+   "footprint_share": 0.005597629239,
+   "entries": 64,
+   "entries_share": 5.89189749e-06,
+   "unique_taken_branches": 39
+  }
+ ],
+ "diagnostics": {
+  "samples": 339451,
+  "samples_empty": 0,
+  "entries": 10862375,
+  "near_entries": 10858656,
+  "far_entries": 3719,
+  "zero_address_entries": 0,
+  "unmapped_entries": 64,
+  "kernel_unmapped_entries": 0,
+  "candidate_ranges": 10522924,
+  "discontinuities": 361577,
+  "discontinuity_rate": 0.03436088676,
+  "discontinuities_by_reason": {
+   "cross_mapping": 0,
+   "negative": 4,
+   "over_4096": 361511,
+   "unmapped_end": 62
+  },
+  "range_lines_added": 23788745,
+  "lost_samples": 0,
+  "lost_from_PERF_RECORD_LOST": 0,
+  "lost_from_PERF_RECORD_LOST_SAMPLES": 0,
+  "lost_records": 0,
+  "lost_records_unparsed": 0,
+  "unparsed_lines": 0,
+  "unparsed_examples": [],
+  "type_conflicts": 0,
+  "offset_overflow": 0,
+  "mmap_events": 58229,
+  "mmap_kernel": 207,
+  "mmap_nonexec_ignored": 0,
+  "comm_exec_events": 11133,
+  "fork_process_events": 15281,
+  "fork_thread_events": 224,
+  "exit_events": 14983,
+  "other_events": 0,
+  "pids_tracked": 15281,
+  "objects_total": 180,
+  "unique_edges": 7381,
+  "unique_far_edges": 693,
+  "input_bytes": 521141904,
+  "input_lines": 439971,
+  "elapsed_s": 3.342672807,
+  "samples_per_s": 101550.7708,
+  "input_MB_per_s": 155.9057479
+ },
+ "workload": "709.cactus_r",
+ "capture": {
+  "benchmark": "709.cactus_r",
+  "cmd_index": 0,
+  "command": "../run_base_refrate_uarch.0000/cactus_base.uarch ShiftedGaugeWave.par > cactus.out 2>> cactus.err",
+  "wall_s": 189.27490091323853,
+  "ts_start": 1793699744.467183,
+  "ts_end": 1793699933.742084,
+  "bench_exit_status": 0,
+  "output_check": {
+   "status": "pass",
+   "cmd_index": 0,
+   "n_checked": 9,
+   "checked": [
+    "cactus.out",
+    "gxx.dl",
+    "gxx.xl",
+    "gxx.yl",
+    "gxx.zl",
+    "gxy.dl",
+    "gxy.xl",
+    "gxy.yl",
+    "gxy.zl"
+   ],
+   "failed": [],
+   "errors": [],
+   "not_produced": 0,
+   "stale_ignored": 0,
+   "specinvoke_rc": 0,
+   "stderr": ""
+  },
+  "binary_sha256_16": "1ad348a28649a99d",
+  "kit_rev": "e8a77d5bdda9",
+  "cpus_measured": "4-11",
+  "governor": "performance",
+  "no_turbo": "1",
+  "smt": "off",
+  "iso_proof": "ISO-PROOF quiet-check: max busy 0.0% on measured cores (silent)",
+  "foreign_witness": {
+   "witness_rows": 95,
+   "rows_with_foreign_task": 0,
+   "mean_foreign_cpu_pct": 6.1,
+   "worst_row": "thu:claude[2324339]=10% root:plymouthd[440]=4% jeferson:claude[2078287]=2%"
+  },
+  "frontend_footprint": {
+   "contract": "docs/handoff/execution/frontend_footprint_method.md v1.1",
+   "event": "br_inst_retired.near_taken:pp",
+   "period": 20011,
+   "branch_filter": "any,save_type",
+   "scope": "perf record -a -C <measured> --cgroup=<fence>",
+   "stat_events": "cycles,instructions,br_inst_retired.near_taken",
+   "window": "benchmark released from a FIFO gate after both perf instances acknowledged enable, to scope exit",
+   "perf_version": "perf version 6.8.12",
+   "perf_record_cmd": "/usr/lib/linux-tools-6.8.0-147/perf record -z -m 512M -e br_inst_retired.near_taken:pp -c 20011 -j any,save_type -a -C 4-11 --cgroup=measured.slice/spec-cactus.scope -D -1 --control=fifo:rec.ctl,rec.ack -o lbr.data",
+   "perf_stat_cmd": "/usr/lib/linux-tools-6.8.0-147/perf stat -x, -a -C 4-11 -e cycles,instructions,br_inst_retired.near_taken --for-each-cgroup=measured.slice/spec-cactus.scope -D -1 --control=fifo:stat.ctl,stat.ack -o exact_counts.csv",
+   "perf_record_rc": "130",
+   "perf_stat_rc": "130",
+   "perf_event_max_sample_rate": 3000
+  }
+ },
+ "exact_counts": {
+  "cycles": 602905236732.0,
+  "instructions": 939218278357.0,
+  "br_inst_retired.near_taken": 6794085948.0
+ },
+ "gates_v4": {
+  "analyzer_ok": true,
+  "exit_status_0": true,
+  "output_check": "pass",
+  "output_ok": true,
+  "lost_pct": 0.0,
+  "lost_ok": true,
+  "sample_coverage": 0.9998039490506604,
+  "coverage_ok": true,
+  "mean_cores": 0.999,
+  "occupancy_ok": true,
+  "perf_record_stats": {
+   "TOTAL": 440193,
+   "MMAP": 176,
+   "COMM": 11803,
+   "EXIT": 14983,
+   "FORK": 15505,
+   "SAMPLE": 339451,
+   "MMAP2": 58053,
+   "FINISHED_ROUND": 4,
+   "ID_INDEX": 1,
+   "THREAD_MAP": 1,
+   "CPU_MAP": 1,
+   "EVENT_UPDATE": 1,
+   "TIME_CONV": 1,
+   "COMPRESSED": 212,
+   "FINISHED_INIT": 1
+  },
+  "throttle_events": 0,
+  "throttle_ok": true,
+  "witness": {
+   "witness_rows": 95,
+   "rows_with_foreign_task": 0,
+   "mean_foreign_cpu_pct": 6.1,
+   "worst_row": "thu:claude[2324339]=10% root:plymouthd[440]=4% jeferson:claude[2078287]=2%"
+  },
+  "iso_proof": "ISO-PROOF quiet-check: max busy 0.0% on measured cores (silent)",
+  "all_ok": true
+ }
+}

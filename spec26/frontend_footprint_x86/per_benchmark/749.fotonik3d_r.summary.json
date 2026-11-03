@@ -1,0 +1,1277 @@
+{
+ "analyzer": "lbr_footprint",
+ "analyzer_version": "1.0",
+ "analyzer_sha": "31c492b25f13b5178b1dfd91aeb2dbe4cbe1fd86",
+ "analyzer_src_sha256": "298e417a3dc3dbd0591380ccc36f6986b6c3aeb2e83c4d5a582759bcbd2dce22",
+ "mode": "lbr",
+ "meta": {
+  "workload": "749.fotonik3d_r",
+  "period": "20011"
+ },
+ "footprint_bytes": 359680,
+ "footprint_bytes_user": 183680,
+ "footprint_bytes_kernel": 176000,
+ "footprint_lines": 5620,
+ "unique_taken_branches": 5026,
+ "unique_taken_branches_user": 1864,
+ "unique_taken_branches_kernel": 3162,
+ "wavg_targets_all": 1.03502664,
+ "wavg_targets_all_user": 1.009575893,
+ "wavg_targets_all_kernel": 2.65981314,
+ "wavg_targets_noret": 1.000046221,
+ "wavg_targets_noret_user": 1.000035147,
+ "wavg_targets_noret_kernel": 1.000990596,
+ "wavg_targets_indirect": 1.035417447,
+ "wavg_targets_indirect_user": 1.029196181,
+ "wavg_targets_indirect_kernel": 1.099681866,
+ "weff_targets_all": 1.013773999,
+ "weff_targets_all_user": 1.006098165,
+ "weff_targets_all_kernel": 1.503802518,
+ "weff_targets_noret": 1.000028604,
+ "weff_targets_noret_user": 1.000023336,
+ "weff_targets_noret_kernel": 1.000477847,
+ "weff_targets_indirect": 1.021918299,
+ "weff_targets_indirect_user": 1.019385179,
+ "weff_targets_indirect_kernel": 1.048084921,
+ "wavg_targets_ge1pct_all": 1.015597327,
+ "wavg_targets_ge1pct_all_user": 1.005807851,
+ "wavg_targets_ge1pct_all_kernel": 1.64056162,
+ "wavg_targets_ge1pct_noret": 1.000046221,
+ "wavg_targets_ge1pct_noret_user": 1.000035147,
+ "wavg_targets_ge1pct_noret_kernel": 1.000990596,
+ "wavg_targets_ge1pct_indirect": 1.035417447,
+ "wavg_targets_ge1pct_indirect_user": 1.029196181,
+ "wavg_targets_ge1pct_indirect_kernel": 1.099681866,
+ "unique_taken_branches_by_type": {
+  "all": {
+   "COND": 2108,
+   "UNCOND": 681,
+   "CALL": 1275,
+   "IND_CALL": 68,
+   "IND": 92,
+   "RET": 802
+  },
+  "user": {
+   "COND": 894,
+   "UNCOND": 260,
+   "CALL": 400,
+   "IND_CALL": 33,
+   "IND": 90,
+   "RET": 187
+  },
+  "kernel": {
+   "COND": 1214,
+   "UNCOND": 421,
+   "CALL": 875,
+   "IND_CALL": 35,
+   "IND": 2,
+   "RET": 615
+  }
+ },
+ "taken_entries_by_type": {
+  "COND": 40334538,
+  "UNCOND": 326254,
+  "CALL": 219432,
+  "IND_CALL": 6850,
+  "IND": 46570,
+  "RET": 227512
+ },
+ "far_transfers": {
+  "entries": 2183,
+  "unique_from": 220,
+  "entries_by_type": {
+   "IRQ": 1077,
+   "ERET": 1103,
+   "SYSRET": 1,
+   "SYSCALL": 2
+  }
+ },
+ "convergence": {
+  "points": [
+   {
+    "pct": 25,
+    "samples": 321590,
+    "footprint_bytes": 293760,
+    "footprint_bytes_user": 156096,
+    "footprint_bytes_kernel": 137664,
+    "unique_taken_branches": 3918,
+    "unique_taken_branches_user": 1487,
+    "unique_taken_branches_kernel": 2431,
+    "wavg_targets_all": 1.081508462
+   },
+   {
+    "pct": 50,
+    "samples": 643179,
+    "footprint_bytes": 309504,
+    "footprint_bytes_user": 162432,
+    "footprint_bytes_kernel": 147072,
+    "unique_taken_branches": 4117,
+    "unique_taken_branches_user": 1498,
+    "unique_taken_branches_kernel": 2619,
+    "wavg_targets_all": 1.04419146
+   },
+   {
+    "pct": 75,
+    "samples": 964768,
+    "footprint_bytes": 315584,
+    "footprint_bytes_user": 162944,
+    "footprint_bytes_kernel": 152640,
+    "unique_taken_branches": 4238,
+    "unique_taken_branches_user": 1504,
+    "unique_taken_branches_kernel": 2734,
+    "wavg_targets_all": 1.031851347
+   },
+   {
+    "pct": 100,
+    "samples": 1286357,
+    "footprint_bytes": 359680,
+    "footprint_bytes_user": 183680,
+    "footprint_bytes_kernel": 176000,
+    "unique_taken_branches": 5026,
+    "unique_taken_branches_user": 1864,
+    "unique_taken_branches_kernel": 3162,
+    "wavg_targets_all": 1.03502664
+   }
+  ],
+  "last_quarter_growth_pct": {
+   "footprint": 12.25978648,
+   "unique_taken_branches": 15.67847195,
+   "footprint_user": 11.28919861,
+   "unique_taken_branches_user": 19.31330472
+  },
+  "note": "share of the final unique count first seen in the last 25 % of the run; well above 0 means the unique counts are still rising, i.e. sampling-limited lower bounds",
+  "unit": "samples",
+  "snapshot_every": 1000,
+  "curve_columns": [
+   "units",
+   "footprint_lines",
+   "footprint_lines_user",
+   "unique_taken_branches",
+   "unique_taken_branches_user",
+   "wavg_targets_all"
+  ],
+  "curve": [
+   [
+    1000,
+    1630,
+    550,
+    1652,
+    581,
+    1.511416669
+   ],
+   [
+    14000,
+    3361,
+    1720,
+    3106,
+    1395,
+    2.566549936
+   ],
+   [
+    27000,
+    3915,
+    2145,
+    3336,
+    1450,
+    1.85505294
+   ],
+   [
+    40000,
+    4018,
+    2205,
+    3433,
+    1469,
+    1.592175315
+   ],
+   [
+    53000,
+    4031,
+    2206,
+    3454,
+    1472,
+    1.447747295
+   ],
+   [
+    66000,
+    4132,
+    2257,
+    3535,
+    1479,
+    1.364182802
+   ],
+   [
+    79000,
+    4134,
+    2257,
+    3538,
+    1480,
+    1.304898196
+   ],
+   [
+    92000,
+    4182,
+    2286,
+    3570,
+    1485,
+    1.263175531
+   ],
+   [
+    105000,
+    4193,
+    2286,
+    3592,
+    1485,
+    1.231188831
+   ],
+   [
+    118000,
+    4211,
+    2286,
+    3617,
+    1485,
+    1.206150585
+   ],
+   [
+    131000,
+    4244,
+    2299,
+    3642,
+    1485,
+    1.186203495
+   ],
+   [
+    144000,
+    4274,
+    2326,
+    3651,
+    1487,
+    1.169720546
+   ],
+   [
+    157000,
+    4326,
+    2341,
+    3682,
+    1487,
+    1.156212332
+   ],
+   [
+    170000,
+    4343,
+    2341,
+    3705,
+    1487,
+    1.144610525
+   ],
+   [
+    183000,
+    4353,
+    2341,
+    3724,
+    1487,
+    1.136503041
+   ],
+   [
+    196000,
+    4365,
+    2341,
+    3737,
+    1487,
+    1.128030463
+   ],
+   [
+    209000,
+    4418,
+    2341,
+    3800,
+    1487,
+    1.12064715
+   ],
+   [
+    222000,
+    4435,
+    2351,
+    3811,
+    1487,
+    1.113977803
+   ],
+   [
+    235000,
+    4435,
+    2351,
+    3811,
+    1487,
+    1.107858282
+   ],
+   [
+    248000,
+    4462,
+    2351,
+    3851,
+    1487,
+    1.102717217
+   ],
+   [
+    261000,
+    4482,
+    2351,
+    3880,
+    1487,
+    1.097923692
+   ],
+   [
+    274000,
+    4495,
+    2364,
+    3880,
+    1487,
+    1.093437881
+   ],
+   [
+    287000,
+    4509,
+    2378,
+    3889,
+    1487,
+    1.090313642
+   ],
+   [
+    300000,
+    4537,
+    2399,
+    3900,
+    1487,
+    1.086636544
+   ],
+   [
+    313000,
+    4566,
+    2415,
+    3918,
+    1487,
+    1.083458154
+   ],
+   [
+    326000,
+    4590,
+    2439,
+    3918,
+    1487,
+    1.08036691
+   ],
+   [
+    339000,
+    4600,
+    2439,
+    3932,
+    1487,
+    1.077658965
+   ],
+   [
+    352000,
+    4608,
+    2446,
+    3938,
+    1487,
+    1.074905024
+   ],
+   [
+    365000,
+    4617,
+    2446,
+    3950,
+    1487,
+    1.072585195
+   ],
+   [
+    378000,
+    4618,
+    2446,
+    3952,
+    1487,
+    1.070299754
+   ],
+   [
+    391000,
+    4618,
+    2446,
+    3952,
+    1487,
+    1.068150386
+   ],
+   [
+    404000,
+    4650,
+    2478,
+    3954,
+    1488,
+    1.066168396
+   ],
+   [
+    417000,
+    4650,
+    2478,
+    3954,
+    1488,
+    1.064275654
+   ],
+   [
+    430000,
+    4664,
+    2478,
+    3968,
+    1488,
+    1.062524344
+   ],
+   [
+    443000,
+    4674,
+    2478,
+    3984,
+    1488,
+    1.060828694
+   ],
+   [
+    456000,
+    4682,
+    2478,
+    3993,
+    1488,
+    1.059231505
+   ],
+   [
+    469000,
+    4692,
+    2478,
+    4007,
+    1488,
+    1.05773061
+   ],
+   [
+    482000,
+    4696,
+    2478,
+    4013,
+    1488,
+    1.056408075
+   ],
+   [
+    495000,
+    4732,
+    2514,
+    4015,
+    1489,
+    1.055048187
+   ],
+   [
+    508000,
+    4738,
+    2514,
+    4019,
+    1489,
+    1.053791742
+   ],
+   [
+    521000,
+    4762,
+    2523,
+    4034,
+    1489,
+    1.052639393
+   ],
+   [
+    534000,
+    4762,
+    2523,
+    4034,
+    1489,
+    1.051515417
+   ],
+   [
+    547000,
+    4762,
+    2523,
+    4034,
+    1489,
+    1.050402306
+   ],
+   [
+    560000,
+    4773,
+    2523,
+    4047,
+    1489,
+    1.049823174
+   ],
+   [
+    573000,
+    4794,
+    2523,
+    4071,
+    1489,
+    1.048795088
+   ],
+   [
+    586000,
+    4794,
+    2523,
+    4071,
+    1489,
+    1.047821334
+   ],
+   [
+    599000,
+    4809,
+    2538,
+    4080,
+    1498,
+    1.046900679
+   ],
+   [
+    612000,
+    4809,
+    2538,
+    4080,
+    1498,
+    1.046034667
+   ],
+   [
+    625000,
+    4828,
+    2538,
+    4104,
+    1498,
+    1.045270044
+   ],
+   [
+    638000,
+    4828,
+    2538,
+    4104,
+    1498,
+    1.044483588
+   ],
+   [
+    651000,
+    4841,
+    2540,
+    4122,
+    1499,
+    1.043750231
+   ],
+   [
+    664000,
+    4841,
+    2540,
+    4122,
+    1499,
+    1.043002197
+   ],
+   [
+    677000,
+    4841,
+    2540,
+    4125,
+    1499,
+    1.042329594
+   ],
+   [
+    690000,
+    4841,
+    2540,
+    4125,
+    1499,
+    1.041625961
+   ],
+   [
+    703000,
+    4842,
+    2540,
+    4129,
+    1499,
+    1.041021011
+   ],
+   [
+    716000,
+    4842,
+    2540,
+    4132,
+    1499,
+    1.040436148
+   ],
+   [
+    729000,
+    4846,
+    2540,
+    4139,
+    1499,
+    1.039856615
+   ],
+   [
+    742000,
+    4846,
+    2540,
+    4139,
+    1499,
+    1.039295248
+   ],
+   [
+    755000,
+    4851,
+    2545,
+    4143,
+    1503,
+    1.03874581
+   ],
+   [
+    768000,
+    4851,
+    2545,
+    4143,
+    1503,
+    1.038187831
+   ],
+   [
+    781000,
+    4851,
+    2545,
+    4143,
+    1503,
+    1.03770101
+   ],
+   [
+    794000,
+    4851,
+    2545,
+    4143,
+    1503,
+    1.037183994
+   ],
+   [
+    807000,
+    4851,
+    2545,
+    4143,
+    1503,
+    1.036673256
+   ],
+   [
+    820000,
+    4854,
+    2545,
+    4150,
+    1503,
+    1.036171245
+   ],
+   [
+    833000,
+    4886,
+    2545,
+    4182,
+    1503,
+    1.035684833
+   ],
+   [
+    846000,
+    4895,
+    2545,
+    4191,
+    1503,
+    1.035223851
+   ],
+   [
+    859000,
+    4895,
+    2545,
+    4191,
+    1503,
+    1.034787922
+   ],
+   [
+    872000,
+    4905,
+    2545,
+    4207,
+    1503,
+    1.034399472
+   ],
+   [
+    885000,
+    4907,
+    2546,
+    4210,
+    1504,
+    1.033998889
+   ],
+   [
+    898000,
+    4907,
+    2546,
+    4210,
+    1504,
+    1.033565805
+   ],
+   [
+    911000,
+    4907,
+    2546,
+    4210,
+    1504,
+    1.033178796
+   ],
+   [
+    924000,
+    4931,
+    2546,
+    4234,
+    1504,
+    1.032991955
+   ],
+   [
+    937000,
+    4931,
+    2546,
+    4238,
+    1504,
+    1.032627892
+   ],
+   [
+    950000,
+    4931,
+    2546,
+    4238,
+    1504,
+    1.032242337
+   ],
+   [
+    963000,
+    4931,
+    2546,
+    4238,
+    1504,
+    1.03187511
+   ],
+   [
+    976000,
+    4931,
+    2546,
+    4238,
+    1504,
+    1.031519146
+   ],
+   [
+    989000,
+    4933,
+    2546,
+    4241,
+    1504,
+    1.03121668
+   ],
+   [
+    1002000,
+    4933,
+    2546,
+    4241,
+    1504,
+    1.03088751
+   ],
+   [
+    1015000,
+    4933,
+    2546,
+    4243,
+    1504,
+    1.03057465
+   ],
+   [
+    1028000,
+    4933,
+    2546,
+    4243,
+    1504,
+    1.030238123
+   ],
+   [
+    1041000,
+    4962,
+    2553,
+    4280,
+    1509,
+    1.029955808
+   ],
+   [
+    1054000,
+    4962,
+    2553,
+    4280,
+    1509,
+    1.029659201
+   ],
+   [
+    1067000,
+    4984,
+    2553,
+    4305,
+    1509,
+    1.030617265
+   ],
+   [
+    1080000,
+    4984,
+    2553,
+    4305,
+    1509,
+    1.030337657
+   ],
+   [
+    1093000,
+    5000,
+    2569,
+    4308,
+    1509,
+    1.030027936
+   ],
+   [
+    1106000,
+    5008,
+    2569,
+    4323,
+    1509,
+    1.029758241
+   ],
+   [
+    1119000,
+    5020,
+    2569,
+    4342,
+    1509,
+    1.02948549
+   ],
+   [
+    1132000,
+    5031,
+    2569,
+    4357,
+    1509,
+    1.029288156
+   ],
+   [
+    1145000,
+    5031,
+    2569,
+    4357,
+    1509,
+    1.029015664
+   ],
+   [
+    1158000,
+    5031,
+    2569,
+    4357,
+    1509,
+    1.028769201
+   ],
+   [
+    1171000,
+    5031,
+    2569,
+    4357,
+    1509,
+    1.028507289
+   ],
+   [
+    1184000,
+    5031,
+    2569,
+    4359,
+    1509,
+    1.028276132
+   ],
+   [
+    1197000,
+    5032,
+    2569,
+    4361,
+    1509,
+    1.028045864
+   ],
+   [
+    1210000,
+    5032,
+    2569,
+    4362,
+    1509,
+    1.027810447
+   ],
+   [
+    1223000,
+    5032,
+    2569,
+    4364,
+    1509,
+    1.027819193
+   ],
+   [
+    1236000,
+    5033,
+    2569,
+    4370,
+    1509,
+    1.027590226
+   ],
+   [
+    1249000,
+    5033,
+    2569,
+    4370,
+    1509,
+    1.027348961
+   ],
+   [
+    1262000,
+    5059,
+    2569,
+    4400,
+    1509,
+    1.027398491
+   ],
+   [
+    1275000,
+    5073,
+    2569,
+    4417,
+    1509,
+    1.027190503
+   ],
+   [
+    1286357,
+    5620,
+    2870,
+    5026,
+    1864,
+    1.03502664
+   ]
+  ]
+ },
+ "processes_with_samples": 2,
+ "top_processes": [
+  {
+   "pid": 2547417,
+   "comm": "fotonik3d_r_bas",
+   "samples": 1286349,
+   "share": 0.9999937809
+  },
+  {
+   "pid": 2547416,
+   "comm": "runuser",
+   "samples": 8,
+   "share": 6.219113357e-06
+  }
+ ],
+ "top_objects_by_footprint": [
+  {
+   "obj_id": 1,
+   "kind": "kernel",
+   "path": "[kernel]",
+   "footprint_bytes": 176000,
+   "footprint_share": 0.4893238434,
+   "entries": 635911,
+   "entries_share": 0.01544847953,
+   "unique_taken_branches": 3162
+  },
+  {
+   "obj_id": 179,
+   "kind": "file",
+   "path": "/home/thu/spec26-infra/cpu2026/benchspec/CPU/749.fotonik3d_r/run/run_base_refrate_uarch.0000/fotonik3d_r_base.uarch",
+   "footprint_bytes": 111232,
+   "footprint_share": 0.309252669,
+   "entries": 40234115,
+   "entries_share": 0.9774259323,
+   "unique_taken_branches": 500
+  },
+  {
+   "obj_id": 180,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libgfortran.so.5.0.0",
+   "footprint_bytes": 34752,
+   "footprint_share": 0.09661921708,
+   "entries": 31284,
+   "entries_share": 0.0007599966562,
+   "unique_taken_branches": 736
+  },
+  {
+   "obj_id": 25,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+   "footprint_bytes": 26688,
+   "footprint_share": 0.07419928826,
+   "entries": 40962,
+   "entries_share": 0.0009951087787,
+   "unique_taken_branches": 475
+  },
+  {
+   "obj_id": 20,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+   "footprint_bytes": 4032,
+   "footprint_share": 0.01120996441,
+   "entries": 220757,
+   "entries_share": 0.005362951728,
+   "unique_taken_branches": 44
+  },
+  {
+   "obj_id": 123,
+   "kind": "file",
+   "path": "/usr/bin/bash",
+   "footprint_bytes": 3520,
+   "footprint_share": 0.009786476868,
+   "entries": 178,
+   "entries_share": 4.324236185e-06,
+   "unique_taken_branches": 53
+  },
+  {
+   "obj_id": 37,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+   "footprint_bytes": 2944,
+   "footprint_share": 0.008185053381,
+   "entries": 126,
+   "entries_share": 3.060976176e-06,
+   "unique_taken_branches": 50
+  },
+  {
+   "obj_id": 181,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libmvec.so.1",
+   "footprint_bytes": 512,
+   "footprint_share": 0.001423487544,
+   "entries": 6,
+   "entries_share": 1.457607703e-07,
+   "unique_taken_branches": 6
+  }
+ ],
+ "top_objects_by_entries": [
+  {
+   "obj_id": 179,
+   "kind": "file",
+   "path": "/home/thu/spec26-infra/cpu2026/benchspec/CPU/749.fotonik3d_r/run/run_base_refrate_uarch.0000/fotonik3d_r_base.uarch",
+   "footprint_bytes": 111232,
+   "footprint_share": 0.309252669,
+   "entries": 40234115,
+   "entries_share": 0.9774259323,
+   "unique_taken_branches": 500
+  },
+  {
+   "obj_id": 1,
+   "kind": "kernel",
+   "path": "[kernel]",
+   "footprint_bytes": 176000,
+   "footprint_share": 0.4893238434,
+   "entries": 635911,
+   "entries_share": 0.01544847953,
+   "unique_taken_branches": 3162
+  },
+  {
+   "obj_id": 20,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+   "footprint_bytes": 4032,
+   "footprint_share": 0.01120996441,
+   "entries": 220757,
+   "entries_share": 0.005362951728,
+   "unique_taken_branches": 44
+  },
+  {
+   "obj_id": 25,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+   "footprint_bytes": 26688,
+   "footprint_share": 0.07419928826,
+   "entries": 40962,
+   "entries_share": 0.0009951087787,
+   "unique_taken_branches": 475
+  },
+  {
+   "obj_id": 180,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libgfortran.so.5.0.0",
+   "footprint_bytes": 34752,
+   "footprint_share": 0.09661921708,
+   "entries": 31284,
+   "entries_share": 0.0007599966562,
+   "unique_taken_branches": 736
+  },
+  {
+   "obj_id": 123,
+   "kind": "file",
+   "path": "/usr/bin/bash",
+   "footprint_bytes": 3520,
+   "footprint_share": 0.009786476868,
+   "entries": 178,
+   "entries_share": 4.324236185e-06,
+   "unique_taken_branches": 53
+  },
+  {
+   "obj_id": 37,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+   "footprint_bytes": 2944,
+   "footprint_share": 0.008185053381,
+   "entries": 126,
+   "entries_share": 3.060976176e-06,
+   "unique_taken_branches": 50
+  },
+  {
+   "obj_id": 181,
+   "kind": "file",
+   "path": "/usr/lib/x86_64-linux-gnu/libmvec.so.1",
+   "footprint_bytes": 512,
+   "footprint_share": 0.001423487544,
+   "entries": 6,
+   "entries_share": 1.457607703e-07,
+   "unique_taken_branches": 6
+  }
+ ],
+ "diagnostics": {
+  "samples": 1286357,
+  "samples_empty": 0,
+  "entries": 41163339,
+  "near_entries": 41161156,
+  "far_entries": 2183,
+  "zero_address_entries": 0,
+  "unmapped_entries": 0,
+  "kernel_unmapped_entries": 0,
+  "candidate_ranges": 39876982,
+  "discontinuities": 69176,
+  "discontinuity_rate": 0.001734735091,
+  "discontinuities_by_reason": {
+   "cross_mapping": 0,
+   "negative": 1,
+   "over_4096": 69175,
+   "unmapped_end": 0
+  },
+  "range_lines_added": 83427493,
+  "lost_samples": 0,
+  "lost_from_PERF_RECORD_LOST": 0,
+  "lost_from_PERF_RECORD_LOST_SAMPLES": 0,
+  "lost_records": 0,
+  "lost_records_unparsed": 0,
+  "unparsed_lines": 0,
+  "unparsed_examples": [],
+  "type_conflicts": 0,
+  "offset_overflow": 0,
+  "mmap_events": 75260,
+  "mmap_kernel": 207,
+  "mmap_nonexec_ignored": 0,
+  "comm_exec_events": 14421,
+  "fork_process_events": 19667,
+  "fork_thread_events": 256,
+  "exit_events": 19414,
+  "other_events": 0,
+  "pids_tracked": 19667,
+  "objects_total": 205,
+  "unique_edges": 5690,
+  "unique_far_edges": 420,
+  "input_bytes": 1934251915,
+  "input_lines": 1416079,
+  "elapsed_s": 11.27309777,
+  "samples_per_s": 114108.5642,
+  "input_MB_per_s": 171.5812242
+ },
+ "workload": "749.fotonik3d_r",
+ "capture": {
+  "benchmark": "749.fotonik3d_r",
+  "cmd_index": 0,
+  "command": "../run_base_refrate_uarch.0000/fotonik3d_r_base.uarch > fotonik3d.log 2>> fotonik3d.err",
+  "wall_s": 245.6244878768921,
+  "ts_start": 1793701954.68895,
+  "ts_end": 1793702200.313438,
+  "bench_exit_status": 0,
+  "output_check": {
+   "status": "pass",
+   "cmd_index": 0,
+   "n_checked": 1,
+   "checked": [
+    "pscyee.out"
+   ],
+   "failed": [],
+   "errors": [],
+   "not_produced": 0,
+   "stale_ignored": 0,
+   "specinvoke_rc": 0,
+   "stderr": ""
+  },
+  "binary_sha256_16": "5e39b9f191e6adee",
+  "kit_rev": "e8a77d5bdda9",
+  "cpus_measured": "4-11",
+  "governor": "performance",
+  "no_turbo": "1",
+  "smt": "off",
+  "iso_proof": "ISO-PROOF quiet-check: max busy 0.0% on measured cores (silent)",
+  "foreign_witness": {
+   "witness_rows": 122,
+   "rows_with_foreign_task": 1,
+   "mean_foreign_cpu_pct": 6.3,
+   "worst_row": "thu:claude[2324339]=15% root:plymouthd[440]=4% thu:claude[478160]=3% jeferson:claude[2078287]=1% polkitd:polkitd[1025]=1%"
+  },
+  "frontend_footprint": {
+   "contract": "docs/handoff/execution/frontend_footprint_method.md v1.1",
+   "event": "br_inst_retired.near_taken:pp",
+   "period": 20011,
+   "branch_filter": "any,save_type",
+   "scope": "perf record -a -C <measured> --cgroup=<fence>",
+   "stat_events": "cycles,instructions,br_inst_retired.near_taken",
+   "window": "benchmark released from a FIFO gate after both perf instances acknowledged enable, to scope exit",
+   "perf_version": "perf version 6.8.12",
+   "perf_record_cmd": "/usr/lib/linux-tools-6.8.0-147/perf record -z -m 512M -e br_inst_retired.near_taken:pp -c 20011 -j any,save_type -a -C 4-11 --cgroup=measured.slice/spec-fotonik3d.scope -D -1 --control=fifo:rec.ctl,rec.ack -o lbr.data",
+   "perf_stat_cmd": "/usr/lib/linux-tools-6.8.0-147/perf stat -x, -a -C 4-11 -e cycles,instructions,br_inst_retired.near_taken --for-each-cgroup=measured.slice/spec-fotonik3d.scope -D -1 --control=fifo:stat.ctl,stat.ack -o exact_counts.csv",
+   "perf_record_rc": "130",
+   "perf_stat_rc": "130",
+   "perf_event_max_sample_rate": 3000
+  }
+ },
+ "exact_counts": {
+  "cycles": 780161892570.0,
+  "instructions": 601368061261.0,
+  "br_inst_retired.near_taken": 25745474138.0
+ },
+ "gates_v4": {
+  "analyzer_ok": true,
+  "exit_status_0": true,
+  "output_check": "pass",
+  "output_ok": true,
+  "lost_pct": 0.0,
+  "lost_ok": true,
+  "sample_coverage": 0.9998374778037658,
+  "coverage_ok": true,
+  "mean_cores": 0.999,
+  "occupancy_ok": true,
+  "perf_record_stats": {
+   "TOTAL": 1416894,
+   "MMAP": 176,
+   "COMM": 15125,
+   "EXIT": 19414,
+   "FORK": 19923,
+   "SAMPLE": 1286357,
+   "MMAP2": 75084,
+   "FINISHED_ROUND": 8,
+   "ID_INDEX": 1,
+   "THREAD_MAP": 1,
+   "CPU_MAP": 1,
+   "EVENT_UPDATE": 1,
+   "TIME_CONV": 1,
+   "COMPRESSED": 801,
+   "FINISHED_INIT": 1
+  },
+  "throttle_events": 0,
+  "throttle_ok": true,
+  "witness": {
+   "witness_rows": 122,
+   "rows_with_foreign_task": 1,
+   "mean_foreign_cpu_pct": 6.3,
+   "worst_row": "thu:claude[2324339]=15% root:plymouthd[440]=4% thu:claude[478160]=3% jeferson:claude[2078287]=1% polkitd:polkitd[1025]=1%"
+  },
+  "iso_proof": "ISO-PROOF quiet-check: max busy 0.0% on measured cores (silent)",
+  "all_ok": true
+ }
+}
