@@ -111,7 +111,7 @@ in it.
 
 ## Push
 - `spec-x86` → `243851228` (SPEC results `spec26/tlb_x86/`, kit mirror, aggregation; report 23 pointer).
-- `dcperf`: Server results, kit, report 25, this log (SHA in the follow-up commit below).
+- `dcperf` → `bb137aad5` (Server results, kit, report 25, this log); this line in the follow-up commit.
 - Report check: the 11 date-based freshness warnings on reports 01–15 (unchanged content), overridden by
   **Jerry** for this push as on the two before; the cross-branch citation and report 23/24 freshness
   warnings were fixed instead.
