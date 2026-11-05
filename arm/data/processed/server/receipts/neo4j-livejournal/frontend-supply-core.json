@@ -1,0 +1,101 @@
+{
+ "attempt": "a1",
+ "valid": true,
+ "receipt": {
+  "status": "pass",
+  "why": "client 19962.4 ops/s in the last window"
+ },
+ "gates": {
+  "perf_rc": true,
+  "no_mux": true,
+  "windows": true,
+  "steady": true,
+  "fenced": true,
+  "witness": true,
+  "alive": true,
+  "receipt": true
+ },
+ "files": {
+  "neo4j_receipt.json": {
+   "whole_run": {
+    "short": {
+     "ops": 5455697,
+     "ops_per_s": 15999.1,
+     "errors": 0,
+     "p95_ms_count_weighted": 2.33,
+     "p99_ms_count_weighted": 3.85
+    },
+    "long": {
+     "ops": 819653,
+     "ops_per_s": 2403.7,
+     "errors": 0,
+     "p95_ms_count_weighted": 7.08,
+     "p99_ms_count_weighted": 10.0
+    },
+    "mut": {
+     "ops": 544677,
+     "ops_per_s": 1597.3,
+     "errors": 0,
+     "p95_ms_count_weighted": 6.59,
+     "p99_ms_count_weighted": 8.66
+    },
+    "all": {
+     "ops_per_s": 20000.0,
+     "span_s": 341.0
+    }
+   },
+   "last_180s": {
+    "short": {
+     "ops": 2889727,
+     "ops_per_s": 15965.3,
+     "errors": 0,
+     "p95_ms_count_weighted": 2.27,
+     "p99_ms_count_weighted": 3.76
+    },
+    "long": {
+     "ops": 434925,
+     "ops_per_s": 2402.9,
+     "errors": 0,
+     "p95_ms_count_weighted": 6.69,
+     "p99_ms_count_weighted": 9.32
+    },
+    "mut": {
+     "ops": 288535,
+     "ops_per_s": 1594.1,
+     "errors": 0,
+     "p95_ms_count_weighted": 7.04,
+     "p99_ms_count_weighted": 9.11
+    },
+    "all": {
+     "ops_per_s": 19962.4,
+     "span_s": 181.0
+    }
+   },
+   "processes": 5
+  },
+  ".load_json": {
+   "server": "neo4j-community-5.26.12",
+   "database": "livejournal",
+   "dataset": "SNAP soc-LiveJournal1",
+   "nodes": 4847571,
+   "heap": "8g",
+   "pagecache": "12g",
+   "client": {
+    "procs": 5,
+    "sessions": 5,
+    "mix": "short 0.80 / long 0.12 / mut 0.08",
+    "duration_s": 390
+   },
+   "warmup_s": 150
+  },
+  "iso.json": {
+   "iso_proof": true,
+   "ts": 1793870226.6438663,
+   "measured_max_busy_pct_1p5s": 0.0,
+   "quiet": "QUIET foreign_total=0% top: -",
+   "managed_irqs_outside_house": 185,
+   "online": "0-15",
+   "why": ""
+  }
+ }
+}

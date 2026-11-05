@@ -47,6 +47,10 @@ nothing of the Server stack installed (no JDK, no infra dirs).
 - 06:28–06:59 Kafka's 5 missing families with **`KAFKA_MIN_CCORES=40`** (decision 13): 5/5 VALID at first attempt. Kafka capture load across all 9 families 0.50–0.53 cores (drift ≤ 2.1 %); only the 10 s liveness probe at warm-up end is marginal.
 - **Tier 1 complete: 90/90 ⟨workload, family⟩ VALID** (95 attempts; 5 rejected: 1 witness, 1 Spark launch, 3 Kafka liveness). Over accepted passes: max drift 12.6 %, max unfenced residual 0.009 %. Exported and pushed.
 
+- 07:00–11:55 **tier 2** (frontend-stalls, frontend-supply-mem, frontend-supply-core, backend, execution): **50/50 VALID** (51 attempts). The one rejection was the SLA receipt: feedsim frontend-supply-core a1 p95 **544 ms** > 500 (x86 D6), re-run VALID. Across all 15 feedsim attempts p95 404–544 ms at 20 QPS: the operating point sits near the SLA edge, as x86's 16 QPS did (p95 ≈ 479).
+- **Campaign complete: 140/140 ⟨workload, family⟩ VALID** (14 families × 10 workloads, 146 attempts). Restore verified 11:55 (online 0-191, slices 0-191, irqbalance active).
+- Raw archive `~/arm_server_raw_20261105.tar.zst` (34 MB zstd; `raw/server` + `interim/server`, excluding DaCapo's `scratch/` Tomcat access logs, 182 MB per pass, and Spark's `spark-tmp/`; `zstd -t` OK); < 100 MB, so also committed as `arm/data/arm_server_raw_20261105.tar.zst`.
+
 ## Defects found
 - **Handoff doc URL wrong for the 4K clips:** `…/y4m/ElFuente/…_8bit_420.y4m` is 404 (that folder holds 10-bit only); the 8-bit files are at `https://media.xiph.org/video/derf/y4m/<file>`.
 - **x86 modules kill by name machine-wide** (`sudo pkill -f DriverNodeRank|LeafNodeRank|ffmpeg|$KAFKA_HOME|$NEO_HOME|$CAS_HOME`). On a shared box that would kill a colleague's process of the same name. Ported to `kill_desc`: TERM only matching processes that descend from the pass's own shell.
@@ -58,5 +62,5 @@ nothing of the Server stack installed (no JDK, no infra dirs).
 | video-4k | ran-with-deltas | SVT-AV1 has **no SVE/SVE2 kernels** with GCC 13 (`HAVE_SVE_HEADERS - Failed`); encoder prints `asm level selected : up to neon_i8mm` vs AVX2 on x86 |
 
 ## Open threads
-- Tier 2 (frontend-stalls, frontend-supply-mem, frontend-supply-core, backend, execution) × 10, ~5 h.
+- Study report.
 - Category labels "ranking" (feedsim) and "video-transcode" (video-4k) in the export are ours (no x86 file has a category): confirm with Jerry/Jef.

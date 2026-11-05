@@ -1,7 +1,7 @@
 suite,category,workload,metric,family,value,mean_of_windows,n_windows,gap_pct,runtime_windows,runtime_families
-RealData,server,cassandra-ycsb20m,IPC,anchor,1.711689921711338,1.6980078108549699,1796,-0.799333493924458,16165,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
-RealData,server,cassandra-ycsb20m,Frontend-bound (%),anchor,21.54745700436882,21.576048833274832,1796,0.13269235854706968,1796,anchor
-RealData,server,cassandra-ycsb20m,Backend-bound (%),anchor,57.84399820776147,57.853708998416735,1796,0.016787896680971942,1796,anchor
+RealData,server,cassandra-ycsb20m,IPC,anchor,1.7232598717141645,1.6980078108549699,1796,-1.4653658031319354,25145,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
+RealData,server,cassandra-ycsb20m,Frontend-bound (%),anchor,21.38923709160448,21.576048833274832,1796,0.8733913270038034,3592,anchor;frontend-stalls
+RealData,server,cassandra-ycsb20m,Backend-bound (%),anchor,58.26060597487902,57.853708998416735,1796,-0.698408417924338,3592,anchor;backend
 RealData,server,cassandra-ycsb20m,Retiring (%),anchor,16.068234504516802,16.040353808365,1796,-0.173514371749824,1796,anchor
 RealData,server,cassandra-ycsb20m,Bad-speculation (%),anchor,4.540310283352905,4.5298883599434285,1796,-0.2295420964441348,1796,anchor
 RealData,server,cassandra-ycsb20m,Branch MPKI,branch,1.7979377672707046,1.7988294112872938,1796,0.049592596185499355,1796,branch
@@ -17,11 +17,19 @@ RealData,server,cassandra-ycsb20m,L2-TLB MPKI,tlb-data,1.1556396487907177,1.1724
 RealData,server,cassandra-ycsb20m,DTLB-walk MPKI,tlb-data,0.8870932277643222,0.8995887900779926,1796,1.4085962920900787,1796,tlb-data
 RealData,server,cassandra-ycsb20m,ITLB-walk MPKI,tlb-code,0.1810648452961386,0.1858126038332535,1796,2.6221316066902745,1796,tlb-code
 RealData,server,cassandra-ycsb20m,L1I-TLB MPKI,tlb-code,3.5749472361931542,3.580531865737625,1796,0.15621571943583365,1796,tlb-code
-RealData,server,cassandra-ycsb20m,Context switches (/CPU-s),anchor,16942.41782793961,17347.988627051316,1796,2.3938188942718757,16165,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
+RealData,server,cassandra-ycsb20m,Context switches (/CPU-s),anchor,16311.684133773404,17347.988627051316,1796,6.353142230925375,25145,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
 RealData,server,cassandra-ycsb20m,Frequency (GHz),frequency,3.2997462787375995,3.2997459250313934,1797,-1.071919402959091e-05,1797,frequency
-DCPerf,ranking,feedsim,IPC,anchor,2.2697324387691684,2.2789680723399144,2996,0.40690406556264735,26955,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
-DCPerf,ranking,feedsim,Frontend-bound (%),anchor,43.26132236334572,43.113516560812506,2996,-0.34165807806754767,2996,anchor
-DCPerf,ranking,feedsim,Backend-bound (%),anchor,25.33219548855992,25.40230561457268,2996,0.2767629282050294,2996,anchor
+RealData,server,cassandra-ycsb20m,Frontend-stall (% cycles),frontend-stalls,16.18307883747981,16.220245027568087,1796,0.22966081090949178,5388,frontend-stalls;frontend-supply-core;frontend-supply-mem
+RealData,server,cassandra-ycsb20m,frontend_mem_bound,frontend-supply-mem,70.92020657925654,70.87017131954288,1796,-0.070551486137805,1796,frontend-supply-mem
+RealData,server,cassandra-ycsb20m,frontend_l1i_bound,frontend-supply-mem,32.443236280899114,32.38865240065247,1796,-0.1682442521271604,1796,frontend-supply-mem
+RealData,server,cassandra-ycsb20m,frontend_l2i_bound,frontend-supply-mem,30.556868237961865,30.558968798838745,1796,0.006874267547712884,1796,frontend-supply-mem
+RealData,server,cassandra-ycsb20m,frontend_tlb_bound,frontend-supply-mem,4.091952768106624,4.0927477496408144,1796,0.01942792547330938,1796,frontend-supply-mem
+RealData,server,cassandra-ycsb20m,frontend_core_bound,frontend-supply-core,28.259659205006617,28.318586580600382,1796,0.20852118267344444,1796,frontend-supply-core
+RealData,server,cassandra-ycsb20m,frontend_flow_bound,frontend-supply-core,3.407725272295704,3.4091651503568996,1796,0.04225334926209321,1796,frontend-supply-core
+RealData,server,cassandra-ycsb20m,frontend_flush_bound,frontend-supply-core,9.898936674122204,9.971056670426021,1796,0.7285630636707991,1796,frontend-supply-core
+DCPerf,ranking,feedsim,IPC,anchor,2.2697405571129248,2.2789680723399144,2996,0.4065449329912345,41933,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
+DCPerf,ranking,feedsim,Frontend-bound (%),anchor,43.266211302773925,43.113516560812506,2996,-0.3529191425911359,5990,anchor;frontend-stalls
+DCPerf,ranking,feedsim,Backend-bound (%),anchor,25.41384181544655,25.40230561457268,2996,-0.04539337640347735,5992,anchor;backend
 DCPerf,ranking,feedsim,Retiring (%),anchor,21.449367111933356,21.512871519598345,2996,0.2960665801167583,2996,anchor
 DCPerf,ranking,feedsim,Bad-speculation (%),anchor,9.957115036161007,9.971306305016464,2996,0.14252390179202729,2996,anchor
 DCPerf,ranking,feedsim,Branch MPKI,branch,4.442479969438726,4.908113456213496,2996,10.481386297248712,2996,branch
@@ -37,11 +45,19 @@ DCPerf,ranking,feedsim,L2-TLB MPKI,tlb-data,0.10473031620818328,0.11183376397246
 DCPerf,ranking,feedsim,DTLB-walk MPKI,tlb-data,0.048925207725103406,0.04741803089774773,2989,-3.0805731798300515,2994,tlb-data
 DCPerf,ranking,feedsim,ITLB-walk MPKI,tlb-code,0.0019120631540087232,0.0018874042948339954,2993,-1.2896466899134273,2995,tlb-code
 DCPerf,ranking,feedsim,L1I-TLB MPKI,tlb-code,0.6637223883583756,0.8078865669243057,2993,21.720553818065415,2995,tlb-code
-DCPerf,ranking,feedsim,Context switches (/CPU-s),anchor,187.87348437753573,189.90028903355548,2996,1.0788135764527804,26955,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
+DCPerf,ranking,feedsim,Context switches (/CPU-s),anchor,187.08688085154466,189.90028903355548,2996,1.5037976843727945,41933,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
 DCPerf,ranking,feedsim,Frequency (GHz),frequency,3.29987742943433,3.2998714173566377,2993,-0.00018219093953319323,2994,frequency
-Renaissance,web,finagle-chirper,IPC,anchor,2.371394472186683,2.372051139422494,1797,0.027691185229309256,16173,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
-Renaissance,web,finagle-chirper,Frontend-bound (%),anchor,23.61377926388368,23.686394482769916,1797,0.307512059271681,1797,anchor
-Renaissance,web,finagle-chirper,Backend-bound (%),anchor,50.68745433993998,50.67647891088116,1797,-0.021653147118449664,1797,anchor
+DCPerf,ranking,feedsim,Frontend-stall (% cycles),frontend-stalls,13.189987716304726,13.242969186334578,2992,0.4016794493626373,8986,frontend-stalls;frontend-supply-core;frontend-supply-mem
+DCPerf,ranking,feedsim,frontend_mem_bound,frontend-supply-mem,40.678144336962546,39.85078429692149,2996,-2.0339178532518982,2996,frontend-supply-mem
+DCPerf,ranking,feedsim,frontend_l1i_bound,frontend-supply-mem,24.891604214965295,24.176960400257936,2996,-2.8710235328171456,2996,frontend-supply-mem
+DCPerf,ranking,feedsim,frontend_l2i_bound,frontend-supply-mem,3.6294980178810334,3.7158732070276748,2996,2.3798108917846643,2996,frontend-supply-mem
+DCPerf,ranking,feedsim,frontend_tlb_bound,frontend-supply-mem,4.192961609483159,4.054001208016739,2996,-3.314134838538359,2996,frontend-supply-mem
+DCPerf,ranking,feedsim,frontend_core_bound,frontend-supply-core,59.3119240144142,60.18314712081367,2996,1.46888356915844,2996,frontend-supply-core
+DCPerf,ranking,feedsim,frontend_flow_bound,frontend-supply-core,13.679836524150092,13.267520026814857,2996,-3.0140455012553704,2996,frontend-supply-core
+DCPerf,ranking,feedsim,frontend_flush_bound,frontend-supply-core,32.667760147523076,34.11860228231184,2996,4.441204809380756,2996,frontend-supply-core
+Renaissance,web,finagle-chirper,IPC,anchor,2.3697112891140772,2.372051139422494,1797,0.0987398895032237,25158,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
+Renaissance,web,finagle-chirper,Frontend-bound (%),anchor,23.498428588608576,23.686394482769916,1797,0.7999083574995378,3594,anchor;frontend-stalls
+Renaissance,web,finagle-chirper,Backend-bound (%),anchor,50.772294731157146,50.67647891088116,1797,-0.1887167416468746,3594,anchor;backend
 Renaissance,web,finagle-chirper,Retiring (%),anchor,22.359705134179414,22.268851359380896,1797,-0.4063281436553351,1797,anchor
 Renaissance,web,finagle-chirper,Bad-speculation (%),anchor,3.3390612619969215,3.368275246968036,1797,0.8749161120105653,1797,anchor
 Renaissance,web,finagle-chirper,Branch MPKI,branch,0.6481785776507897,0.6789417702721945,1797,4.7460983256960825,1797,branch
@@ -57,11 +73,19 @@ Renaissance,web,finagle-chirper,L2-TLB MPKI,tlb-data,0.7237270528181392,0.730040
 Renaissance,web,finagle-chirper,DTLB-walk MPKI,tlb-data,0.5126102770274543,0.5168499402132056,1797,0.8270733880593347,1797,tlb-data
 Renaissance,web,finagle-chirper,ITLB-walk MPKI,tlb-code,0.16169533239114733,0.1636587983480818,1797,1.2142997128604633,1797,tlb-code
 Renaissance,web,finagle-chirper,L1I-TLB MPKI,tlb-code,2.477838614183994,2.4763264333009802,1797,-0.06102822332163276,1797,tlb-code
-Renaissance,web,finagle-chirper,Context switches (/CPU-s),anchor,12714.723830473207,13099.682614595642,1797,3.027661388915182,16173,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
+Renaissance,web,finagle-chirper,Context switches (/CPU-s),anchor,12672.528924640717,13099.682614595642,1797,3.370705977434058,25158,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
 Renaissance,web,finagle-chirper,Frequency (GHz),frequency,3.2981574248974392,3.297865171747312,1797,-0.00886110371569453,1797,frequency
-Renaissance,web,finagle-http,IPC,anchor,1.6677474055221169,1.6704227600460557,1797,0.16041724994327242,16173,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
-Renaissance,web,finagle-http,Frontend-bound (%),anchor,29.301247312188927,29.291080777340333,1797,-0.034696594108349146,1797,anchor
-Renaissance,web,finagle-http,Backend-bound (%),anchor,53.306315235930754,53.29912564646015,1797,-0.013487312786084118,1797,anchor
+Renaissance,web,finagle-chirper,Frontend-stall (% cycles),frontend-stalls,16.523764261160682,16.50777144267557,1797,-0.09678677468610812,5391,frontend-stalls;frontend-supply-core;frontend-supply-mem
+Renaissance,web,finagle-chirper,frontend_mem_bound,frontend-supply-mem,75.46858232268808,75.43021776255152,1797,-0.05083514087030052,1797,frontend-supply-mem
+Renaissance,web,finagle-chirper,frontend_l1i_bound,frontend-supply-mem,31.931916161898627,32.19236821916039,1797,0.8156480680371415,1797,frontend-supply-mem
+Renaissance,web,finagle-chirper,frontend_l2i_bound,frontend-supply-mem,34.838508900130726,34.57890219949477,1797,-0.7451716759180299,1797,frontend-supply-mem
+Renaissance,web,finagle-chirper,frontend_tlb_bound,frontend-supply-mem,4.860489206374381,4.82042887746879,1797,-0.8242036388652672,1797,frontend-supply-mem
+Renaissance,web,finagle-chirper,frontend_core_bound,frontend-supply-core,24.89936515511221,24.950596613229784,1797,0.2057540736417334,1797,frontend-supply-core
+Renaissance,web,finagle-chirper,frontend_flow_bound,frontend-supply-core,5.122733890288705,5.075329883797314,1797,-0.9253653909537585,1797,frontend-supply-core
+Renaissance,web,finagle-chirper,frontend_flush_bound,frontend-supply-core,6.290324877370055,6.304179483586551,1797,0.2202526337922382,1797,frontend-supply-core
+Renaissance,web,finagle-http,IPC,anchor,1.6605321743594652,1.6704227600460557,1797,0.5956274644546237,25158,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
+Renaissance,web,finagle-http,Frontend-bound (%),anchor,29.109441525002076,29.291080777340333,1797,0.6239874172173578,3594,anchor;frontend-stalls
+Renaissance,web,finagle-http,Backend-bound (%),anchor,53.58185989556227,53.29912564646015,1797,-0.527667851868532,3594,anchor;backend
 Renaissance,web,finagle-http,Retiring (%),anchor,15.896689606169454,15.897210339382367,1797,0.0032757336641357454,1797,anchor
 Renaissance,web,finagle-http,Bad-speculation (%),anchor,1.4957478457108606,1.512583236817153,1797,1.125550082159156,1797,anchor
 Renaissance,web,finagle-http,Branch MPKI,branch,0.4009383412044063,0.40847188386288946,1797,1.8789778587532022,1797,branch
@@ -77,11 +101,19 @@ Renaissance,web,finagle-http,L2-TLB MPKI,tlb-data,1.67058386685565,1.66797443647
 Renaissance,web,finagle-http,DTLB-walk MPKI,tlb-data,1.2720253742163687,1.2698944243882158,1797,-0.16752416039387227,1797,tlb-data
 Renaissance,web,finagle-http,ITLB-walk MPKI,tlb-code,0.4003252456831018,0.3997232952967119,1797,-0.1503653324093348,1797,tlb-code
 Renaissance,web,finagle-http,L1I-TLB MPKI,tlb-code,4.614037401162375,4.608695571673645,1797,-0.1157734327724353,1797,tlb-code
-Renaissance,web,finagle-http,Context switches (/CPU-s),anchor,48581.9871221738,47753.05450133748,1797,-1.706255075058423,16173,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
+Renaissance,web,finagle-http,Context switches (/CPU-s),anchor,48496.9169203496,47753.05450133748,1797,-1.5338344502060293,25158,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
 Renaissance,web,finagle-http,Frequency (GHz),frequency,3.298294013534725,3.298256368623538,1797,-0.0011413449205099563,1797,frequency
-RealData,server,kafka-20g,IPC,anchor,1.5908998336081288,1.5942390514195044,1796,0.20989491235298607,16169,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
-RealData,server,kafka-20g,Frontend-bound (%),anchor,21.118847711966666,21.345402584409907,1796,1.0727615234180963,1796,anchor
-RealData,server,kafka-20g,Backend-bound (%),anchor,60.62385656685207,60.41457851733526,1796,-0.34520741729129867,1796,anchor
+Renaissance,web,finagle-http,Frontend-stall (% cycles),frontend-stalls,22.222461945106325,22.530433641875057,1797,1.3858576854782338,5391,frontend-stalls;frontend-supply-core;frontend-supply-mem
+Renaissance,web,finagle-http,frontend_mem_bound,frontend-supply-mem,76.87080349651335,76.8485482780684,1797,-0.02895145807334935,1797,frontend-supply-mem
+Renaissance,web,finagle-http,frontend_l1i_bound,frontend-supply-mem,38.63114709545143,38.59540953480147,1797,-0.09250970612304416,1797,frontend-supply-mem
+Renaissance,web,finagle-http,frontend_l2i_bound,frontend-supply-mem,30.32883708885247,30.336672474906248,1797,0.02583477246695148,1797,frontend-supply-mem
+Renaissance,web,finagle-http,frontend_tlb_bound,frontend-supply-mem,4.101967576115522,4.106922776646387,1797,0.12080057774513137,1797,frontend-supply-mem
+Renaissance,web,finagle-http,frontend_core_bound,frontend-supply-core,23.51450484171398,23.540216408490632,1797,0.1093434327013424,1797,frontend-supply-core
+Renaissance,web,finagle-http,frontend_flow_bound,frontend-supply-core,4.232243647741729,4.237174570297366,1797,0.11650847555216187,1797,frontend-supply-core
+Renaissance,web,finagle-http,frontend_flush_bound,frontend-supply-core,3.7934139655353256,3.8209107833412506,1797,0.7248567663783724,1797,frontend-supply-core
+RealData,server,kafka-20g,IPC,anchor,1.5866172353196182,1.5942390514195044,1796,0.4803815268243211,25152,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
+RealData,server,kafka-20g,Frontend-bound (%),anchor,21.200314689250117,21.345402584409907,1796,0.6843667053364951,3593,anchor;frontend-stalls
+RealData,server,kafka-20g,Backend-bound (%),anchor,61.07413586030614,60.41457851733526,1796,-1.0799290627369327,3592,anchor;backend
 RealData,server,kafka-20g,Retiring (%),anchor,15.743689993546438,15.761485422004034,1796,0.11303213201537043,1796,anchor
 RealData,server,kafka-20g,Bad-speculation (%),anchor,2.513605727634826,2.4785334762508047,1796,-1.3952964459952253,1796,anchor
 RealData,server,kafka-20g,Branch MPKI,branch,0.8092168414908861,0.7970165316330552,1796,-1.5076688017705258,1796,branch
@@ -97,11 +129,19 @@ RealData,server,kafka-20g,L2-TLB MPKI,tlb-data,0.5290185794434027,0.535911533527
 RealData,server,kafka-20g,DTLB-walk MPKI,tlb-data,0.4187354979969907,0.42421959039220924,1797,1.3096793611842128,1797,tlb-data
 RealData,server,kafka-20g,ITLB-walk MPKI,tlb-code,0.10072978439075293,0.10200540832081918,1797,1.2663820713820102,1797,tlb-code
 RealData,server,kafka-20g,L1I-TLB MPKI,tlb-code,2.0731800210999176,2.107107439292721,1797,1.6364916624463348,1797,tlb-code
-RealData,server,kafka-20g,Context switches (/CPU-s),anchor,33711.6693350362,34514.481971803456,1796,2.3814087305753926,16169,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
+RealData,server,kafka-20g,Context switches (/CPU-s),anchor,33564.718070184805,34514.481971803456,1796,2.8296495731996534,25152,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
 RealData,server,kafka-20g,Frequency (GHz),frequency,3.2955356417262736,3.295682461821533,1797,0.004455120842884568,1797,frequency
-RealData,apache-spark,naivebayes-rcv1,IPC,anchor,2.068340211536632,2.1904087648048867,1797,5.901763771133495,16173,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
-RealData,apache-spark,naivebayes-rcv1,Frontend-bound (%),anchor,7.840551230371904,8.603514548192264,1797,9.730990786271152,1797,anchor
-RealData,apache-spark,naivebayes-rcv1,Backend-bound (%),anchor,69.10796755864249,66.8466884246673,1797,-3.272096132846536,1797,anchor
+RealData,server,kafka-20g,Frontend-stall (% cycles),frontend-stalls,14.571293032647613,15.083777357097118,1797,3.5170820002127536,5390,frontend-stalls;frontend-supply-core;frontend-supply-mem
+RealData,server,kafka-20g,frontend_mem_bound,frontend-supply-mem,71.48068808716008,71.49586671965874,1796,0.021234592034357815,1796,frontend-supply-mem
+RealData,server,kafka-20g,frontend_l1i_bound,frontend-supply-mem,37.51252378068776,37.74574536307416,1796,0.6217165865722594,1796,frontend-supply-mem
+RealData,server,kafka-20g,frontend_l2i_bound,frontend-supply-mem,27.495974505613464,27.306685047229262,1796,-0.6884260761354636,1796,frontend-supply-mem
+RealData,server,kafka-20g,frontend_tlb_bound,frontend-supply-mem,3.266007853803811,3.243697111384592,1796,-0.6831196805982711,1796,frontend-supply-mem
+RealData,server,kafka-20g,frontend_core_bound,frontend-supply-core,28.975084090553437,28.982709846016665,1797,0.026318320386560175,1797,frontend-supply-core
+RealData,server,kafka-20g,frontend_flow_bound,frontend-supply-core,3.2253973031421674,3.1913975179140484,1797,-1.0541270433566943,1797,frontend-supply-core
+RealData,server,kafka-20g,frontend_flush_bound,frontend-supply-core,8.912761589724226,8.875033429559334,1797,-0.423304940731168,1797,frontend-supply-core
+RealData,apache-spark,naivebayes-rcv1,IPC,anchor,2.0669243396385855,2.1904087648048867,1797,5.974307951102517,25158,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
+RealData,apache-spark,naivebayes-rcv1,Frontend-bound (%),anchor,7.891335634043739,8.603514548192264,1797,9.024820983106308,3594,anchor;frontend-stalls
+RealData,apache-spark,naivebayes-rcv1,Backend-bound (%),anchor,69.1415847524235,66.8466884246673,1797,-3.319126016526187,3594,anchor;backend
 RealData,apache-spark,naivebayes-rcv1,Retiring (%),anchor,19.63137502020727,20.743489964597504,1797,5.664987517407702,1797,anchor
 RealData,apache-spark,naivebayes-rcv1,Bad-speculation (%),anchor,3.420106190778331,3.806307062542926,1797,11.2920725328913,1797,anchor
 RealData,apache-spark,naivebayes-rcv1,Branch MPKI,branch,1.145274609643922,1.0315616939146188,1797,-9.928877735677528,1797,branch
@@ -117,11 +157,19 @@ RealData,apache-spark,naivebayes-rcv1,L2-TLB MPKI,tlb-data,2.7736158411946037,3.
 RealData,apache-spark,naivebayes-rcv1,DTLB-walk MPKI,tlb-data,2.6001465507177377,3.137674763009077,1797,20.67299676408475,1797,tlb-data
 RealData,apache-spark,naivebayes-rcv1,ITLB-walk MPKI,tlb-code,0.018352110706546073,0.019344872679538164,1797,5.409524761846494,1797,tlb-code
 RealData,apache-spark,naivebayes-rcv1,L1I-TLB MPKI,tlb-code,0.19141954778844167,0.19166991285157672,1797,0.1307938849650614,1797,tlb-code
-RealData,apache-spark,naivebayes-rcv1,Context switches (/CPU-s),anchor,480.8773306407416,476.6131209997328,1797,-0.8867562202042201,16173,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
+RealData,apache-spark,naivebayes-rcv1,Context switches (/CPU-s),anchor,475.04691811478807,476.6131209997328,1797,0.3296943575931786,25158,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
 RealData,apache-spark,naivebayes-rcv1,Frequency (GHz),frequency,3.299332009320792,3.2993302201653223,1797,-5.422780928083246e-05,1797,frequency
-RealData,database,neo4j-livejournal,IPC,anchor,2.340145315500336,2.4949495260117747,1794,6.615153746481783,16137,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
-RealData,database,neo4j-livejournal,Frontend-bound (%),anchor,21.19756033888026,21.13456438168427,1794,-0.29718494104456444,1794,anchor
-RealData,database,neo4j-livejournal,Backend-bound (%),anchor,49.24231590369593,49.2506184173919,1794,0.01686052644681378,1794,anchor
+RealData,apache-spark,naivebayes-rcv1,Frontend-stall (% cycles),frontend-stalls,3.7053233881426504,4.025388459598796,1797,8.637979413089312,5391,frontend-stalls;frontend-supply-core;frontend-supply-mem
+RealData,apache-spark,naivebayes-rcv1,frontend_mem_bound,frontend-supply-mem,57.804006614755544,61.107258516347876,1797,5.714572561738509,1797,frontend-supply-mem
+RealData,apache-spark,naivebayes-rcv1,frontend_l1i_bound,frontend-supply-mem,11.188910570879566,10.858507897659923,1797,-2.952947663015148,1797,frontend-supply-mem
+RealData,apache-spark,naivebayes-rcv1,frontend_l2i_bound,frontend-supply-mem,37.48218289038577,39.56035579516158,1797,5.544428697905049,1797,frontend-supply-mem
+RealData,apache-spark,naivebayes-rcv1,frontend_tlb_bound,frontend-supply-mem,5.7260555628148575,7.149910644489785,1797,24.86624633755699,1797,frontend-supply-mem
+RealData,apache-spark,naivebayes-rcv1,frontend_core_bound,frontend-supply-core,42.479800984992366,39.24085192932559,1797,-7.624680390595655,1797,frontend-supply-core
+RealData,apache-spark,naivebayes-rcv1,frontend_flow_bound,frontend-supply-core,3.718916094614826,3.803003503962318,1797,2.2610730440854763,1797,frontend-supply-core
+RealData,apache-spark,naivebayes-rcv1,frontend_flush_bound,frontend-supply-core,30.017263062726283,27.665712873627793,1797,-7.833992673431008,1797,frontend-supply-core
+RealData,database,neo4j-livejournal,IPC,anchor,2.3417482797668985,2.4949495260117747,1794,6.54217396329746,25114,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
+RealData,database,neo4j-livejournal,Frontend-bound (%),anchor,20.66817764017818,21.13456438168427,1794,2.256545059877235,3589,anchor;frontend-stalls
+RealData,database,neo4j-livejournal,Backend-bound (%),anchor,50.215627016126774,49.2506184173919,1794,-1.92172966081846,3590,anchor;backend
 RealData,database,neo4j-livejournal,Retiring (%),anchor,23.3762047931556,23.423351683951346,1794,0.20168753316855229,1794,anchor
 RealData,database,neo4j-livejournal,Bad-speculation (%),anchor,6.183918964268206,6.191465516972481,1794,0.12203511637005887,1794,anchor
 RealData,database,neo4j-livejournal,Branch MPKI,branch,1.130848155500777,1.1305669194190702,1795,-0.02486948228538122,1795,branch
@@ -137,11 +185,19 @@ RealData,database,neo4j-livejournal,L2-TLB MPKI,tlb-data,0.7279254297570953,0.71
 RealData,database,neo4j-livejournal,DTLB-walk MPKI,tlb-data,0.5122740106891861,0.5034345287140718,1789,-1.7255378548722662,1789,tlb-data
 RealData,database,neo4j-livejournal,ITLB-walk MPKI,tlb-code,0.17890360310719974,0.17729208078038886,1787,-0.9007768981853638,1789,tlb-code
 RealData,database,neo4j-livejournal,L1I-TLB MPKI,tlb-code,1.1678368589302632,1.1758947795023873,1787,0.6899868342488444,1789,tlb-code
-RealData,database,neo4j-livejournal,Context switches (/CPU-s),anchor,20751.778514312755,21308.23143834775,1794,2.681471005731882,16137,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
+RealData,database,neo4j-livejournal,Context switches (/CPU-s),anchor,20785.510094348912,21308.23143834775,1794,2.5148352945206423,25114,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
 RealData,database,neo4j-livejournal,Frequency (GHz),frequency,3.299578205727871,3.299594811352757,1794,0.0005032650796694637,1794,frequency
-RealData,apache-spark,pagerank-livejournal,IPC,anchor,1.862019806748623,1.8498653853618086,1797,-0.6527546776227943,16172,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
-RealData,apache-spark,pagerank-livejournal,Frontend-bound (%),anchor,4.319543230911004,4.332869874196085,1797,0.3085197339782324,1797,anchor
-RealData,apache-spark,pagerank-livejournal,Backend-bound (%),anchor,71.72928510844432,71.74686065888866,1797,0.024502614821515327,1797,anchor
+RealData,database,neo4j-livejournal,Frontend-stall (% cycles),frontend-stalls,15.701681872198025,15.252974526208156,1795,-2.8577024400447586,5385,frontend-stalls;frontend-supply-core;frontend-supply-mem
+RealData,database,neo4j-livejournal,frontend_mem_bound,frontend-supply-mem,77.56421156142125,77.48227600891832,1795,-0.10563577048423138,1795,frontend-supply-mem
+RealData,database,neo4j-livejournal,frontend_l1i_bound,frontend-supply-mem,16.74268657300785,16.8694689562926,1795,0.7572403791464828,1795,frontend-supply-mem
+RealData,database,neo4j-livejournal,frontend_l2i_bound,frontend-supply-mem,51.74812746561547,51.5285359359525,1795,-0.424346812952566,1795,frontend-supply-mem
+RealData,database,neo4j-livejournal,frontend_tlb_bound,frontend-supply-mem,5.924144386880643,5.930465854174204,1795,0.10670684035926319,1795,frontend-supply-mem
+RealData,database,neo4j-livejournal,frontend_core_bound,frontend-supply-core,23.204016364019232,23.251780968506345,1795,0.20584627996202712,1795,frontend-supply-core
+RealData,database,neo4j-livejournal,frontend_flow_bound,frontend-supply-core,5.198355220895435,5.191405305132473,1795,-0.13369451427686108,1795,frontend-supply-core
+RealData,database,neo4j-livejournal,frontend_flush_bound,frontend-supply-core,9.081048171059392,9.106246126191715,1795,0.27747848769955624,1795,frontend-supply-core
+RealData,apache-spark,pagerank-livejournal,IPC,anchor,1.8629609958131892,1.8498653853618086,1797,-0.7029460348773622,25150,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
+RealData,apache-spark,pagerank-livejournal,Frontend-bound (%),anchor,4.396284663108711,4.332869874196085,1797,-1.4424632109191888,3594,anchor;frontend-stalls
+RealData,apache-spark,pagerank-livejournal,Backend-bound (%),anchor,71.59039678987898,71.74686065888866,1797,0.21855426988191265,3594,anchor;backend
 RealData,apache-spark,pagerank-livejournal,Retiring (%),anchor,17.288221975563655,17.28492909238958,1797,-0.01904697416964307,1797,anchor
 RealData,apache-spark,pagerank-livejournal,Bad-speculation (%),anchor,6.66294968508102,6.635340374525669,1797,-0.4143706895636658,1797,anchor
 RealData,apache-spark,pagerank-livejournal,Branch MPKI,branch,1.3206679990874648,1.5931578284938812,1797,20.632727498106817,1797,branch
@@ -157,11 +213,19 @@ RealData,apache-spark,pagerank-livejournal,L2-TLB MPKI,tlb-data,0.76787068280695
 RealData,apache-spark,pagerank-livejournal,DTLB-walk MPKI,tlb-data,0.7563691896567456,0.9013502078652362,1797,19.16802273163529,1797,tlb-data
 RealData,apache-spark,pagerank-livejournal,ITLB-walk MPKI,tlb-code,0.005670521105348672,0.0050949399527569295,1797,-10.150410198611736,1797,tlb-code
 RealData,apache-spark,pagerank-livejournal,L1I-TLB MPKI,tlb-code,0.1779611701926075,0.18515676844401488,1797,4.043352964930267,1797,tlb-code
-RealData,apache-spark,pagerank-livejournal,Context switches (/CPU-s),anchor,76.78774171463866,77.87554958333106,1797,1.4166426103986216,16172,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
+RealData,apache-spark,pagerank-livejournal,Context switches (/CPU-s),anchor,75.97942265519569,77.87554958333106,1797,2.49557954229297,25150,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
 RealData,apache-spark,pagerank-livejournal,Frequency (GHz),frequency,3.299988922025643,3.299989031746392,1796,3.324882341227584e-06,1796,frequency
-DaCapo,server,tomcat,IPC,anchor,1.889678952781344,1.8779550111417431,1798,-0.620419760845877,16182,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
-DaCapo,server,tomcat,Frontend-bound (%),anchor,30.96698069620193,31.1688340250144,1798,0.6518340641366736,1798,anchor
-DaCapo,server,tomcat,Backend-bound (%),anchor,46.51929854909539,47.03627409278448,1798,1.1113141423306037,1798,anchor
+RealData,apache-spark,pagerank-livejournal,Frontend-stall (% cycles),frontend-stalls,1.7087470200129062,1.742952285780285,1797,2.0017747136799957,5387,frontend-stalls;frontend-supply-core;frontend-supply-mem
+RealData,apache-spark,pagerank-livejournal,frontend_mem_bound,frontend-supply-mem,20.023116940983673,20.523950835356803,1794,2.5012783766348314,1794,frontend-supply-mem
+RealData,apache-spark,pagerank-livejournal,frontend_l1i_bound,frontend-supply-mem,3.871064410214974,3.9956062444701446,1794,3.2172503750268073,1794,frontend-supply-mem
+RealData,apache-spark,pagerank-livejournal,frontend_l2i_bound,frontend-supply-mem,10.73930964423542,11.013071009465552,1794,2.549152359873343,1794,frontend-supply-mem
+RealData,apache-spark,pagerank-livejournal,frontend_tlb_bound,frontend-supply-mem,2.2518801826923998,2.3813191117669725,1794,5.7480380203804895,1794,frontend-supply-mem
+RealData,apache-spark,pagerank-livejournal,frontend_core_bound,frontend-supply-core,79.76107384313227,79.52513941520249,1796,-0.2958014687638162,1796,frontend-supply-core
+RealData,apache-spark,pagerank-livejournal,frontend_flow_bound,frontend-supply-core,1.4171224327895182,1.3397762512646811,1796,-5.457974535946473,1796,frontend-supply-core
+RealData,apache-spark,pagerank-livejournal,frontend_flush_bound,frontend-supply-core,67.40986829298902,67.68465343938,1796,0.40763341236131984,1796,frontend-supply-core
+DaCapo,server,tomcat,IPC,anchor,1.8894941245018055,1.8779550111417431,1798,-0.6106985573773552,25172,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
+DaCapo,server,tomcat,Frontend-bound (%),anchor,31.00598081941801,31.1688340250144,1798,0.5252315885275981,3596,anchor;frontend-stalls
+DaCapo,server,tomcat,Backend-bound (%),anchor,46.031943951120205,47.03627409278448,1798,2.181811271604652,3596,anchor;backend
 DaCapo,server,tomcat,Retiring (%),anchor,18.007429640394268,17.836902476780693,1798,-0.9469822568738382,1798,anchor
 DaCapo,server,tomcat,Bad-speculation (%),anchor,4.50629111430841,3.957989405420427,1798,-12.167471984821645,1798,anchor
 DaCapo,server,tomcat,Branch MPKI,branch,1.7297366534061203,1.5349375239274055,1798,-11.261779594895271,1798,branch
@@ -177,11 +241,19 @@ DaCapo,server,tomcat,L2-TLB MPKI,tlb-data,0.5784766467849223,0.6012132099917299,
 DaCapo,server,tomcat,DTLB-walk MPKI,tlb-data,0.40375864859642624,0.4190465808765302,1798,3.786403667945916,1798,tlb-data
 DaCapo,server,tomcat,ITLB-walk MPKI,tlb-code,0.16172395935455056,0.17027770542037302,1798,5.289102554724076,1798,tlb-code
 DaCapo,server,tomcat,L1I-TLB MPKI,tlb-code,2.1310771018154977,2.2399777738160127,1798,5.1101235102071545,1798,tlb-code
-DaCapo,server,tomcat,Context switches (/CPU-s),anchor,55583.919076298305,58342.688908655764,1798,4.963251742955695,16182,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
+DaCapo,server,tomcat,Context switches (/CPU-s),anchor,55558.80739352275,58342.688908655764,1798,5.0106934359026,25172,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
 DaCapo,server,tomcat,Frequency (GHz),frequency,3.3001171604356996,3.300192302540064,1798,0.002276952626573548,1798,frequency
-RealData,video-transcode,video-4k,IPC,anchor,3.8868392814556243,3.8874279657453323,1797,0.01514557837564044,16159,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
-RealData,video-transcode,video-4k,Frontend-bound (%),anchor,17.026247032704365,17.02577671006766,1797,-0.002762338851312759,1797,anchor
-RealData,video-transcode,video-4k,Backend-bound (%),anchor,39.70201808756627,39.70311937583469,1797,0.002773884858917281,1797,anchor
+DaCapo,server,tomcat,Frontend-stall (% cycles),frontend-stalls,24.154167383357308,24.359373166503644,1798,0.8495667844370711,5394,frontend-stalls;frontend-supply-core;frontend-supply-mem
+DaCapo,server,tomcat,frontend_mem_bound,frontend-supply-mem,69.53343478491674,70.06492319439873,1798,0.7643638073194761,1798,frontend-supply-mem
+DaCapo,server,tomcat,frontend_l1i_bound,frontend-supply-mem,29.740561773406792,30.43619830332392,1798,2.3390161060748587,1798,frontend-supply-mem
+DaCapo,server,tomcat,frontend_l2i_bound,frontend-supply-mem,31.47738786942642,31.364469689941743,1798,-0.3587279222567019,1798,frontend-supply-mem
+DaCapo,server,tomcat,frontend_tlb_bound,frontend-supply-mem,4.153749041441723,4.145274717381613,1798,-0.20401627482936716,1798,frontend-supply-mem
+DaCapo,server,tomcat,frontend_core_bound,frontend-supply-core,30.345000532394426,29.781754057645628,1798,-1.8561425765918549,1798,frontend-supply-core
+DaCapo,server,tomcat,frontend_flow_bound,frontend-supply-core,7.160978373691621,7.148682829405069,1798,-0.17170201674849056,1798,frontend-supply-core
+DaCapo,server,tomcat,frontend_flush_bound,frontend-supply-core,9.050944429305847,8.432937080291566,1798,-6.828097927695247,1798,frontend-supply-core
+RealData,video-transcode,video-4k,IPC,anchor,3.885876313070741,3.8874279657453323,1797,0.03993057291535811,25142,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
+RealData,video-transcode,video-4k,Frontend-bound (%),anchor,17.032505472205532,17.02577671006766,1797,-0.039505415975659534,3592,anchor;frontend-stalls
+RealData,video-transcode,video-4k,Backend-bound (%),anchor,39.718949370639706,39.70311937583469,1797,-0.0398550189666363,3594,anchor;backend
 RealData,video-transcode,video-4k,Retiring (%),anchor,38.91751849640219,38.91694077987987,1797,-0.0014844639243082628,1797,anchor
 RealData,video-transcode,video-4k,Bad-speculation (%),anchor,4.354216383327178,4.354163134217784,1797,-0.0012229320894055146,1797,anchor
 RealData,video-transcode,video-4k,Branch MPKI,branch,0.6918209204083597,0.6937670057890288,1795,0.2812990071939978,1795,branch
@@ -197,5 +269,13 @@ RealData,video-transcode,video-4k,L2-TLB MPKI,tlb-data,0.014272815433895166,0.01
 RealData,video-transcode,video-4k,DTLB-walk MPKI,tlb-data,0.008882100070329435,0.008956834467349425,1786,0.8414045825675754,1786,tlb-data
 RealData,video-transcode,video-4k,ITLB-walk MPKI,tlb-code,0.0001505485395778174,0.0001516278196584987,1797,0.7168984061272984,1797,tlb-code
 RealData,video-transcode,video-4k,L1I-TLB MPKI,tlb-code,0.0006925142062028025,0.0006969115416075891,1797,0.6349812560377743,1797,tlb-code
-RealData,video-transcode,video-4k,Context switches (/CPU-s),anchor,71.54175294548006,82.26532484935572,1797,14.989249581356772,16159,anchor;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;frequency;tlb-code;tlb-data
+RealData,video-transcode,video-4k,Context switches (/CPU-s),anchor,70.74474674051231,82.26532484935572,1797,16.28471178376005,25142,anchor;backend;bandwidth;branch;branch-types;cache-l1;cache-l2-ll;execution;frequency;frontend-stalls;frontend-supply-core;frontend-supply-mem;tlb-code;tlb-data
 RealData,video-transcode,video-4k,Frequency (GHz),frequency,3.299991190629108,3.299990972907705,1797,-6.597635889051353e-06,1797,frequency
+RealData,video-transcode,video-4k,Frontend-stall (% cycles),frontend-stalls,4.080040338535511,4.084242948100701,1795,0.10300411801071017,5389,frontend-stalls;frontend-supply-core;frontend-supply-mem
+RealData,video-transcode,video-4k,frontend_mem_bound,frontend-supply-mem,46.48593537674996,45.81264607331969,1797,-1.4483720677523753,1797,frontend-supply-mem
+RealData,video-transcode,video-4k,frontend_l1i_bound,frontend-supply-mem,35.17968414929704,34.534449974098855,1797,-1.8341101996820415,1797,frontend-supply-mem
+RealData,video-transcode,video-4k,frontend_l2i_bound,frontend-supply-mem,5.85706212557466,5.850013717713189,1797,-0.12034032950912975,1797,frontend-supply-mem
+RealData,video-transcode,video-4k,frontend_tlb_bound,frontend-supply-mem,0.1867210948252142,0.1934042769093124,1797,3.579232485946043,1797,frontend-supply-mem
+RealData,video-transcode,video-4k,frontend_core_bound,frontend-supply-core,53.457414786356985,54.05228155751802,1797,1.112786268356648,1797,frontend-supply-core
+RealData,video-transcode,video-4k,frontend_flow_bound,frontend-supply-core,2.032982584461281,2.021817625697895,1797,-0.5491910677801014,1797,frontend-supply-core
+RealData,video-transcode,video-4k,frontend_flush_bound,frontend-supply-core,31.111316068026117,31.89538844235322,1797,2.5202160288323956,1797,frontend-supply-core

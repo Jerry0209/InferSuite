@@ -1,0 +1,36 @@
+{
+ "attempt": "a1",
+ "valid": true,
+ "receipt": {
+  "status": "pass",
+  "why": "1 paced experiments, (QPS, p95 ms) = [(19.96, 431.778)]"
+ },
+ "gates": {
+  "perf_rc": true,
+  "no_mux": true,
+  "windows": true,
+  "steady": true,
+  "fenced": true,
+  "witness": true,
+  "alive": true,
+  "receipt": true
+ },
+ "files": {
+  "feedsim_results.txt": "duration_secs,total_queries,requested_qps,achieved_qps,total_bytes_rx,total_bytes_tx,rx_MBps,tx_MBps,min_ms,avg_ms,50p_ms,90p_ms,95p_ms,99p_ms,99.9p_ms\n120,2956,0.00,23.27,48167762,8938944,0.36,0.07,265.101,683.747,690.692,784.426,812.194,998.265,1250.294\n360,7324,20.00,19.96,119895554,22147776,0.31,0.06,265.101,344.165,326.450,401.747,431.778,585.308,651.677\n",
+  ".load_json": {
+   "qps": 20,
+   "warmup_s": 120,
+   "exp_s": 360,
+   "threads": "-t 8 -c 6 -s 4"
+  },
+  "iso.json": {
+   "iso_proof": true,
+   "ts": 1793875444.1414576,
+   "measured_max_busy_pct_1p5s": 0.0,
+   "quiet": "QUIET foreign_total=0% top: -",
+   "managed_irqs_outside_house": 185,
+   "online": "0-15",
+   "why": ""
+  }
+ }
+}

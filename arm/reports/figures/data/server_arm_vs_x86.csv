@@ -1,7 +1,7 @@
 suite,category,workload,metric,parity,x86_metric,arm_value,x86_value,arm_mean_of_windows
-RealData,server,cassandra-ycsb20m,IPC,exact,IPC,1.711689921711338,1.27902,1.6980078108549699
-RealData,server,cassandra-ycsb20m,Frontend-bound (%),analogue,,21.54745700436882,,21.576048833274832
-RealData,server,cassandra-ycsb20m,Backend-bound (%),analogue,,57.84399820776147,,57.853708998416735
+RealData,server,cassandra-ycsb20m,IPC,exact,IPC,1.7232598717141645,1.27902,1.6980078108549699
+RealData,server,cassandra-ycsb20m,Frontend-bound (%),analogue,,21.38923709160448,,21.576048833274832
+RealData,server,cassandra-ycsb20m,Backend-bound (%),analogue,,58.26060597487902,,57.853708998416735
 RealData,server,cassandra-ycsb20m,Retiring (%),analogue,,16.068234504516802,,16.040353808365
 RealData,server,cassandra-ycsb20m,Bad-speculation (%),analogue,,4.540310283352905,,4.5298883599434285
 RealData,server,cassandra-ycsb20m,Branch MPKI,exact,Branch MPKI,1.7979377672707046,2.03501,1.7988294112872938
@@ -17,11 +17,19 @@ RealData,server,cassandra-ycsb20m,L2-TLB MPKI,none,,1.1556396487907177,,1.172478
 RealData,server,cassandra-ycsb20m,DTLB-walk MPKI,none,,0.8870932277643222,,0.8995887900779926
 RealData,server,cassandra-ycsb20m,ITLB-walk MPKI,partial,,0.1810648452961386,,0.1858126038332535
 RealData,server,cassandra-ycsb20m,L1I-TLB MPKI,none,,3.5749472361931542,,3.580531865737625
-RealData,server,cassandra-ycsb20m,Context switches (/CPU-s),exact,Context switches (/CPU-s),16942.41782793961,16525.8,17347.988627051316
+RealData,server,cassandra-ycsb20m,Context switches (/CPU-s),exact,Context switches (/CPU-s),16311.684133773404,16525.8,17347.988627051316
 RealData,server,cassandra-ycsb20m,Frequency (GHz),none,,3.2997462787375995,,3.2997459250313934
-DCPerf,ranking,feedsim,IPC,exact,IPC,2.2697324387691684,1.82034,2.2789680723399144
-DCPerf,ranking,feedsim,Frontend-bound (%),analogue,,43.26132236334572,,43.113516560812506
-DCPerf,ranking,feedsim,Backend-bound (%),analogue,,25.33219548855992,,25.40230561457268
+RealData,server,cassandra-ycsb20m,Frontend-stall (% cycles),none,,16.18307883747981,,16.220245027568087
+RealData,server,cassandra-ycsb20m,frontend_mem_bound,none,,70.92020657925654,,70.87017131954288
+RealData,server,cassandra-ycsb20m,frontend_l1i_bound,none,,32.443236280899114,,32.38865240065247
+RealData,server,cassandra-ycsb20m,frontend_l2i_bound,none,,30.556868237961865,,30.558968798838745
+RealData,server,cassandra-ycsb20m,frontend_tlb_bound,none,,4.091952768106624,,4.0927477496408144
+RealData,server,cassandra-ycsb20m,frontend_core_bound,none,,28.259659205006617,,28.318586580600382
+RealData,server,cassandra-ycsb20m,frontend_flow_bound,none,,3.407725272295704,,3.4091651503568996
+RealData,server,cassandra-ycsb20m,frontend_flush_bound,none,,9.898936674122204,,9.971056670426021
+DCPerf,ranking,feedsim,IPC,exact,IPC,2.2697405571129248,1.82034,2.2789680723399144
+DCPerf,ranking,feedsim,Frontend-bound (%),analogue,,43.266211302773925,,43.113516560812506
+DCPerf,ranking,feedsim,Backend-bound (%),analogue,,25.41384181544655,,25.40230561457268
 DCPerf,ranking,feedsim,Retiring (%),analogue,,21.449367111933356,,21.512871519598345
 DCPerf,ranking,feedsim,Bad-speculation (%),analogue,,9.957115036161007,,9.971306305016464
 DCPerf,ranking,feedsim,Branch MPKI,exact,Branch MPKI,4.442479969438726,4.68542,4.908113456213496
@@ -37,11 +45,19 @@ DCPerf,ranking,feedsim,L2-TLB MPKI,none,,0.10473031620818328,,0.1118337639724602
 DCPerf,ranking,feedsim,DTLB-walk MPKI,none,,0.048925207725103406,,0.04741803089774773
 DCPerf,ranking,feedsim,ITLB-walk MPKI,partial,,0.0019120631540087232,,0.0018874042948339954
 DCPerf,ranking,feedsim,L1I-TLB MPKI,none,,0.6637223883583756,,0.8078865669243057
-DCPerf,ranking,feedsim,Context switches (/CPU-s),exact,Context switches (/CPU-s),187.87348437753573,193.735,189.90028903355548
+DCPerf,ranking,feedsim,Context switches (/CPU-s),exact,Context switches (/CPU-s),187.08688085154466,193.735,189.90028903355548
 DCPerf,ranking,feedsim,Frequency (GHz),none,,3.29987742943433,,3.2998714173566377
-Renaissance,web,finagle-chirper,IPC,exact,IPC,2.371394472186683,1.93002,2.372051139422494
-Renaissance,web,finagle-chirper,Frontend-bound (%),analogue,,23.61377926388368,,23.686394482769916
-Renaissance,web,finagle-chirper,Backend-bound (%),analogue,,50.68745433993998,,50.67647891088116
+DCPerf,ranking,feedsim,Frontend-stall (% cycles),none,,13.189987716304726,,13.242969186334578
+DCPerf,ranking,feedsim,frontend_mem_bound,none,,40.678144336962546,,39.85078429692149
+DCPerf,ranking,feedsim,frontend_l1i_bound,none,,24.891604214965295,,24.176960400257936
+DCPerf,ranking,feedsim,frontend_l2i_bound,none,,3.6294980178810334,,3.7158732070276748
+DCPerf,ranking,feedsim,frontend_tlb_bound,none,,4.192961609483159,,4.054001208016739
+DCPerf,ranking,feedsim,frontend_core_bound,none,,59.3119240144142,,60.18314712081367
+DCPerf,ranking,feedsim,frontend_flow_bound,none,,13.679836524150092,,13.267520026814857
+DCPerf,ranking,feedsim,frontend_flush_bound,none,,32.667760147523076,,34.11860228231184
+Renaissance,web,finagle-chirper,IPC,exact,IPC,2.3697112891140772,1.93002,2.372051139422494
+Renaissance,web,finagle-chirper,Frontend-bound (%),analogue,,23.498428588608576,,23.686394482769916
+Renaissance,web,finagle-chirper,Backend-bound (%),analogue,,50.772294731157146,,50.67647891088116
 Renaissance,web,finagle-chirper,Retiring (%),analogue,,22.359705134179414,,22.268851359380896
 Renaissance,web,finagle-chirper,Bad-speculation (%),analogue,,3.3390612619969215,,3.368275246968036
 Renaissance,web,finagle-chirper,Branch MPKI,exact,Branch MPKI,0.6481785776507897,1.33292,0.6789417702721945
@@ -57,11 +73,19 @@ Renaissance,web,finagle-chirper,L2-TLB MPKI,none,,0.7237270528181392,,0.73004068
 Renaissance,web,finagle-chirper,DTLB-walk MPKI,none,,0.5126102770274543,,0.5168499402132056
 Renaissance,web,finagle-chirper,ITLB-walk MPKI,partial,,0.16169533239114733,,0.1636587983480818
 Renaissance,web,finagle-chirper,L1I-TLB MPKI,none,,2.477838614183994,,2.4763264333009802
-Renaissance,web,finagle-chirper,Context switches (/CPU-s),exact,Context switches (/CPU-s),12714.723830473207,9278.1,13099.682614595642
+Renaissance,web,finagle-chirper,Context switches (/CPU-s),exact,Context switches (/CPU-s),12672.528924640717,9278.1,13099.682614595642
 Renaissance,web,finagle-chirper,Frequency (GHz),none,,3.2981574248974392,,3.297865171747312
-Renaissance,web,finagle-http,IPC,exact,IPC,1.6677474055221169,1.42299,1.6704227600460557
-Renaissance,web,finagle-http,Frontend-bound (%),analogue,,29.301247312188927,,29.291080777340333
-Renaissance,web,finagle-http,Backend-bound (%),analogue,,53.306315235930754,,53.29912564646015
+Renaissance,web,finagle-chirper,Frontend-stall (% cycles),none,,16.523764261160682,,16.50777144267557
+Renaissance,web,finagle-chirper,frontend_mem_bound,none,,75.46858232268808,,75.43021776255152
+Renaissance,web,finagle-chirper,frontend_l1i_bound,none,,31.931916161898627,,32.19236821916039
+Renaissance,web,finagle-chirper,frontend_l2i_bound,none,,34.838508900130726,,34.57890219949477
+Renaissance,web,finagle-chirper,frontend_tlb_bound,none,,4.860489206374381,,4.82042887746879
+Renaissance,web,finagle-chirper,frontend_core_bound,none,,24.89936515511221,,24.950596613229784
+Renaissance,web,finagle-chirper,frontend_flow_bound,none,,5.122733890288705,,5.075329883797314
+Renaissance,web,finagle-chirper,frontend_flush_bound,none,,6.290324877370055,,6.304179483586551
+Renaissance,web,finagle-http,IPC,exact,IPC,1.6605321743594652,1.42299,1.6704227600460557
+Renaissance,web,finagle-http,Frontend-bound (%),analogue,,29.109441525002076,,29.291080777340333
+Renaissance,web,finagle-http,Backend-bound (%),analogue,,53.58185989556227,,53.29912564646015
 Renaissance,web,finagle-http,Retiring (%),analogue,,15.896689606169454,,15.897210339382367
 Renaissance,web,finagle-http,Bad-speculation (%),analogue,,1.4957478457108606,,1.512583236817153
 Renaissance,web,finagle-http,Branch MPKI,exact,Branch MPKI,0.4009383412044063,0.578506,0.40847188386288946
@@ -77,11 +101,19 @@ Renaissance,web,finagle-http,L2-TLB MPKI,none,,1.67058386685565,,1.6679744364735
 Renaissance,web,finagle-http,DTLB-walk MPKI,none,,1.2720253742163687,,1.2698944243882158
 Renaissance,web,finagle-http,ITLB-walk MPKI,partial,,0.4003252456831018,,0.3997232952967119
 Renaissance,web,finagle-http,L1I-TLB MPKI,none,,4.614037401162375,,4.608695571673645
-Renaissance,web,finagle-http,Context switches (/CPU-s),exact,Context switches (/CPU-s),48581.9871221738,40575.1,47753.05450133748
+Renaissance,web,finagle-http,Context switches (/CPU-s),exact,Context switches (/CPU-s),48496.9169203496,40575.1,47753.05450133748
 Renaissance,web,finagle-http,Frequency (GHz),none,,3.298294013534725,,3.298256368623538
-RealData,server,kafka-20g,IPC,exact,IPC,1.5908998336081288,1.20841,1.5942390514195044
-RealData,server,kafka-20g,Frontend-bound (%),analogue,,21.118847711966666,,21.345402584409907
-RealData,server,kafka-20g,Backend-bound (%),analogue,,60.62385656685207,,60.41457851733526
+Renaissance,web,finagle-http,Frontend-stall (% cycles),none,,22.222461945106325,,22.530433641875057
+Renaissance,web,finagle-http,frontend_mem_bound,none,,76.87080349651335,,76.8485482780684
+Renaissance,web,finagle-http,frontend_l1i_bound,none,,38.63114709545143,,38.59540953480147
+Renaissance,web,finagle-http,frontend_l2i_bound,none,,30.32883708885247,,30.336672474906248
+Renaissance,web,finagle-http,frontend_tlb_bound,none,,4.101967576115522,,4.106922776646387
+Renaissance,web,finagle-http,frontend_core_bound,none,,23.51450484171398,,23.540216408490632
+Renaissance,web,finagle-http,frontend_flow_bound,none,,4.232243647741729,,4.237174570297366
+Renaissance,web,finagle-http,frontend_flush_bound,none,,3.7934139655353256,,3.8209107833412506
+RealData,server,kafka-20g,IPC,exact,IPC,1.5866172353196182,1.20841,1.5942390514195044
+RealData,server,kafka-20g,Frontend-bound (%),analogue,,21.200314689250117,,21.345402584409907
+RealData,server,kafka-20g,Backend-bound (%),analogue,,61.07413586030614,,60.41457851733526
 RealData,server,kafka-20g,Retiring (%),analogue,,15.743689993546438,,15.761485422004034
 RealData,server,kafka-20g,Bad-speculation (%),analogue,,2.513605727634826,,2.4785334762508047
 RealData,server,kafka-20g,Branch MPKI,exact,Branch MPKI,0.8092168414908861,1.14766,0.7970165316330552
@@ -97,11 +129,19 @@ RealData,server,kafka-20g,L2-TLB MPKI,none,,0.5290185794434027,,0.53591153352700
 RealData,server,kafka-20g,DTLB-walk MPKI,none,,0.4187354979969907,,0.42421959039220924
 RealData,server,kafka-20g,ITLB-walk MPKI,partial,,0.10072978439075293,,0.10200540832081918
 RealData,server,kafka-20g,L1I-TLB MPKI,none,,2.0731800210999176,,2.107107439292721
-RealData,server,kafka-20g,Context switches (/CPU-s),exact,Context switches (/CPU-s),33711.6693350362,26679.2,34514.481971803456
+RealData,server,kafka-20g,Context switches (/CPU-s),exact,Context switches (/CPU-s),33564.718070184805,26679.2,34514.481971803456
 RealData,server,kafka-20g,Frequency (GHz),none,,3.2955356417262736,,3.295682461821533
-RealData,apache-spark,naivebayes-rcv1,IPC,exact,IPC,2.068340211536632,1.39707,2.1904087648048867
-RealData,apache-spark,naivebayes-rcv1,Frontend-bound (%),analogue,,7.840551230371904,,8.603514548192264
-RealData,apache-spark,naivebayes-rcv1,Backend-bound (%),analogue,,69.10796755864249,,66.8466884246673
+RealData,server,kafka-20g,Frontend-stall (% cycles),none,,14.571293032647613,,15.083777357097118
+RealData,server,kafka-20g,frontend_mem_bound,none,,71.48068808716008,,71.49586671965874
+RealData,server,kafka-20g,frontend_l1i_bound,none,,37.51252378068776,,37.74574536307416
+RealData,server,kafka-20g,frontend_l2i_bound,none,,27.495974505613464,,27.306685047229262
+RealData,server,kafka-20g,frontend_tlb_bound,none,,3.266007853803811,,3.243697111384592
+RealData,server,kafka-20g,frontend_core_bound,none,,28.975084090553437,,28.982709846016665
+RealData,server,kafka-20g,frontend_flow_bound,none,,3.2253973031421674,,3.1913975179140484
+RealData,server,kafka-20g,frontend_flush_bound,none,,8.912761589724226,,8.875033429559334
+RealData,apache-spark,naivebayes-rcv1,IPC,exact,IPC,2.0669243396385855,1.39707,2.1904087648048867
+RealData,apache-spark,naivebayes-rcv1,Frontend-bound (%),analogue,,7.891335634043739,,8.603514548192264
+RealData,apache-spark,naivebayes-rcv1,Backend-bound (%),analogue,,69.1415847524235,,66.8466884246673
 RealData,apache-spark,naivebayes-rcv1,Retiring (%),analogue,,19.63137502020727,,20.743489964597504
 RealData,apache-spark,naivebayes-rcv1,Bad-speculation (%),analogue,,3.420106190778331,,3.806307062542926
 RealData,apache-spark,naivebayes-rcv1,Branch MPKI,exact,Branch MPKI,1.145274609643922,1.47274,1.0315616939146188
@@ -117,11 +157,19 @@ RealData,apache-spark,naivebayes-rcv1,L2-TLB MPKI,none,,2.7736158411946037,,3.31
 RealData,apache-spark,naivebayes-rcv1,DTLB-walk MPKI,none,,2.6001465507177377,,3.137674763009077
 RealData,apache-spark,naivebayes-rcv1,ITLB-walk MPKI,partial,,0.018352110706546073,,0.019344872679538164
 RealData,apache-spark,naivebayes-rcv1,L1I-TLB MPKI,none,,0.19141954778844167,,0.19166991285157672
-RealData,apache-spark,naivebayes-rcv1,Context switches (/CPU-s),exact,Context switches (/CPU-s),480.8773306407416,355.094,476.6131209997328
+RealData,apache-spark,naivebayes-rcv1,Context switches (/CPU-s),exact,Context switches (/CPU-s),475.04691811478807,355.094,476.6131209997328
 RealData,apache-spark,naivebayes-rcv1,Frequency (GHz),none,,3.299332009320792,,3.2993302201653223
-RealData,database,neo4j-livejournal,IPC,exact,IPC,2.340145315500336,2.15063,2.4949495260117747
-RealData,database,neo4j-livejournal,Frontend-bound (%),analogue,,21.19756033888026,,21.13456438168427
-RealData,database,neo4j-livejournal,Backend-bound (%),analogue,,49.24231590369593,,49.2506184173919
+RealData,apache-spark,naivebayes-rcv1,Frontend-stall (% cycles),none,,3.7053233881426504,,4.025388459598796
+RealData,apache-spark,naivebayes-rcv1,frontend_mem_bound,none,,57.804006614755544,,61.107258516347876
+RealData,apache-spark,naivebayes-rcv1,frontend_l1i_bound,none,,11.188910570879566,,10.858507897659923
+RealData,apache-spark,naivebayes-rcv1,frontend_l2i_bound,none,,37.48218289038577,,39.56035579516158
+RealData,apache-spark,naivebayes-rcv1,frontend_tlb_bound,none,,5.7260555628148575,,7.149910644489785
+RealData,apache-spark,naivebayes-rcv1,frontend_core_bound,none,,42.479800984992366,,39.24085192932559
+RealData,apache-spark,naivebayes-rcv1,frontend_flow_bound,none,,3.718916094614826,,3.803003503962318
+RealData,apache-spark,naivebayes-rcv1,frontend_flush_bound,none,,30.017263062726283,,27.665712873627793
+RealData,database,neo4j-livejournal,IPC,exact,IPC,2.3417482797668985,2.15063,2.4949495260117747
+RealData,database,neo4j-livejournal,Frontend-bound (%),analogue,,20.66817764017818,,21.13456438168427
+RealData,database,neo4j-livejournal,Backend-bound (%),analogue,,50.215627016126774,,49.2506184173919
 RealData,database,neo4j-livejournal,Retiring (%),analogue,,23.3762047931556,,23.423351683951346
 RealData,database,neo4j-livejournal,Bad-speculation (%),analogue,,6.183918964268206,,6.191465516972481
 RealData,database,neo4j-livejournal,Branch MPKI,exact,Branch MPKI,1.130848155500777,1.6499,1.1305669194190702
@@ -137,11 +185,19 @@ RealData,database,neo4j-livejournal,L2-TLB MPKI,none,,0.7279254297570953,,0.7155
 RealData,database,neo4j-livejournal,DTLB-walk MPKI,none,,0.5122740106891861,,0.5034345287140718
 RealData,database,neo4j-livejournal,ITLB-walk MPKI,partial,,0.17890360310719974,,0.17729208078038886
 RealData,database,neo4j-livejournal,L1I-TLB MPKI,none,,1.1678368589302632,,1.1758947795023873
-RealData,database,neo4j-livejournal,Context switches (/CPU-s),exact,Context switches (/CPU-s),20751.778514312755,17245.3,21308.23143834775
+RealData,database,neo4j-livejournal,Context switches (/CPU-s),exact,Context switches (/CPU-s),20785.510094348912,17245.3,21308.23143834775
 RealData,database,neo4j-livejournal,Frequency (GHz),none,,3.299578205727871,,3.299594811352757
-RealData,apache-spark,pagerank-livejournal,IPC,exact,IPC,1.862019806748623,1.69761,1.8498653853618086
-RealData,apache-spark,pagerank-livejournal,Frontend-bound (%),analogue,,4.319543230911004,,4.332869874196085
-RealData,apache-spark,pagerank-livejournal,Backend-bound (%),analogue,,71.72928510844432,,71.74686065888866
+RealData,database,neo4j-livejournal,Frontend-stall (% cycles),none,,15.701681872198025,,15.252974526208156
+RealData,database,neo4j-livejournal,frontend_mem_bound,none,,77.56421156142125,,77.48227600891832
+RealData,database,neo4j-livejournal,frontend_l1i_bound,none,,16.74268657300785,,16.8694689562926
+RealData,database,neo4j-livejournal,frontend_l2i_bound,none,,51.74812746561547,,51.5285359359525
+RealData,database,neo4j-livejournal,frontend_tlb_bound,none,,5.924144386880643,,5.930465854174204
+RealData,database,neo4j-livejournal,frontend_core_bound,none,,23.204016364019232,,23.251780968506345
+RealData,database,neo4j-livejournal,frontend_flow_bound,none,,5.198355220895435,,5.191405305132473
+RealData,database,neo4j-livejournal,frontend_flush_bound,none,,9.081048171059392,,9.106246126191715
+RealData,apache-spark,pagerank-livejournal,IPC,exact,IPC,1.8629609958131892,1.69761,1.8498653853618086
+RealData,apache-spark,pagerank-livejournal,Frontend-bound (%),analogue,,4.396284663108711,,4.332869874196085
+RealData,apache-spark,pagerank-livejournal,Backend-bound (%),analogue,,71.59039678987898,,71.74686065888866
 RealData,apache-spark,pagerank-livejournal,Retiring (%),analogue,,17.288221975563655,,17.28492909238958
 RealData,apache-spark,pagerank-livejournal,Bad-speculation (%),analogue,,6.66294968508102,,6.635340374525669
 RealData,apache-spark,pagerank-livejournal,Branch MPKI,exact,Branch MPKI,1.3206679990874648,1.54219,1.5931578284938812
@@ -157,11 +213,19 @@ RealData,apache-spark,pagerank-livejournal,L2-TLB MPKI,none,,0.7678706828069523,
 RealData,apache-spark,pagerank-livejournal,DTLB-walk MPKI,none,,0.7563691896567456,,0.9013502078652362
 RealData,apache-spark,pagerank-livejournal,ITLB-walk MPKI,partial,,0.005670521105348672,,0.0050949399527569295
 RealData,apache-spark,pagerank-livejournal,L1I-TLB MPKI,none,,0.1779611701926075,,0.18515676844401488
-RealData,apache-spark,pagerank-livejournal,Context switches (/CPU-s),exact,Context switches (/CPU-s),76.78774171463866,74.1877,77.87554958333106
+RealData,apache-spark,pagerank-livejournal,Context switches (/CPU-s),exact,Context switches (/CPU-s),75.97942265519569,74.1877,77.87554958333106
 RealData,apache-spark,pagerank-livejournal,Frequency (GHz),none,,3.299988922025643,,3.299989031746392
-DaCapo,server,tomcat,IPC,exact,IPC,1.889678952781344,1.37344,1.8779550111417431
-DaCapo,server,tomcat,Frontend-bound (%),analogue,,30.96698069620193,,31.1688340250144
-DaCapo,server,tomcat,Backend-bound (%),analogue,,46.51929854909539,,47.03627409278448
+RealData,apache-spark,pagerank-livejournal,Frontend-stall (% cycles),none,,1.7087470200129062,,1.742952285780285
+RealData,apache-spark,pagerank-livejournal,frontend_mem_bound,none,,20.023116940983673,,20.523950835356803
+RealData,apache-spark,pagerank-livejournal,frontend_l1i_bound,none,,3.871064410214974,,3.9956062444701446
+RealData,apache-spark,pagerank-livejournal,frontend_l2i_bound,none,,10.73930964423542,,11.013071009465552
+RealData,apache-spark,pagerank-livejournal,frontend_tlb_bound,none,,2.2518801826923998,,2.3813191117669725
+RealData,apache-spark,pagerank-livejournal,frontend_core_bound,none,,79.76107384313227,,79.52513941520249
+RealData,apache-spark,pagerank-livejournal,frontend_flow_bound,none,,1.4171224327895182,,1.3397762512646811
+RealData,apache-spark,pagerank-livejournal,frontend_flush_bound,none,,67.40986829298902,,67.68465343938
+DaCapo,server,tomcat,IPC,exact,IPC,1.8894941245018055,1.37344,1.8779550111417431
+DaCapo,server,tomcat,Frontend-bound (%),analogue,,31.00598081941801,,31.1688340250144
+DaCapo,server,tomcat,Backend-bound (%),analogue,,46.031943951120205,,47.03627409278448
 DaCapo,server,tomcat,Retiring (%),analogue,,18.007429640394268,,17.836902476780693
 DaCapo,server,tomcat,Bad-speculation (%),analogue,,4.50629111430841,,3.957989405420427
 DaCapo,server,tomcat,Branch MPKI,exact,Branch MPKI,1.7297366534061203,2.82879,1.5349375239274055
@@ -177,11 +241,19 @@ DaCapo,server,tomcat,L2-TLB MPKI,none,,0.5784766467849223,,0.6012132099917299
 DaCapo,server,tomcat,DTLB-walk MPKI,none,,0.40375864859642624,,0.4190465808765302
 DaCapo,server,tomcat,ITLB-walk MPKI,partial,,0.16172395935455056,,0.17027770542037302
 DaCapo,server,tomcat,L1I-TLB MPKI,none,,2.1310771018154977,,2.2399777738160127
-DaCapo,server,tomcat,Context switches (/CPU-s),exact,Context switches (/CPU-s),55583.919076298305,33712.8,58342.688908655764
+DaCapo,server,tomcat,Context switches (/CPU-s),exact,Context switches (/CPU-s),55558.80739352275,33712.8,58342.688908655764
 DaCapo,server,tomcat,Frequency (GHz),none,,3.3001171604356996,,3.300192302540064
-RealData,video-transcode,video-4k,IPC,exact,IPC,3.8868392814556243,2.45967,3.8874279657453323
-RealData,video-transcode,video-4k,Frontend-bound (%),analogue,,17.026247032704365,,17.02577671006766
-RealData,video-transcode,video-4k,Backend-bound (%),analogue,,39.70201808756627,,39.70311937583469
+DaCapo,server,tomcat,Frontend-stall (% cycles),none,,24.154167383357308,,24.359373166503644
+DaCapo,server,tomcat,frontend_mem_bound,none,,69.53343478491674,,70.06492319439873
+DaCapo,server,tomcat,frontend_l1i_bound,none,,29.740561773406792,,30.43619830332392
+DaCapo,server,tomcat,frontend_l2i_bound,none,,31.47738786942642,,31.364469689941743
+DaCapo,server,tomcat,frontend_tlb_bound,none,,4.153749041441723,,4.145274717381613
+DaCapo,server,tomcat,frontend_core_bound,none,,30.345000532394426,,29.781754057645628
+DaCapo,server,tomcat,frontend_flow_bound,none,,7.160978373691621,,7.148682829405069
+DaCapo,server,tomcat,frontend_flush_bound,none,,9.050944429305847,,8.432937080291566
+RealData,video-transcode,video-4k,IPC,exact,IPC,3.885876313070741,2.45967,3.8874279657453323
+RealData,video-transcode,video-4k,Frontend-bound (%),analogue,,17.032505472205532,,17.02577671006766
+RealData,video-transcode,video-4k,Backend-bound (%),analogue,,39.718949370639706,,39.70311937583469
 RealData,video-transcode,video-4k,Retiring (%),analogue,,38.91751849640219,,38.91694077987987
 RealData,video-transcode,video-4k,Bad-speculation (%),analogue,,4.354216383327178,,4.354163134217784
 RealData,video-transcode,video-4k,Branch MPKI,exact,Branch MPKI,0.6918209204083597,1.36702,0.6937670057890288
@@ -197,5 +269,13 @@ RealData,video-transcode,video-4k,L2-TLB MPKI,none,,0.014272815433895166,,0.0143
 RealData,video-transcode,video-4k,DTLB-walk MPKI,none,,0.008882100070329435,,0.008956834467349425
 RealData,video-transcode,video-4k,ITLB-walk MPKI,partial,,0.0001505485395778174,,0.0001516278196584987
 RealData,video-transcode,video-4k,L1I-TLB MPKI,none,,0.0006925142062028025,,0.0006969115416075891
-RealData,video-transcode,video-4k,Context switches (/CPU-s),exact,Context switches (/CPU-s),71.54175294548006,70.9272,82.26532484935572
+RealData,video-transcode,video-4k,Context switches (/CPU-s),exact,Context switches (/CPU-s),70.74474674051231,70.9272,82.26532484935572
 RealData,video-transcode,video-4k,Frequency (GHz),none,,3.299991190629108,,3.299990972907705
+RealData,video-transcode,video-4k,Frontend-stall (% cycles),none,,4.080040338535511,,4.084242948100701
+RealData,video-transcode,video-4k,frontend_mem_bound,none,,46.48593537674996,,45.81264607331969
+RealData,video-transcode,video-4k,frontend_l1i_bound,none,,35.17968414929704,,34.534449974098855
+RealData,video-transcode,video-4k,frontend_l2i_bound,none,,5.85706212557466,,5.850013717713189
+RealData,video-transcode,video-4k,frontend_tlb_bound,none,,0.1867210948252142,,0.1934042769093124
+RealData,video-transcode,video-4k,frontend_core_bound,none,,53.457414786356985,,54.05228155751802
+RealData,video-transcode,video-4k,frontend_flow_bound,none,,2.032982584461281,,2.021817625697895
+RealData,video-transcode,video-4k,frontend_flush_bound,none,,31.111316068026117,,31.89538844235322

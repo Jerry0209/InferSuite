@@ -1,0 +1,100 @@
+{
+ "attempt": "a1",
+ "valid": true,
+ "receipt": {
+  "status": "pass",
+  "why": "produce 119997.6 rec/s, consume 703.1 MB/s"
+ },
+ "gates": {
+  "perf_rc": true,
+  "no_mux": true,
+  "windows": true,
+  "steady": true,
+  "fenced": true,
+  "witness": true,
+  "alive": true,
+  "receipt": true
+ },
+ "files": {
+  "kafka_receipt.json": {
+   "producers": 3,
+   "producer_total_records_per_s": 119997.6,
+   "producer_final": {
+    "records": 13200000.0,
+    "records_per_s": 39999.151533,
+    "MB_per_s": 39.06,
+    "avg_ms": 1.76,
+    "max_ms": 320.0,
+    "p50_ms": 2,
+    "p95_ms": 4,
+    "p99_ms": 5
+   },
+   "producer_status": {
+    "n": 197,
+    "median_records_per_s": 40001.0
+   },
+   "consumer_total_MB_per_s_last": 703.1,
+   "consumers": {
+    "consumer_1.log": {
+     "MB_consumed": 61029.9688,
+     "MB_per_s_last": 117.1428,
+     "msgs_per_s_last": 119954.2092,
+     "intervals": 66
+    },
+    "consumer_2.log": {
+     "MB_consumed": 60456.6484,
+     "MB_per_s_last": 117.1703,
+     "msgs_per_s_last": 119982.4035,
+     "intervals": 65
+    },
+    "consumer_3.log": {
+     "MB_consumed": 61031.7676,
+     "MB_per_s_last": 117.1926,
+     "msgs_per_s_last": 120005.2,
+     "intervals": 66
+    },
+    "consumer_4.log": {
+     "MB_consumed": 61025.7266,
+     "MB_per_s_last": 117.182,
+     "msgs_per_s_last": 119994.4,
+     "intervals": 66
+    },
+    "consumer_5.log": {
+     "MB_consumed": 60461.7803,
+     "MB_per_s_last": 117.2016,
+     "msgs_per_s_last": 120014.4,
+     "intervals": 65
+    },
+    "consumer_6.log": {
+     "MB_consumed": 60452.3174,
+     "MB_per_s_last": 117.1772,
+     "msgs_per_s_last": 119989.4021,
+     "intervals": 65
+    }
+   }
+  },
+  ".load_json": {
+   "server": "apache-kafka-4.3.1 (KRaft)",
+   "jdk": "21",
+   "heap": "6g",
+   "prefill": "messages=20000000 record_bytes=1024 partitions=12 retention_bytes_per_partition=",
+   "client": {
+    "producers": 3,
+    "producer_rps_each": 40000,
+    "record_bytes": 1024,
+    "consumers_from_earliest": 6,
+    "duration_s": 330
+   },
+   "warmup_s": 90
+  },
+  "iso.json": {
+   "iso_proof": true,
+   "ts": 1793875068.188735,
+   "measured_max_busy_pct_1p5s": 0.0,
+   "quiet": "QUIET foreign_total=0% top: -",
+   "managed_irqs_outside_house": 185,
+   "online": "0-15",
+   "why": ""
+  }
+ }
+}

@@ -1,0 +1,101 @@
+{
+ "attempt": "a1",
+ "valid": true,
+ "receipt": {
+  "status": "pass",
+  "why": "client 19721.2 ops/s in the last window"
+ },
+ "gates": {
+  "perf_rc": true,
+  "no_mux": true,
+  "windows": true,
+  "steady": true,
+  "fenced": true,
+  "witness": true,
+  "alive": true,
+  "receipt": true
+ },
+ "files": {
+  "neo4j_receipt.json": {
+   "whole_run": {
+    "short": {
+     "ops": 5442228,
+     "ops_per_s": 15959.4,
+     "errors": 0,
+     "p95_ms_count_weighted": 2.28,
+     "p99_ms_count_weighted": 3.85
+    },
+    "long": {
+     "ops": 817541,
+     "ops_per_s": 2397.5,
+     "errors": 0,
+     "p95_ms_count_weighted": 7.8,
+     "p99_ms_count_weighted": 10.84
+    },
+    "mut": {
+     "ops": 543265,
+     "ops_per_s": 1593.1,
+     "errors": 0,
+     "p95_ms_count_weighted": 8.26,
+     "p99_ms_count_weighted": 10.71
+    },
+    "all": {
+     "ops_per_s": 19950.0,
+     "span_s": 341.0
+    }
+   },
+   "last_180s": {
+    "short": {
+     "ops": 2855056,
+     "ops_per_s": 15773.8,
+     "errors": 0,
+     "p95_ms_count_weighted": 2.22,
+     "p99_ms_count_weighted": 3.75
+    },
+    "long": {
+     "ops": 429489,
+     "ops_per_s": 2372.9,
+     "errors": 0,
+     "p95_ms_count_weighted": 7.65,
+     "p99_ms_count_weighted": 10.51
+    },
+    "mut": {
+     "ops": 284985,
+     "ops_per_s": 1574.5,
+     "errors": 0,
+     "p95_ms_count_weighted": 10.03,
+     "p99_ms_count_weighted": 12.74
+    },
+    "all": {
+     "ops_per_s": 19721.2,
+     "span_s": 181.0
+    }
+   },
+   "processes": 5
+  },
+  ".load_json": {
+   "server": "neo4j-community-5.26.12",
+   "database": "livejournal",
+   "dataset": "SNAP soc-LiveJournal1",
+   "nodes": 4847571,
+   "heap": "8g",
+   "pagecache": "12g",
+   "client": {
+    "procs": 5,
+    "sessions": 5,
+    "mix": "short 0.80 / long 0.12 / mut 0.08",
+    "duration_s": 390
+   },
+   "warmup_s": 150
+  },
+  "iso.json": {
+   "iso_proof": true,
+   "ts": 1793863424.9057825,
+   "measured_max_busy_pct_1p5s": 0.0,
+   "quiet": "QUIET foreign_total=0% top: -",
+   "managed_irqs_outside_house": 185,
+   "online": "0-15",
+   "why": ""
+  }
+ }
+}

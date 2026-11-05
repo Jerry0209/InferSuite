@@ -1,0 +1,72 @@
+{
+ "attempt": "a1",
+ "valid": true,
+ "receipt": {
+  "status": "pass",
+  "why": "YCSB median 82206.9 ops/s over 37 status lines"
+ },
+ "gates": {
+  "perf_rc": true,
+  "no_mux": true,
+  "windows": true,
+  "steady": true,
+  "fenced": true,
+  "witness": true,
+  "alive": true,
+  "receipt": true
+ },
+ "files": {
+  "cassandra_receipt.json": {
+   "OVERALL": {
+    "RunTime(ms)": 362209.0,
+    "Throughput(ops/sec)": 81567.03174134271
+   },
+   "READ": {
+    "Operations": 14772188.0,
+    "AverageLatency(us)": 344.9624406350637,
+    "MinLatency(us)": 71.0,
+    "MaxLatency(us)": 48255.0,
+    "95thPercentileLatency(us)": 526.0,
+    "99thPercentileLatency(us)": 859.0,
+    "Return=OK": 14772188.0
+   },
+   "UPDATE": {
+    "Operations": 14772125.0,
+    "AverageLatency(us)": 237.01347084458058,
+    "MinLatency(us)": 42.0,
+    "MaxLatency(us)": 47903.0,
+    "95thPercentileLatency(us)": 428.0,
+    "99thPercentileLatency(us)": 695.0,
+    "Return=OK": 14772125.0
+   },
+   "status_lines": {
+    "n": 37,
+    "median_ops_per_s": 82206.9,
+    "last_10_mean_ops_per_s": 69901.95599999999
+   }
+  },
+  ".load_json": {
+   "server": "apache-cassandra-5.0.9",
+   "jdk": "17",
+   "heap": "8G",
+   "records": 20000000,
+   "row_bytes": 1000,
+   "client": {
+    "tool": "YCSB 0.17",
+    "workload": "workloada",
+    "threads": 24,
+    "duration_s": 360
+   },
+   "warmup_s": 120
+  },
+  "iso.json": {
+   "iso_proof": true,
+   "ts": 1793863817.8875947,
+   "measured_max_busy_pct_1p5s": 0.0,
+   "quiet": "QUIET foreign_total=2% top: ubuntu:claude[3557]=2%",
+   "managed_irqs_outside_house": 185,
+   "online": "0-15",
+   "why": ""
+  }
+ }
+}

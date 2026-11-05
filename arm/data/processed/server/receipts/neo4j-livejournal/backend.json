@@ -1,0 +1,101 @@
+{
+ "attempt": "a1",
+ "valid": true,
+ "receipt": {
+  "status": "pass",
+  "why": "client 20496.1 ops/s in the last window"
+ },
+ "gates": {
+  "perf_rc": true,
+  "no_mux": true,
+  "windows": true,
+  "steady": true,
+  "fenced": true,
+  "witness": true,
+  "alive": true,
+  "receipt": true
+ },
+ "files": {
+  "neo4j_receipt.json": {
+   "whole_run": {
+    "short": {
+     "ops": 5551050,
+     "ops_per_s": 16278.7,
+     "errors": 0,
+     "p95_ms_count_weighted": 2.31,
+     "p99_ms_count_weighted": 3.9
+    },
+    "long": {
+     "ops": 833910,
+     "ops_per_s": 2445.5,
+     "errors": 0,
+     "p95_ms_count_weighted": 7.66,
+     "p99_ms_count_weighted": 10.65
+    },
+    "mut": {
+     "ops": 554138,
+     "ops_per_s": 1625.0,
+     "errors": 0,
+     "p95_ms_count_weighted": 6.03,
+     "p99_ms_count_weighted": 8.08
+    },
+    "all": {
+     "ops_per_s": 20349.2,
+     "span_s": 341.0
+    }
+   },
+   "last_180s": {
+    "short": {
+     "ops": 2967244,
+     "ops_per_s": 16393.6,
+     "errors": 0,
+     "p95_ms_count_weighted": 2.25,
+     "p99_ms_count_weighted": 3.8
+    },
+    "long": {
+     "ops": 446391,
+     "ops_per_s": 2466.2,
+     "errors": 0,
+     "p95_ms_count_weighted": 7.41,
+     "p99_ms_count_weighted": 10.26
+    },
+    "mut": {
+     "ops": 296158,
+     "ops_per_s": 1636.2,
+     "errors": 0,
+     "p95_ms_count_weighted": 5.98,
+     "p99_ms_count_weighted": 7.95
+    },
+    "all": {
+     "ops_per_s": 20496.1,
+     "span_s": 181.0
+    }
+   },
+   "processes": 5
+  },
+  ".load_json": {
+   "server": "neo4j-community-5.26.12",
+   "database": "livejournal",
+   "dataset": "SNAP soc-LiveJournal1",
+   "nodes": 4847571,
+   "heap": "8g",
+   "pagecache": "12g",
+   "client": {
+    "procs": 5,
+    "sessions": 5,
+    "mix": "short 0.80 / long 0.12 / mut 0.08",
+    "duration_s": 390
+   },
+   "warmup_s": 150
+  },
+  "iso.json": {
+   "iso_proof": true,
+   "ts": 1793874260.108265,
+   "measured_max_busy_pct_1p5s": 0.0,
+   "quiet": "QUIET foreign_total=1% top: ubuntu:claude[3557]=1%",
+   "managed_irqs_outside_house": 185,
+   "online": "0-15",
+   "why": ""
+  }
+ }
+}
