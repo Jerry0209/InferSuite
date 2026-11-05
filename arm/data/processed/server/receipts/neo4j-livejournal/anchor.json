@@ -1,0 +1,101 @@
+{
+ "attempt": "a1",
+ "valid": true,
+ "receipt": {
+  "status": "pass",
+  "why": "client 19565.3 ops/s in the last window"
+ },
+ "gates": {
+  "perf_rc": true,
+  "no_mux": true,
+  "windows": true,
+  "steady": true,
+  "fenced": true,
+  "witness": true,
+  "alive": true,
+  "receipt": true
+ },
+ "files": {
+  "neo4j_receipt.json": {
+   "whole_run": {
+    "short": {
+     "ops": 5440710,
+     "ops_per_s": 15955.0,
+     "errors": 0,
+     "p95_ms_count_weighted": 2.15,
+     "p99_ms_count_weighted": 3.64
+    },
+    "long": {
+     "ops": 817372,
+     "ops_per_s": 2397.0,
+     "errors": 0,
+     "p95_ms_count_weighted": 6.4,
+     "p99_ms_count_weighted": 8.93
+    },
+    "mut": {
+     "ops": 543183,
+     "ops_per_s": 1592.9,
+     "errors": 0,
+     "p95_ms_count_weighted": 8.62,
+     "p99_ms_count_weighted": 10.99
+    },
+    "all": {
+     "ops_per_s": 19944.9,
+     "span_s": 341.0
+    }
+   },
+   "last_180s": {
+    "short": {
+     "ops": 2832248,
+     "ops_per_s": 15647.9,
+     "errors": 0,
+     "p95_ms_count_weighted": 2.09,
+     "p99_ms_count_weighted": 3.55
+    },
+    "long": {
+     "ops": 426256,
+     "ops_per_s": 2355.0,
+     "errors": 0,
+     "p95_ms_count_weighted": 6.26,
+     "p99_ms_count_weighted": 8.59
+    },
+    "mut": {
+     "ops": 282789,
+     "ops_per_s": 1562.4,
+     "errors": 0,
+     "p95_ms_count_weighted": 10.14,
+     "p99_ms_count_weighted": 12.9
+    },
+    "all": {
+     "ops_per_s": 19565.3,
+     "span_s": 181.0
+    }
+   },
+   "processes": 5
+  },
+  ".load_json": {
+   "server": "neo4j-community-5.26.12",
+   "database": "livejournal",
+   "dataset": "SNAP soc-LiveJournal1",
+   "nodes": 4847571,
+   "heap": "8g",
+   "pagecache": "12g",
+   "client": {
+    "procs": 5,
+    "sessions": 5,
+    "mix": "short 0.80 / long 0.12 / mut 0.08",
+    "duration_s": 390
+   },
+   "warmup_s": 150
+  },
+  "iso.json": {
+   "iso_proof": true,
+   "ts": 1793838680.8576748,
+   "measured_max_busy_pct_1p5s": 0.0,
+   "quiet": "QUIET foreign_total=0% top: -",
+   "managed_irqs_outside_house": 185,
+   "online": "0-15",
+   "why": ""
+  }
+ }
+}

@@ -1,81 +1,201 @@
 suite,category,workload,metric,parity,x86_metric,arm_value,x86_value,arm_mean_of_windows
-RealData,server,cassandra-ycsb20m,IPC,exact,IPC,1.6654240168163814,1.27902,
-RealData,server,cassandra-ycsb20m,L1I MPKI,analogue,L1I MPKI (code-read),31.406424644469308,37.3598,
+RealData,server,cassandra-ycsb20m,IPC,exact,IPC,1.711689921711338,1.27902,1.6980078108549699
+RealData,server,cassandra-ycsb20m,Frontend-bound (%),analogue,,21.54745700436882,,21.576048833274832
+RealData,server,cassandra-ycsb20m,Backend-bound (%),analogue,,57.84399820776147,,57.853708998416735
+RealData,server,cassandra-ycsb20m,Retiring (%),analogue,,16.068234504516802,,16.040353808365
+RealData,server,cassandra-ycsb20m,Bad-speculation (%),analogue,,4.540310283352905,,4.5298883599434285
+RealData,server,cassandra-ycsb20m,Branch MPKI,exact,Branch MPKI,1.7979377672707046,2.03501,1.7988294112872938
+RealData,server,cassandra-ycsb20m,Branch-direction MPKI,analogue,Branch-direction MPKI,1.7256793479165993,2.15013,1.7263078059074222
+RealData,server,cassandra-ycsb20m,Target-mispredict MPKI,partial,BTB MPKI (BAClears),0.07190651326231502,0.805884,0.0719611738481556
+RealData,server,cassandra-ycsb20m,L1I MPKI,analogue,L1I MPKI (code-read),29.32242017255248,37.3598,27.449504430713095
+RealData,server,cassandra-ycsb20m,L1D-load MPKI,analogue,L1D-load MPKI,11.82664782764318,8.09959,11.904185017426649
+RealData,server,cassandra-ycsb20m,L2-load MPKI,analogue,L2-load MPKI,11.621621164043567,0.950188,11.703355242445907
+RealData,server,cassandra-ycsb20m,LLC MPKI,partial,LLC MPKI,0.3393842730817171,0.279664,0.3409097723634539
+RealData,server,cassandra-ycsb20m,DRAM read (GB/s),partial,DRAM read (GB/s),0.7389343856763608,11.0908,0.7426374233304258
 RealData,server,cassandra-ycsb20m,L1D-TLB MPKI,none,,5.519095100463163,,5.575395557155468
 RealData,server,cassandra-ycsb20m,L2-TLB MPKI,none,,1.1556396487907177,,1.172478906799944
 RealData,server,cassandra-ycsb20m,DTLB-walk MPKI,none,,0.8870932277643222,,0.8995887900779926
 RealData,server,cassandra-ycsb20m,ITLB-walk MPKI,partial,,0.1810648452961386,,0.1858126038332535
 RealData,server,cassandra-ycsb20m,L1I-TLB MPKI,none,,3.5749472361931542,,3.580531865737625
-RealData,server,cassandra-ycsb20m,Context switches (/CPU-s),exact,Context switches (/CPU-s),20301.56629921151,16525.8,
-DCPerf,ranking,feedsim,IPC,exact,IPC,2.26614241277773,1.82034,
-DCPerf,ranking,feedsim,L1I MPKI,analogue,L1I MPKI (code-read),3.2256411099539077,5.66694,
+RealData,server,cassandra-ycsb20m,Context switches (/CPU-s),exact,Context switches (/CPU-s),16942.41782793961,16525.8,17347.988627051316
+RealData,server,cassandra-ycsb20m,Frequency (GHz),none,,3.2997462787375995,,3.2997459250313934
+DCPerf,ranking,feedsim,IPC,exact,IPC,2.2697324387691684,1.82034,2.2789680723399144
+DCPerf,ranking,feedsim,Frontend-bound (%),analogue,,43.26132236334572,,43.113516560812506
+DCPerf,ranking,feedsim,Backend-bound (%),analogue,,25.33219548855992,,25.40230561457268
+DCPerf,ranking,feedsim,Retiring (%),analogue,,21.449367111933356,,21.512871519598345
+DCPerf,ranking,feedsim,Bad-speculation (%),analogue,,9.957115036161007,,9.971306305016464
+DCPerf,ranking,feedsim,Branch MPKI,exact,Branch MPKI,4.442479969438726,4.68542,4.908113456213496
+DCPerf,ranking,feedsim,Branch-direction MPKI,analogue,Branch-direction MPKI,3.03804944178632,3.32435,3.2765438710425685
+DCPerf,ranking,feedsim,Target-mispredict MPKI,partial,BTB MPKI (BAClears),1.4078918485056013,1.4058,1.7504083186318742
+DCPerf,ranking,feedsim,L1I MPKI,analogue,L1I MPKI (code-read),3.219842640926058,5.66694,3.8111971018291304
+DCPerf,ranking,feedsim,L1D-load MPKI,analogue,L1D-load MPKI,31.594810093029807,11.681,35.7117410583895
+DCPerf,ranking,feedsim,L2-load MPKI,analogue,L2-load MPKI,15.289049879521396,4.21672,17.196958880994952
+DCPerf,ranking,feedsim,LLC MPKI,partial,LLC MPKI,0.2201174583696676,0.480402,0.23589375221969422
+DCPerf,ranking,feedsim,DRAM read (GB/s),partial,DRAM read (GB/s),0.3246291796417133,11.6652,0.3255639902383261
 DCPerf,ranking,feedsim,L1D-TLB MPKI,none,,30.552946150390497,,36.84359174039959
 DCPerf,ranking,feedsim,L2-TLB MPKI,none,,0.10473031620818328,,0.11183376397246023
 DCPerf,ranking,feedsim,DTLB-walk MPKI,none,,0.048925207725103406,,0.04741803089774773
 DCPerf,ranking,feedsim,ITLB-walk MPKI,partial,,0.0019120631540087232,,0.0018874042948339954
 DCPerf,ranking,feedsim,L1I-TLB MPKI,none,,0.6637223883583756,,0.8078865669243057
-DCPerf,ranking,feedsim,Context switches (/CPU-s),exact,Context switches (/CPU-s),187.861598010691,193.735,
-Renaissance,web,finagle-chirper,IPC,exact,IPC,2.345289192495117,1.93002,
-Renaissance,web,finagle-chirper,L1I MPKI,analogue,L1I MPKI (code-read),20.98665899464607,25.4967,
+DCPerf,ranking,feedsim,Context switches (/CPU-s),exact,Context switches (/CPU-s),187.87348437753573,193.735,189.90028903355548
+DCPerf,ranking,feedsim,Frequency (GHz),none,,3.29987742943433,,3.2998714173566377
+Renaissance,web,finagle-chirper,IPC,exact,IPC,2.371394472186683,1.93002,2.372051139422494
+Renaissance,web,finagle-chirper,Frontend-bound (%),analogue,,23.61377926388368,,23.686394482769916
+Renaissance,web,finagle-chirper,Backend-bound (%),analogue,,50.68745433993998,,50.67647891088116
+Renaissance,web,finagle-chirper,Retiring (%),analogue,,22.359705134179414,,22.268851359380896
+Renaissance,web,finagle-chirper,Bad-speculation (%),analogue,,3.3390612619969215,,3.368275246968036
+Renaissance,web,finagle-chirper,Branch MPKI,exact,Branch MPKI,0.6481785776507897,1.33292,0.6789417702721945
+Renaissance,web,finagle-chirper,Branch-direction MPKI,analogue,Branch-direction MPKI,0.5463662144254887,1.10526,0.572496136012176
+Renaissance,web,finagle-chirper,Target-mispredict MPKI,partial,BTB MPKI (BAClears),0.10920931929451527,0.722743,0.11409569545238848
+Renaissance,web,finagle-chirper,L1I MPKI,analogue,L1I MPKI (code-read),21.14523865093339,25.4967,21.39774735132763
+Renaissance,web,finagle-chirper,L1D-load MPKI,analogue,L1D-load MPKI,10.36608938634148,8.99174,10.366969659121843
+Renaissance,web,finagle-chirper,L2-load MPKI,analogue,L2-load MPKI,5.431607343520505,0.540576,5.582452056947439
+Renaissance,web,finagle-chirper,LLC MPKI,partial,LLC MPKI,0.060164820210157725,0.0732878,0.06429454441565255
+Renaissance,web,finagle-chirper,DRAM read (GB/s),partial,DRAM read (GB/s),0.1859701818640637,7.67914,0.18832563355793963
 Renaissance,web,finagle-chirper,L1D-TLB MPKI,none,,6.025172333260902,,6.0325115432979155
 Renaissance,web,finagle-chirper,L2-TLB MPKI,none,,0.7237270528181392,,0.7300406866204088
 Renaissance,web,finagle-chirper,DTLB-walk MPKI,none,,0.5126102770274543,,0.5168499402132056
 Renaissance,web,finagle-chirper,ITLB-walk MPKI,partial,,0.16169533239114733,,0.1636587983480818
 Renaissance,web,finagle-chirper,L1I-TLB MPKI,none,,2.477838614183994,,2.4763264333009802
-Renaissance,web,finagle-chirper,Context switches (/CPU-s),exact,Context switches (/CPU-s),12675.799315285169,9278.1,
-Renaissance,web,finagle-http,IPC,exact,IPC,1.67944109881037,1.42299,
-Renaissance,web,finagle-http,L1I MPKI,analogue,L1I MPKI (code-read),45.908983189652396,52.2515,
+Renaissance,web,finagle-chirper,Context switches (/CPU-s),exact,Context switches (/CPU-s),12714.723830473207,9278.1,13099.682614595642
+Renaissance,web,finagle-chirper,Frequency (GHz),none,,3.2981574248974392,,3.297865171747312
+Renaissance,web,finagle-http,IPC,exact,IPC,1.6677474055221169,1.42299,1.6704227600460557
+Renaissance,web,finagle-http,Frontend-bound (%),analogue,,29.301247312188927,,29.291080777340333
+Renaissance,web,finagle-http,Backend-bound (%),analogue,,53.306315235930754,,53.29912564646015
+Renaissance,web,finagle-http,Retiring (%),analogue,,15.896689606169454,,15.897210339382367
+Renaissance,web,finagle-http,Bad-speculation (%),analogue,,1.4957478457108606,,1.512583236817153
+Renaissance,web,finagle-http,Branch MPKI,exact,Branch MPKI,0.4009383412044063,0.578506,0.40847188386288946
+Renaissance,web,finagle-http,Branch-direction MPKI,analogue,Branch-direction MPKI,0.22058972748587796,0.363886,0.2278859378009201
+Renaissance,web,finagle-http,Target-mispredict MPKI,partial,BTB MPKI (BAClears),0.2537598824982368,1.69826,0.2541169955491016
+Renaissance,web,finagle-http,L1I MPKI,analogue,L1I MPKI (code-read),46.01273434133513,52.2515,46.055200075130514
+Renaissance,web,finagle-http,L1D-load MPKI,analogue,L1D-load MPKI,19.713965285862763,12.7143,19.689701130804053
+Renaissance,web,finagle-http,L2-load MPKI,analogue,L2-load MPKI,8.010808944636208,0.617536,8.023858532154204
+Renaissance,web,finagle-http,LLC MPKI,partial,LLC MPKI,0.035707796024878516,0.0179786,0.037608353338912125
+Renaissance,web,finagle-http,DRAM read (GB/s),partial,DRAM read (GB/s),0.08295287638857604,7.59444,0.08192086110080965
 Renaissance,web,finagle-http,L1D-TLB MPKI,none,,10.740185677886904,,10.728186558612158
 Renaissance,web,finagle-http,L2-TLB MPKI,none,,1.67058386685565,,1.6679744364735662
 Renaissance,web,finagle-http,DTLB-walk MPKI,none,,1.2720253742163687,,1.2698944243882158
 Renaissance,web,finagle-http,ITLB-walk MPKI,partial,,0.4003252456831018,,0.3997232952967119
 Renaissance,web,finagle-http,L1I-TLB MPKI,none,,4.614037401162375,,4.608695571673645
-Renaissance,web,finagle-http,Context switches (/CPU-s),exact,Context switches (/CPU-s),48520.55589641319,40575.1,
-RealData,server,kafka-20g,IPC,exact,IPC,1.6061706741811062,1.20841,
-RealData,server,kafka-20g,L1I MPKI,analogue,L1I MPKI (code-read),38.35465241241572,49.388,
+Renaissance,web,finagle-http,Context switches (/CPU-s),exact,Context switches (/CPU-s),48581.9871221738,40575.1,47753.05450133748
+Renaissance,web,finagle-http,Frequency (GHz),none,,3.298294013534725,,3.298256368623538
+RealData,server,kafka-20g,IPC,exact,IPC,1.5908998336081288,1.20841,1.5942390514195044
+RealData,server,kafka-20g,Frontend-bound (%),analogue,,21.118847711966666,,21.345402584409907
+RealData,server,kafka-20g,Backend-bound (%),analogue,,60.62385656685207,,60.41457851733526
+RealData,server,kafka-20g,Retiring (%),analogue,,15.743689993546438,,15.761485422004034
+RealData,server,kafka-20g,Bad-speculation (%),analogue,,2.513605727634826,,2.4785334762508047
+RealData,server,kafka-20g,Branch MPKI,exact,Branch MPKI,0.8092168414908861,1.14766,0.7970165316330552
+RealData,server,kafka-20g,Branch-direction MPKI,analogue,Branch-direction MPKI,0.6701436013912994,0.815956,0.6591255494461427
+RealData,server,kafka-20g,Target-mispredict MPKI,partial,BTB MPKI (BAClears),0.2047293349661739,0.863551,0.2046907645423965
+RealData,server,kafka-20g,L1I MPKI,analogue,L1I MPKI (code-read),38.12523736406449,49.388,38.50679426784972
+RealData,server,kafka-20g,L1D-load MPKI,analogue,L1D-load MPKI,12.509781789259744,9.39701,12.623604528761376
+RealData,server,kafka-20g,L2-load MPKI,analogue,L2-load MPKI,8.705848331516794,0.496963,8.677782495244225
+RealData,server,kafka-20g,LLC MPKI,partial,LLC MPKI,0.23281609140195772,0.103059,0.217486431984203
+RealData,server,kafka-20g,DRAM read (GB/s),partial,DRAM read (GB/s),0.03859583827841471,0.875758,0.03873393969974765
 RealData,server,kafka-20g,L1D-TLB MPKI,none,,6.66350243469117,,6.756660489463273
 RealData,server,kafka-20g,L2-TLB MPKI,none,,0.5290185794434027,,0.5359115335270072
 RealData,server,kafka-20g,DTLB-walk MPKI,none,,0.4187354979969907,,0.42421959039220924
 RealData,server,kafka-20g,ITLB-walk MPKI,partial,,0.10072978439075293,,0.10200540832081918
 RealData,server,kafka-20g,L1I-TLB MPKI,none,,2.0731800210999176,,2.107107439292721
-RealData,server,kafka-20g,Context switches (/CPU-s),exact,Context switches (/CPU-s),33806.96622793921,26679.2,
-RealData,apache-spark,naivebayes-rcv1,IPC,exact,IPC,2.0755255885406396,1.39707,
-RealData,apache-spark,naivebayes-rcv1,L1I MPKI,analogue,L1I MPKI (code-read),1.347485099214178,2.9187,
+RealData,server,kafka-20g,Context switches (/CPU-s),exact,Context switches (/CPU-s),33711.6693350362,26679.2,34514.481971803456
+RealData,server,kafka-20g,Frequency (GHz),none,,3.2955356417262736,,3.295682461821533
+RealData,apache-spark,naivebayes-rcv1,IPC,exact,IPC,2.068340211536632,1.39707,2.1904087648048867
+RealData,apache-spark,naivebayes-rcv1,Frontend-bound (%),analogue,,7.840551230371904,,8.603514548192264
+RealData,apache-spark,naivebayes-rcv1,Backend-bound (%),analogue,,69.10796755864249,,66.8466884246673
+RealData,apache-spark,naivebayes-rcv1,Retiring (%),analogue,,19.63137502020727,,20.743489964597504
+RealData,apache-spark,naivebayes-rcv1,Bad-speculation (%),analogue,,3.420106190778331,,3.806307062542926
+RealData,apache-spark,naivebayes-rcv1,Branch MPKI,exact,Branch MPKI,1.145274609643922,1.47274,1.0315616939146188
+RealData,apache-spark,naivebayes-rcv1,Branch-direction MPKI,analogue,Branch-direction MPKI,1.0917026476119263,1.4433,0.9666157744318532
+RealData,apache-spark,naivebayes-rcv1,Target-mispredict MPKI,partial,BTB MPKI (BAClears),0.0431524450122242,0.108724,0.04822943883775698
+RealData,apache-spark,naivebayes-rcv1,L1I MPKI,analogue,L1I MPKI (code-read),1.3530234747092051,2.9187,1.2900278070428057
+RealData,apache-spark,naivebayes-rcv1,L1D-load MPKI,analogue,L1D-load MPKI,21.894813721924002,26.2738,25.722525904336486
+RealData,apache-spark,naivebayes-rcv1,L2-load MPKI,analogue,L2-load MPKI,36.513067857388464,10.4208,42.152547339605896
+RealData,apache-spark,naivebayes-rcv1,LLC MPKI,partial,LLC MPKI,1.2290036752787885,3.94635,1.3715994100100466
+RealData,apache-spark,naivebayes-rcv1,DRAM read (GB/s),partial,DRAM read (GB/s),3.5294938076149838,26.1214,3.563365503701264
 RealData,apache-spark,naivebayes-rcv1,L1D-TLB MPKI,none,,17.365326936265376,,20.513145487650196
 RealData,apache-spark,naivebayes-rcv1,L2-TLB MPKI,none,,2.7736158411946037,,3.318651347908812
 RealData,apache-spark,naivebayes-rcv1,DTLB-walk MPKI,none,,2.6001465507177377,,3.137674763009077
 RealData,apache-spark,naivebayes-rcv1,ITLB-walk MPKI,partial,,0.018352110706546073,,0.019344872679538164
 RealData,apache-spark,naivebayes-rcv1,L1I-TLB MPKI,none,,0.19141954778844167,,0.19166991285157672
-RealData,apache-spark,naivebayes-rcv1,Context switches (/CPU-s),exact,Context switches (/CPU-s),474.5756794909639,355.094,
-RealData,database,neo4j-livejournal,IPC,exact,IPC,2.2682776284536033,2.15063,
-RealData,database,neo4j-livejournal,L1I MPKI,analogue,L1I MPKI (code-read),11.34261258301924,14.2989,
+RealData,apache-spark,naivebayes-rcv1,Context switches (/CPU-s),exact,Context switches (/CPU-s),480.8773306407416,355.094,476.6131209997328
+RealData,apache-spark,naivebayes-rcv1,Frequency (GHz),none,,3.299332009320792,,3.2993302201653223
+RealData,database,neo4j-livejournal,IPC,exact,IPC,2.340145315500336,2.15063,2.4949495260117747
+RealData,database,neo4j-livejournal,Frontend-bound (%),analogue,,21.19756033888026,,21.13456438168427
+RealData,database,neo4j-livejournal,Backend-bound (%),analogue,,49.24231590369593,,49.2506184173919
+RealData,database,neo4j-livejournal,Retiring (%),analogue,,23.3762047931556,,23.423351683951346
+RealData,database,neo4j-livejournal,Bad-speculation (%),analogue,,6.183918964268206,,6.191465516972481
+RealData,database,neo4j-livejournal,Branch MPKI,exact,Branch MPKI,1.130848155500777,1.6499,1.1305669194190702
+RealData,database,neo4j-livejournal,Branch-direction MPKI,analogue,Branch-direction MPKI,1.056016224088146,1.41977,1.0567264296219463
+RealData,database,neo4j-livejournal,Target-mispredict MPKI,partial,BTB MPKI (BAClears),0.07355734991540153,0.730423,0.07359604847117733
+RealData,database,neo4j-livejournal,L1I MPKI,analogue,L1I MPKI (code-read),11.255451038050277,14.2989,11.235703525173209
+RealData,database,neo4j-livejournal,L1D-load MPKI,analogue,L1D-load MPKI,5.89895601696845,3.94008,5.9246234979154995
+RealData,database,neo4j-livejournal,L2-load MPKI,analogue,L2-load MPKI,7.259065536687729,0.611888,7.232946274224494
+RealData,database,neo4j-livejournal,LLC MPKI,partial,LLC MPKI,0.1875818851506735,0.189226,0.18447001798022056
+RealData,database,neo4j-livejournal,DRAM read (GB/s),partial,DRAM read (GB/s),0.5794407315269898,4.31307,0.5791248609389529
 RealData,database,neo4j-livejournal,L1D-TLB MPKI,none,,3.498658319880363,,3.5154594070041334
 RealData,database,neo4j-livejournal,L2-TLB MPKI,none,,0.7279254297570953,,0.7155985022496817
 RealData,database,neo4j-livejournal,DTLB-walk MPKI,none,,0.5122740106891861,,0.5034345287140718
 RealData,database,neo4j-livejournal,ITLB-walk MPKI,partial,,0.17890360310719974,,0.17729208078038886
 RealData,database,neo4j-livejournal,L1I-TLB MPKI,none,,1.1678368589302632,,1.1758947795023873
-RealData,database,neo4j-livejournal,Context switches (/CPU-s),exact,Context switches (/CPU-s),20615.108463622033,17245.3,
-RealData,apache-spark,pagerank-livejournal,IPC,exact,IPC,1.852112714454372,1.69761,
-RealData,apache-spark,pagerank-livejournal,L1I MPKI,analogue,L1I MPKI (code-read),0.2375318236609209,0.46074,
+RealData,database,neo4j-livejournal,Context switches (/CPU-s),exact,Context switches (/CPU-s),20751.778514312755,17245.3,21308.23143834775
+RealData,database,neo4j-livejournal,Frequency (GHz),none,,3.299578205727871,,3.299594811352757
+RealData,apache-spark,pagerank-livejournal,IPC,exact,IPC,1.862019806748623,1.69761,1.8498653853618086
+RealData,apache-spark,pagerank-livejournal,Frontend-bound (%),analogue,,4.319543230911004,,4.332869874196085
+RealData,apache-spark,pagerank-livejournal,Backend-bound (%),analogue,,71.72928510844432,,71.74686065888866
+RealData,apache-spark,pagerank-livejournal,Retiring (%),analogue,,17.288221975563655,,17.28492909238958
+RealData,apache-spark,pagerank-livejournal,Bad-speculation (%),analogue,,6.66294968508102,,6.635340374525669
+RealData,apache-spark,pagerank-livejournal,Branch MPKI,exact,Branch MPKI,1.3206679990874648,1.54219,1.5931578284938812
+RealData,apache-spark,pagerank-livejournal,Branch-direction MPKI,analogue,Branch-direction MPKI,1.375844989625381,1.53721,1.7262208592390236
+RealData,apache-spark,pagerank-livejournal,Target-mispredict MPKI,partial,BTB MPKI (BAClears),0.005690211462192372,0.0119459,0.004823911691114836
+RealData,apache-spark,pagerank-livejournal,L1I MPKI,analogue,L1I MPKI (code-read),0.22737630359376684,0.46074,0.19835259916005252
+RealData,apache-spark,pagerank-livejournal,L1D-load MPKI,analogue,L1D-load MPKI,3.6289999270498194,2.60256,4.205086147509888
+RealData,apache-spark,pagerank-livejournal,L2-load MPKI,analogue,L2-load MPKI,7.416329823509588,1.12883,8.134220140364794
+RealData,apache-spark,pagerank-livejournal,LLC MPKI,partial,LLC MPKI,0.7756354907897145,0.798679,0.9764594738025163
+RealData,apache-spark,pagerank-livejournal,DRAM read (GB/s),partial,DRAM read (GB/s),2.344171766771457,11.0654,2.3353613563294484
 RealData,apache-spark,pagerank-livejournal,L1D-TLB MPKI,none,,3.3460721240077125,,3.77278223576215
 RealData,apache-spark,pagerank-livejournal,L2-TLB MPKI,none,,0.7678706828069523,,0.9117576114009985
 RealData,apache-spark,pagerank-livejournal,DTLB-walk MPKI,none,,0.7563691896567456,,0.9013502078652362
 RealData,apache-spark,pagerank-livejournal,ITLB-walk MPKI,partial,,0.005670521105348672,,0.0050949399527569295
 RealData,apache-spark,pagerank-livejournal,L1I-TLB MPKI,none,,0.1779611701926075,,0.18515676844401488
-RealData,apache-spark,pagerank-livejournal,Context switches (/CPU-s),exact,Context switches (/CPU-s),73.47497670663651,74.1877,
-DaCapo,server,tomcat,IPC,exact,IPC,1.8916550606077627,1.37344,
-DaCapo,server,tomcat,L1I MPKI,analogue,L1I MPKI (code-read),33.510479460833956,38.9236,
+RealData,apache-spark,pagerank-livejournal,Context switches (/CPU-s),exact,Context switches (/CPU-s),76.78774171463866,74.1877,77.87554958333106
+RealData,apache-spark,pagerank-livejournal,Frequency (GHz),none,,3.299988922025643,,3.299989031746392
+DaCapo,server,tomcat,IPC,exact,IPC,1.889678952781344,1.37344,1.8779550111417431
+DaCapo,server,tomcat,Frontend-bound (%),analogue,,30.96698069620193,,31.1688340250144
+DaCapo,server,tomcat,Backend-bound (%),analogue,,46.51929854909539,,47.03627409278448
+DaCapo,server,tomcat,Retiring (%),analogue,,18.007429640394268,,17.836902476780693
+DaCapo,server,tomcat,Bad-speculation (%),analogue,,4.50629111430841,,3.957989405420427
+DaCapo,server,tomcat,Branch MPKI,exact,Branch MPKI,1.7297366534061203,2.82879,1.5349375239274055
+DaCapo,server,tomcat,Branch-direction MPKI,analogue,Branch-direction MPKI,1.4895005118956257,2.46686,1.3053391888283328
+DaCapo,server,tomcat,Target-mispredict MPKI,partial,BTB MPKI (BAClears),0.3462950877043306,2.10066,0.3101953960472512
+DaCapo,server,tomcat,L1I MPKI,analogue,L1I MPKI (code-read),33.89926870436924,38.9236,36.25985506435797
+DaCapo,server,tomcat,L1D-load MPKI,analogue,L1D-load MPKI,11.5166644969323,7.19862,11.610368323637301
+DaCapo,server,tomcat,L2-load MPKI,analogue,L2-load MPKI,8.12293455681849,0.41614,8.230704133948787
+DaCapo,server,tomcat,LLC MPKI,partial,LLC MPKI,0.09152456127213589,0.0394627,0.08758730489361878
+DaCapo,server,tomcat,DRAM read (GB/s),partial,DRAM read (GB/s),0.022298027968352507,0.742931,0.022203730822422336
 DaCapo,server,tomcat,L1D-TLB MPKI,none,,5.195348808885683,,5.294948138286998
 DaCapo,server,tomcat,L2-TLB MPKI,none,,0.5784766467849223,,0.6012132099917299
 DaCapo,server,tomcat,DTLB-walk MPKI,none,,0.40375864859642624,,0.4190465808765302
 DaCapo,server,tomcat,ITLB-walk MPKI,partial,,0.16172395935455056,,0.17027770542037302
 DaCapo,server,tomcat,L1I-TLB MPKI,none,,2.1310771018154977,,2.2399777738160127
-DaCapo,server,tomcat,Context switches (/CPU-s),exact,Context switches (/CPU-s),55601.68655166934,33712.8,
-RealData,video-transcode,video-4k,IPC,exact,IPC,3.887938860335768,2.45967,
-RealData,video-transcode,video-4k,L1I MPKI,analogue,L1I MPKI (code-read),2.6251769170040715,7.59938,
+DaCapo,server,tomcat,Context switches (/CPU-s),exact,Context switches (/CPU-s),55583.919076298305,33712.8,58342.688908655764
+DaCapo,server,tomcat,Frequency (GHz),none,,3.3001171604356996,,3.300192302540064
+RealData,video-transcode,video-4k,IPC,exact,IPC,3.8868392814556243,2.45967,3.8874279657453323
+RealData,video-transcode,video-4k,Frontend-bound (%),analogue,,17.026247032704365,,17.02577671006766
+RealData,video-transcode,video-4k,Backend-bound (%),analogue,,39.70201808756627,,39.70311937583469
+RealData,video-transcode,video-4k,Retiring (%),analogue,,38.91751849640219,,38.91694077987987
+RealData,video-transcode,video-4k,Bad-speculation (%),analogue,,4.354216383327178,,4.354163134217784
+RealData,video-transcode,video-4k,Branch MPKI,exact,Branch MPKI,0.6918209204083597,1.36702,0.6937670057890288
+RealData,video-transcode,video-4k,Branch-direction MPKI,analogue,Branch-direction MPKI,0.6771026969715006,1.32918,0.6797597280179438
+RealData,video-transcode,video-4k,Target-mispredict MPKI,partial,BTB MPKI (BAClears),0.013948852404212595,0.0309254,0.014048474676440315
+RealData,video-transcode,video-4k,L1I MPKI,analogue,L1I MPKI (code-read),2.6270091401134,7.59938,2.644006971402078
+RealData,video-transcode,video-4k,L1D-load MPKI,analogue,L1D-load MPKI,6.108547709153177,5.40068,6.134341334163013
+RealData,video-transcode,video-4k,L2-load MPKI,analogue,L2-load MPKI,1.6612647888106495,0.465729,1.6669080980841848
+RealData,video-transcode,video-4k,LLC MPKI,partial,LLC MPKI,0.11408193636026266,0.404632,0.11491384713479141
+RealData,video-transcode,video-4k,DRAM read (GB/s),partial,DRAM read (GB/s),0.7464702829742863,7.95862,0.7453444895311606
 RealData,video-transcode,video-4k,L1D-TLB MPKI,none,,5.0859741987127105,,5.10201402063385
 RealData,video-transcode,video-4k,L2-TLB MPKI,none,,0.014272815433895166,,0.014362030070110792
 RealData,video-transcode,video-4k,DTLB-walk MPKI,none,,0.008882100070329435,,0.008956834467349425
 RealData,video-transcode,video-4k,ITLB-walk MPKI,partial,,0.0001505485395778174,,0.0001516278196584987
 RealData,video-transcode,video-4k,L1I-TLB MPKI,none,,0.0006925142062028025,,0.0006969115416075891
-RealData,video-transcode,video-4k,Context switches (/CPU-s),exact,Context switches (/CPU-s),66.12432258308802,70.9272,
+RealData,video-transcode,video-4k,Context switches (/CPU-s),exact,Context switches (/CPU-s),71.54175294548006,70.9272,82.26532484935572
+RealData,video-transcode,video-4k,Frequency (GHz),none,,3.299991190629108,,3.299990972907705

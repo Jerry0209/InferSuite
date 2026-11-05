@@ -1,0 +1,36 @@
+{
+ "attempt": "a1",
+ "valid": true,
+ "receipt": {
+  "status": "pass",
+  "why": "18 dacapo iterations completed"
+ },
+ "gates": {
+  "perf_rc": true,
+  "no_mux": true,
+  "windows": true,
+  "steady": true,
+  "fenced": true,
+  "witness": true,
+  "alive": true,
+  "receipt": true
+ },
+ "files": {
+  ".load_json": {
+   "jar": "dacapo-23.11-MR2-chopin.jar",
+   "benchmark": "tomcat",
+   "iterations": 40,
+   "size": "default",
+   "java": "openjdk version 21.0.12.1 2026-08-18"
+  },
+  "iso.json": {
+   "iso_proof": true,
+   "ts": 1793844912.125385,
+   "measured_max_busy_pct_1p5s": 0.0,
+   "quiet": "QUIET foreign_total=0% top: -",
+   "managed_irqs_outside_house": 185,
+   "online": "0-15",
+   "why": ""
+  }
+ }
+}

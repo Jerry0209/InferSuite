@@ -1,0 +1,38 @@
+{
+ "attempt": "a1",
+ "valid": true,
+ "receipt": {
+  "status": "pass",
+  "why": "5 spark passes completed"
+ },
+ "gates": {
+  "perf_rc": true,
+  "no_mux": true,
+  "windows": true,
+  "steady": true,
+  "fenced": true,
+  "witness": true,
+  "alive": true,
+  "receipt": true
+ },
+ "files": {
+  "spark_receipt.txt": "[rd] graph loaded: 4308452 source vertices in 8.3 s\n[rd] pass 1 done at 50 s; top rank (8737,702.6589163063594)\n[rd] pass 2 done at 91 s; top rank (8737,702.6589163063594)\n[rd] pass 3 done at 134 s; top rank (8737,702.6589163063594)\n[rd] pass 4 done at 176 s; top rank (8737,702.6589163063594)\n[rd] pass 5 done at 219 s; top rank (8737,702.6589163063594)\n",
+  ".load_json": {
+   "engine": "spark-3.5.9 local[8]",
+   "script": "pagerank.scala",
+   "input": "soc-LiveJournal1.txt",
+   "input_bytes": 1080598042,
+   "driver_mem": "24g",
+   "iters": "3"
+  },
+  "iso.json": {
+   "iso_proof": true,
+   "ts": 1793845452.8266797,
+   "measured_max_busy_pct_1p5s": 0.0,
+   "quiet": "QUIET foreign_total=1% top: root:kworker/12:1-mm_percpu_wq[1436]=1%",
+   "managed_irqs_outside_house": 185,
+   "online": "0-15",
+   "why": ""
+  }
+ }
+}

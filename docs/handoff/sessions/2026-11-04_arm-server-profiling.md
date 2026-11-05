@@ -27,6 +27,7 @@ nothing of the Server stack installed (no JDK, no infra dirs).
 | 10 | Witness tolerates **this Claude session's own process** (pid in `arm/data/interim/server/operator_pids`, banked per pass as `witness_operator_pids`); its children (tool calls) stay foreign | First pass (finagle-http tlb-data a1) was rejected only for `claude[3557]=11%` in one 2 s row on a house core; quiet_gate's design already tolerates the operator's agent when it is an ancestor of the driver, which under tmux it is not | Claude |
 | 11 | `no_mux` gates **hardware family events only**; software environment events with zero runtime in a window (`<not counted>`) are not multiplexing | pagerank tlb-data a1: `page-faults` `<not counted>` in the first 100 ms window only, every PMU event 100 % running. `arm_server.py rejudge` re-scored all 19 accepted passes with the new rule: all still VALID; pagerank a1 became VALID | Claude |
 | 12 | Workload ABORTED only after **two** start failures | the first rule aborted pagerank after one start failure following a counted-but-rejected attempt | Claude |
+| 13 | Kafka liveness floor **0.40 cores** (x86 0.50) for its 5 remaining tier-1 families; note banked as `arm/data/raw/server/kafka-20g/LIVENESS_NOTE.txt` | Same produce/consume load; with the 21 GB log page-cached (377 GiB) the broker serves it at 0.49–0.53 cores, so the x86 floor rejects a running broker by chance (3 of 7 probes). D4 idle floor (0.10), drift and receipt gates unchanged; the 4 earlier Kafka passes met 0.50 | Claude |
 | 7 | THP `never` during captures (shield) | Matches x86 Server (`apply_isolation` wrote `never` to `enabled` and `defrag`; DCPerf README) and the ARM SPEC run. ARM shield writes `enabled` only | Claude |
 
 ## What changed
@@ -42,6 +43,10 @@ nothing of the Server stack installed (no JDK, no infra dirs).
 - Kafka liveness is marginal on this box (0.50–0.51 cores against the x86 floor of 0.50): the whole 21 GB log is page-cached (377 GiB), consumers catch up in ~20 s and then tail the produce rate. x86 knobs kept; recorded in `arm/arch_failures.csv`.
 - `bench_spark.sh`: a launch that dies silently within 30 s of start (2 of 6 launches, no output at all; reproduced unshielded at 23:59, the next launch always worked) is relaunched up to 3 times before anything is counted.
 
+- 00:08–06:26 **rest of tier 1** (anchor, frequency, branch, branch-types, cache-l1, cache-l2-ll, bandwidth): 63/63 VALID for the 9 non-Kafka workloads. Kafka failed the 0.50-core liveness check on anchor a1, branch a1 and a2 → ABORTED by the two-failure rule (decision 12).
+- 06:28–06:59 Kafka's 5 missing families with **`KAFKA_MIN_CCORES=40`** (decision 13): 5/5 VALID at first attempt. Kafka capture load across all 9 families 0.50–0.53 cores (drift ≤ 2.1 %); only the 10 s liveness probe at warm-up end is marginal.
+- **Tier 1 complete: 90/90 ⟨workload, family⟩ VALID** (95 attempts; 5 rejected: 1 witness, 1 Spark launch, 3 Kafka liveness). Over accepted passes: max drift 12.6 %, max unfenced residual 0.009 %. Exported and pushed.
+
 ## Defects found
 - **Handoff doc URL wrong for the 4K clips:** `…/y4m/ElFuente/…_8bit_420.y4m` is 404 (that folder holds 10-bit only); the 8-bit files are at `https://media.xiph.org/video/derf/y4m/<file>`.
 - **x86 modules kill by name machine-wide** (`sudo pkill -f DriverNodeRank|LeafNodeRank|ffmpeg|$KAFKA_HOME|$NEO_HOME|$CAS_HOME`). On a shared box that would kill a colleague's process of the same name. Ported to `kill_desc`: TERM only matching processes that descend from the pass's own shell.
@@ -53,5 +58,5 @@ nothing of the Server stack installed (no JDK, no infra dirs).
 | video-4k | ran-with-deltas | SVT-AV1 has **no SVE/SVE2 kernels** with GCC 13 (`HAVE_SVE_HEADERS - Failed`); encoder prints `asm level selected : up to neon_i8mm` vs AVX2 on x86 |
 
 ## Open threads
-- Remaining tier 1 (anchor, frequency, branch, branch-types, cache-l1, cache-l2-ll, bandwidth), then tier 2.
+- Tier 2 (frontend-stalls, frontend-supply-mem, frontend-supply-core, backend, execution) × 10, ~5 h.
 - Category labels "ranking" (feedsim) and "video-transcode" (video-4k) in the export are ours (no x86 file has a category): confirm with Jerry/Jef.

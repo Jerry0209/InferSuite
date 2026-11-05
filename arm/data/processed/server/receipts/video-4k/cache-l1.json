@@ -1,0 +1,35 @@
+{
+ "attempt": "a1",
+ "valid": true,
+ "receipt": {
+  "status": "pass",
+  "why": "encode stage running (batch: no SLA)"
+ },
+ "gates": {
+  "perf_rc": true,
+  "no_mux": true,
+  "windows": true,
+  "steady": true,
+  "fenced": true,
+  "witness": true,
+  "alive": true,
+  "receipt": true
+ },
+ "files": {
+  ".load_json": {
+   "encoder": "svt",
+   "levels": "6:6",
+   "procs": 8,
+   "parallelism": 1
+  },
+  "iso.json": {
+   "iso_proof": true,
+   "ts": 1793853692.2822251,
+   "measured_max_busy_pct_1p5s": 0.0,
+   "quiet": "QUIET foreign_total=0% top: -",
+   "managed_irqs_outside_house": 185,
+   "online": "0-15",
+   "why": ""
+  }
+ }
+}

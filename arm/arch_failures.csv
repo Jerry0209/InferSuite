@@ -4,7 +4,7 @@ feedsim,ran-with-deltas,"folly: 'arch aarch64-linux-gnu does not match x86_64, s
 finagle-chirper,ran,,Renaissance 0.16.1; netty native aarch64 epoll loaded
 finagle-http,ran,,Renaissance 0.16.1; netty native aarch64 epoll loaded
 cassandra-ycsb20m,ran-with-deltas,"SIGAR has no aarch64 library: 'SigarLibrary.java:60 - Could not initialize SIGAR library ...' / 'Sigar could not be initialized, test for checking degraded mode omitted.' (warning, not fatal)",Cassandra 5.0.9 JDK 17; jemalloc 5.2.1 (FeedSim build) as on x86; Corretto crypto/JNA/netty epoll load on aarch64
-kafka-20g,ran,,Kafka 4.3.1 KRaft; pure Java (compression none); liveness marginal (0.50-0.51 cores vs 0.50 floor): whole 21 GB log page-cached on 377 GiB
+kafka-20g,ran-with-deltas,"platform, not ISA: the whole 21 GB log is page-cached (377 GiB RAM), consumers catch up in ~20 s and tail the produce rate; broker 0.50-0.53 cores, under the x86 0.50-core liveness floor on 3 of 7 probes","Kafka 4.3.1 KRaft; pure Java (compression none); 5 tier-1 families captured with the liveness floor at 0.40 cores"
 naivebayes-rcv1,ran,,Spark 3.5.9 local[8]; Hadoop native-library warning is platform-independent
 neo4j-livejournal,ran,,Neo4j 5.26.12; neo4j-rust-ext aarch64 wheel active; DirectByteBuffer fallback warning reproduced as on x86
 pagerank-livejournal,ran,,Spark 3.5.9 local[8]; spark-shell exited silently right after launch on 2 of 6 launches (not arch-specific as far as known); relaunch handled in bench_spark.sh
