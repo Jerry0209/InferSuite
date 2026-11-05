@@ -268,6 +268,30 @@ def metrics(S: dict, coI: dict, coC: dict, secs: dict) -> dict:
     out["bound_on_stores_pct"] = share("exe_activity.bound_on_stores")
     out["dsb2mite_penalty_pct"] = share("dsb2mite_switches.penalty_cycles")
     out["itlb_walk_pct"] = share("itlb_misses.walk_active")
+
+    # ---- TLB hierarchy (groups tlb_d, tlb_i; 2026-11-04). An L1 TLB miss hits the STLB or
+    # walks, and an STLB miss IS a walk, so: L1 misses = stlb_hit + walk_completed (less
+    # aborted wrong-path walks), STLB misses = walk_completed. ARM parity: dTLB_L1_MPKI ~
+    # L1D-TLB MPKI, dTLB_walk_MPKI ~ DTLB-walk MPKI, iTLB_L1_MPKI ~ L1I-TLB MPKI,
+    # iTLB_walk_MPKI ~ ITLB-walk MPKI. Each group's events share windows, so one coI each.
+    dlh, dlw = S.get("dtlb_load_misses.stlb_hit", 0.0), S.get("dtlb_load_misses.walk_completed", 0.0)
+    dsh, dsw = S.get("dtlb_store_misses.stlb_hit", 0.0), S.get("dtlb_store_misses.walk_completed", 0.0)
+    ih, iw = S.get("itlb_misses.stlb_hit", 0.0), S.get("itlb_misses.walk_completed", 0.0)
+    td = has("dtlb_load_misses.stlb_hit", "dtlb_load_misses.walk_completed",
+             "dtlb_store_misses.stlb_hit", "dtlb_store_misses.walk_completed")
+    ti = has("itlb_misses.stlb_hit", "itlb_misses.walk_completed")
+    cd, ci = co("dtlb_load_misses.stlb_hit"), co("itlb_misses.stlb_hit")
+    out["dTLB_L1_MPKI"] = 1000 * (dlh + dlw + dsh + dsw) / cd if td else None
+    out["dTLB_L1_load_MPKI"] = 1000 * (dlh + dlw) / cd if td else None
+    out["dTLB_L1_store_MPKI"] = 1000 * (dsh + dsw) / cd if td else None
+    out["dTLB_walk_MPKI"] = 1000 * (dlw + dsw) / cd if td else None
+    out["dTLB_STLB_hit_pct"] = (100 * (dlh + dsh) / (dlh + dlw + dsh + dsw)
+                                if td and dlh + dlw + dsh + dsw else None)
+    out["iTLB_L1_MPKI"] = 1000 * (ih + iw) / ci if ti else None
+    out["iTLB_walk_MPKI"] = 1000 * iw / ci if ti else None
+    out["iTLB_STLB_hit_pct"] = 100 * ih / (ih + iw) if ti and ih + iw else None
+    out["STLB_MPKI"] = (out["dTLB_walk_MPKI"] + out["iTLB_walk_MPKI"]) if td and ti else None
+    out["dtlb_load_walk_pct"] = share("dtlb_load_misses.walk_active")
     out["baclears_MPKI"] = 1000 * S["baclears.any"] / co("baclears.any") if has("baclears.any") else None
     out["dsb_miss_MPKI"] = (1000 * S["frontend_retired.any_dsb_miss"] / co("frontend_retired.any_dsb_miss")
                             if has("frontend_retired.any_dsb_miss") else None)

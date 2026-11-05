@@ -146,6 +146,13 @@ GRP[priv]="task-clock,context-switches,cpu-migrations,page-faults,cycles:u,cycle
 GRP[mem_bound]="cycles,instructions,exe_activity.bound_on_loads,memory_activity.stalls_l1d_miss,memory_activity.stalls_l2_miss,memory_activity.stalls_l3_miss"
 GRP[fe_l3x]="cycles,instructions,dsb2mite_switches.penalty_cycles,idq.ms_switches,exe_activity.bound_on_stores,itlb_misses.walk_active"
 GRP[fe_miss]="cycles,instructions,baclears.any,frontend_retired.any_dsb_miss,br_misp_retired.cond,br_misp_retired.indirect"
+# The 2 TLB groups (2026-11-04, Jef: the TLB hierarchy, for parity with the ARM tlb-data and
+# tlb-code families). Not in the default rotation: GORDER_OVERRIDE="tlb_d tlb_i" with a fresh
+# DATA_ROOT. An L1 TLB miss either hits the STLB (stlb_hit) or walks; walk_completed counts
+# walks that reached a translation, so stlb_hit + walk_completed is the L1-miss count less
+# aborted (wrong-path) walks. tlb_i also carries the walk durations, data and code.
+GRP[tlb_d]="cycles,instructions,dtlb_load_misses.stlb_hit,dtlb_load_misses.walk_completed,dtlb_store_misses.stlb_hit,dtlb_store_misses.walk_completed"
+GRP[tlb_i]="cycles,instructions,itlb_misses.stlb_hit,itlb_misses.walk_completed,itlb_misses.walk_active,dtlb_load_misses.walk_active"
 
 GORDER_SHARED8="fpbr cache mlp fe fe_lat core_ports dram_bw priv"
 GORDER="${GORDER_OVERRIDE:-$GORDER_SHARED8 mem_bound fe_l3x fe_miss}"

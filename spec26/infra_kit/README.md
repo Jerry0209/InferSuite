@@ -15,6 +15,7 @@ What is here:
 | `scripts/extract_cmd.py`, `clean_rundir.py`, `verify_output.py` | Get the exact ref command line out of a run dir (`specinvoke -n`); reset generated outputs between runs; SPEC's own output check after a run. **Architecture-neutral: reuse on ARM.** |
 | `scripts/quiet_gate.py` | Whole-machine quiet gate and witness (waits for other users' work to stop, never kills it). Architecture-neutral |
 | `scripts/extract_metrics.py`, `validate_spec.py`, `perf_census.py` | x86 metric formulas and gates (Intel event names) |
+| `scripts/counter_group_episode.sh` | 2026-11-04: SPEC episodes for a chosen set of counter groups (`GORDER_OVERRIDE`, fresh `DATA_ROOT`): the campaign's own `run_episode` inside the footprint run's quiet gates, witness and verified restore. Used for the TLB groups `tlb_d`/`tlb_i` (`run_spec_campaign.sh`; results `spec26/tlb_x86/`) |
 | `scripts/llc_dram_crosscheck.sh`, `xcheck_report.py`, `xcheck_calib.c`, `plot_llc_dram_violins.py` | The 2026-10 LLC/DRAM cross-check against the memory controllers (see `docs/spec26_profile_validation.md`) |
 | `config/uarch-gcc14.cfg` | The x86 build config (gcc 14, `-g -O3 -march=native`, copies = 1, threads = 1) |
 | `config/uarch-gcc14-aarch64.cfg` | The ARM twin: identical except `-mabi=lp64` and `-mcpu=native`, plus hw fields to fill in |
