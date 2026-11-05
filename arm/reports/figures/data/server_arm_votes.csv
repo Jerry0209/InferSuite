@@ -1,0 +1,81 @@
+suite,category,workload,metric,family,value,mean_of_windows,n_windows,gap_pct,runtime_windows,runtime_families
+RealData,server,cassandra-ycsb20m,IPC,anchor,1.6654240168163814,,0,,3592,tlb-code;tlb-data
+RealData,server,cassandra-ycsb20m,L1I MPKI,cache-l1,31.406424644469308,,0,,1796,tlb-code
+RealData,server,cassandra-ycsb20m,L1D-TLB MPKI,tlb-data,5.519095100463163,5.575395557155468,1796,1.0201030362310646,1796,tlb-data
+RealData,server,cassandra-ycsb20m,L2-TLB MPKI,tlb-data,1.1556396487907177,1.172478906799944,1796,1.4571374413163445,1796,tlb-data
+RealData,server,cassandra-ycsb20m,DTLB-walk MPKI,tlb-data,0.8870932277643222,0.8995887900779926,1796,1.4085962920900787,1796,tlb-data
+RealData,server,cassandra-ycsb20m,ITLB-walk MPKI,tlb-code,0.1810648452961386,0.1858126038332535,1796,2.6221316066902745,1796,tlb-code
+RealData,server,cassandra-ycsb20m,L1I-TLB MPKI,tlb-code,3.5749472361931542,3.580531865737625,1796,0.15621571943583365,1796,tlb-code
+RealData,server,cassandra-ycsb20m,Context switches (/CPU-s),anchor,20301.56629921151,,0,,3592,tlb-code;tlb-data
+DCPerf,ranking,feedsim,IPC,anchor,2.26614241277773,,0,,5989,tlb-code;tlb-data
+DCPerf,ranking,feedsim,L1I MPKI,cache-l1,3.2256411099539077,,0,,2995,tlb-code
+DCPerf,ranking,feedsim,L1D-TLB MPKI,tlb-data,30.552946150390497,36.84359174039959,2989,20.589325687430282,2994,tlb-data
+DCPerf,ranking,feedsim,L2-TLB MPKI,tlb-data,0.10473031620818328,0.11183376397246023,2989,6.7826089154134594,2994,tlb-data
+DCPerf,ranking,feedsim,DTLB-walk MPKI,tlb-data,0.048925207725103406,0.04741803089774773,2989,-3.0805731798300515,2994,tlb-data
+DCPerf,ranking,feedsim,ITLB-walk MPKI,tlb-code,0.0019120631540087232,0.0018874042948339954,2993,-1.2896466899134273,2995,tlb-code
+DCPerf,ranking,feedsim,L1I-TLB MPKI,tlb-code,0.6637223883583756,0.8078865669243057,2993,21.720553818065415,2995,tlb-code
+DCPerf,ranking,feedsim,Context switches (/CPU-s),anchor,187.861598010691,,0,,5989,tlb-code;tlb-data
+Renaissance,web,finagle-chirper,IPC,anchor,2.345289192495117,,0,,3594,tlb-code;tlb-data
+Renaissance,web,finagle-chirper,L1I MPKI,cache-l1,20.98665899464607,,0,,1797,tlb-code
+Renaissance,web,finagle-chirper,L1D-TLB MPKI,tlb-data,6.025172333260902,6.0325115432979155,1797,0.12180913061189517,1797,tlb-data
+Renaissance,web,finagle-chirper,L2-TLB MPKI,tlb-data,0.7237270528181392,0.7300406866204088,1797,0.8723777531439166,1797,tlb-data
+Renaissance,web,finagle-chirper,DTLB-walk MPKI,tlb-data,0.5126102770274543,0.5168499402132056,1797,0.8270733880593347,1797,tlb-data
+Renaissance,web,finagle-chirper,ITLB-walk MPKI,tlb-code,0.16169533239114733,0.1636587983480818,1797,1.2142997128604633,1797,tlb-code
+Renaissance,web,finagle-chirper,L1I-TLB MPKI,tlb-code,2.477838614183994,2.4763264333009802,1797,-0.06102822332163276,1797,tlb-code
+Renaissance,web,finagle-chirper,Context switches (/CPU-s),anchor,12675.799315285169,,0,,3594,tlb-code;tlb-data
+Renaissance,web,finagle-http,IPC,anchor,1.67944109881037,,0,,3594,tlb-code;tlb-data
+Renaissance,web,finagle-http,L1I MPKI,cache-l1,45.908983189652396,,0,,1797,tlb-code
+Renaissance,web,finagle-http,L1D-TLB MPKI,tlb-data,10.740185677886904,10.728186558612158,1797,-0.11172171165952074,1797,tlb-data
+Renaissance,web,finagle-http,L2-TLB MPKI,tlb-data,1.67058386685565,1.6679744364735662,1797,-0.1561987059647156,1797,tlb-data
+Renaissance,web,finagle-http,DTLB-walk MPKI,tlb-data,1.2720253742163687,1.2698944243882158,1797,-0.16752416039387227,1797,tlb-data
+Renaissance,web,finagle-http,ITLB-walk MPKI,tlb-code,0.4003252456831018,0.3997232952967119,1797,-0.1503653324093348,1797,tlb-code
+Renaissance,web,finagle-http,L1I-TLB MPKI,tlb-code,4.614037401162375,4.608695571673645,1797,-0.1157734327724353,1797,tlb-code
+Renaissance,web,finagle-http,Context switches (/CPU-s),anchor,48520.55589641319,,0,,3594,tlb-code;tlb-data
+RealData,server,kafka-20g,IPC,anchor,1.6061706741811062,,0,,3594,tlb-code;tlb-data
+RealData,server,kafka-20g,L1I MPKI,cache-l1,38.35465241241572,,0,,1797,tlb-code
+RealData,server,kafka-20g,L1D-TLB MPKI,tlb-data,6.66350243469117,6.756660489463273,1797,1.398034377343479,1797,tlb-data
+RealData,server,kafka-20g,L2-TLB MPKI,tlb-data,0.5290185794434027,0.5359115335270072,1797,1.3029701321372795,1797,tlb-data
+RealData,server,kafka-20g,DTLB-walk MPKI,tlb-data,0.4187354979969907,0.42421959039220924,1797,1.3096793611842128,1797,tlb-data
+RealData,server,kafka-20g,ITLB-walk MPKI,tlb-code,0.10072978439075293,0.10200540832081918,1797,1.2663820713820102,1797,tlb-code
+RealData,server,kafka-20g,L1I-TLB MPKI,tlb-code,2.0731800210999176,2.107107439292721,1797,1.6364916624463348,1797,tlb-code
+RealData,server,kafka-20g,Context switches (/CPU-s),anchor,33806.96622793921,,0,,3594,tlb-code;tlb-data
+RealData,apache-spark,naivebayes-rcv1,IPC,anchor,2.0755255885406396,,0,,3594,tlb-code;tlb-data
+RealData,apache-spark,naivebayes-rcv1,L1I MPKI,cache-l1,1.347485099214178,,0,,1797,tlb-code
+RealData,apache-spark,naivebayes-rcv1,L1D-TLB MPKI,tlb-data,17.365326936265376,20.513145487650196,1797,18.127033040829094,1797,tlb-data
+RealData,apache-spark,naivebayes-rcv1,L2-TLB MPKI,tlb-data,2.7736158411946037,3.318651347908812,1797,19.650720861165116,1797,tlb-data
+RealData,apache-spark,naivebayes-rcv1,DTLB-walk MPKI,tlb-data,2.6001465507177377,3.137674763009077,1797,20.67299676408475,1797,tlb-data
+RealData,apache-spark,naivebayes-rcv1,ITLB-walk MPKI,tlb-code,0.018352110706546073,0.019344872679538164,1797,5.409524761846494,1797,tlb-code
+RealData,apache-spark,naivebayes-rcv1,L1I-TLB MPKI,tlb-code,0.19141954778844167,0.19166991285157672,1797,0.1307938849650614,1797,tlb-code
+RealData,apache-spark,naivebayes-rcv1,Context switches (/CPU-s),anchor,474.5756794909639,,0,,3594,tlb-code;tlb-data
+RealData,database,neo4j-livejournal,IPC,anchor,2.2682776284536033,,0,,3578,tlb-code;tlb-data
+RealData,database,neo4j-livejournal,L1I MPKI,cache-l1,11.34261258301924,,0,,1789,tlb-code
+RealData,database,neo4j-livejournal,L1D-TLB MPKI,tlb-data,3.498658319880363,3.5154594070041334,1789,0.4802151449972114,1789,tlb-data
+RealData,database,neo4j-livejournal,L2-TLB MPKI,tlb-data,0.7279254297570953,0.7155985022496817,1789,-1.6934327341094577,1789,tlb-data
+RealData,database,neo4j-livejournal,DTLB-walk MPKI,tlb-data,0.5122740106891861,0.5034345287140718,1789,-1.7255378548722662,1789,tlb-data
+RealData,database,neo4j-livejournal,ITLB-walk MPKI,tlb-code,0.17890360310719974,0.17729208078038886,1787,-0.9007768981853638,1789,tlb-code
+RealData,database,neo4j-livejournal,L1I-TLB MPKI,tlb-code,1.1678368589302632,1.1758947795023873,1787,0.6899868342488444,1789,tlb-code
+RealData,database,neo4j-livejournal,Context switches (/CPU-s),anchor,20615.108463622033,,0,,3578,tlb-code;tlb-data
+RealData,apache-spark,pagerank-livejournal,IPC,anchor,1.852112714454372,,0,,3594,tlb-code;tlb-data
+RealData,apache-spark,pagerank-livejournal,L1I MPKI,cache-l1,0.2375318236609209,,0,,1797,tlb-code
+RealData,apache-spark,pagerank-livejournal,L1D-TLB MPKI,tlb-data,3.3460721240077125,3.77278223576215,1797,12.752567665617184,1797,tlb-data
+RealData,apache-spark,pagerank-livejournal,L2-TLB MPKI,tlb-data,0.7678706828069523,0.9117576114009985,1797,18.738432370938742,1797,tlb-data
+RealData,apache-spark,pagerank-livejournal,DTLB-walk MPKI,tlb-data,0.7563691896567456,0.9013502078652362,1797,19.16802273163529,1797,tlb-data
+RealData,apache-spark,pagerank-livejournal,ITLB-walk MPKI,tlb-code,0.005670521105348672,0.0050949399527569295,1797,-10.150410198611736,1797,tlb-code
+RealData,apache-spark,pagerank-livejournal,L1I-TLB MPKI,tlb-code,0.1779611701926075,0.18515676844401488,1797,4.043352964930267,1797,tlb-code
+RealData,apache-spark,pagerank-livejournal,Context switches (/CPU-s),anchor,73.47497670663651,,0,,3594,tlb-code;tlb-data
+DaCapo,server,tomcat,IPC,anchor,1.8916550606077627,,0,,3596,tlb-code;tlb-data
+DaCapo,server,tomcat,L1I MPKI,cache-l1,33.510479460833956,,0,,1798,tlb-code
+DaCapo,server,tomcat,L1D-TLB MPKI,tlb-data,5.195348808885683,5.294948138286998,1798,1.9170864760989375,1798,tlb-data
+DaCapo,server,tomcat,L2-TLB MPKI,tlb-data,0.5784766467849223,0.6012132099917299,1798,3.930420239636929,1798,tlb-data
+DaCapo,server,tomcat,DTLB-walk MPKI,tlb-data,0.40375864859642624,0.4190465808765302,1798,3.786403667945916,1798,tlb-data
+DaCapo,server,tomcat,ITLB-walk MPKI,tlb-code,0.16172395935455056,0.17027770542037302,1798,5.289102554724076,1798,tlb-code
+DaCapo,server,tomcat,L1I-TLB MPKI,tlb-code,2.1310771018154977,2.2399777738160127,1798,5.1101235102071545,1798,tlb-code
+DaCapo,server,tomcat,Context switches (/CPU-s),anchor,55601.68655166934,,0,,3596,tlb-code;tlb-data
+RealData,video-transcode,video-4k,IPC,anchor,3.887938860335768,,0,,3583,tlb-code;tlb-data
+RealData,video-transcode,video-4k,L1I MPKI,cache-l1,2.6251769170040715,,0,,1797,tlb-code
+RealData,video-transcode,video-4k,L1D-TLB MPKI,tlb-data,5.0859741987127105,5.10201402063385,1786,0.3153736392370818,1786,tlb-data
+RealData,video-transcode,video-4k,L2-TLB MPKI,tlb-data,0.014272815433895166,0.014362030070110792,1786,0.6250668386263759,1786,tlb-data
+RealData,video-transcode,video-4k,DTLB-walk MPKI,tlb-data,0.008882100070329435,0.008956834467349425,1786,0.8414045825675754,1786,tlb-data
+RealData,video-transcode,video-4k,ITLB-walk MPKI,tlb-code,0.0001505485395778174,0.0001516278196584987,1797,0.7168984061272984,1797,tlb-code
+RealData,video-transcode,video-4k,L1I-TLB MPKI,tlb-code,0.0006925142062028025,0.0006969115416075891,1797,0.6349812560377743,1797,tlb-code
+RealData,video-transcode,video-4k,Context switches (/CPU-s),anchor,66.12432258308802,,0,,3583,tlb-code;tlb-data

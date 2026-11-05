@@ -1,0 +1,101 @@
+{
+ "attempt": "a1",
+ "valid": true,
+ "receipt": {
+  "status": "pass",
+  "why": "client 16822.7 ops/s in the last window"
+ },
+ "gates": {
+  "perf_rc": true,
+  "no_mux": true,
+  "windows": true,
+  "steady": true,
+  "fenced": true,
+  "witness": true,
+  "alive": true,
+  "receipt": true
+ },
+ "files": {
+  "neo4j_receipt.json": {
+   "whole_run": {
+    "short": {
+     "ops": 4790612,
+     "ops_per_s": 14048.7,
+     "errors": 0,
+     "p95_ms_count_weighted": 2.07,
+     "p99_ms_count_weighted": 3.57
+    },
+    "long": {
+     "ops": 719663,
+     "ops_per_s": 2110.4,
+     "errors": 0,
+     "p95_ms_count_weighted": 7.11,
+     "p99_ms_count_weighted": 9.77
+    },
+    "mut": {
+     "ops": 478399,
+     "ops_per_s": 1402.9,
+     "errors": 0,
+     "p95_ms_count_weighted": 9.34,
+     "p99_ms_count_weighted": 11.52
+    },
+    "all": {
+     "ops_per_s": 17562.0,
+     "span_s": 341.0
+    }
+   },
+   "last_180s": {
+    "short": {
+     "ops": 2435409,
+     "ops_per_s": 13455.3,
+     "errors": 0,
+     "p95_ms_count_weighted": 1.89,
+     "p99_ms_count_weighted": 3.35
+    },
+    "long": {
+     "ops": 366202,
+     "ops_per_s": 2023.2,
+     "errors": 0,
+     "p95_ms_count_weighted": 6.64,
+     "p99_ms_count_weighted": 8.82
+    },
+    "mut": {
+     "ops": 243290,
+     "ops_per_s": 1344.1,
+     "errors": 0,
+     "p95_ms_count_weighted": 11.64,
+     "p99_ms_count_weighted": 13.99
+    },
+    "all": {
+     "ops_per_s": 16822.7,
+     "span_s": 181.0
+    }
+   },
+   "processes": 5
+  },
+  ".load_json": {
+   "server": "neo4j-community-5.26.12",
+   "database": "livejournal",
+   "dataset": "SNAP soc-LiveJournal1",
+   "nodes": 4847571,
+   "heap": "8g",
+   "pagecache": "12g",
+   "client": {
+    "procs": 5,
+    "sessions": 5,
+    "mix": "short 0.80 / long 0.12 / mut 0.08",
+    "duration_s": 390
+   },
+   "warmup_s": 150
+  },
+  "iso.json": {
+   "iso_proof": true,
+   "ts": 1793831269.5099773,
+   "measured_max_busy_pct_1p5s": 0.0,
+   "quiet": "QUIET foreign_total=8% top: ubuntu:claude[3557]=8%",
+   "managed_irqs_outside_house": 185,
+   "online": "0-15",
+   "why": ""
+  }
+ }
+}

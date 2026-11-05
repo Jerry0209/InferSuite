@@ -1,0 +1,11 @@
+workload,status,error,attempts
+tomcat,ran,,DaCapo 23.11-MR2 tomcat on OpenJDK 21 arm64; no arch warning
+feedsim,ran-with-deltas,"folly: 'arch aarch64-linux-gnu does not match x86_64, skipping setting SSE2/AVX2 compile flags for LtHash SIMD code'; 'compiler does not have flag pclmul, skipping ... ChecksumDetail.cpp; Crc32CombineDetail.cpp; Crc32cDetail.cpp' (software CRC); F14 NEON; Boost.Context arm64 asm",built from source at DCPerf 9308c3e with x86 dependency pins; calibrated 20 QPS (x86 16) by the same p95<=500 ms rule
+finagle-chirper,ran,,Renaissance 0.16.1; netty native aarch64 epoll loaded
+finagle-http,ran,,Renaissance 0.16.1; netty native aarch64 epoll loaded
+cassandra-ycsb20m,ran-with-deltas,"SIGAR has no aarch64 library: 'SigarLibrary.java:60 - Could not initialize SIGAR library ...' / 'Sigar could not be initialized, test for checking degraded mode omitted.' (warning, not fatal)",Cassandra 5.0.9 JDK 17; jemalloc 5.2.1 (FeedSim build) as on x86; Corretto crypto/JNA/netty epoll load on aarch64
+kafka-20g,ran,,Kafka 4.3.1 KRaft; pure Java (compression none); liveness marginal (0.50-0.51 cores vs 0.50 floor): whole 21 GB log page-cached on 377 GiB
+naivebayes-rcv1,ran,,Spark 3.5.9 local[8]; Hadoop native-library warning is platform-independent
+neo4j-livejournal,ran,,Neo4j 5.26.12; neo4j-rust-ext aarch64 wheel active; DirectByteBuffer fallback warning reproduced as on x86
+pagerank-livejournal,ran,,Spark 3.5.9 local[8]; spark-shell exited silently right after launch on 2 of 6 launches (not arch-specific as far as known); relaunch handled in bench_spark.sh
+video-4k,ran-with-deltas,"SVT-AV1 built without SVE/SVE2 (GCC 13: 'Performing Test HAVE_SVE_HEADERS - Failed'); encoder 'asm level selected : up to neon_i8mm' vs AVX2 on x86",ffmpeg n7.0.1 + SVT-AV1 v3.0.1 via DCPerf installer; 4K inputs sha256 = x86

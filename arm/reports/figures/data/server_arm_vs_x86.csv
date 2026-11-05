@@ -1,0 +1,81 @@
+suite,category,workload,metric,parity,x86_metric,arm_value,x86_value,arm_mean_of_windows
+RealData,server,cassandra-ycsb20m,IPC,exact,IPC,1.6654240168163814,1.27902,
+RealData,server,cassandra-ycsb20m,L1I MPKI,analogue,L1I MPKI (code-read),31.406424644469308,37.3598,
+RealData,server,cassandra-ycsb20m,L1D-TLB MPKI,none,,5.519095100463163,,5.575395557155468
+RealData,server,cassandra-ycsb20m,L2-TLB MPKI,none,,1.1556396487907177,,1.172478906799944
+RealData,server,cassandra-ycsb20m,DTLB-walk MPKI,none,,0.8870932277643222,,0.8995887900779926
+RealData,server,cassandra-ycsb20m,ITLB-walk MPKI,partial,,0.1810648452961386,,0.1858126038332535
+RealData,server,cassandra-ycsb20m,L1I-TLB MPKI,none,,3.5749472361931542,,3.580531865737625
+RealData,server,cassandra-ycsb20m,Context switches (/CPU-s),exact,Context switches (/CPU-s),20301.56629921151,16525.8,
+DCPerf,ranking,feedsim,IPC,exact,IPC,2.26614241277773,1.82034,
+DCPerf,ranking,feedsim,L1I MPKI,analogue,L1I MPKI (code-read),3.2256411099539077,5.66694,
+DCPerf,ranking,feedsim,L1D-TLB MPKI,none,,30.552946150390497,,36.84359174039959
+DCPerf,ranking,feedsim,L2-TLB MPKI,none,,0.10473031620818328,,0.11183376397246023
+DCPerf,ranking,feedsim,DTLB-walk MPKI,none,,0.048925207725103406,,0.04741803089774773
+DCPerf,ranking,feedsim,ITLB-walk MPKI,partial,,0.0019120631540087232,,0.0018874042948339954
+DCPerf,ranking,feedsim,L1I-TLB MPKI,none,,0.6637223883583756,,0.8078865669243057
+DCPerf,ranking,feedsim,Context switches (/CPU-s),exact,Context switches (/CPU-s),187.861598010691,193.735,
+Renaissance,web,finagle-chirper,IPC,exact,IPC,2.345289192495117,1.93002,
+Renaissance,web,finagle-chirper,L1I MPKI,analogue,L1I MPKI (code-read),20.98665899464607,25.4967,
+Renaissance,web,finagle-chirper,L1D-TLB MPKI,none,,6.025172333260902,,6.0325115432979155
+Renaissance,web,finagle-chirper,L2-TLB MPKI,none,,0.7237270528181392,,0.7300406866204088
+Renaissance,web,finagle-chirper,DTLB-walk MPKI,none,,0.5126102770274543,,0.5168499402132056
+Renaissance,web,finagle-chirper,ITLB-walk MPKI,partial,,0.16169533239114733,,0.1636587983480818
+Renaissance,web,finagle-chirper,L1I-TLB MPKI,none,,2.477838614183994,,2.4763264333009802
+Renaissance,web,finagle-chirper,Context switches (/CPU-s),exact,Context switches (/CPU-s),12675.799315285169,9278.1,
+Renaissance,web,finagle-http,IPC,exact,IPC,1.67944109881037,1.42299,
+Renaissance,web,finagle-http,L1I MPKI,analogue,L1I MPKI (code-read),45.908983189652396,52.2515,
+Renaissance,web,finagle-http,L1D-TLB MPKI,none,,10.740185677886904,,10.728186558612158
+Renaissance,web,finagle-http,L2-TLB MPKI,none,,1.67058386685565,,1.6679744364735662
+Renaissance,web,finagle-http,DTLB-walk MPKI,none,,1.2720253742163687,,1.2698944243882158
+Renaissance,web,finagle-http,ITLB-walk MPKI,partial,,0.4003252456831018,,0.3997232952967119
+Renaissance,web,finagle-http,L1I-TLB MPKI,none,,4.614037401162375,,4.608695571673645
+Renaissance,web,finagle-http,Context switches (/CPU-s),exact,Context switches (/CPU-s),48520.55589641319,40575.1,
+RealData,server,kafka-20g,IPC,exact,IPC,1.6061706741811062,1.20841,
+RealData,server,kafka-20g,L1I MPKI,analogue,L1I MPKI (code-read),38.35465241241572,49.388,
+RealData,server,kafka-20g,L1D-TLB MPKI,none,,6.66350243469117,,6.756660489463273
+RealData,server,kafka-20g,L2-TLB MPKI,none,,0.5290185794434027,,0.5359115335270072
+RealData,server,kafka-20g,DTLB-walk MPKI,none,,0.4187354979969907,,0.42421959039220924
+RealData,server,kafka-20g,ITLB-walk MPKI,partial,,0.10072978439075293,,0.10200540832081918
+RealData,server,kafka-20g,L1I-TLB MPKI,none,,2.0731800210999176,,2.107107439292721
+RealData,server,kafka-20g,Context switches (/CPU-s),exact,Context switches (/CPU-s),33806.96622793921,26679.2,
+RealData,apache-spark,naivebayes-rcv1,IPC,exact,IPC,2.0755255885406396,1.39707,
+RealData,apache-spark,naivebayes-rcv1,L1I MPKI,analogue,L1I MPKI (code-read),1.347485099214178,2.9187,
+RealData,apache-spark,naivebayes-rcv1,L1D-TLB MPKI,none,,17.365326936265376,,20.513145487650196
+RealData,apache-spark,naivebayes-rcv1,L2-TLB MPKI,none,,2.7736158411946037,,3.318651347908812
+RealData,apache-spark,naivebayes-rcv1,DTLB-walk MPKI,none,,2.6001465507177377,,3.137674763009077
+RealData,apache-spark,naivebayes-rcv1,ITLB-walk MPKI,partial,,0.018352110706546073,,0.019344872679538164
+RealData,apache-spark,naivebayes-rcv1,L1I-TLB MPKI,none,,0.19141954778844167,,0.19166991285157672
+RealData,apache-spark,naivebayes-rcv1,Context switches (/CPU-s),exact,Context switches (/CPU-s),474.5756794909639,355.094,
+RealData,database,neo4j-livejournal,IPC,exact,IPC,2.2682776284536033,2.15063,
+RealData,database,neo4j-livejournal,L1I MPKI,analogue,L1I MPKI (code-read),11.34261258301924,14.2989,
+RealData,database,neo4j-livejournal,L1D-TLB MPKI,none,,3.498658319880363,,3.5154594070041334
+RealData,database,neo4j-livejournal,L2-TLB MPKI,none,,0.7279254297570953,,0.7155985022496817
+RealData,database,neo4j-livejournal,DTLB-walk MPKI,none,,0.5122740106891861,,0.5034345287140718
+RealData,database,neo4j-livejournal,ITLB-walk MPKI,partial,,0.17890360310719974,,0.17729208078038886
+RealData,database,neo4j-livejournal,L1I-TLB MPKI,none,,1.1678368589302632,,1.1758947795023873
+RealData,database,neo4j-livejournal,Context switches (/CPU-s),exact,Context switches (/CPU-s),20615.108463622033,17245.3,
+RealData,apache-spark,pagerank-livejournal,IPC,exact,IPC,1.852112714454372,1.69761,
+RealData,apache-spark,pagerank-livejournal,L1I MPKI,analogue,L1I MPKI (code-read),0.2375318236609209,0.46074,
+RealData,apache-spark,pagerank-livejournal,L1D-TLB MPKI,none,,3.3460721240077125,,3.77278223576215
+RealData,apache-spark,pagerank-livejournal,L2-TLB MPKI,none,,0.7678706828069523,,0.9117576114009985
+RealData,apache-spark,pagerank-livejournal,DTLB-walk MPKI,none,,0.7563691896567456,,0.9013502078652362
+RealData,apache-spark,pagerank-livejournal,ITLB-walk MPKI,partial,,0.005670521105348672,,0.0050949399527569295
+RealData,apache-spark,pagerank-livejournal,L1I-TLB MPKI,none,,0.1779611701926075,,0.18515676844401488
+RealData,apache-spark,pagerank-livejournal,Context switches (/CPU-s),exact,Context switches (/CPU-s),73.47497670663651,74.1877,
+DaCapo,server,tomcat,IPC,exact,IPC,1.8916550606077627,1.37344,
+DaCapo,server,tomcat,L1I MPKI,analogue,L1I MPKI (code-read),33.510479460833956,38.9236,
+DaCapo,server,tomcat,L1D-TLB MPKI,none,,5.195348808885683,,5.294948138286998
+DaCapo,server,tomcat,L2-TLB MPKI,none,,0.5784766467849223,,0.6012132099917299
+DaCapo,server,tomcat,DTLB-walk MPKI,none,,0.40375864859642624,,0.4190465808765302
+DaCapo,server,tomcat,ITLB-walk MPKI,partial,,0.16172395935455056,,0.17027770542037302
+DaCapo,server,tomcat,L1I-TLB MPKI,none,,2.1310771018154977,,2.2399777738160127
+DaCapo,server,tomcat,Context switches (/CPU-s),exact,Context switches (/CPU-s),55601.68655166934,33712.8,
+RealData,video-transcode,video-4k,IPC,exact,IPC,3.887938860335768,2.45967,
+RealData,video-transcode,video-4k,L1I MPKI,analogue,L1I MPKI (code-read),2.6251769170040715,7.59938,
+RealData,video-transcode,video-4k,L1D-TLB MPKI,none,,5.0859741987127105,,5.10201402063385
+RealData,video-transcode,video-4k,L2-TLB MPKI,none,,0.014272815433895166,,0.014362030070110792
+RealData,video-transcode,video-4k,DTLB-walk MPKI,none,,0.008882100070329435,,0.008956834467349425
+RealData,video-transcode,video-4k,ITLB-walk MPKI,partial,,0.0001505485395778174,,0.0001516278196584987
+RealData,video-transcode,video-4k,L1I-TLB MPKI,none,,0.0006925142062028025,,0.0006969115416075891
+RealData,video-transcode,video-4k,Context switches (/CPU-s),exact,Context switches (/CPU-s),66.12432258308802,70.9272,

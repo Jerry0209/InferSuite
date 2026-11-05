@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# ARM port of local_agents/kit/dcperf/bench_video_transcode.sh (dcperf-arm): measured.slice -> $MSLICE + $SCOPE_PROPS (AllowedCPUs=8-15, mems 0), JDK -amd64 -> $(dpkg --print-architecture), machine-wide pkill -> kill_desc (own process tree only).
+# bench_video_transcode.sh — VideoTranscodeBench module for run_dcperf_profile.sh.
+#
+# Unlike FeedSim this benchmark has no client/server split: it is a BATCH of ffmpeg/SVT-AV1
+# encodes run through a process pool. Fencing is therefore trivial — the whole batch goes into
+# one measured.slice scope, and there is no load generator to keep off the measured partition.
+#
+# DATASET DEVIATION (documented in local_agents/DCPerf/README.md): DCPerf specifies the Netflix
+# "El Fuente" shots from CDVL, whose download sits behind a manual free registration and so
+# cannot be scripted. We substitute shots cut from freely-redistributable Xiph 1080p sequences
+# at the same resolution and shot length. The ENCODER, encoding levels, parallelism and pool
+# size are DCPerf's; only the source content differs, so absolute encode times are not
+# comparable with published DCPerf numbers — the microarchitectural character of AV1 encoding,
+# which is what this study reads, is preserved.
+VT_DIR="$DCPERF_ROOT/benchmarks/video_transcode_bench"
+VT_ENCODER="${VT_ENCODER:-svt}"
+VT_LEVELS="${VT_LEVELS:-6:9}"          # SVT-AV1 preset range; higher = faster/cheaper
+VT_PROCS="${VT_PROCS:-8}"              # pool size == measured physical cores
+VT_PARALLELISM="${VT_PARALLELISM:-1}"  # encoder-internal threads (DCPerf default)
+
+# VT_CUTS (2026-09-21): the DCPerf runner reads ./datasets/cuts RELATIVE to its own directory,
+# so a different source set (the 4K Netflix sequences for the realistic-dataset study) is
+# selected by pointing datasets/cuts at it: the original directory is kept beside it as
+# datasets/cuts_1080p_xiph and cuts becomes a symlink. Unset = leave the tree as it is.
+VT_CUTS="${VT_CUTS:-}"
+vt_select_cuts(){
+  [ -n "$VT_CUTS" ] || return 0
+  [ -d "$VT_CUTS" ] || { dlog "VT_CUTS=$VT_CUTS is not a directory"; return 1; }
+  local cur="$VT_DIR/datasets/cuts"
+  if [ -d "$cur" ] && [ ! -L "$cur" ]; then
+    sudo mv "$cur" "$VT_DIR/datasets/cuts_1080p_xiph" || return 1
+    dlog "original cuts kept as datasets/cuts_1080p_xiph"
+  fi
+  [ "$(readlink -f "$cur" 2>/dev/null)" = "$(readlink -f "$VT_CUTS")" ] || { sudo rm -f "$cur"; sudo ln -s "$(readlink -f "$VT_CUTS")" "$cur" || return 1; }
+  dlog "datasets/cuts -> $(readlink -f "$cur")"
+}
+
+bench_preflight(){
+  [ -d "$VT_DIR" ] || { dlog "video_transcode_bench not installed at $VT_DIR"; return 1; }
+  vt_select_cuts || return 1
+  local n
+  n=$(sudo find -L "$VT_DIR/datasets/cuts/" -name '*.y4m' 2>/dev/null | wc -l)   # -L + trailing slash: cuts may be a symlink (VT_CUTS)
+  [ "$n" -gt 0 ] || { dlog "no .y4m clips in $VT_DIR/datasets/cuts — see the dataset note"; return 1; }
+  dlog "video_transcode preflight OK ($n clips, encoder=$VT_ENCODER levels=$VT_LEVELS procs=$VT_PROCS)"
+}
+
+bench_start(){ # $1 OUT, $2 UNIT
+  local OUT="$1" UNIT="$2" CG="$MSLICE/$2.scope" i
+  sudo systemctl stop "$UNIT.scope" 2>/dev/null; sudo systemctl reset-failed "$UNIT.scope" 2>/dev/null
+  echo "{\"encoder\":\"$VT_ENCODER\",\"levels\":\"$VT_LEVELS\",\"procs\":$VT_PROCS,\"parallelism\":$VT_PARALLELISM}" \
+    > "$OUT/.load_json"
+
+  # the whole batch runs inside the measured fence; no client to place elsewhere
+  # run.sh resolves ./datasets/cuts and ./generate_commands_all.py RELATIVE to the benchmark
+  # directory, and systemd-run --scope inherits the caller's cwd, so the cd is mandatory.
+  ( sudo systemd-run --collect --scope --slice="$MSLICE" $SCOPE_PROPS --unit="$UNIT" -- \
+      taskset -c "$CPUS_MEASURED" bash -c "cd '$VT_DIR' && exec ./run.sh --encoder '$VT_ENCODER' \
+        --levels '$VT_LEVELS' --procs '$VT_PROCS' --parallelism '$VT_PARALLELISM'" \
+    ) > "$OUT/vtb_run.log" 2>&1 &
+  VT_RUN_PID=$!
+  dlog "video_transcode launched (pid $VT_RUN_PID)"
+
+  for i in $(seq 1 300); do [ -d "/sys/fs/cgroup/$CG" ] && break; sleep 1; done
+  [ -d "/sys/fs/cgroup/$CG" ] || { dlog "encode scope never appeared"; return 1; }
+  echo "$CG" > "$OUT/.server_cg"
+
+  # ENCODE STAGE GATE (2026-09-21): the runner first copies the reference clips and downscales
+  # them into the resolution ladder, and with 4K sources that stage saturates the cores for a
+  # minute or more on its own -- the 4K smoke declared steady state 22 s after launch, inside
+  # the downscale. The runner prints "Running M<level>" when the encode loop starts; wait for
+  # it (up to 20 min) before judging saturation, so every window is an encode window.
+  for i in $(seq 1 1200); do
+    grep -q 'Running M' "$OUT/vtb_run.log" 2>/dev/null && break
+    kill -0 "$VT_RUN_PID" 2>/dev/null || { dlog "batch exited before the encode stage"; return 1; }
+    sleep 1
+  done
+  grep -q 'Running M' "$OUT/vtb_run.log" 2>/dev/null || { dlog "encode stage never started"; return 1; }
+  dlog "encode stage started ($(grep -o 'Running M[0-9]*' "$OUT/vtb_run.log" | tail -1)) after ${i}s of copy + downscale"
+  # STEADY STATE for a batch workload = the pool is saturated. Wait until the fence has been
+  # busy above half the pool for several consecutive samples, rather than assuming a fixed
+  # warm-up: command generation and the first ffmpeg spawns take a variable amount of time.
+  local ok=0 prev="" cur rate
+  for i in $(seq 1 600); do
+    cur=$(head -3 "/sys/fs/cgroup/$CG/cpu.stat" 2>/dev/null | awk '/usage_usec/{print $2}')
+    if [ -n "$prev" ] && [ -n "$cur" ]; then
+      rate=$(( (cur - prev) / 1000000 ))          # cores busy over the 1 s sample
+      if [ "$rate" -ge $((VT_PROCS / 2)) ]; then ok=$((ok+1)); else ok=0; fi
+      [ "$ok" -ge 8 ] && { dlog "encode pool saturated (~${rate} cores)"; return 0; }
+    fi
+    prev="$cur"
+    kill -0 "$VT_RUN_PID" 2>/dev/null || { dlog "batch exited before saturating"; return 1; }
+    sleep 1
+  done
+  dlog "encode pool never saturated"; return 1
+}
+
+bench_stop(){ # $1 OUT, $2 UNIT
+  local OUT="$1" UNIT="$2"
+  [ -n "$VT_RUN_PID" ] && sudo kill -TERM "$VT_RUN_PID" 2>/dev/null
+  sudo systemctl stop "$UNIT.scope" 2>/dev/null
+  kill_desc ffmpeg
+  sleep 3
+  # ARM port: run.sh deletes its ~16 GB of scratch only on a clean finish; a pass is always
+  # killed at the end of the capture, so clear it here or the disk fills after a few passes.
+  [ -d "${VT_DIR:?}" ] && sudo rm -rf "$VT_DIR/resized_clips" "$VT_DIR/bitstreams"
+}

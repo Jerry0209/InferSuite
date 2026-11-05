@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# ARM port of local_agents/kit/dcperf/setup_cassandra_ycsb.sh. Edits: JDK 17/21 paths auto-detected (-$ARCH; CAS_JAVA_HOME/YCSB_JAVA_HOME override,
+# YCSB's was hard-coded), CPUS 8-15/0-7, measured.slice -> ${MSLICE:-jerryprep.slice} + AllowedCPUs, CASSANDRA_LIBJEMALLOC set explicitly
+# (apt libjemalloc2) and passed to the node, ParallelGCThreads=ConcGCThreads=${CAS_GC_THREADS:-16} pinned in jvm17-server.options (x86: 16).
+# setup_cassandra_ycsb.sh — ONE-TIME build of the realistic Cassandra workload's data: a
+# standalone Apache Cassandra 5.0 node (JDK 17) loaded by YCSB 0.17 (the same YCSB version
+# DaCapo bundles) with RECORDS x 1 KB rows of the CoreWorkload schema, then flushed and fully
+# compacted so the profiling passes open a settled store. Nothing here is measured.
+#   RECORDS=20000000 INFRA=~/realdata-infra bash local_agents/kit/dcperf/setup_cassandra_ycsb.sh
+set -euo pipefail
+INFRA="${INFRA:-$HOME/realdata-infra}"
+CAS="$INFRA/cassandra"; YCSB="$INFRA/ycsb"; DS="$INFRA/datasets/cassandra-ycsb"
+RECORDS="${RECORDS:-20000000}"
+LOAD_THREADS="${LOAD_THREADS:-16}"
+CPUS_MEASURED="${CPUS_MEASURED:-8-15}"; CPUS_HOUSE="${CPUS_HOUSE:-0-7}"
+ARCH="${ARCH:-$(dpkg --print-architecture)}"
+export JAVA_HOME="${CAS_JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-$ARCH}"
+YCSB_JAVA_HOME="${YCSB_JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-$ARCH}"
+export CASSANDRA_LIBJEMALLOC="${CASSANDRA_LIBJEMALLOC:-/usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2}"
+CAS_GC_THREADS="${CAS_GC_THREADS:-16}"
+export PATH="$JAVA_HOME/bin:$PATH"
+export CASSANDRA_HOME="$CAS" CASSANDRA_CONF="$CAS/conf"
+export MAX_HEAP_SIZE="${CAS_HEAP:-8G}" HEAP_NEWSIZE="${CAS_NEW:-2G}"
+mkdir -p "$DS" "$CAS/data"
+log(){ echo "[$(date +%H:%M:%S)] $*" | tee -a "$INFRA/logs/setup_cassandra.log"; }
+
+# 1. node configuration (the profiling passes use the same file): loopback only, one token
+#    range, all state under the infra tree, and no hinted-handoff/batchlog noise
+if ! grep -q 'infersuite' "$CAS/conf/cassandra.yaml"; then
+  python3 - "$CAS/conf/cassandra.yaml" "$CAS" <<'PY'
+import re, sys
+p, home = sys.argv[1], sys.argv[2]
+y = open(p).read()
+def setk(y, key, val):
+    pat = re.compile(rf'^(#\s*)?{key}:.*$', re.M)
+    return pat.sub(f'{key}: {val}', y, count=1) if pat.search(y) else y + f'\n{key}: {val}\n'
+y = setk(y, 'cluster_name', "'infersuite-realdata'")
+y = setk(y, 'num_tokens', '16')
+y = setk(y, 'listen_address', '127.0.0.1')
+y = setk(y, 'rpc_address', '127.0.0.1')
+y = setk(y, 'hints_directory', f'{home}/data/hints')
+y = setk(y, 'saved_caches_directory', f'{home}/data/saved_caches')
+y = setk(y, 'commitlog_directory', f'{home}/data/commitlog')
+y = re.sub(r'^(#\s*)?data_file_directories:.*\n(\s*(#\s*)?- .*\n)?', f'data_file_directories:\n    - {home}/data/data\n', y, count=1, flags=re.M)
+y = setk(y, 'hinted_handoff_enabled', 'false')
+y = setk(y, 'auto_snapshot', 'false')
+y = setk(y, 'incremental_backups', 'false')
+open(p, 'w').write(y + '\n# infersuite: configured by setup_cassandra_ycsb.sh\n')
+PY
+  log "cassandra.yaml configured"
+fi
+# GC threads: cassandra-env.sh sets both to the /proc/cpuinfo count (192 here, 16 on x86) unless jvm17-server.options names them
+sed -i -E "s/^#?-XX:ParallelGCThreads=.*/-XX:ParallelGCThreads=$CAS_GC_THREADS/; s/^#?-XX:ConcGCThreads=.*/-XX:ConcGCThreads=$CAS_GC_THREADS/" "$CAS/conf/jvm17-server.options"
+
+start_node(){
+  # a shell in user.slice is confined to the housekeeping cpuset, so it cannot taskset onto the
+  # measured cores itself; systemd puts the node into measured.slice first (what the
+  # orchestrator does for every profiled server), then taskset is allowed
+  sudo systemctl stop realdata-cassandra-setup.scope 2>/dev/null || true; sudo systemctl reset-failed realdata-cassandra-setup.scope 2>/dev/null || true
+  ( sudo systemd-run --collect --scope --slice="${MSLICE:-jerryprep.slice}" -p AllowedCPUs="$CPUS_MEASURED" --unit=realdata-cassandra-setup \
+      -E JAVA_HOME="$JAVA_HOME" -E CASSANDRA_HOME="$CAS" -E CASSANDRA_CONF="$CAS/conf" \
+      -E MAX_HEAP_SIZE="$MAX_HEAP_SIZE" -E HEAP_NEWSIZE="$HEAP_NEWSIZE" -E PATH="$JAVA_HOME/bin:/usr/bin:/bin" \
+      -E CASSANDRA_LIBJEMALLOC="$CASSANDRA_LIBJEMALLOC" \
+      -- taskset -c "$CPUS_MEASURED" "$CAS/bin/cassandra" -f -R ) > "$INFRA/logs/cassandra_setup_node.log" 2>&1 &
+  CAS_PID=$!
+  local i; for i in $(seq 1 180); do "$CAS/bin/nodetool" -h 127.0.0.1 status 2>/dev/null | grep -q '^UN' && break; sleep 2; done
+  "$CAS/bin/nodetool" -h 127.0.0.1 status 2>/dev/null | grep -q '^UN' || { log "node did not come up"; return 1; }
+  log "node up (pid $CAS_PID)"
+}
+stop_node(){ "$CAS/bin/nodetool" -h 127.0.0.1 drain >/dev/null 2>&1 || true
+  sudo systemctl stop realdata-cassandra-setup.scope 2>/dev/null || true; kill -TERM "$CAS_PID" 2>/dev/null || true
+  local i; for i in $(seq 1 60); do pgrep -f "$CAS/bin" >/dev/null || break; sleep 1; done; }
+
+if [ -f "$DS/SETUP_DONE" ]; then log "already built ($(cat "$DS/SETUP_DONE"))"; exit 0; fi
+start_node
+# 2. YCSB schema (CoreWorkload: y_id + field0..field9)
+"$CAS/bin/cqlsh" 127.0.0.1 -e "CREATE KEYSPACE IF NOT EXISTS ycsb WITH REPLICATION = {'class':'SimpleStrategy','replication_factor':1};
+CREATE TABLE IF NOT EXISTS ycsb.usertable (y_id varchar primary key, field0 varchar, field1 varchar, field2 varchar, field3 varchar, field4 varchar, field5 varchar, field6 varchar, field7 varchar, field8 varchar, field9 varchar);" >> "$INFRA/logs/setup_cassandra.log" 2>&1
+log "schema created"
+# 3. load RECORDS rows (client on the housekeeping cores, YCSB's own Java client)
+log "YCSB load: $RECORDS records x 10 fields x 100 B, $LOAD_THREADS threads"
+( cd "$YCSB" && taskset -c "$CPUS_HOUSE" env JAVA_HOME="$YCSB_JAVA_HOME" PATH="$YCSB_JAVA_HOME/bin:$PATH" \
+    bash bin/ycsb.sh load cassandra-cql -P workloads/workloada -p recordcount="$RECORDS" -p hosts=127.0.0.1 \
+    -p cassandra.writeconsistencylevel=ONE -p core_workload_insertion_retry_limit=10 \
+    -p core_workload_insertion_retry_interval=2 -threads "$LOAD_THREADS" -s ) > "$INFRA/logs/ycsb_load.log" 2>&1 \
+  || { log "YCSB load FAILED (see logs/ycsb_load.log)"; stop_node; exit 1; }
+log "load done: $(grep -E '\[OVERALL\], (RunTime|Throughput)|\[INSERT\], (Operations|Return=)' "$INFRA/logs/ycsb_load.log" | tr '\n' ' ')"
+# YCSB kills a client thread on an insert error unless retries are enabled (2026-09-21: 6 write
+# timeouts silently dropped 12 % of the key space); the retry knobs above are the fix, this is the check
+INSERTED=$(sed -nE 's/^\[INSERT\], Operations, ([0-9]+).*/\1/p' "$INFRA/logs/ycsb_load.log" | head -1)
+[ "${INSERTED:-0}" -ge "$RECORDS" ] || { log "LOAD INCOMPLETE: $INSERTED of $RECORDS inserts"; stop_node; exit 1; }
+# 4. settle the store: flush memtables, compact fully, so no pass profiles a compaction backlog
+"$CAS/bin/nodetool" -h 127.0.0.1 flush >> "$INFRA/logs/setup_cassandra.log" 2>&1
+log "compacting"; "$CAS/bin/nodetool" -h 127.0.0.1 compact ycsb >> "$INFRA/logs/setup_cassandra.log" 2>&1 || true
+"$CAS/bin/nodetool" -h 127.0.0.1 tablestats ycsb.usertable 2>/dev/null | grep -E 'Space used \(live\)|SSTable count|Number of partitions' | sed 's/^\s*/   /' | tee -a "$INFRA/logs/setup_cassandra.log"
+stop_node
+echo "records=$RECORDS store=$(du -sh "$CAS/data/data/ycsb" | cut -f1) built=$(date -Is)" > "$DS/SETUP_DONE"
+log "SETUP DONE: $(cat "$DS/SETUP_DONE")"

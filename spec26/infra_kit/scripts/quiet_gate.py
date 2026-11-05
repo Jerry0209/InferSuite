@@ -84,9 +84,9 @@ def snap(mslice: str, mine: set[int]) -> dict[int, tuple[float, str, str]]:
     return d
 
 
-def sample(secs: float, mslice: str, mine_root: int | None):
+def sample(secs: float, mslice: str, mine_root: int | None, operator: set[int] = frozenset()):
     mine = descendants(mine_root) if mine_root else set()
-    mine |= ancestors(os.getpid())
+    mine |= ancestors(os.getpid()) | set(operator)
     a = snap(mslice, mine)
     time.sleep(secs)
     if mine_root:
@@ -121,11 +121,14 @@ def main() -> int:
     ap.add_argument("--total-max", type=float, default=40.0)
     ap.add_argument("--mslice", default="measured.slice")
     ap.add_argument("--mine", type=int, default=None)
+    ap.add_argument("--operator", type=int, action="append", default=[],
+                    help="the operator's own agent process (that pid only, not its children): "
+                         "tolerated like an ancestor when the driver runs detached (tmux)")
     ap.add_argument("--out", default=None)
     a = ap.parse_args()
 
     if a.mode == "check":
-        total, busy = sample(a.sample, a.mslice, a.mine)
+        total, busy = sample(a.sample, a.mslice, a.mine, set(a.operator))
         ok, tasks = verdict(total, busy, a.proc_max, a.total_max)
         print(f"{'QUIET' if ok else 'BUSY'} foreign_total={total:.0f}% top: {fmt(busy)}")
         return 0 if ok else 1
@@ -133,7 +136,7 @@ def main() -> int:
     if a.mode == "wait":
         quiet_since = None
         while True:
-            total, busy = sample(a.poll, a.mslice, a.mine)
+            total, busy = sample(a.poll, a.mslice, a.mine, set(a.operator))
             ok, _ = verdict(total, busy, a.proc_max, a.total_max)
             now = time.time()
             quiet_since = (quiet_since or now) if ok else None
@@ -146,7 +149,7 @@ def main() -> int:
     # witness: append one row per poll until killed; analysed after the capture
     with open(a.out, "a") as fh:
         while True:
-            total, busy = sample(a.poll, a.mslice, a.mine)
+            total, busy = sample(a.poll, a.mslice, a.mine, set(a.operator))
             fh.write(f"{time.time():.3f}\t{total:.1f}\t{fmt(busy, 5)}\n")
             fh.flush()
 
