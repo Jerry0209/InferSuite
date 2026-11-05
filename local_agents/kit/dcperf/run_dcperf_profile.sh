@@ -32,6 +32,9 @@
 # group mismatch below deletes that run_N, so a lone "lbr" pointed at banked counter data
 # would delete its run_1.
 #   PROF_GROUPS=lbr DATA_ROOT=local_agents/DCPerf/data/frontend_footprint BENCH=feedsim ...
+# PASS_GATES=1 (2026-11-04, the TLB groups): counter passes also run the foreign-process
+# witness and are DONE only if counter_pass_gates.py passes (windows, zero multiplexing, D4,
+# D5, witness, receipt vs the banked passes in $(dirname DATA_ROOT)/<suite>_<workload>).
 set -o pipefail
 KITD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$KITD/../../.." && pwd)"
@@ -185,7 +188,14 @@ for g in $PROF_GROUPS; do
   if [ "$g" = lbr ]; then
     lbr_capture "$OUT" "$CG" "$CAPTURE_S"
   else
+    # PASS_GATES=1 (2026-11-04): the LBR pass's whole-machine witness runs over counter passes too
+    if [ "${PASS_GATES:-0}" = 1 ]; then
+      taskset -c "$CPUS_HOUSE" python3 "$KITD/quiet_gate.py" witness --out "$OUT/witness.tsv" --poll 2 \
+          --mine "$FF_MINE_PID" >/dev/null 2>&1 &
+      FF_WIT_PID=$!
+    fi
     GORDER="$g" cycle_stats "$OUT" "$CG" "[ -d /sys/fs/cgroup/$CG ]" "$CAPTURE_S"
+    ff_stop_instruments
   fi
 
   stop_tma_cont; stop_pollers "$OUT"
@@ -199,7 +209,17 @@ for g in $PROF_GROUPS; do
     sleep 20; continue
   fi
   NW=$(($(wc -l < "$OUT/windows.tsv" 2>/dev/null || echo 1) - 1))
-  if [ "$NW" -gt 10 ] && [ -s "$OUT/cpustat_scope1.tsv" ]; then
+  if [ "$NW" -gt 10 ] && [ -s "$OUT/cpustat_scope1.tsv" ] && [ "${PASS_GATES:-0}" = 1 ]; then
+    # receipt vs the 9 banked counter passes, then counter_pass_gates.py; DONE only if all pass
+    BANKED="$(dirname "$DATA_ROOT")/${SUITE}_${WL}"
+    [ -d "$BANKED" ] && python3 "$KITD/receipt_compare.py" "$OUT" "$BANKED" --out "$OUT/receipt_compare.json" > /dev/null 2>&1
+    if python3 "$KITD/counter_pass_gates.py" "$OUT" --group "$g" --events "${GRP[$g]}" --capture-s "$CAPTURE_S" \
+         --measured "$CPUS_MEASURED" --winsec "$WINSEC" > "$OUT/gates.log" 2>&1; then
+      : > "$OUT/DONE"; dlog "pass $n ($g) OK — $(cat "$OUT/gates.log")"
+    else
+      dlog "pass $n ($g) GATES FAIL — $(cat "$OUT/gates.log")"
+    fi
+  elif [ "$NW" -gt 10 ] && [ -s "$OUT/cpustat_scope1.tsv" ]; then
     : > "$OUT/DONE"; dlog "pass $n ($g) OK — $NW windows"
   else
     dlog "pass $n ($g) INCOMPLETE — $NW windows"

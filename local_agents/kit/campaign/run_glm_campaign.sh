@@ -58,6 +58,11 @@ GRP[fe_l3x]="cycles,instructions,dsb2mite_switches.penalty_cycles,idq.ms_switche
 # fe_miss (2026-07-28b): BTB-miss proxy (baclears), uop-cache miss count, and branch-direction
 # vs indirect mispredict split — for the per-window distribution study. GORDER_OVERRIDE only.
 GRP[fe_miss]="cycles,instructions,baclears.any,frontend_retired.any_dsb_miss,br_misp_retired.cond,br_misp_retired.indirect"
+# tlb_d / tlb_i (2026-11-04): the TLB hierarchy (L1 miss -> STLB hit or page walk), data and
+# code, for parity with the ARM tlb-data/tlb-code families; byte-identical to the SPEC kit's.
+# GORDER_OVERRIDE / PROF_GROUPS only. stlb_hit + walk_completed = L1 TLB misses less aborted walks.
+GRP[tlb_d]="cycles,instructions,dtlb_load_misses.stlb_hit,dtlb_load_misses.walk_completed,dtlb_store_misses.stlb_hit,dtlb_store_misses.walk_completed"
+GRP[tlb_i]="cycles,instructions,itlb_misses.stlb_hit,itlb_misses.walk_completed,itlb_misses.walk_active,dtlb_load_misses.walk_active"
 # priv: kernel-vs-user split + kernel-mediated behavior. context-switches/migrations/
 # page-faults are software events (zero PMU counters); :u/:k splits cost 2 GP.
 GRP[priv]="task-clock,context-switches,cpu-migrations,page-faults,cycles:u,cycles:k,instructions:u,instructions:k"

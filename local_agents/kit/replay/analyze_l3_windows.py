@@ -259,6 +259,21 @@ def derive(group, d, dur=None):
         out["uopCache_MPKI"] = 1000 * g("frontend_retired.any_dsb_miss") / I
         out["branchDir_MPKI"] = 1000 * g("br_misp_retired.cond") / I
         out["branchInd_MPKI"] = 1000 * g("br_misp_retired.indirect") / I
+    elif group == "tlb_d":         # data TLB hierarchy: L1 miss -> STLB hit or page walk
+        dlh, dlw = g("dtlb_load_misses.stlb_hit"), g("dtlb_load_misses.walk_completed")
+        dsh, dsw = g("dtlb_store_misses.stlb_hit"), g("dtlb_store_misses.walk_completed")
+        out["dTLB_L1_MPKI"] = 1000 * (dlh + dlw + dsh + dsw) / I
+        out["dTLB_L1_load_MPKI"] = 1000 * (dlh + dlw) / I
+        out["dTLB_L1_store_MPKI"] = 1000 * (dsh + dsw) / I
+        out["dTLB_walk_MPKI"] = 1000 * (dlw + dsw) / I
+        if dlh + dlw + dsh + dsw > 1e3: out["dTLB_STLB_hit_pct"] = 100 * (dlh + dsh) / (dlh + dlw + dsh + dsw)
+    elif group == "tlb_i":         # code TLB hierarchy + walk durations (data loads, code)
+        ih, iw = g("itlb_misses.stlb_hit"), g("itlb_misses.walk_completed")
+        out["iTLB_L1_MPKI"] = 1000 * (ih + iw) / I
+        out["iTLB_walk_MPKI"] = 1000 * iw / I
+        if ih + iw > 1e3: out["iTLB_STLB_hit_pct"] = 100 * ih / (ih + iw)
+        out["itlb_walk_pct"] = 100 * g("itlb_misses.walk_active") / C
+        out["dtlb_load_walk_pct"] = 100 * g("dtlb_load_misses.walk_active") / C
     elif group == "priv":
         ck, cu = g("cycles:k"), g("cycles:u")
         if ck + cu > 1e5: out["kernel_pct"] = 100 * ck / (ck + cu)

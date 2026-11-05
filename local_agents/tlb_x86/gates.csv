@@ -1,0 +1,21 @@
+workload,suite,run,group,done,all_ok,overrides,n_windows,span_s,pitch_s,counted_ok,windows_multiplexed,alive_ok,active_ok,d4_drift_pct,load_cores,d5_residual_pct,witness_clean,receipt_metric,receipt_ratio,receipt_comparable,receipt_basis,fence_cores_new,windows_dropped_not_counted,instructions,files
+feedsim,dcperf,run_1,tlb_d,True,True,,2530,300.01,0.1186,True,0,True,True,0.0,3.36,0.0,True,"achieved QPS, fixed-QPS experiment row",1.0,True,workload receipt,3.3607,0,4961481278996.0,2530
+feedsim,dcperf,run_2,tlb_i,True,True,,2524,299.64,0.1187,True,0,True,True,0.07,3.371,0.0,True,"achieved QPS, fixed-QPS experiment row",1.0,True,workload receipt,3.3726,0,4964688020376.0,2524
+tomcat,dacapo,run_1,tlb_d,True,True,,1537,179.56,0.1168,True,0,True,True,3.96,0.966,0.0,True,mean iteration time,0.998648,True,workload receipt,0.9658,0,572115471686.0,1537
+tomcat,dacapo,run_2,tlb_i,True,True,,1531,179.13,0.117,True,0,True,True,4.82,0.953,0.0,True,mean iteration time,0.997661,True,workload receipt,0.9541,0,561797475849.0,1531
+finagle-chirper,renaissance,run_1,tlb_d,True,True,,1522,179.92,0.1182,True,0,True,True,0.32,6.309,0.0,True,mean operation time,0.988035,True,workload receipt,6.3096,0,5876063279830.0,1522
+finagle-chirper,renaissance,run_2,tlb_i,True,True,,1519,179.85,0.1184,True,0,True,True,0.58,6.314,0.0,True,mean operation time,0.974908,True,workload receipt,6.3139,0,5986091248416.0,1519
+finagle-http,renaissance,run_1,tlb_d,True,True,,1522,179.57,0.118,True,0,True,True,0.08,6.616,0.0,True,mean operation time,0.984836,True,workload receipt,6.6163,0,4205790554297.0,1522
+finagle-http,renaissance,run_2,tlb_i,True,True,,1523,179.94,0.1181,True,0,True,True,0.12,6.618,0.0,True,mean operation time,0.984967,True,workload receipt,6.6184,0,4140290400138.0,1523
+cassandra-ycsb20m,realdata,run_1,tlb_d,True,True,,1487,179.82,0.1209,True,0,True,True,0.86,6.208,3.65,True,YCSB OVERALL Throughput(ops/sec),0.954698,True,workload receipt,6.207,0,3611525716323.0,1487
+cassandra-ycsb20m,realdata,run_2,tlb_i,True,True,,1485,179.38,0.1208,True,0,True,True,0.84,6.313,2.99,True,YCSB OVERALL Throughput(ops/sec),0.959655,True,workload receipt,6.3125,0,3822426860044.0,1485
+kafka-20g,realdata,run_1,tlb_d,True,True,,1487,179.12,0.1205,True,0,True,True,1.57,0.658,5.59,True,consumer total MB/s inside the capture window,1.0,True,workload receipt,0.6582,0,349961268216.0,1487
+kafka-20g,realdata,run_2,tlb_i,True,True,,1492,179.53,0.1203,True,0,True,True,1.93,0.668,4.86,True,consumer total MB/s inside the capture window,1.0,True,workload receipt,0.6681,0,354101948992.0,1492
+naivebayes-rcv1,realdata,run_1,tlb_d,True,True,,1493,179.41,0.1202,True,0,True,True,0.6,6.742,0.0,True,mean seconds per pass,0.981365,True,workload receipt,6.745,0,4570444947055.0,1493
+naivebayes-rcv1,realdata,run_2,tlb_i,True,True,,1492,179.55,0.1203,True,0,True,True,2.31,6.714,0.0,True,mean seconds per pass,0.99258,True,workload receipt,6.7174,0,4550207423902.0,1492
+neo4j-livejournal,realdata,run_1,tlb_d,True,True,,1420,179.37,0.1263,True,0,True,True,0.68,3.851,0.33,True,"client ops/s, all classes, capture window",0.988707,True,workload receipt,3.8506,0,3587659328825.0,1420
+neo4j-livejournal,realdata,run_2,tlb_i,True,True,,1417,179.24,0.1265,True,0,True,True,0.25,3.966,0.14,True,"client ops/s, all classes, capture window",1.014507,True,workload receipt,3.9667,0,3754978692945.0,1417
+pagerank-livejournal,realdata,run_1,tlb_d,True,True,,1518,179.79,0.1184,True,0,True,True,0.69,7.705,0.0,True,mean seconds per pass,1.0,True,workload receipt,7.7053,0,6431623055341.0,1518
+pagerank-livejournal,realdata,run_2,tlb_i,True,True,,1512,179.22,0.1185,True,0,True,True,1.06,7.704,0.0,True,mean seconds per pass,1.015504,True,workload receipt,7.7045,0,6406583399983.0,1512
+video-4k,realdata,run_1,tlb_d,True,True,,1520,179.82,0.1183,True,0,True,True,0.25,7.983,0.02,True,throughput receipt (none exists in vtb_run.log),,,fence-load proxy (batch without a receipt by design),7.9831,1,9633005811041.0,1520
+video-4k,realdata,run_2,tlb_i,True,True,,1517,179.4,0.1183,True,0,True,True,1.85,7.703,0.0,True,throughput receipt (none exists in vtb_run.log),,,fence-load proxy (batch without a receipt by design),7.703,0,9914746067606.0,1517

@@ -123,7 +123,7 @@ The campaign took 15:44–18:13 including two smokes. Peak disk use is ~1.7 GB o
 
 | Item | Repo location | Role |
 |---|---|---|
-| `frontend_footprint_server.sh` | `local_agents/kit/dcperf/` | campaign wrapper: per-workload env, quiet/perf gates, snapshot + RESTORE-VERIFY, sysctl pin, cleanup |
+| `frontend_footprint_server.sh` | `local_agents/kit/dcperf/` | campaign wrapper: per-workload env, quiet/perf gates, snapshot + RESTORE-VERIFY, sysctl pin, cleanup. Since 2026-11-04 it also runs counter groups (`FF_GROUPS`, `FF_SUBDIR`; `run_dcperf_profile.sh` `PASS_GATES=1`; report 25); defaults unchanged |
 | `lbr_pass.sh` | `local_agents/kit/dcperf/` | the `lbr` pass: root `perf record` + `perf stat` via control FIFOs, ring fallback, metadata, analysis |
 | `run_dcperf_profile.sh` | `local_agents/kit/dcperf/` | orchestrator, now with the `lbr` pseudo-group |
 | `lbr_pass_gates.py` | `local_agents/kit/dcperf/` | per-pass gates → `summary.json` (`gates_v4`), incl. the recorded-override rule |

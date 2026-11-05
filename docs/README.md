@@ -36,6 +36,7 @@ Full index and reading order: **[reports/README.md](reports/README.md)**.
 | own deck | [21 — the agent's position in the SPEC distribution](reports/21_agent_position_in_spec_distribution.md) | Ranks not ratios: L1I p77, MITE p65, DSB p27 — the agent is in SPEC's tail; only kernel time leaves the suite (p96) |
 | — (feeds the P7 selection) | [22 — type identification over SWE-bench Multilingual](reports/22_multiling_typeid_sweep.md) | 285 classification-only live episodes, zero failures: behaviour collapses to search-led (E/B lead 0), PHP/Ruby carry the only co-dominant structure, magnitude nests by mechanism — the measured frame for the ≤30 P7 representatives |
 | own study (Rahul's footprint violins, Server part) | [24 — Server-set front-end footprint on x86](reports/24_server_frontend_footprint_x86.md) | PEBS-LBR footprint, unique taken branches and targets per taken branch for the 10 realistic Server workloads (10/10 gated); ~10× SPEC's footprint and branch counts (6–8× at matched samples), indirect-branch `weff` 2.6× SPEC's |
+| own study (Jef's TLB request) | [25 — TLB hierarchy on x86: SPEC and Server](reports/25_x86_tlb_hierarchy_spec_server.md) | x86 data/code TLB hierarchy (L1 misses, STLB misses = walks, walk cycles) for SPEC 26/26 and the 10 realistic Server workloads 20/20, next to ARM SPEC; Server stresses the instruction TLB ~two orders of magnitude more than SPEC, the data TLB 1.5–2.6× |
 
 Companion material elsewhere in the repo:
 

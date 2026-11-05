@@ -5,6 +5,9 @@
 #
 #   ./frontend_footprint_server.sh feedsim tomcat ...       workloads, in the given order
 #   ./frontend_footprint_server.sh all                      the 10 realistic-set workloads
+#   FF_GROUPS="tlb_d tlb_i" FF_SUBDIR=tlb_x86 ./frontend_footprint_server.sh all
+#                         counter groups instead of the LBR pass (2026-11-04, the TLB hierarchy):
+#                         one dedicated-group pass per group, PASS_GATES=1, no sysctl pin needed
 #
 # Per workload, around the orchestrator (which owns the shield, ISO-PROOF and the pass):
 #   - wait until no perf owned by another user exists (never killed) and the whole machine is
@@ -22,6 +25,9 @@ set -o pipefail
 KITD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$KITD/../../.." && pwd)"
 MSLICE="measured.slice"
+FF_GROUPS="${FF_GROUPS:-lbr}"                 # PROF_GROUPS for every workload
+FF_SUBDIR="${FF_SUBDIR:-frontend_footprint}"  # DATA_ROOT = <family>/data/$FF_SUBDIR (fresh)
+NG=$(echo $FF_GROUPS | wc -w)
 FF_QUIET_HOLD="${FF_QUIET_HOLD:-180}"
 FF_DISK_MIN_G="${FF_DISK_MIN_G:-30}"
 FF_MAX_SAMPLE_RATE="${FF_MAX_SAMPLE_RATE:-}"
@@ -30,8 +36,8 @@ VT_DIR="${DCPERF_ROOT:-$HOME/dcperf-infra/DCPerf}/benchmarks/video_transcode_ben
 ALL=(feedsim tomcat finagle-chirper finagle-http cassandra-ycsb20m kafka-20g naivebayes-rcv1
      neo4j-livejournal pagerank-livejournal video-4k)
 
-SESS="$REPO/local_agents/DCPerf/data/frontend_footprint/_session"; n=2
-while [ -e "$SESS" ]; do SESS="$REPO/local_agents/DCPerf/data/frontend_footprint/_session.$n"; n=$((n+1)); done
+SESS="$REPO/local_agents/DCPerf/data/$FF_SUBDIR/_session"; n=2
+while [ -e "$SESS" ]; do SESS="$REPO/local_agents/DCPerf/data/$FF_SUBDIR/_session.$n"; n=$((n+1)); done
 mkdir -p "$SESS"
 LOGF="$SESS/wrapper.log"
 log(){ printf '[ffs %s] %s\n' "$(date +%H:%M:%S)" "$*" | tee -a "$LOGF"; }
@@ -163,16 +169,17 @@ trap 'exit 130' INT TERM
 WLS=("$@"); [ "${WLS[0]:-}" = all ] && WLS=("${ALL[@]}")
 [ ${#WLS[@]} -gt 0 ] || { sed -n '2,20p' "$0"; exit 1; }
 for w in "${WLS[@]}"; do wl_spec "$w" >/dev/null || { echo "unknown workload $w"; exit 1; }; done
-log "================ Server front-end footprint: ${WLS[*]} (session $SESS) ================"
+log "================ Server passes [$FF_GROUPS] -> $FF_SUBDIR: ${WLS[*]} (session $SESS) ================"
 sysctl_apply
 okc=0; failc=0
 for w in "${WLS[@]}"; do
   IFS='|' read -r fam tmo envs <<< "$(wl_spec "$w")"
-  DR="$REPO/local_agents/$fam/data/frontend_footprint"
+  DR="$REPO/local_agents/$fam/data/$FF_SUBDIR"
   suite=$(sed -n 's/.*SUITE=\([^ ]*\).*/\1/p' <<< "$envs")
   avail=$(df -BG --output=avail "$REPO" | tail -1 | tr -dc '0-9')
   if [ "${avail:-0}" -lt "$FF_DISK_MIN_G" ]; then log "STOP: only ${avail}G free (< ${FF_DISK_MIN_G}G) before $w"; break; fi
-  if [ -f "$DR/${suite}_$w/run_1/DONE" ]; then log "skip $w — DONE"; okc=$((okc+1)); continue; fi
+  if [ -f "$DR/${suite}_$w/run_$NG/DONE" ] && [ "$(ls "$DR/${suite}_$w"/run_*/DONE 2>/dev/null | wc -l)" = "$NG" ]; then
+    log "skip $w — DONE"; okc=$((okc+1)); continue; fi
   foreign_perf_wait
   quiet_wait
   PRE="$SESS/pre_state.$w.tsv"; machine_state > "$PRE"
@@ -186,7 +193,8 @@ for w in "${WLS[@]}"; do
   [ -n "$inp" ] && { log "INPUT STATE $w: $inp"; mkdir -p "$DR"; printf '%s\t%s\t%s\n' "$(date -Is)" "$w" "$inp" >> "$DR/input_state.tsv"; }
   log "---------------- $w ($envs, DATA_ROOT=${DR#$REPO/}, timeout ${tmo}s) ----------------"
   # shellcheck disable=SC2086
-  env $envs PROF_GROUPS=lbr DATA_ROOT="$DR" FF_MINE_PID=$$ \
+  pg=0; [ "$FF_GROUPS" = lbr ] || pg=1
+  env $envs PROF_GROUPS="$FF_GROUPS" PASS_GATES=$pg DATA_ROOT="$DR" FF_MINE_PID=$$ \
     timeout "$tmo" bash "$KITD/run_dcperf_profile.sh" >> "$SESS/orchestrator.$w.log" 2>&1
   rc=$?
   log "$w: orchestrator exit $rc"
@@ -194,7 +202,7 @@ for w in "${WLS[@]}"; do
   [ "$w" = video-4k ] && video_cleanup
   mslice_restore "$PRE"
   verify_restored "$PRE" || { log "STOP: machine not restored after $w — fix before continuing"; exit 1; }
-  if [ -f "$DR/${suite}_$w/run_1/DONE" ]; then okc=$((okc+1)); log "PASS-OK $w"
-  else failc=$((failc+1)); log "PASS-FAIL $w (see $SESS/orchestrator.$w.log and $DR/${suite}_$w/run_1)"; fi
+  if [ "$(ls "$DR/${suite}_$w"/run_*/DONE 2>/dev/null | wc -l)" = "$NG" ]; then okc=$((okc+1)); log "PASS-OK $w"
+  else failc=$((failc+1)); log "PASS-FAIL $w (see $SESS/orchestrator.$w.log and $DR/${suite}_$w/run_*)"; fi
 done
 log "================ done: $okc ok, $failc failed ================"
